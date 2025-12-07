@@ -1,0 +1,16 @@
+services:
+  web:
+    image: ya_dashboard:latest
+    container_name: ya_dashboard
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runner
+    ports:
+      - "3002:3000"
+    volumes:
+      - ./.ya_dashboard/data:/app/data
+    environment:
+      - NEXTAUTH_URL=http://localhost:3002
+      - NEXTAUTH_SECRET=qvMKHaYRDviUXdaslQrrL+7P6yywKQOSmA5ZmvX5//s=
+    restart: unless-stopped

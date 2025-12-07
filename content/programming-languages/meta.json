@@ -1,0 +1,9 @@
+{
+  "title": "编程语言",
+  "description": "编程语言相关的文档和资源",
+  "icon": "Building",
+  "root": true,
+  "pages": [
+    "index"
+  ]
+}

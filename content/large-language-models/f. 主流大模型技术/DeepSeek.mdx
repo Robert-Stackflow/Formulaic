@@ -1,0 +1,41 @@
+---
+title: DeepSeek
+description: 介绍 DeepSeek 大语言模型的架构、训练方法及其技术细节
+---
+
+### DeepSeek 系列基础技术
+
+- 多头潜在注意力（Multi-head Latent Attention，MLA）
+- DeepSeekMoE
+
+### DeepSeek V3
+
+![DeepSeek-V3](https://arxiv.org/html/2412.19437v1/x2.png)
+
+- 架构
+
+  - 无辅助损失的负载平衡策略（auxiliary-loss-free strategy for load balancing）
+
+  - Multi-Token Prediction（MTP）
+
+    ![MTP架构](https://arxiv.org/html/2412.19437v1/x3.png)
+
+- 预训练
+
+  - FP8 混合精度训练框架
+  - DualPipe 流水线并行算法
+  - 跨节点 MoE 训练的通信效率提升
+  - 两次长上下文扩展，最终达到 128K
+
+- 后训练
+
+  - 监督微调
+    - 从 DeepSeek R1 模型生成推理数据
+    - 从 DeepSeek V2.5 模型生成非推理数据
+    - 从 DeepSeek R1 系列模型（长 CoT 模型）提炼推理能力到 DeepSeek V3 中
+  - 强化学习
+    - 基于规则的奖励模型：针对具有特定规则验证的问题（如数学问题具有准确结果，编程问题使用编译器生成反馈）
+    - 基于模型的奖励模型
+      - 针对没有明确真实答案的问题，从 DeepSeek-V3 SFT 检查点训练得到
+      - 构建偏好数据集，包含最终奖励和导致奖励的思维链，来避免奖励黑客
+    - 采用组相对策略优化（Group Relative Policy Optimization，GRPO）

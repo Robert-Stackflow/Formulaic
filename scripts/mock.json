@@ -1,0 +1,918 @@
+{
+    "users": [
+        {
+            "username": "zhangsan",
+            "email": "zhangsan@hust.edu.cn",
+            "student_id": "M202401001",
+            "password": "User@123456",
+            "role": "user",
+            "can_view_todo": 1,
+            "can_edit_todo": 1,
+            "can_create_todo_board": 1,
+            "can_view_discuss": 1,
+            "can_post_discuss": 1
+        },
+        {
+            "username": "lisi",
+            "email": "lisi@hust.edu.cn",
+            "student_id": "M202401002",
+            "password": "User@123456",
+            "role": "user",
+            "can_view_todo": 0,
+            "can_edit_todo": 0,
+            "can_create_todo_board": 0,
+            "can_view_discuss": 1,
+            "can_post_discuss": 1
+        },
+        {
+            "username": "wangwu",
+            "email": "wangwu@hust.edu.cn",
+            "student_id": "M202401003",
+            "password": "User@123456",
+            "role": "user",
+            "can_view_todo": 1,
+            "can_edit_todo": 1,
+            "can_create_todo_board": 1,
+            "can_view_discuss": 1,
+            "can_post_discuss": 1
+        },
+        {
+            "username": "zhaoliu",
+            "email": "zhaoliu@hust.edu.cn",
+            "student_id": "M202401004",
+            "password": "User@123456",
+            "role": "moderator",
+            "can_view_todo": 1,
+            "can_edit_todo": 1,
+            "can_create_todo_board": 1,
+            "can_view_discuss": 1,
+            "can_post_discuss": 1,
+            "can_create_discuss_board": 1
+        },
+        {
+            "username": "徐瑞达",
+            "email": "M202474007@hust.edu.cn",
+            "student_id": "M202474007",
+            "password": "Admin@123456",
+            "role": "user",
+            "can_view_todo": 1,
+            "can_edit_todo": 0,
+            "can_create_todo_board": 0,
+            "can_view_discuss": 1,
+            "can_post_discuss": 1
+        },
+        {
+            "username": "sunqi",
+            "email": "sunqi@hust.edu.cn",
+            "student_id": "M202401005",
+            "password": "User@123456",
+            "role": "user",
+            "can_view_discuss": 1,
+            "can_post_discuss": 1
+        },
+        {
+            "username": "chenba",
+            "email": "chenba@hust.edu.cn",
+            "student_id": "M202401006",
+            "password": "User@123456",
+            "role": "user",
+            "can_view_discuss": 1,
+            "can_post_discuss": 1
+        },
+        {
+            "username": "liujiu",
+            "email": "liujiu@hust.edu.cn",
+            "student_id": "M202401007",
+            "password": "User@123456",
+            "role": "user",
+            "can_view_discuss": 1,
+            "can_post_discuss": 1
+        }
+    ],
+    "todoBoards": [
+        {
+            "title": "前端开发任务",
+            "description": "前端相关的开发任务和优化",
+            "lists": [
+                {
+                    "title": "UI组件开发",
+                    "description": "开发可复用的UI组件",
+                    "tags": [
+                        "feature",
+                        "ui"
+                    ],
+                    "cards": [
+                        {
+                            "title": "开发表格组件",
+                            "description": "创建支持排序、筛选、分页的表格组件"
+                        },
+                        {
+                            "title": "优化按钮样式",
+                            "description": "统一所有按钮的视觉风格和交互效果"
+                        },
+                        {
+                            "title": "实现模态框组件",
+                            "description": "支持多种尺寸和自定义内容的模态框"
+                        }
+                    ]
+                },
+                {
+                    "title": "性能优化",
+                    "description": "前端性能相关优化",
+                    "tags": [
+                        "performance"
+                    ],
+                    "cards": [
+                        {
+                            "title": "优化首屏加载速度",
+                            "description": "代码分割、懒加载、资源压缩"
+                        },
+                        {
+                            "title": "减少重渲染",
+                            "description": "使用React.memo和useMemo优化组件"
+                        }
+                    ]
+                },
+                {
+                    "title": "Bug修复",
+                    "description": "前端已知问题",
+                    "tags": [
+                        "bug"
+                    ],
+                    "cards": [
+                        {
+                            "title": "修复表单验证问题",
+                            "description": "表单提交时验证逻辑有误"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "title": "后端API开发",
+            "description": "后端接口和服务开发",
+            "lists": [
+                {
+                    "title": "用户系统",
+                    "description": "用户相关功能",
+                    "tags": [
+                        "feature",
+                        "backend"
+                    ],
+                    "cards": [
+                        {
+                            "title": "实现用户注册流程",
+                            "description": "支持邮箱验证和学号验证"
+                        },
+                        {
+                            "title": "添加密码重置功能",
+                            "description": "邮件验证码方式重置密码"
+                        },
+                        {
+                            "title": "完善用户权限系统",
+                            "description": "细粒度的权限控制"
+                        }
+                    ]
+                },
+                {
+                    "title": "数据库优化",
+                    "description": "数据库性能优化",
+                    "tags": [
+                        "performance",
+                        "database"
+                    ],
+                    "cards": [
+                        {
+                            "title": "添加索引",
+                            "description": "为常用查询字段添加索引"
+                        },
+                        {
+                            "title": "优化查询语句",
+                            "description": "减少N+1查询问题"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "title": "DevOps与部署",
+            "description": "运维和部署相关任务",
+            "lists": [
+                {
+                    "title": "CI/CD",
+                    "description": "持续集成和部署",
+                    "tags": [
+                        "devops"
+                    ],
+                    "cards": [
+                        {
+                            "title": "配置GitHub Actions",
+                            "description": "自动化测试和部署流程"
+                        },
+                        {
+                            "title": "设置Docker镜像",
+                            "description": "创建生产环境Docker镜像"
+                        }
+                    ]
+                },
+                {
+                    "title": "监控告警",
+                    "description": "系统监控和告警",
+                    "tags": [
+                        "monitoring"
+                    ],
+                    "cards": [
+                        {
+                            "title": "集成日志系统",
+                            "description": "使用ELK或类似工具收集日志"
+                        },
+                        {
+                            "title": "配置性能监控",
+                            "description": "监控API响应时间和资源使用"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "title": "产品规划",
+            "description": "产品功能规划和需求分析",
+            "lists": [
+                {
+                    "title": "新功能需求",
+                    "description": "待评审的新功能",
+                    "tags": [
+                        "feature",
+                        "planning"
+                    ],
+                    "cards": [
+                        {
+                            "title": "社交分享功能",
+                            "description": "支持分享到微信、QQ等平台"
+                        },
+                        {
+                            "title": "移动端App",
+                            "description": "开发原生或混合移动应用"
+                        },
+                        {
+                            "title": "实时通知推送",
+                            "description": "WebSocket或SSE实现实时通知"
+                        },
+                        {
+                            "title": "多语言支持",
+                            "description": "i18n国际化方案"
+                        }
+                    ]
+                },
+                {
+                    "title": "用户反馈",
+                    "description": "用户提出的建议",
+                    "tags": [
+                        "feedback"
+                    ],
+                    "cards": [
+                        {
+                            "title": "优化搜索体验",
+                            "description": "用户反馈搜索结果不够准确"
+                        },
+                        {
+                            "title": "增加快捷键支持",
+                            "description": "键盘快捷键提升效率"
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "discussionTopics": [
+        {
+            "board": "综合讨论区",
+            "title": "欢迎来到Formulaic讨论区！",
+            "content": "# 欢迎大家！\n\n这里是Formulaic的综合讨论区，欢迎大家在这里：\n\n- 分享使用心得\n- 提出问题和建议\n- 讨论技术话题\n- 交流学习经验\n\n希望大家能够积极参与，共同建设一个友好的社区！",
+            "tags": [
+                "announcement"
+            ],
+            "author": "admin",
+            "views": 156,
+            "comments": [
+                {
+                    "author": "zhangsan",
+                    "content": "感谢管理员！期待这个平台越来越好！"
+                },
+                {
+                    "author": "lisi",
+                    "content": "界面很简洁，使用起来很方便"
+                }
+            ]
+        },
+        {
+            "board": "YA",
+            "title": "YA项目架构设计讨论",
+            "content": "# 关于YA项目的架构设计\n\n最近在思考YA项目的整体架构，想和大家讨论一下：\n\n## 当前架构\n\n- 前端：Next.js + React\n- 后端：Next.js API Routes\n- 数据库：SQLite\n\n## 遇到的问题\n\n1. SQLite在高并发下的性能问题\n2. API Routes是否应该拆分为独立服务\n3. 前端状态管理方案选择\n\n大家有什么建议吗？",
+            "tags": [
+                "question",
+                "architecture"
+            ],
+            "author": "wangwu",
+            "views": 89,
+            "comments": [
+                {
+                    "author": "zhaoliu",
+                    "content": "建议考虑使用PostgreSQL替代SQLite，更适合生产环境"
+                },
+                {
+                    "author": "zhangsan",
+                    "content": "前端状态管理可以试试Zustand，比Redux轻量很多"
+                },
+                {
+                    "author": "admin",
+                    "content": "关于API拆分，目前规模还不需要，可以先保持现状，后续根据需求演进"
+                }
+            ]
+        },
+        {
+            "board": "MCP Server",
+            "title": "MCP Server开发环境配置指南",
+            "content": "# MCP Server开发环境配置\n\n分享一下我的配置经验，希望对大家有帮助。\n\n## 环境要求\n\n- Node.js 18+\n- TypeScript 5.0+\n- VS Code（推荐）\n\n## 配置步骤\n\n1. 克隆仓库\n```bash\ngit clone https://gitea.example.com/ya/mcp-server.git\ncd mcp-server\n```\n\n2. 安装依赖\n```bash\nnpm install\n```\n\n3. 配置环境变量\n```bash\ncp .env.example .env\n```\n\n4. 启动开发服务器\n```bash\nnpm run dev\n```\n\n## 常见问题\n\n欢迎大家在评论区补充！",
+            "tags": [
+                "tutorial"
+            ],
+            "author": "zhangsan",
+            "views": 234,
+            "comments": [
+                {
+                    "author": "lisi",
+                    "content": "非常实用的教程！已经成功配置了"
+                },
+                {
+                    "author": "wangwu",
+                    "content": "建议补充一下调试技巧"
+                }
+            ]
+        },
+        {
+            "board": "Gitea平台",
+            "title": "如何配置SSH密钥？",
+            "content": "新手求助，想配置SSH密钥但是不太会操作，有没有详细的教程？",
+            "tags": [
+                "question"
+            ],
+            "author": "sunqi",
+            "views": 67,
+            "comments": [
+                {
+                    "author": "admin",
+                    "content": "可以参考官方文档：https://docs.gitea.io/en-us/ssh-key/"
+                },
+                {
+                    "author": "zhaoliu",
+                    "content": "我整理了一份中文教程，稍后发帖分享"
+                }
+            ]
+        },
+        {
+            "board": "Formulaic",
+            "title": "Dashboard性能优化建议",
+            "content": "# Dashboard性能优化\n\n最近在使用Dashboard时发现加载有点慢，做了一些分析：\n\n## 问题分析\n\n- 首屏加载包体积过大（3.2MB）\n- 未使用代码分割\n- 图片未优化\n\n## 优化建议\n\n1. 启用代码分割和懒加载\n2. 使用next/image优化图片\n3. 减少第三方库的使用\n4. 启用gzip压缩\n\n已提交PR，欢迎review。",
+            "tags": [
+                "enhancement",
+                "performance"
+            ],
+            "author": "wangwu",
+            "views": 123,
+            "comments": [
+                {
+                    "author": "admin",
+                    "content": "很好的建议！我会尽快review你的PR"
+                },
+                {
+                    "author": "zhangsan",
+                    "content": "同意，首屏加载确实需要优化"
+                }
+            ]
+        },
+        {
+            "board": "Formulaic",
+            "title": "Markdown编辑器功能请求",
+            "content": "希望能在Markdown编辑器中添加以下功能：\n\n1. 实时预览\n2. 语法高亮\n3. 支持上传图片\n4. 支持插入表格\n5. 支持数学公式（LaTeX）\n\n这些功能会大大提升写作体验！",
+            "tags": [
+                "feature-request"
+            ],
+            "author": "lisi",
+            "views": 145,
+            "comments": [
+                {
+                    "author": "admin",
+                    "content": "很好的建议！已加入开发计划"
+                },
+                {
+                    "author": "wangwu",
+                    "content": "实时预览和语法高亮是刚需，强烈支持！"
+                },
+                {
+                    "author": "zhaoliu",
+                    "content": "可以参考Typora的实现方式"
+                }
+            ]
+        },
+        {
+            "board": "综合讨论区",
+            "title": "分享一些好用的开发工具",
+            "content": "# 开发工具推荐\n\n分享一些我常用的开发工具：\n\n## 代码编辑器\n\n- VS Code（主力）\n- WebStorm（偶尔用）\n\n## 调试工具\n\n- Chrome DevTools\n- React DevTools\n- Redux DevTools\n\n## 协作工具\n\n- Figma（设计协作）\n- Notion（文档管理）\n- Linear（项目管理）\n\n## 命令行工具\n\n- oh-my-zsh\n- fzf（模糊搜索）\n- tldr（快速查看命令用法）\n\n大家还有什么推荐的工具吗？",
+            "tags": [
+                "discussion"
+            ],
+            "author": "zhaoliu",
+            "views": 198,
+            "comments": [
+                {
+                    "author": "zhangsan",
+                    "content": "推荐Postman做API测试"
+                },
+                {
+                    "author": "lisi",
+                    "content": "我在用Bruno，比Postman更轻量"
+                },
+                {
+                    "author": "wangwu",
+                    "content": "命令行推荐bat（cat的替代品）和exa（ls的替代品）"
+                }
+            ]
+        },
+        {
+            "board": "MCP Server",
+            "title": "MCP协议详解",
+            "content": "# Model Context Protocol 详解\n\n## 什么是MCP？\n\nMCP（Model Context Protocol）是一个用于AI模型和应用之间通信的协议。\n\n## 核心概念\n\n### 1. 工具（Tools）\n\n工具是MCP中最基本的单元，代表AI可以调用的功能。\n\n### 2. 资源（Resources）\n\n资源提供上下文信息，帮助AI更好地理解任务。\n\n### 3. 提示词（Prompts）\n\n预定义的提示模板，简化常见任务。\n\n## 实现示例\n\n```typescript\nimport { MCPServer } from '@modelcontextprotocol/sdk';\n\nconst server = new MCPServer({\n  name: 'example-server',\n  version: '1.0.0'\n});\n\nserver.tool('get_weather', async (params) => {\n  // 实现获取天气的逻辑\n});\n```\n\n更多内容待续...",
+            "tags": [
+                "tutorial",
+                "technical"
+            ],
+            "author": "admin",
+            "views": 312,
+            "comments": [
+                {
+                    "author": "zhangsan",
+                    "content": "写得很清楚！期待后续内容"
+                },
+                {
+                    "author": "wangwu",
+                    "content": "能否补充一下错误处理的最佳实践？"
+                }
+            ]
+        },
+        {
+            "board": "YA",
+            "title": "如何实现主题的置顶功能？",
+            "content": "想给重要主题添加置顶功能，有人知道怎么实现吗？",
+            "tags": [
+                "question"
+            ],
+            "author": "sunqi",
+            "views": 45,
+            "comments": []
+        },
+        {
+            "board": "YA",
+            "title": "讨论区标签管理优化建议",
+            "content": "# 标签管理优化\n\n目前的标签系统还不够完善，建议：\n1. 支持标签颜色自定义\n2. 添加标签图标\n3. 支持标签层级\n4. 标签使用统计",
+            "tags": [
+                "enhancement"
+            ],
+            "author": "chenba",
+            "views": 78,
+            "comments": [
+                {
+                    "author": "admin",
+                    "content": "很好的建议，会考虑实现"
+                }
+            ]
+        },
+        {
+            "board": "YA",
+            "title": "关于评论回复功能的改进想法",
+            "content": "当前的评论系统缺少嵌套回复，建议增加类似Reddit的树形回复结构。",
+            "tags": [
+                "feature-request"
+            ],
+            "author": "liujiu",
+            "views": 92,
+            "comments": [
+                {
+                    "author": "zhangsan",
+                    "content": "支持！嵌套回复对于深度讨论很重要"
+                },
+                {
+                    "author": "wangwu",
+                    "content": "同意，不过实现起来可能比较复杂"
+                }
+            ]
+        },
+        {
+            "board": "YA",
+            "title": "数据库迁移方案讨论",
+            "content": "# 从SQLite迁移到PostgreSQL\n\n考虑到性能和扩展性，建议迁移到PostgreSQL。\n\n## 迁移步骤\n1. 导出现有数据\n2. 创建PostgreSQL schema\n3. 数据转换和导入\n4. 测试验证\n5. 切换生产环境\n\n大家觉得这个方案可行吗？",
+            "tags": [
+                "discussion",
+                "database"
+            ],
+            "author": "zhaoliu",
+            "views": 156,
+            "comments": [
+                {
+                    "author": "admin",
+                    "content": "目前SQLite够用，不急于迁移"
+                },
+                {
+                    "author": "wangwu",
+                    "content": "可以先做性能测试，看看瓶颈在哪"
+                }
+            ]
+        },
+        {
+            "board": "YA",
+            "title": "前端路由优化讨论",
+            "content": "Next.js的App Router用起来有点不习惯，大家有什么好的实践经验吗？",
+            "tags": [
+                "question"
+            ],
+            "author": "lisi",
+            "views": 67,
+            "comments": [
+                {
+                    "author": "zhangsan",
+                    "content": "建议多看看官方文档和示例"
+                }
+            ]
+        },
+        {
+            "board": "YA",
+            "title": "API接口文档生成方案",
+            "content": "建议使用Swagger或OpenAPI来生成API文档，方便前后端对接。",
+            "tags": [
+                "enhancement"
+            ],
+            "author": "chenba",
+            "views": 89,
+            "comments": []
+        },
+        {
+            "board": "YA",
+            "title": "用户权限系统设计探讨",
+            "content": "# 权限系统设计\n\n当前的权限控制比较简单，建议引入RBAC（基于角色的访问控制）。\n\n## 角色设计\n- 管理员：所有权限\n- 版主：管理特定板块\n- 普通用户：基本操作\n- 游客：只读\n\n## 权限粒度\n- 板块级别\n- 功能级别\n- 数据级别",
+            "tags": [
+                "discussion",
+                "security"
+            ],
+            "author": "zhaoliu",
+            "views": 234,
+            "comments": [
+                {
+                    "author": "admin",
+                    "content": "很完整的方案，可以作为下一版本的重点功能"
+                },
+                {
+                    "author": "wangwu",
+                    "content": "RBAC确实是标准做法"
+                }
+            ]
+        },
+        {
+            "board": "YA",
+            "title": "搜索功能增强建议",
+            "content": "希望能支持：\n1. 全文搜索\n2. 高级筛选（日期、作者、标签）\n3. 搜索结果高亮\n4. 搜索历史记录",
+            "tags": [
+                "feature-request"
+            ],
+            "author": "sunqi",
+            "views": 123,
+            "comments": [
+                {
+                    "author": "lisi",
+                    "content": "搜索确实需要改进，现在只能搜标题"
+                }
+            ]
+        },
+        {
+            "board": "YA",
+            "title": "通知系统实现方案",
+            "content": "# 通知系统设计\n\n## 通知类型\n- 回复通知\n- 点赞通知\n- 关注主题更新\n- 系统公告\n\n## 推送方式\n- 站内消息\n- 邮件通知\n- 浏览器推送\n\n大家还有什么需求？",
+            "tags": [
+                "discussion",
+                "feature"
+            ],
+            "author": "wangwu",
+            "views": 178,
+            "comments": [
+                {
+                    "author": "chenba",
+                    "content": "建议增加推送设置，让用户自己选择接收哪些通知"
+                },
+                {
+                    "author": "zhangsan",
+                    "content": "微信推送也可以考虑"
+                }
+            ]
+        },
+        {
+            "board": "YA",
+            "title": "代码审查流程建议",
+            "content": "团队协作需要规范的代码审查流程，建议：\n1. PR必须有描述\n2. 至少一人review\n3. 通过CI测试\n4. 符合代码规范",
+            "tags": [
+                "discussion"
+            ],
+            "author": "liujiu",
+            "views": 95,
+            "comments": []
+        },
+        {
+            "board": "YA",
+            "title": "移动端适配问题汇总",
+            "content": "收集了一些移动端的问题：\n1. 触摸响应延迟\n2. 滚动不流畅\n3. 弹窗在小屏幕上显示不全\n4. 输入框被键盘遮挡",
+            "tags": [
+                "bug"
+            ],
+            "author": "sunqi",
+            "views": 112,
+            "comments": [
+                {
+                    "author": "admin",
+                    "content": "感谢反馈，会逐步修复"
+                }
+            ]
+        },
+        {
+            "board": "YA",
+            "title": "主题列表分页性能优化",
+            "content": "当主题数量很多时，分页加载会变慢，建议使用虚拟滚动或者缓存策略。",
+            "tags": [
+                "performance"
+            ],
+            "author": "chenba",
+            "views": 67,
+            "comments": []
+        },
+        {
+            "board": "YA",
+            "title": "Dark Mode主题切换功能",
+            "content": "# Dark Mode实现\n\n建议添加深色模式，提升夜间使用体验。\n\n可以使用Tailwind的dark模式，配合next-themes实现。",
+            "tags": [
+                "feature-request"
+            ],
+            "author": "lisi",
+            "views": 201,
+            "comments": [
+                {
+                    "author": "zhangsan",
+                    "content": "强烈支持！深色模式护眼"
+                },
+                {
+                    "author": "wangwu",
+                    "content": "已经有了吧？我看到了dark模式的样式"
+                },
+                {
+                    "author": "lisi",
+                    "content": "哦对，我看到了，那就是希望能自动跟随系统"
+                }
+            ]
+        },
+        {
+            "board": "YA",
+            "title": "用户个人主页功能设计",
+            "content": "建议添加用户个人主页，展示：\n- 发布的主题\n- 参与的讨论\n- 获得的赞数\n- 关注的主题\n- 个人简介",
+            "tags": [
+                "feature-request"
+            ],
+            "author": "zhaoliu",
+            "views": 145,
+            "comments": [
+                {
+                    "author": "sunqi",
+                    "content": "可以参考GitHub的profile设计"
+                }
+            ]
+        },
+        {
+            "board": "YA",
+            "title": "Markdown渲染性能问题",
+            "content": "长文档的Markdown渲染很慢，有时会卡顿，需要优化。",
+            "tags": [
+                "bug",
+                "performance"
+            ],
+            "author": "chenba",
+            "views": 88,
+            "comments": [
+                {
+                    "author": "admin",
+                    "content": "会考虑使用增量渲染或者Web Worker"
+                }
+            ]
+        },
+        {
+            "board": "YA",
+            "title": "讨论区统计数据展示",
+            "content": "希望能看到一些统计数据：\n- 总主题数\n- 总回复数\n- 活跃用户\n- 热门标签\n\n可以做成一个Dashboard",
+            "tags": [
+                "feature-request"
+            ],
+            "author": "liujiu",
+            "views": 134,
+            "comments": []
+        },
+        {
+            "board": "YA",
+            "title": "图片上传功能实现",
+            "content": "# 图片上传方案\n\n## 方案1：本地存储\n- 简单直接\n- 占用服务器空间\n\n## 方案2：对象存储（OSS）\n- 需要第三方服务\n- 成本较高但稳定\n\n## 方案3：图床服务\n- 免费但不稳定\n\n大家倾向哪个方案？",
+            "tags": [
+                "discussion"
+            ],
+            "author": "wangwu",
+            "views": 167,
+            "comments": [
+                {
+                    "author": "admin",
+                    "content": "初期用本地存储，后期再考虑OSS"
+                },
+                {
+                    "author": "zhaoliu",
+                    "content": "建议直接用OSS，省得以后迁移麻烦"
+                }
+            ]
+        },
+        {
+            "board": "YA",
+            "title": "关注功能的邮件通知",
+            "content": "当关注的主题有新回复时，希望能收到邮件通知。",
+            "tags": [
+                "feature-request"
+            ],
+            "author": "sunqi",
+            "views": 76,
+            "comments": [
+                {
+                    "author": "lisi",
+                    "content": "好主意，但要提供关闭选项"
+                }
+            ]
+        },
+        {
+            "board": "YA",
+            "title": "主题编辑历史记录",
+            "content": "建议保存主题和回复的编辑历史，方便查看改动。类似Wiki的版本控制。",
+            "tags": [
+                "feature-request"
+            ],
+            "author": "chenba",
+            "views": 93,
+            "comments": []
+        },
+        {
+            "board": "YA",
+            "title": "防垃圾信息机制讨论",
+            "content": "# 反垃圾策略\n\n1. 验证码（CAPTCHA）\n2. 发帖频率限制\n3. 关键词过滤\n4. 用户举报机制\n5. 信誉积分系统\n\n大家有什么补充？",
+            "tags": [
+                "discussion",
+                "security"
+            ],
+            "author": "zhaoliu",
+            "views": 118,
+            "comments": [
+                {
+                    "author": "admin",
+                    "content": "目前的速率限制应该够用，其他功能后续添加"
+                }
+            ]
+        },
+        {
+            "board": "YA",
+            "title": "多语言支持的必要性",
+            "content": "YA项目是否需要支持多语言？如果需要，优先支持哪些语言？",
+            "tags": [
+                "discussion"
+            ],
+            "author": "liujiu",
+            "views": 58,
+            "comments": [
+                {
+                    "author": "zhangsan",
+                    "content": "目前用户都是中文，暂时不需要"
+                }
+            ]
+        },
+        {
+            "board": "YA",
+            "title": "API限流策略优化",
+            "content": "现在的限流规则是否合理？是否需要针对不同接口设置不同的限制？",
+            "tags": [
+                "question",
+                "security"
+            ],
+            "author": "sunqi",
+            "views": 72,
+            "comments": []
+        },
+        {
+            "board": "YA",
+            "title": "SEO优化建议",
+            "content": "# SEO优化清单\n\n1. 语义化HTML标签\n2. Meta标签完善\n3. 结构化数据（JSON-LD）\n4. 站点地图（sitemap.xml）\n5. robots.txt配置\n6. 性能优化（Core Web Vitals）\n\n已经实现了哪些？",
+            "tags": [
+                "enhancement"
+            ],
+            "author": "chenba",
+            "views": 104,
+            "comments": [
+                {
+                    "author": "admin",
+                    "content": "sitemap已经有了，其他的会逐步完善"
+                }
+            ]
+        },
+        {
+            "board": "YA",
+            "title": "测试覆盖率提升计划",
+            "content": "目前的测试覆盖率还很低，建议：\n1. 单元测试（Jest）\n2. 集成测试\n3. E2E测试（Playwright）\n\n谁愿意一起来完善测试？",
+            "tags": [
+                "discussion"
+            ],
+            "author": "wangwu",
+            "views": 81,
+            "comments": [
+                {
+                    "author": "zhaoliu",
+                    "content": "我可以帮忙写一些测试用例"
+                }
+            ]
+        },
+        {
+            "board": "YA",
+            "title": "WebSocket实时通信探讨",
+            "content": "考虑引入WebSocket实现实时功能，比如在线用户列表、实时回复等。",
+            "tags": [
+                "discussion",
+                "feature"
+            ],
+            "author": "lisi",
+            "views": 126,
+            "comments": [
+                {
+                    "author": "wangwu",
+                    "content": "SSE可能更简单，够用就行"
+                }
+            ]
+        },
+        {
+            "board": "YA",
+            "title": "错误日志收集方案",
+            "content": "建议集成Sentry或类似的错误追踪服务，方便定位问题。",
+            "tags": [
+                "enhancement"
+            ],
+            "author": "sunqi",
+            "views": 64,
+            "comments": []
+        },
+        {
+            "board": "YA",
+            "title": "主题导出功能",
+            "content": "希望能将主题导出为PDF或Markdown文件，方便离线阅读。",
+            "tags": [
+                "feature-request"
+            ],
+            "author": "chenba",
+            "views": 97,
+            "comments": [
+                {
+                    "author": "liujiu",
+                    "content": "PDF导出会比较复杂，Markdown导出应该容易实现"
+                }
+            ]
+        },
+        {
+            "board": "YA",
+            "title": "Emoji表情支持",
+            "content": "建议在编辑器中添加Emoji选择器，丰富表达方式。",
+            "tags": [
+                "feature-request"
+            ],
+            "author": "liujiu",
+            "views": 55,
+            "comments": []
+        },
+        {
+            "board": "YA",
+            "title": "代码块语法高亮优化",
+            "content": "当前的代码高亮效果一般，建议使用Prism.js或highlight.js优化。",
+            "tags": [
+                "enhancement"
+            ],
+            "author": "zhaoliu",
+            "views": 88,
+            "comments": [
+                {
+                    "author": "admin",
+                    "content": "已经在用了，可能是主题配色问题"
+                }
+            ]
+        }
+    ]
+}
