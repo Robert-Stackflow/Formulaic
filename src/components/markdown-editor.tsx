@@ -25,7 +25,7 @@ export default function MarkdownEditor({
       .replace(/^## (.*$)/gim, '<h2 class="text-xl font-bold my-3">$1</h2>')
       .replace(/^# (.*$)/gim, '<h2 class="text-2xl font-bold my-4">$1</h2>')
       // 粗体
-      .replace(/\*\*(.*?)\*\*/gim, '<strong class="font-bold">$1</strong>')
+      .replace(/**(.*?)**/ gim, '<strong class="font-bold">$1</strong>')
       // 斜体
       .replace(/\*(.*?)\*/gim, '<em class="italic">$1</em>')
       // 代码块

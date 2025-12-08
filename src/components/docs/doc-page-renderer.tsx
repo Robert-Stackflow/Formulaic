@@ -41,12 +41,15 @@ export function DocPageRenderer({ source, slug }: DocPageRendererProps) {
         <div className="flex-1">
           <h1 className="text-[1.75em] font-semibold">{title}</h1>
           <p className="text-lg text-fd-muted-foreground mb-4">{description}</p>
-          <div className="flex flex-row flex-wrap gap-2 items-center" id="doc-page-actions">
+          <div
+            className="flex flex-row flex-wrap gap-2 items-center"
+            id="doc-page-actions"
+          >
             <LLMCopyButton markdownUrl={`${page.url}.mdx`} />
             <ExportPDFButton />
             <ViewOptions
               markdownUrl={`${page.url}.mdx`}
-              githubUrl={`https://github.com/Robert-Stackflow/Formulaic/blob/main/content/${page.path}`}
+              githubUrl={`https://github.com/Robert-Stackflow/Formulaic/blob/master/content/${page.url}.md`}
             />
           </div>
         </div>

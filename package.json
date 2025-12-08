@@ -7,7 +7,7 @@
   },
   "scripts": {
     "build": "next build",
-    "dev": "next dev --turbo",
+    "dev": "set NODE_OPTIONS=--max-old-space-size=8192 && next dev",
     "db:init": "npx --yes tsx scripts/init-db.ts",
     "db:mock": "npx --yes tsx scripts/import-mock.ts",
     "pangu": "npx --yes tsx scripts/pangu-fix.ts",
