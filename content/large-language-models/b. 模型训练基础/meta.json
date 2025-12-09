@@ -1,0 +1,7 @@
+{
+    "title": "模型训练基础",
+    "description": "介绍 PyTorch 框架、分布式训练等训练技术",
+    "pages": [
+        "..."
+    ]
+}
