@@ -9,7 +9,7 @@ import "katex/dist/katex.css";
 
 export const metadata: Metadata = {
   title: {
-    default: "Formulaic - 技术面试八股文知识库",
+    default: "Formulaic - 技术面试知识库",
     template: "%s - Formulaic",
   },
   description:
@@ -35,13 +35,13 @@ export const metadata: Metadata = {
     type: "website",
     locale: "zh_CN",
     siteName: "Formulaic",
-    title: "Formulaic - 技术面试八股文知识库",
+    title: "Formulaic - 技术面试知识库",
     description:
       "系统化的技术面试知识库，帮助你掌握算法、后端、系统、DevOps 等核心领域的八股文知识。",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Formulaic - 技术面试八股文知识库",
+    title: "Formulaic - 技术面试知识库",
     description:
       "系统化的技术面试知识库，帮助你掌握算法、后端、系统、DevOps 等核心领域的八股文知识。",
   },

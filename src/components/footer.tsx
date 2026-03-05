@@ -12,7 +12,7 @@ export function Footer() {
               Formulaic
             </h3>
             <p className="text-sm text-fd-muted-foreground leading-relaxed">
-              技术面试八股文知识库，系统化整理算法、后端、系统等核心领域知识。
+              技术面试知识库，系统化整理算法、后端、系统等核心领域知识。
             </p>
           </div>
 
