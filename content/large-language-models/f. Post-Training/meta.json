@@ -1,0 +1,7 @@
+{
+    "title": "Post-Training",
+    "description": "大语言模型后训练（Post-Training）的核心概念、常见方法（微调、增量训练、知识蒸馏等）及其在模型性能提升中的作用",
+    "pages": [
+        "..."
+    ]
+}

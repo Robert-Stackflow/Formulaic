@@ -1,0 +1,10 @@
+---
+title: LLM Frontier
+description: 介绍大语言模型前沿技术及其最新进展
+---
+
+- 参考资料
+  - 论文
+    - MiMo-VL：[MiMo-VL Technical Report](https://arxiv.org/abs/2506.03569)
+    - MiMo-Audio：[MiMo-Audio: Audio Language Models are Few-Shot Learners](https://arxiv.org/abs/2512.23808)
+    - MiMo-V2-Flash：[MiMo-V2-Flash Technical Report](https://arxiv.org/abs/2601.02780v2)

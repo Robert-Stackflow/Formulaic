@@ -1,0 +1,169 @@
+---
+title: LLM Reasoning
+description: 介绍大语言模型（LLM）推理能力的现状、调研及其面临的问题
+---
+
+- 参考资料
+  - 帖子
+    - [The State of Reinforcement Learning for LLM Reasoning](https://magazine.sebastianraschka.com/p/the-state-of-llm-reasoning-model-training)
+    - [The State of LLM Reasoning Model Inference](https://magazine.sebastianraschka.com/p/state-of-llm-reasoning-and-inference-scaling)
+    - [Understanding Reasoning LLMs](https://magazine.sebastianraschka.com/p/understanding-reasoning-llms)
+    - [A Visual Guide to Reasoning LLMs](https://newsletter.maartengrootendorst.com/p/a-visual-guide-to-reasoning-llms)
+    - [Demystifying Reasoning Models - by Cameron R. Wolfe, Ph.D.](https://cameronrwolfe.substack.com/p/demystifying-reasoning-models)
+  - LLM 对比
+    - [Beyond Standard LLMs](https://magazine.sebastianraschka.com/p/beyond-standard-llms)
+    - [The Big LLM Architecture Comparison](https://magazine.sebastianraschka.com/p/the-big-llm-architecture-comparison)
+
+## 大模型推理调研
+
+### o1的推理能力
+
+#### 观察思维链
+
+o1的思维链与之前的思维链有何不同？
+
+- 问题大纲：针对问题，先给出大纲描述，即重新阐述问题
+- 搜索/规划：问题的分解
+- 自我纠错：识别并纠正错误
+- 回溯：某个方法行不通时，考虑另一方面
+
+  > o1的自我纠错和回溯的能力是自然产生的，而不是经由某种训练诱导的
+
+- 自我评估
+  - 回顾之前做的事情，评估是否正确可行
+  - 自我提供动态的奖励信号
+  - o1只是一个模型，LLM既是生成器，又是验证器（而且是PRM）
+
+#### Pre-Training与Post-Training
+
+- Pre-Training阶段中通过训练大量数据，提高模型参数来提升模型性能的收益越来越低
+- Post-Training：预训练之后做的所有事
+  - 指令微调
+  - RLHF、DPO
+  - RFT、RLVR（Reinforcement learning with verifiable rewards）
+  - 提示工程
+- 新的Scaling Law
+  - 训练时计算——进行强化微调（Reinforcement Fine Tuning, RFT)
+  - 测试时计算（推理时计算）——更长的思考时间，更长的思维链
+
+### 强化微调(Reinforcement Finetuning, RFT)
+
+- 三个微调阶段
+  - 监督微调：教授模型特定的格式，并为其提供遵循指令的基础能力
+  - 偏好微调：使模型的输出与人类的偏好相一致，同时在能力上实现较小的提升
+  - 强化微调：在可验证的任务上提升模型的性能
+- 高数据效率
+  - 仅需要数十条数据即可达到很好的效果
+  - Continuations：不断根据这些提示进行训练，有时模型会正确并从中学习，并将探索到的方法记忆在模型中
+
+    > o1 learns to hone its chain of thought and refine the strategies it uses. It learns to recognize and correct its mistakes. It learns to break down tricky steps into simpler ones. It learns to try a different approach when the current one isn’t working.
+
+  - 无需人类写下复杂的思维过程，构造昂贵的CoT数据集
+
+    > When training a model for reasoning, one thing that immediately jumps to mind is to have humans write out their thought process and train on that. **When we saw that if you train the model using RL to generate and hone its own chain of thoughts it can do even better than having humans write chains of thought for it.** That was the “Aha!” moment that you could really scale this.
+
+### 已有的研究
+
+- 自洽（多数投票、Majority Vote、Self-Consistency、Consensus）
+  - 生成多个思维链：让模型针对同一问题生成多条推理路径（使用 n 个随机采样）
+  - 提取答案：从每条推理路径中提取最终答案
+  - 统计支持率：统计每个答案的出现次数
+  - 选择最多数支持的答案：将支持率最高的答案作为最终输出。
+- 拒绝采样（BestOfN）
+  - 训练一个验证器：LLM本身、基于LLM微调的验证器、外部验证器
+  - 生成多个思维链：让模型针对同一问题生成多条推理路径
+  - 使用验证器为每个思维链打分，分数最高者为最终结果
+- MCTS
+- On-Policy？
+
+### 四种可能途径
+
+- Filter：猜测+检查
+  - 对N条思维链进行拒绝采样（BestOfN）后，仅对成功的示例进行训练
+  - Self-Training
+  - 缺点：并未产生回溯反思的能力
+- Evaluation：过程奖励
+  - 不采用结果奖励模型，而是采用过程奖励模型
+  - 针对产生的中间奖励训练推理模型
+  - 也可以使用PRM进行拒绝采样
+  - 缺点
+    - 需要单独训练过程奖励模型，且推理质量的瓶颈即为奖励模型的质量
+    - 除了o1，还没有在单条思维链中同时进行生成和验证的公开研究，而是交替进行
+- 指导：搜索/AlphaZero
+  - AlphaProof
+  - Self-Play
+  - Beam Search
+- 组合：学会纠正
+  - 从错误的CoT开始，找到正确的修正方法
+  - 构造错误的CoT，然后插入字符串"wait, that's wrong. What if…"，最后给出正确的CoT，从而得到一个犯错误后自我纠正最后正确回答问题的思维链
+
+### 问题思考
+
+- o1的局限性
+  - 开放式任务（例如写作、医学）的解决方案很少是二元的，而且往往是高度上下文相关的，枚举大量思维链不一定有效
+  - 搜索和强化学习在具有明确成功指标的领域（例如编码或数学）可以发挥很好的作用，但是当答案的“正确性”变得模糊或主观时，它们就会成为时间和资源的低效利用
+- 这是人类的思维方式吗
+  - 人类在思考时，会生成很多条思维链吗
+  - 人类有能力辨别何时以及如何使用捷径，但是o1对于再简单的问题1+1=？也会产生大量思维过程
+- 推理能力源自何处：模式匹配？
+  - 自回归语言模型如何能产生诸如自我纠错、回溯的能力？
+  - 当训练期间的数据中有类似的模式可用时，通过模式匹配的快捷学习可能会让LLM在推理期间产生快速的正确答案
+  - 但这无法对不常见或复杂的示例进行泛化，包括o1
+  - 自回归语言模型的性能会随着任务的复杂性增加而迅速降低
+- 由人类标签/数据标注转向自我引导、搜索和规划
+  - AlpahGo接受专家对弈的数据训练，需要训练复杂的价值网络，而AlphaGo Zero采用纯粹的自我对弈（Self-Play），通过更多的计算取得更好的性能
+  - 计算机视觉的早期方法关注边缘检测、特征提取等，但如今卷积神经网络通过更通用的计算方法大幅提升了性能
+  - RLHF需要昂贵的人类偏好数据，而RLAIF、Constitutional AI使用AI代替人类偏好，效果更好
+  - PRM需要昂贵的人类标注进行监督学习，而现在可能由ORM引导得到
+  - 使用专家标注后的思维链数据进行监督微调的效果没有o1的强化微调有所成效
+
+  > The Bitter Lesson
+  >
+  > - **利用计算能力的通用方法最终总是更有效的**
+  > - 教训
+  >   - 基于人类知识能短期内提升系统性能，但从长远看会导致方法复杂化，限制系统适应和扩展；因为人类知识是有限的，而人工标注的数据更是昂贵的
+  >   - 能够随计算能力扩展的方法（如搜索与学习）在长期内更有效
+  >   - 人类认知和现实世界的复杂性本质上是不可简化的，试图用简单模型直接反映人类知识往往是徒劳的
+  > - 真正的突破
+  >   - 开发能够利用计算能力扩展的元方法（如搜索和学习），而非将人类知识直接嵌入系统
+  >   - AI的真正突破在于通用方法的发现和利用，而非对人类知识的模拟
+  >   - AI要学会不依赖人类知识并发现事物的方法
+  > - 痛苦教训的最终形式是学习和搜索之间的紧密反馈循环
+  >   - 用搜索生成高质量的推理过程：通过搜索算法找到一系列正确的解决方案或推理路径（这些路径相当于“解题的详细步骤”）
+  >   - 把推理过程浓缩成精简的知识表示：将这些详细步骤转化为更简短、更易理解的知识（类似把一个长篇推理题的过程压缩成几句话）
+  >   - 训练模型吸收这些浓缩的知识：通过学习这些简化后的内容，把推理能力直接融入模型中，这样以后模型就可以跳过搜索，直接得出结果。
+  >   - 当模型达到足够强的能力水平后，一些经典的 AI 问题（比如“模式崩溃”（mode collapse）、“灾难性遗忘”（catastrophic forgetting）等）可能会自然消失，因为模型已经具备了更高的智慧和稳定性，能够灵活应对这些问题。
+  >   - 更通俗点，这就像先教给一个学生详细的解题步骤，然后让他自己总结出简便的公式，最后再用公式解题。他学到一定程度后，不仅解题速度快，还能自己发现和解决问题，而不用担心忘记以前学的内容或者陷入某种固定思路。
+
+- AI存在的问题
+  - 模式崩溃（Mode Collapse）
+    - 问题本质：LLM 在生成内容时可能反复输出同一种类型的答案，而缺乏多样性。
+    - 举例：让 LLM 生成 5 篇文章，它输出的内容几乎一样，只是换了少量句子或词语。
+    - 解决方法：
+      - 在生成时引入温度调节机制，增大随机性（提高温度参数）以避免输出单一模式。
+      - 优化训练目标，例如使用去偏的采样策略（Top-k、Nucleus Sampling）增强生成结果的多样性。
+      - 增加训练数据的多样性，确保模型学到更广泛的模式。
+  - 灾难性遗忘（Catastrophic Forgetting）
+    - 问题本质：LLM 在增量学习时，如果仅用新数据进行微调，可能会忘记之前学过的知识。
+    - 举例：LLM 原本知道“爱因斯坦提出相对论”，但微调后被新的领域知识覆盖，不再正确回答物理问题。
+    - 解决方法：
+      - 使用混合训练数据进行微调，将原始知识和新任务的数据结合，避免完全覆盖旧知识。
+      - 使用参数冻结技术，仅微调部分参数而保护大部分基础知识。
+      - 引入知识蒸馏（Knowledge Distillation），将原模型的知识传递到新模型中以保留旧知识。
+  - 幻觉（Hallucination）
+    - 问题本质：LLM 输出的内容看似合理，但实际与事实不符，甚至编造信息。
+    - 举例：让 LLM 推荐一篇学术论文，它生成了一个看似真实的标题和作者，但该论文实际上并不存在。
+    - 解决方法：
+      - 在生成答案时结合外部知识检索模块（如搜索引擎或数据库），验证生成内容的真实性。
+      - 增强模型的训练数据质量，加入更多标注数据，特别是关于事实性验证的任务。
+      - 通过后处理步骤进行事实校验，比如用专门的 Fact-Checker 模块对输出进行审查。
+  - 解释性缺失（Lack of Explainability）
+    - 问题本质：LLM 的输出基于其复杂的参数和概率推断，人类很难理解其如何得出结论。
+    - 举例：当 LLM 给出一个医学建议时，用户无法知道它是根据什么逻辑或信息得出该建议的。
+    - 解决方法：
+      - 提供可解释性输出，例如附加推理链（Chain-of-Thought Reasoning），让模型解释其回答背后的逻辑步骤。
+      - 结合外部知识库，提供可追溯的来源或依据（如引用权威文献）。
+      - 使用可视化技术（如注意力机制热图）展示模型在生成过程中关注的关键上下文部分。
+- 其他思考
+  - 何时使用复杂的（o1），何时使用简单的（GPT4o）
+  - 如果不从感官输入中学习世界模型，并结合能够推理和规划（而不仅仅是自回归）的架构，可能很难实现人类水平的人工智能
