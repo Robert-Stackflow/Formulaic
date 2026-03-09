@@ -1,6 +1,5 @@
 import "@/app/global.css";
 import { RootProvider } from "fumadocs-ui/provider/next";
-import { AuthProvider } from "@/components/auth-provider";
 import { ToastContainer } from "@/components/toast";
 import type { ReactNode } from "react";
 import type { Metadata } from "next";
@@ -78,12 +77,10 @@ export default function Layout({ children }: { children: ReactNode }) {
         />
       </head>
       <body className="flex flex-col min-h-screen antialiased">
-        <AuthProvider>
           <RootProvider search={{}}>
             <ClientShell>{children}</ClientShell>
             <ToastContainer />
           </RootProvider>
-        </AuthProvider>
       </body>
     </html>
   );
