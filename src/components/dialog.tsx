@@ -43,9 +43,9 @@ export function Dialog({
   if (!isOpen) return null;
 
   const buttonColors = {
-    danger: "bg-red-600 hover:bg-red-700 text-white",
-    warning: "bg-orange-600 hover:bg-orange-700 text-white",
-    info: "bg-blue-600 hover:bg-blue-700 text-white",
+    danger: "bg-fd-destructive hover:brightness-90 text-fd-primary-foreground",
+    warning: "bg-fd-warning hover:brightness-90 text-fd-primary-foreground",
+    info: "bg-fd-primary hover:brightness-90 text-fd-primary-foreground",
   };
 
   return (

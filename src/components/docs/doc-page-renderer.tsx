@@ -1,12 +1,19 @@
 import { getPageTreePeers } from "fumadocs-core/page-tree";
 import { Card, Cards } from "fumadocs-ui/components/card";
 import { DocsPage } from "fumadocs-ui/page";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createRelativeLink } from "fumadocs-ui/mdx";
 import { getMDXComponents } from "@/mdx-components";
 import { tocConfig } from "@/lib/toc-config";
 import type { LoaderOutput } from "fumadocs-core/source";
 import { ExportPDFButton, LLMCopyButton, ViewOptions } from "./page-sections";
+import { AISummaryCard } from "@/components/ai-summary-card";
+import { aiSummaryConfig } from "@/config/ai-summary";
+import { GiscusComments } from "@/components/giscus-comments";
+import { DocFeedback } from "@/components/doc-feedback";
+import { giscusConfig, githubConfig } from "@/config/giscus";
+import { PageInfoCard } from "@/components/page-info-card";
 
 interface DocPageRendererProps {
   source: LoaderOutput<any>;
@@ -24,8 +31,19 @@ export function DocPageRenderer({ source, slug }: DocPageRendererProps) {
     lastModified,
     title,
     description,
+    tags,
     index,
+    ai_summary,
   } = page.data;
+
+  // Determine whether to show AI summary
+  // Priority: page-level ai_summary > index page check > global default
+  const showAISummary =
+    ai_summary !== undefined
+      ? ai_summary
+      : index
+        ? false
+        : aiSummaryConfig.showByDefault;
 
   return (
     <DocsPage
@@ -35,12 +53,35 @@ export function DocPageRenderer({ source, slug }: DocPageRendererProps) {
       {...tocConfig}
       tableOfContent={{
         style: "clerk",
+        footer: (
+          <div className="mt-4">
+            <PageInfoCard
+              owner={githubConfig.owner}
+              repo={githubConfig.repo}
+              filePath={`${githubConfig.contentDir}${page.url}.mdx`}
+              pageUrl={page.url}
+            />
+          </div>
+        ),
       }}
     >
       <div className="flex items-start justify-between gap-4 mb-4">
         <div className="flex-1">
           <h1 className="text-[1.75em] font-semibold">{title}</h1>
-          <p className="text-lg text-fd-muted-foreground mb-4">{description}</p>
+          <p className="text-lg text-fd-muted-foreground mb-3">{description}</p>
+          {tags && tags.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2 text-sm text-fd-muted-foreground mb-4">
+              {tags.map((tag: string) => (
+                <Link
+                  key={tag}
+                  href={`/tags/${encodeURIComponent(tag)}`}
+                  className="rounded-full border border-fd-border px-2 py-0.5 text-xs text-fd-muted-foreground hover:text-fd-foreground hover:border-fd-foreground/30"
+                >
+                  {tag}
+                </Link>
+              ))}
+            </div>
+          )}
           <div
             className="flex flex-row flex-wrap gap-2 items-center"
             id="doc-page-actions"
@@ -49,13 +90,16 @@ export function DocPageRenderer({ source, slug }: DocPageRendererProps) {
             <ExportPDFButton />
             <ViewOptions
               markdownUrl={`${page.url}.mdx`}
-              githubUrl={`https://github.com/Robert-Stackflow/Formulaic/blob/master/content/${page.url}.md`}
+              githubUrl={`https://github.com/${githubConfig.owner}/${githubConfig.repo}/blob/${githubConfig.branch}/${githubConfig.contentDir}${page.url}.mdx`}
             />
           </div>
         </div>
       </div>
       <div className="flex flex-row gap-2 items-center border-b mb-3"></div>
-      <div className="prose flex-1 text-fd-foreground/90">
+      
+      {showAISummary && <AISummaryCard />}
+
+      <div className="prose flex-1 text-fd-foreground/90" id="doc-content">
         <MDXContent
           components={getMDXComponents({
             a: createRelativeLink(source, page),
@@ -63,6 +107,25 @@ export function DocPageRenderer({ source, slug }: DocPageRendererProps) {
         />
         {index ? <DocsCategory source={source} url={page.url} /> : null}
       </div>
+
+      {/* Document Feedback */}
+      <DocFeedback
+        githubEditUrl={`https://github.com/${githubConfig.owner}/${githubConfig.repo}/edit/${githubConfig.branch}/${githubConfig.contentDir}${page.url}.mdx`}
+        githubIssueUrl={`https://github.com/${githubConfig.owner}/${githubConfig.repo}/issues/new?title=${encodeURIComponent(`[文档反馈] ${title}`)}&body=${encodeURIComponent(`页面链接: ${page.url}\n\n问题描述:\n`)}`}
+      />
+
+      {/* Giscus Comments */}
+      <GiscusComments
+        repo={giscusConfig.repo}
+        repoId={giscusConfig.repoId}
+        category={giscusConfig.category}
+        categoryId={giscusConfig.categoryId}
+        mapping={giscusConfig.mapping}
+        reactionsEnabled={giscusConfig.reactionsEnabled}
+        inputPosition={giscusConfig.inputPosition}
+        lang={giscusConfig.lang}
+        loading={giscusConfig.loading}
+      />
     </DocsPage>
   );
 }

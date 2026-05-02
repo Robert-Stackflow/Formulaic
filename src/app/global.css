@@ -1,65 +1,177 @@
-/* Google Fonts - Inter */
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
-
 @import "tailwindcss";
 @import "fumadocs-ui/css/default.css";
 @import "fumadocs-ui/css/preset.css";
 
-/* Apply Inter font to body */
-body {
-  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-    "Helvetica Neue", Arial, sans-serif;
+svg {
+  display: inline-block;
+  vertical-align: middle;
+}
+
+figure {
+  box-shadow: none !important;
+}
+
+/* 嵌套列表缩进和样式 */
+article ul {
+  list-style-type: disc; /* 第一层：实心圆 */
+}
+
+article ul ul {
+  list-style-type: circle; /* 第二层：空心圆 */
+  margin-left: 2rem;
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+article ul ul ul {
+  list-style-type: square; /* 第三层：方块 */
+  margin-left: 2rem;
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+article ol ul,
+article ul ol,
+article ol ol {
+  margin-left: 2rem;
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+article strong,
+article b {
+  font-weight: 600;
+  color: var(--color-fd-foreground);
+}
+
+article img {
+  max-width: 100%;
+  height: auto;
+  margin-left: auto;
+  margin-right: auto;
+  display: block;
+  border-radius: 0.5rem;
+}
+
+article figure:has(img) {
+  margin: 1.5rem auto;
+  text-align: center;
+  max-width: 100%;
+}
+
+article figure:has(img) img {
+  max-width: 100%;
+  max-height: 600px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+}
+
+article figcaption {
+  margin-top: 0.75rem;
+  font-size: 0.875rem;
+  color: var(--color-fd-muted-foreground);
+  font-style: italic;
+  text-align: center;
+}
+
+article figure:has(pre) {
+  text-align: left;
+}
+
+article pre[data-language]::before {
+  content: attr(data-language);
+  display: block;
+  padding: 0.5rem 1rem;
+  margin: -1rem -1rem 0.75rem -1rem;
+  background: var(--color-fd-muted);
+  border-bottom: 1px solid var(--color-fd-border);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-fd-muted-foreground);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+article figure[data-rehype-pretty-code-figure] figcaption {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: var(--color-fd-muted);
+  border: 1px solid var(--color-fd-border);
+  border-bottom: none;
+  border-radius: 0.5rem 0.5rem 0 0;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-fd-foreground);
+  font-style: normal;
+  text-align: left;
+}
+
+article figure[data-rehype-pretty-code-figure] pre {
+  margin-top: 0;
+  border-radius: 0 0 0.5rem 0.5rem;
+}
+
+article figure[data-rehype-pretty-code-figure]:has(figcaption) pre {
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
 }
 
 @theme {
-  --color-fd-background: hsl(0, 0%, 96%);
-  --color-fd-foreground: hsl(0, 0%, 3.9%);
-  --color-fd-muted: hsl(0, 0%, 96.1%);
-  --color-fd-muted-foreground: hsl(0, 0%, 45.1%);
-  --color-fd-popover: hsl(0, 0%, 98%);
-  --color-fd-popover-foreground: hsl(0, 0%, 15.1%);
-  --color-fd-card: hsl(0, 0%, 94.7%);
-  --color-fd-card-foreground: hsl(0, 0%, 3.9%);
-  --color-fd-border: hsla(0, 0%, 80%, 50%);
+  --color-fd-background: hsl(0, 0%, 100%);
+  --color-fd-foreground: hsl(220, 15%, 12%);
+  --color-fd-muted: hsl(220, 14%, 96%);
+  --color-fd-muted-foreground: hsl(220, 8%, 45%);
+  --color-fd-popover: hsl(0, 0%, 100%);
+  --color-fd-popover-foreground: hsl(220, 15%, 12%);
+  --color-fd-card: hsl(0, 0%, 100%);
+  --color-fd-card-foreground: hsl(220, 15%, 12%);
+  --color-fd-border: hsl(220, 13%, 90%);
 
-  /* ✅ 主色调修改为 #35b56a */
-  --color-fd-primary: hsl(149, 53%, 46%);
-  --color-fd-primary-foreground: hsl(0, 0%, 98%);
+  --color-fd-primary: hsl(220, 15%, 22%);
+  --color-fd-primary-foreground: hsl(0, 0%, 100%);
 
-  /* 次色保持浅灰或略带绿色调 */
-  --color-fd-secondary: hsl(150, 20%, 90%);
-  --color-fd-secondary-foreground: hsl(149, 53%, 25%);
+  --color-fd-secondary: hsl(220, 14%, 96%);
+  --color-fd-secondary-foreground: hsl(220, 15%, 22%);
 
-  /* accent 调整为与主色呼应 */
-  --color-fd-accent: hsla(149, 40%, 75%, 0.5);
-  --color-fd-accent-foreground: hsl(149, 53%, 25%);
+  --color-fd-accent: hsl(220, 14%, 94%);
+  --color-fd-accent-foreground: hsl(220, 15%, 22%);
 
-  --color-fd-ring: hsl(149, 53%, 50%);
+  --color-fd-ring: hsl(220, 15%, 22%);
+
+  --color-fd-success: hsl(142, 76%, 36%);
+  --color-fd-warning: hsl(38, 92%, 50%);
+  --color-fd-destructive: hsl(0, 84%, 60%);
 }
 
 .dark {
-  --color-fd-background: hsl(0, 0%, 7.04%);
-  --color-fd-foreground: hsl(0, 0%, 92%);
-  --color-fd-muted: hsl(0, 0%, 12.9%);
-  --color-fd-muted-foreground: hsla(0, 0%, 70%, 0.8);
-  --color-fd-popover: hsl(0, 0%, 11.6%);
-  --color-fd-popover-foreground: hsl(0, 0%, 86.9%);
-  --color-fd-card: hsl(0, 0%, 9.8%);
-  --color-fd-card-foreground: hsl(0, 0%, 98%);
-  --color-fd-border: hsla(0, 0%, 40%, 20%);
+  --color-fd-background: hsl(220, 15%, 8%);
+  --color-fd-foreground: hsl(220, 10%, 92%);
+  --color-fd-muted: hsl(220, 12%, 14%);
+  --color-fd-muted-foreground: hsl(220, 8%, 65%);
+  --color-fd-popover: hsl(220, 15%, 10%);
+  --color-fd-popover-foreground: hsl(220, 10%, 92%);
+  --color-fd-card: hsl(220, 15%, 10%);
+  --color-fd-card-foreground: hsl(220, 10%, 92%);
+  --color-fd-border: hsl(220, 10%, 22%);
 
-  /* ✅ 暗色模式主色调 */
-  --color-fd-primary: hsl(149, 53%, 46%);
-  --color-fd-primary-foreground: hsl(0, 0%, 98%);
+  --color-fd-primary: hsl(220, 12%, 78%);
+  --color-fd-primary-foreground: hsl(220, 15%, 10%);
 
-  --color-fd-secondary: hsl(149, 25%, 15%);
-  --color-fd-secondary-foreground: hsl(149, 40%, 85%);
+  --color-fd-secondary: hsl(220, 12%, 16%);
+  --color-fd-secondary-foreground: hsl(220, 10%, 85%);
 
-  --color-fd-accent: hsla(149, 40%, 40%, 0.3);
-  --color-fd-accent-foreground: hsl(149, 40%, 85%);
+  --color-fd-accent: hsl(220, 12%, 18%);
+  --color-fd-accent-foreground: hsl(220, 10%, 85%);
 
-  --color-fd-ring: hsl(149, 53%, 46%);
+  --color-fd-ring: hsl(220, 12%, 78%);
   --color-fd-overlay: hsla(0, 0%, 0%, 0.2);
+
+  --color-fd-success: hsl(142, 71%, 45%);
+  --color-fd-warning: hsl(38, 92%, 60%);
+  --color-fd-destructive: hsl(0, 63%, 55%);
 }
 
 .dark #nd-sidebar {
@@ -68,10 +180,9 @@ body {
   --color-fd-muted-foreground: hsl(0, 0%, 72%);
 }
 
-/* 全局滚动条样式 */
 * {
   scrollbar-width: thin;
-  scrollbar-color: hsl(0, 0%, 75%) transparent;
+  scrollbar-color: var(--color-fd-muted-foreground) transparent;
 }
 
 *::-webkit-scrollbar {
@@ -84,7 +195,7 @@ body {
 }
 
 *::-webkit-scrollbar-thumb {
-  background: hsl(0, 0%, 75%);
+  background: var(--color-fd-muted-foreground);
   border-radius: 6px;
   border: 2px solid transparent;
   background-clip: padding-box;
@@ -92,13 +203,12 @@ body {
 }
 
 *::-webkit-scrollbar-thumb:hover {
-  background: hsl(0, 0%, 65%);
+  background: var(--color-fd-foreground);
   border-radius: 6px;
   border: 2px solid transparent;
   background-clip: padding-box;
 }
 
-/* 移除滚动条按钮（小三角） */
 *::-webkit-scrollbar-button {
   display: none;
   width: 0;
@@ -107,19 +217,6 @@ body {
 
 *::-webkit-scrollbar-corner {
   background: transparent;
-}
-
-/* 暗色模式滚动条样式 */
-.dark * {
-  scrollbar-color: hsl(0, 0%, 35%) transparent;
-}
-
-.dark *::-webkit-scrollbar-thumb {
-  background: hsl(0, 0%, 35%);
-}
-
-.dark *::-webkit-scrollbar-thumb:hover {
-  background: hsl(0, 0%, 45%);
 }
 
 /* 打印样式 - 隐藏导航元素 */
@@ -135,29 +232,30 @@ body {
     display: none;
   }
 
-  /* 隐藏页脚 */
   footer {
     display: none;
   }
 
-  /* 隐藏导航栏 */
   nav {
     display: none;
   }
 
-  /* 隐藏 TOC */
   .nd-toc {
     display: none;
   }
 
-  /* 优化内容区域 */
+  #giscus-comments,
+  #doc-feedback,
+  #ai-summary-card {
+    display: none;
+  }
+
   main {
     max-width: 100% !important;
     margin: 0 !important;
     padding: 0 !important;
   }
 
-  /* 避免分页截断 */
   h1,
   h2,
   h3,
@@ -176,7 +274,6 @@ body {
     break-inside: avoid;
   }
 
-  /* 确保链接可见 */
   a {
     text-decoration: underline;
   }

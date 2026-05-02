@@ -99,10 +99,10 @@ export function getPasswordStrengthInfo(password: string): {
 
   switch (strength) {
     case "strong":
-      return { text: "强", color: "text-green-600" };
+      return { text: "强", color: "text-fd-success" };
     case "medium":
-      return { text: "中", color: "text-yellow-600" };
+      return { text: "中", color: "text-fd-warning" };
     default:
-      return { text: "弱", color: "text-red-600" };
+      return { text: "弱", color: "text-fd-destructive" };
   }
 }

@@ -62,14 +62,14 @@ export function AppShell({ children }: AppShellProps) {
           "fixed lg:sticky top-0 left-0 h-screen bg-fd-card border-r border-fd-border z-50 transition-all duration-300 ease-in-out flex flex-col",
           sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
           collapsed ? "lg:w-20" : "lg:w-64",
-          "w-64"
+          "w-64",
         )}
       >
         {/* Header: Logo & Toggle */}
         <div
           className={cn(
             "flex items-center border-b border-fd-border p-4 h-16",
-            collapsed ? "justify-center" : "justify-between"
+            collapsed ? "justify-center" : "justify-between",
           )}
         >
           {!collapsed && (

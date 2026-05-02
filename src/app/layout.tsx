@@ -77,10 +77,10 @@ export default function Layout({ children }: { children: ReactNode }) {
         />
       </head>
       <body className="flex flex-col min-h-screen antialiased">
-          <RootProvider search={{}}>
-            <ClientShell>{children}</ClientShell>
-            <ToastContainer />
-          </RootProvider>
+        <RootProvider search={{}}>
+          <ClientShell>{children}</ClientShell>
+          <ToastContainer />
+        </RootProvider>
       </body>
     </html>
   );

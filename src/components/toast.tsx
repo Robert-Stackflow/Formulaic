@@ -28,26 +28,24 @@ export function Toast({
   }, [duration, onClose]);
 
   const icons = {
-    success: <CheckCircle2 className="w-5 h-5 text-green-600" />,
-    error: <XCircle className="w-5 h-5 text-red-600" />,
-    info: <Info className="w-5 h-5 text-blue-600" />,
-    warning: <AlertCircle className="w-5 h-5 text-yellow-600" />,
+    success: <CheckCircle2 className="w-5 h-5 text-fd-success" />,
+    error: <XCircle className="w-5 h-5 text-fd-destructive" />,
+    info: <Info className="w-5 h-5 text-fd-primary" />,
+    warning: <AlertCircle className="w-5 h-5 text-fd-warning" />,
   };
 
   const bgColors = {
-    success:
-      "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800",
-    error: "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800",
-    info: "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800",
-    warning:
-      "bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800",
+    success: "bg-fd-success/10 border-fd-success/20",
+    error: "bg-fd-destructive/10 border-fd-destructive/20",
+    info: "bg-fd-primary/10 border-fd-primary/20",
+    warning: "bg-fd-warning/10 border-fd-warning/20",
   };
 
   const textColors = {
-    success: "text-green-800 dark:text-green-200",
-    error: "text-red-800 dark:text-red-200",
-    info: "text-blue-800 dark:text-blue-200",
-    warning: "text-yellow-800 dark:text-yellow-200",
+    success: "text-fd-success",
+    error: "text-fd-destructive",
+    info: "text-fd-primary",
+    warning: "text-fd-warning",
   };
 
   return (

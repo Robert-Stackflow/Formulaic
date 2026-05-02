@@ -13,6 +13,23 @@ const config = {
     remotePatterns: [], // Prevent external image loading
     unoptimized: true, // Disable built-in image optimization
   },
+  async headers() {
+    return [
+      {
+        source: "/giscus-:theme.css",
+        headers: [
+          {
+            key: "Access-Control-Allow-Origin",
+            value: "https://giscus.app",
+          },
+          {
+            key: "Access-Control-Allow-Methods",
+            value: "GET",
+          },
+        ],
+      },
+    ];
+  },
 };
 
 export default withMDX(config);

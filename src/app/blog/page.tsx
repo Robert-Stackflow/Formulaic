@@ -4,13 +4,15 @@ import { CalendarIcon, UserIcon } from "lucide-react";
 import { blogSource } from "@/lib/source";
 import { HomeLayout } from "fumadocs-ui/layouts/home";
 import { baseOptions } from "../layout.config";
+import { BlogTag } from "@/components/blog-tag";
 
 export const dynamic = "force-static";
 export const revalidate = 1800;
 
 export const metadata: Metadata = {
   title: "Blog",
-  description: "YA develop blogs and news updates.",
+  description: "Formulaic 的最新动态",
+  keywords: ["博客", "开发日志", "更新动态"],
 };
 
 export default function BlogPage() {
@@ -29,14 +31,14 @@ export default function BlogPage() {
               <h1 className="text-3xl font-bold text-fd-foreground mb-2">
                 博客
               </h1>
-              <p className="text-fd-muted-foreground">YA 开发日志与最新动态</p>
+              <p className="text-fd-muted-foreground">Formulaic 的最新动态</p>
             </div>
 
             <div className="space-y-4">
               {posts.map((post) => (
                 <article
                   key={post.url}
-                  className="group p-6 bg-fd-card border border-fd-border rounded-lg transition-all"
+                  className="group p-6 bg-fd-card border border-fd-border rounded-lg transition-all duration-300 hover:border-fd-primary/50 hover:shadow-lg hover:shadow-fd-primary/5 hover:-translate-y-1"
                 >
                   <Link href={post.url} className="block">
                     <div>
@@ -48,12 +50,22 @@ export default function BlogPage() {
                         {post.data.description}
                       </p>
 
-                      <div className="flex flex-wrap items-center gap-3 text-sm text-fd-muted-foreground">
-                        <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-3 text-sm text-fd-muted-foreground">
+                        {post.data.author && (
+                          <>
+                            <div className="flex items-center gap-1.5 whitespace-nowrap">
+                              <UserIcon className="w-4 h-4" />
+                              <span>{post.data.author}</span>
+                            </div>
+                            <span>•</span>
+                          </>
+                        )}
+
+                        <div className="flex items-center gap-1.5 whitespace-nowrap">
                           <CalendarIcon className="w-4 h-4" />
                           <span>
                             {new Date(
-                              post.data.published_at
+                              post.data.published_at,
                             ).toLocaleDateString("zh-CN", {
                               year: "numeric",
                               month: "2-digit",
@@ -67,12 +79,7 @@ export default function BlogPage() {
                             <span>•</span>
                             <div className="flex flex-wrap gap-2">
                               {post.data.tags.map((tag) => (
-                                <span
-                                  key={tag}
-                                  className="px-2 py-0.5 bg-fd-primary/10 text-fd-primary rounded text-xs"
-                                >
-                                  {tag}
-                                </span>
+                                <BlogTag key={tag} tag={tag} />
                               ))}
                             </div>
                           </>

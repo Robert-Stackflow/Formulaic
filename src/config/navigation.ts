@@ -15,7 +15,7 @@ import { Session } from "next-auth";
 
 export function getNavigationConfig(
   session: Session | null,
-  isAdmin: boolean
+  isAdmin: boolean,
 ): NavSection[] {
   // 1. 核心功能 (仅登录可见)
   const coreNav: NavItem[] = session

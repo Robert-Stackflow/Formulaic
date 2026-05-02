@@ -148,12 +148,10 @@ description: 从优化问题的形式化定义出发，引入梯度下降，并�
 
 - 引入动量的动机
   - 在标准 SGD 中，梯度通常包含较强的随机噪声，尤其是在狭长谷地或各向异性（曲率不均）的损失地形中，参数更新容易在陡峭方向上来回摆动，从而减慢沿平坦方向的前进速度
-
-  <img src="/img/without_momentum.gif" alt="img" style="zoom:67%;" />
+  ![img](/img/llm/without_momentum.gif)
   - 单步更新完全依赖当前梯度，使得优化过程对瞬时噪声高度敏感，历史梯度中所蕴含的稳定方向信息被忽略
   - 动量方法的核心思想是：将参数更新视为一个**具有“惯性”的动态过程**，通过累积历史梯度来平滑噪声，并在长期一致的方向上加速收敛
-
-  <img src="/img/with_momentum.gif" alt="img" style="zoom:72%;" />
+  ![img](/img/llm/with_momentum.gif)
 
 #### Momentum
 
@@ -190,7 +188,7 @@ description: 从优化问题的形式化定义出发，引入梯度下降，并�
 
   - 这种前瞻性更新防止前进过快，并提高了响应速度，这显著提升了循环神经网络在多项任务上的性能
 
-  <img src="/img/nesterov_update_vector.png" alt="img" style="zoom:50%;" />
+  ![img](/img/llm/nesterov_update_vector.png)
 
 - 需要注意的是，动量方法仍假设所有参数维度共享同一学习率尺度，无法应对梯度幅值差异巨大的情况
 
@@ -264,10 +262,10 @@ description: 从优化问题的形式化定义出发，引入梯度下降，并�
 - 为了清晰表达，先以参数更新向量 $\Delta\theta_t$ 的形式重写基础 SGD 的更新规则：
 
   $$
-  \begin{align}
+  \begin{align*}
   \Delta\theta_t &= -\eta \cdot g_{t,i} \\
   \theta_{t+1} &= \theta_t + \Delta\theta_t
-  \end{align}
+  \end{align*}
   $$
 
 - 之前推导的 Adagrad 参数更新向量形式为：
@@ -307,10 +305,10 @@ $$
 - 将之前更新规则中的学习率 $\eta$ 替换为 $RMS [\Delta\theta]_{t-1}$，最终得到 Adadelta 的更新规则：
 
   $$
-  \begin{align}
+  \begin{align*}
   \Delta\theta_t &= -\frac {RMS [\Delta\theta]_{t-1}}{RMS [g]_t} g_t \\
   \theta_{t+1} &= \theta_t + \Delta\theta_t
-  \end{align}
+  \end{align*}
   $$
 
 - 使用 Adadelta 时，甚至无需设置默认学习率，因为它已从更新规则中被完全移除
@@ -413,10 +411,10 @@ $$
 - 在 AdaMax 中，用无穷范数约束的 $u_t$ 替代原有的 $v_t$：
 
   $$
-  \begin{align}
+  \begin{align*}
   u_t &= \beta_2^\infty v_{t-1} + (1-\beta_2^\infty)|g_t|^\infty \\
   &= \max (\beta_2 \cdot v_{t-1}, |g_t|)
-  \end{align}
+  \end{align*}
   $$
 
 - 将 $u_t$ 代入 Adam 的更新方程（用 $u_t$ 替换 $\sqrt {\hat {v}_t} + \epsilon$），得到 AdaMax 的更新规则：
@@ -440,11 +438,11 @@ $$
 - 首先，回顾标准动量机制的更新规则：
 
   $$
-  \begin{align}
+  \begin{align*}
   g_t &= \nabla_{\theta_t} J (\theta_t) \\
   m_t &= \gamma m_{t-1} + \eta g_t \\
   \theta_{t+1} &= \theta_t - m_t
-  \end{align}
+  \end{align*}
   $$
 
 - 其中 $J$ 是目标函数，$\gamma$ 是动量衰减系数，$\eta$ 是步长。展开第三式可得：
@@ -458,21 +456,21 @@ $$
 - NAG 通过在计算梯度之前先用动量更新参数，从而在梯度方向上迈出更精准的一步,只需修改梯度 $g_t$ 即可得到 NAG 的更新规则：
 
   $$
-  \begin{align}
+  \begin{align*}
   g_t &= \nabla_{\theta_t} J (\theta_t - \gamma m_{t-1}) \\
   m_t &= \gamma m_{t-1} + \eta g_t \\
   \theta_{t+1} &= \theta_t - m_t
-  \end{align}
+  \end{align*}
   $$
 
 - Dozat 提出了对 NAG 的另一种修改方式：不再两次应用动量步骤（一次更新梯度 $g_t$，一次更新参数 $\theta_{t+1}$），而是直接用 “前瞻” 动量向量来更新当前参数：
 
   $$
-  \begin{align}
+  \begin{align*}
   g_t &= \nabla_{\theta_t} J (\theta_t) \\
   m_t &= \gamma m_{t-1} + \eta g_t \\
   \theta_{t+1} &= \theta_t - (\gamma m_t + \eta g_t)
-  \end{align}
+  \end{align*}
   $$
 
 - 注意，这里不再像之前展开的动量更新规则那样使用前一时刻的动量向量 $m_{t-1}$，而是用当前动量向量 $m_t$ 来 “前瞻”
@@ -482,11 +480,11 @@ $$
 - 首先，回顾 Adam 的更新规则（注意 $v_t$ 无需修改）：
 
   $$
-  \begin{align}
+  \begin{align*}
   m_t &= \beta_1 m_{t-1} + (1-\beta_1) g_t \\
   \hat {m}_t &= \frac {m_t}{1-\beta_1^t} \\
   \theta_{t+1} &= \theta_t - \frac {\eta}{\sqrt {\hat {v}_t} + \epsilon} \hat {m}_t
-  \end{align}
+  \end{align*}
   $$
 
 - 将 $\hat {m}_t$ 和 $m_t$ 的定义代入并展开第二式，可得：
@@ -537,12 +535,12 @@ $$
 - 完整的 AMSGrad 更新规则（不含偏差校正）如下：
 
   $$
-  \begin{align}
+  \begin{align*}
   m_t &= \beta_1 m_{t-1} + (1-\beta_1) g_t \\
   v_t &= \beta_2 v_{t-1} + (1-\beta_2) g_t^2 \\
   \hat {v}_t &= \max (\hat {v}_{t-1}, v_t) \\
   \theta_{t+1} &= \theta_t - \frac {\eta}{\sqrt {\hat {v}_t} + \epsilon} m_t
-  \end{align}
+  \end{align*}
   $$
 
 - 作者观察到，在小型数据集和 CIFAR-10 上，AMSGrad 的性能优于或与 Adam 相当；但在更大规模的实验中，它的表现与 Adam 相似或更差
@@ -598,13 +596,11 @@ $$
 ### 不同算法对比
 
 - 不同算法在 Beale 函数损失曲面等高线上随时间的收敛轨迹
-
-  <img src="/img/contours_evaluation_optimizers.gif" alt="img" style="zoom: 50%;" />
+  ![img](/img/llm/contours_evaluation_optimizers.gif)
   - Adagrad、Adadelta、RMSProp：几乎立刻就能朝着正确方向前进，并且收敛速度相近
   - Momentum、NAG：初期会像 “滚下山的球” 一样偏离正确路径，但 NAG 凭借其前瞻机制带来的高响应性，能迅速修正方向并收敛到最小值
 
 - 算法在鞍点（一个维度斜率为正、另一维度斜率为负的点）的行为，这类点对 SGD 来说是典型的挑战
-
-  <img src="/img/saddle_point_evaluation_optimizers.gif" alt="img" style="zoom:50%;" />
+  ![img](/img/llm/saddle_point_evaluation_optimizers.gif)
   - SGD、Momentum、NAG：难以打破对称性，虽然 Momentum 和 NAG 最终能逃离鞍点，但过程较为缓慢
   - Adagrad、RMSProp、Adadelta：能迅速沿着负斜率方向下降，表现出更强的逃离能力

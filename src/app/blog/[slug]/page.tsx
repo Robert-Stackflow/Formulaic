@@ -6,6 +6,7 @@ import {
   ExternalLinkIcon,
   DownloadIcon,
   GitBranchIcon,
+  UserIcon,
 } from "lucide-react";
 import { blogSource } from "@/lib/source";
 import { DocsBody } from "fumadocs-ui/page";
@@ -19,6 +20,7 @@ import { PageLayout } from "@/components/page-layout";
 import { getMDXComponents } from "@/mdx-components";
 import { baseOptions } from "@/app/layout.config";
 import { HomeLayout } from "fumadocs-ui/layouts/home";
+import { PageViews } from "@/components/page-views";
 
 interface BlogPageProps {
   params: Promise<{ slug: string }>;
@@ -66,7 +68,23 @@ export default async function BlogPostPage({ params }: BlogPageProps) {
                 {data.title}
               </h1>
 
+              {data.description && (
+                <p className="text-lg text-fd-muted-foreground mb-4">
+                  {data.description}
+                </p>
+              )}
+
               <div className="flex flex-wrap items-center gap-3 text-sm text-fd-muted-foreground">
+                {data.author && (
+                  <>
+                    <div className="flex items-center gap-2">
+                      <UserIcon className="w-4 h-4" />
+                      <span>{data.author}</span>
+                    </div>
+                    <span>•</span>
+                  </>
+                )}
+
                 <div className="flex items-center gap-2">
                   <CalendarIcon className="w-4 h-4" />
                   <span>
@@ -83,17 +101,20 @@ export default async function BlogPostPage({ params }: BlogPageProps) {
                     <span>•</span>
                     <div className="flex flex-wrap gap-2">
                       {data.tags.map((tag) => (
-                        <span
+                        <Link
                           key={tag}
-                          className="px-2 py-0.5 bg-fd-primary/10 text-fd-primary rounded text-xs"
+                          href={`/tags/${encodeURIComponent(tag)}`}
+                          className="px-2 py-0.5 border border-fd-border text-fd-muted-foreground rounded-full text-xs hover:text-fd-foreground hover:border-fd-foreground/30"
                         >
                           {tag}
-                        </span>
+                        </Link>
                       ))}
                     </div>
                   </>
                 )}
               </div>
+
+              <PageViews />
             </div>
 
             <div className="flex gap-8">

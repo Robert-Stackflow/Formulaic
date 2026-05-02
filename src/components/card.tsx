@@ -166,7 +166,7 @@ export default function Card({
                               setDeleteDialogOpen(true);
                             },
                             className:
-                              "text-red-600 dark:text-red-400 hover:!bg-red-50 dark:hover:!bg-red-950/20",
+                              "text-fd-destructive hover:!bg-fd-destructive/10",
                           }
                         : undefined,
                     ].filter(
@@ -189,7 +189,7 @@ export default function Card({
           <div className="flex items-center justify-between text-xs text-fd-muted-foreground">
             <span>@{card.creator_name}</span>
             {card.completed && card.completed_at ? (
-              <span className="text-green-600 dark:text-green-400">
+              <span className="text-fd-success">
                 ✓ {formatDate(card.completed_at)}
               </span>
             ) : null}

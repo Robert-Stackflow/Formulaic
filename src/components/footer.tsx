@@ -12,7 +12,8 @@ export function Footer() {
               Formulaic
             </h3>
             <p className="text-sm text-fd-muted-foreground leading-relaxed">
-              技术面试知识库，系统化整理算法、后端、系统等核心领域知识。
+              覆盖 LLM、AI
+              Infra、数据结构与算法、计算机系统基础等知识，让学习更清晰、更高效
             </p>
           </div>
 

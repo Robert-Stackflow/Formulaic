@@ -78,7 +78,7 @@ export function SidebarFooter({
   // 退出登录按钮的 Popover 样式
   const signOutItemClass = cn(
     dropdownItemClass,
-    "text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20"
+    "text-fd-destructive hover:text-fd-destructive hover:bg-fd-destructive/10"
   );
 
   if (!session) {

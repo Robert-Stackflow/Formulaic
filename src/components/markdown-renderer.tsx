@@ -60,7 +60,7 @@ export function MarkdownRenderer({
               </code>
             ) : (
               <code
-                className="block bg-fd-secondary text-fd-foreground p-4 rounded border border-fd-border overflow-x-auto"
+                className="block bg-fd-secondary text-fd-foreground p-4 rounded border border-fd-border overflow-x-auto shadow-none"
                 {...props}
               >
                 {children}

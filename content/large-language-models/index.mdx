@@ -1,125 +1,100 @@
 ---
 title: 大语言模型学习指南
 description: 如何使用该文档系统地学习有关大语言模型的知识
+ai_summary: false
 ---
 
 
-<div className="max-w-6xl mx-auto my-16 px-4">
-  
-  <div className="relative border-l-2 border-slate-200 space-y-12">
-
-    {/* Phase 1: 基础基石 */}
-    <div className="relative pl-8 sm:pl-12 group">
-      {/* 装饰性圆点 */}
-      <div className="absolute -left-[9px] top-1 w-4 h-4 rounded-full bg-white border-4 border-slate-300 group-hover:border-slate-500 transition-colors"></div>
-      
-      <h3 className="text-xl font-bold text-slate-800 mb-2">01. 数学与编程基石</h3>
-      <span className="text-slate-600 mb-4 text-sm leading-relaxed">
-        在接触模型之前，构建坚实的数学思维和工程能力。这是理解“矩阵计算”和“概率分布”的基础。
-      </span>
-      <div className="bg-slate-50 rounded-lg p-4 border border-slate-100">
-        <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">核心考点</h4>
-        <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-slate-700">
-          <li className="flex items-center"><span className="w-1.5 h-1.5 rounded-full bg-slate-400 mr-2"></span>Python & PyTorch 基础张量操作</li>
-          <li className="flex items-center"><span className="w-1.5 h-1.5 rounded-full bg-slate-400 mr-2"></span>线性代数 (矩阵乘法、秩、特征值)</li>
-          <li className="flex items-center"><span className="w-1.5 h-1.5 rounded-full bg-slate-400 mr-2"></span>微积分 (梯度、链式法则)</li>
-          <li className="flex items-center"><span className="w-1.5 h-1.5 rounded-full bg-slate-400 mr-2"></span>概率论 (贝叶斯、最大似然估计)</li>
-        </ul>
-      </div>
+<div className="max-w-6xl mx-auto my-12 px-4">
+  <div className="grid gap-6">
+    <div className="rounded-2xl border border-fd-border bg-fd-card p-6">
+      <div className="text-xs font-semibold text-fd-muted-foreground">01</div>
+      <h3 className="mt-2 text-lg font-semibold text-fd-foreground">机器学习基础</h3>
+      <p className="mt-2 text-sm text-fd-muted-foreground">
+        先建立统一的 ML 认知框架，理解数据如何驱动模型学习、如何评估与改进表现，
+        为后续大模型训练与应用打下方法论基础
+      </p>
+      <ul className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-fd-foreground">
+        <li>监督 / 无监督 / 自监督</li>
+        <li>损失函数与优化方法</li>
+        <li>特征工程与数据预处理</li>
+        <li>评估指标与过拟合</li>
+      </ul>
     </div>
 
-    {/* Phase 2: 深度学习原理 */}
-    <div className="relative pl-8 sm:pl-12 group">
-      <div className="absolute -left-[9px] top-1 w-4 h-4 rounded-full bg-white border-4 border-blue-300 group-hover:border-blue-500 transition-colors"></div>
-      
-      <h3 className="text-xl font-bold text-slate-800 mb-2">02. 神经网络与 NLP 基础</h3>
-      <span className="text-slate-600 mb-4 text-sm leading-relaxed">
-        理解模型是如何“学习”的，以及在 Transformer 出现之前，我们是如何处理序列数据的。
-      </span>
-      <div className="bg-blue-50/50 rounded-lg p-4 border border-blue-100">
-        <h4 className="text-xs font-bold text-blue-400 uppercase tracking-wider mb-3">核心考点</h4>
-        <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-slate-700">
-          <li className="flex items-center"><span className="w-1.5 h-1.5 rounded-full bg-blue-400 mr-2"></span>反向传播算法 (Backpropagation)</li>
-          <li className="flex items-center"><span className="w-1.5 h-1.5 rounded-full bg-blue-400 mr-2"></span>Word Embedding (Word2Vec, GloVe)</li>
-          <li className="flex items-center"><span className="w-1.5 h-1.5 rounded-full bg-blue-400 mr-2"></span>RNN 与 LSTM 的梯度消失问题</li>
-          <li className="flex items-center"><span className="w-1.5 h-1.5 rounded-full bg-blue-400 mr-2"></span>Seq2Seq 架构与早期 Attention</li>
-        </ul>
-      </div>
+    <div className="rounded-2xl border border-fd-border bg-fd-card p-6">
+      <div className="text-xs font-semibold text-fd-muted-foreground">02</div>
+      <h3 className="mt-2 text-lg font-semibold text-fd-foreground">LLM 基础</h3>
+      <p className="mt-2 text-sm text-fd-muted-foreground">
+        从表示学习到 Transformer 结构，理解 LLM 的核心组件、数据流动方式与关键计算瓶颈，
+        建立对"模型内部如何工作"的直观认知
+      </p>
+      <ul className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-fd-foreground">
+        <li>Tokenization 与词表设计</li>
+        <li>Embedding 与位置编码</li>
+        <li>Self-Attention 与多头机制</li>
+        <li>Transformer 结构与残差</li>
+      </ul>
     </div>
 
-    {/* Phase 3: Transformer (重点) */}
-    <div className="relative pl-8 sm:pl-12 group">
-      <div className="absolute -left-[9px] top-1 w-4 h-4 rounded-full bg-white border-4 border-indigo-400 group-hover:border-indigo-600 transition-colors"></div>
-      
-      <h3 className="text-xl font-bold text-indigo-700 mb-2">03. Transformer 架构详解</h3>
-      <span className="text-slate-600 mb-4 text-sm leading-relaxed">
-        LLM 的核心。你需要像外科医生一样解剖 Transformer，了解数据在每一层是如何流动的。
-      </span>
-      <div className="bg-indigo-50/50 rounded-lg p-4 border border-indigo-100 ring-1 ring-indigo-50">
-        <h4 className="text-xs font-bold text-indigo-400 uppercase tracking-wider mb-3">核心考点</h4>
-        <ul className="grid grid-cols-1 sm:grid-cols-2 gap-y-3 gap-x-4 text-sm text-slate-700">
-          <li className="flex items-start">
-            <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 mr-2 mt-1.5 shrink-0"></span>
-            <span><strong>Tokenization:</strong> Byte-Pair Encoding (BPE), SentencePiece, Tiktoken</span>
-          </li>
-          <li className="flex items-start">
-            <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 mr-2 mt-1.5 shrink-0"></span>
-            <span><strong>Input Embedding:</strong> 词向量空间的映射</span>
-          </li>
-          <li className="flex items-start">
-            <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 mr-2 mt-1.5 shrink-0"></span>
-            <span><strong>Positional Encoding:</strong> 绝对位置, 相对位置, RoPE (旋转位置编码)</span>
-          </li>
-          <li className="flex items-start">
-            <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 mr-2 mt-1.5 shrink-0"></span>
-            <span><strong>Attention:</strong> Self-Attention, Multi-Head Attention, KV Cache</span>
-          </li>
-          <li className="flex items-start">
-            <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 mr-2 mt-1.5 shrink-0"></span>
-            <span><strong>Components:</strong> LayerNorm vs RMSNorm, FFN (SwiGLU)</span>
-          </li>
-        </ul>
-      </div>
+    <div className="rounded-2xl border border-fd-border bg-fd-card p-6">
+      <div className="text-xs font-semibold text-fd-muted-foreground">03</div>
+      <h3 className="mt-2 text-lg font-semibold text-fd-foreground">LLM 训练</h3>
+      <p className="mt-2 text-sm text-fd-muted-foreground">
+        覆盖预训练、指令微调到对齐的完整流程，理解不同阶段的数据目标与质量要求，
+        让模型从"能说话"走向"更可靠、更可控"
+      </p>
+      <ul className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-fd-foreground">
+        <li>预训练目标与数据清洗</li>
+        <li>指令微调与数据配比</li>
+        <li>对齐方法：RLHF / DPO</li>
+        <li>训练评估与回归测试</li>
+      </ul>
     </div>
 
-    {/* Phase 4: 预训练与微调 */}
-    <div className="relative pl-8 sm:pl-12 group">
-      <div className="absolute -left-[9px] top-1 w-4 h-4 rounded-full bg-white border-4 border-violet-300 group-hover:border-violet-500 transition-colors"></div>
-      
-      <h3 className="text-xl font-bold text-slate-800 mb-2">04. 训练流程与微调技术</h3>
-      <span className="text-slate-600 mb-4 text-sm leading-relaxed">
-        模型是如何从“胡言乱语”变成“百科全书”，再变成“贴心助手”的？
-      </span>
-      <div className="bg-violet-50/50 rounded-lg p-4 border border-violet-100">
-        <h4 className="text-xs font-bold text-violet-400 uppercase tracking-wider mb-3">核心考点</h4>
-        <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-slate-700">
-          <li className="flex items-center"><span className="w-1.5 h-1.5 rounded-full bg-violet-400 mr-2"></span>Pre-training: Next Token Prediction (CLM)</li>
-          <li className="flex items-center"><span className="w-1.5 h-1.5 rounded-full bg-violet-400 mr-2"></span>Scaling Laws (参数量与数据量的关系)</li>
-          <li className="flex items-center"><span className="w-1.5 h-1.5 rounded-full bg-violet-400 mr-2"></span>SFT (有监督微调) 与 指令对齐</li>
-          <li className="flex items-center"><span className="w-1.5 h-1.5 rounded-full bg-violet-400 mr-2"></span>PEFT 高效微调: LoRA, QLoRA, Adapter</li>
-          <li className="flex items-center"><span className="w-1.5 h-1.5 rounded-full bg-violet-400 mr-2"></span>人类偏好对齐: RLHF, DPO</li>
-        </ul>
-      </div>
+    <div className="rounded-2xl border border-fd-border bg-fd-card p-6">
+      <div className="text-xs font-semibold text-fd-muted-foreground">04</div>
+      <h3 className="mt-2 text-lg font-semibold text-fd-foreground">分布式训练</h3>
+      <p className="mt-2 text-sm text-fd-muted-foreground">
+        规模化训练需要工程化能力与成本控制：并行策略、内存管理、通信与吞吐优化，
+        让训练在可控成本内稳定扩展
+      </p>
+      <ul className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-fd-foreground">
+        <li>数据并行 / 张量并行 / 流水线</li>
+        <li>ZeRO 与内存优化策略</li>
+        <li>混合精度与梯度累积</li>
+        <li>通信开销与吞吐优化</li>
+      </ul>
     </div>
 
-    {/* Phase 5: 工程与应用 */}
-    <div className="relative pl-8 sm:pl-12 group">
-      <div className="absolute -left-[9px] top-1 w-4 h-4 rounded-full bg-white border-4 border-emerald-300 group-hover:border-emerald-500 transition-colors"></div>
-      
-      <h3 className="text-xl font-bold text-slate-800 mb-2">05. 生产环境与应用开发</h3>
-      <span className="text-slate-600 mb-4 text-sm leading-relaxed">
-        走出实验室。解决上下文长度限制、幻觉问题，并进行推理加速。
-      </span>
-      <div className="bg-emerald-50/50 rounded-lg p-4 border border-emerald-100">
-        <h4 className="text-xs font-bold text-emerald-400 uppercase tracking-wider mb-3">核心考点</h4>
-        <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-slate-700">
-          <li className="flex items-center"><span className="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-2"></span>RAG (检索增强生成) & 向量数据库</li>
-          <li className="flex items-center"><span className="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-2"></span>Prompt Engineering (CoT, ToT)</li>
-          <li className="flex items-center"><span className="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-2"></span>量化 (Quantization): FP16, INT8, GPTQ</li>
-          <li className="flex items-center"><span className="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-2"></span>推理加速: vLLM, Flash Attention</li>
-        </ul>
-      </div>
+    <div className="rounded-2xl border border-fd-border bg-fd-card p-6">
+      <div className="text-xs font-semibold text-fd-muted-foreground">05</div>
+      <h3 className="mt-2 text-lg font-semibold text-fd-foreground">LLM 推理</h3>
+      <p className="mt-2 text-sm text-fd-muted-foreground">
+        关注真实生产中的低延迟与高吞吐：缓存、批量化、量化与部署策略，
+        让推理服务稳定且成本可控
+      </p>
+      <ul className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-fd-foreground">
+        <li>KV Cache 与批量化</li>
+        <li>量化与蒸馏</li>
+        <li>推理加速：vLLM / FlashAttention</li>
+        <li>服务化与成本优化</li>
+      </ul>
     </div>
 
+    <div className="rounded-2xl border border-fd-border bg-fd-card p-6">
+      <div className="text-xs font-semibold text-fd-muted-foreground">06</div>
+      <h3 className="mt-2 text-lg font-semibold text-fd-foreground">Agent 与应用</h3>
+      <p className="mt-2 text-sm text-fd-muted-foreground">
+        将模型能力落地到真实业务场景，围绕工具调用、检索增强、工作流编排与评测，
+        构建可维护、可迭代的智能应用体系
+      </p>
+      <ul className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-fd-foreground">
+        <li>工具调用与函数规划</li>
+        <li>RAG 与检索策略</li>
+        <li>工作流编排与评测</li>
+        <li>安全与监控</li>
+      </ul>
+    </div>
   </div>
 </div>

@@ -1,0 +1,274 @@
+/* Giscus Dark Theme - Custom */
+
+/* ============================================
+   CSS 变量定义
+   ============================================ */
+main {
+  /* 代码高亮颜色 */
+  --color-prettylights-syntax-comment: #8b949e;
+  --color-prettylights-syntax-constant: #79c0ff;
+  --color-prettylights-syntax-entity: #d2a8ff;
+  --color-prettylights-syntax-storage-modifier-import: #c9d1d9;
+  --color-prettylights-syntax-entity-tag: #7ee787;
+  --color-prettylights-syntax-keyword: #ff7b72;
+  --color-prettylights-syntax-string: #a5d6ff;
+  --color-prettylights-syntax-variable: #ffa657;
+  --color-prettylights-syntax-brackethighlighter-unmatched: #f85149;
+  --color-prettylights-syntax-invalid-illegal-text: #f0f6fc;
+  --color-prettylights-syntax-invalid-illegal-bg: #8e1519;
+  --color-prettylights-syntax-carriage-return-text: #f0f6fc;
+  --color-prettylights-syntax-carriage-return-bg: #b62324;
+  --color-prettylights-syntax-string-regexp: #7ee787;
+  --color-prettylights-syntax-markup-list: #f2cc60;
+  --color-prettylights-syntax-markup-heading: #1f6feb;
+  --color-prettylights-syntax-markup-italic: #c9d1d9;
+  --color-prettylights-syntax-markup-bold: #c9d1d9;
+  --color-prettylights-syntax-markup-deleted-text: #ffdcd7;
+  --color-prettylights-syntax-markup-deleted-bg: #67060c;
+  --color-prettylights-syntax-markup-inserted-text: #aff5b4;
+  --color-prettylights-syntax-markup-inserted-bg: #033a16;
+  --color-prettylights-syntax-markup-changed-text: #ffdfb6;
+  --color-prettylights-syntax-markup-changed-bg: #5a1e02;
+  --color-prettylights-syntax-markup-ignored-text: #c9d1d9;
+  --color-prettylights-syntax-markup-ignored-bg: #1158c7;
+  --color-prettylights-syntax-meta-diff-range: #d2a8ff;
+  --color-prettylights-syntax-brackethighlighter-angle: #8b949e;
+  --color-prettylights-syntax-sublimelinter-gutter-mark: #484f58;
+  --color-prettylights-syntax-constant-other-reference-link: #a5d6ff;
+
+  /* 主色调 - 使用网站的深色模式颜色变量 */
+  --color-canvas-default: hsl(220, 15%, 8%);
+  --color-canvas-subtle: hsl(220, 12%, 12%);
+  --color-canvas-inset: hsl(220, 12%, 12%);
+  --color-border-default: hsl(220, 10%, 22%);
+  --color-border-muted: hsl(220, 10%, 18%);
+  --color-input-border: hsl(220, 10%, 22%);
+
+  /* 文字颜色 */
+  --color-fg-default: hsl(220, 10%, 92%);
+  --color-fg-muted: hsl(220, 8%, 65%);
+  --color-fg-subtle: hsl(220, 8%, 55%);
+  --color-fg-accent: hsl(220, 12%, 78%);
+
+  /* 按钮和交互元素 */
+  --color-accent-fg: hsl(220, 12%, 78%);
+  --color-accent-emphasis: hsl(220, 12%, 78%);
+  --color-accent-muted: hsl(220, 12%, 18%);
+  --color-accent-subtle: hsl(220, 12%, 16%);
+  --color-neutral-muted: hsl(220, 12%, 18%);
+
+  /* 状态颜色 */
+  --color-danger-fg: hsl(0, 63%, 55%);
+  --color-success-fg: hsl(142, 71%, 45%);
+
+  --color-canvas-overlay: hsla(0, 0%, 0%, 0.9);
+  --color-bg-overlay: hsla(0, 0%, 0%, 0.5);
+}
+
+/* ============================================
+   全局样式
+   ============================================ */
+main {
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
+/* ============================================
+   评论框和评论项
+   ============================================ */
+.gsc-comment-box {
+  background: var(--color-canvas-default) !important;
+}
+
+.gsc-comment {
+  border-radius: 0.375rem !important;
+  background: var(--color-border-default) !important;
+}
+
+.color-box-border-info {
+  border-color: var(--color-border-default) !important;
+}
+
+.gsc-comments-count a,
+.link-secondary {
+  text-decoration-line: none !important;
+}
+
+/* ============================================
+   输入框样式
+   ============================================ */
+.gsc-comment-box-textarea {
+  border-radius: 0.375rem !important;
+  border: 1px solid var(--color-border-default) !important;
+  border-bottom-left-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+  border-bottom-style: dashed !important;
+  transition: all 0.2s ease !important;
+}
+
+.gsc-comment-box-write {
+  transition: all 0.2s ease !important;
+}
+
+.gsc-comment-box-write:focus-within {
+  border-color: var(--color-accent-emphasis) !important;
+  box-shadow: 0 0 0 2px var(--color-accent-subtle) !important;
+  outline: none !important;
+}
+
+.gsc-comment-box-preview {
+  border-bottom: 1px dashed var(--color-border-default) !important;
+}
+
+/* ============================================
+   回复按钮
+   ============================================ */
+.gsc-reply-box button {
+  transition: all 0.2s ease !important;
+}
+
+.gsc-reply-box button:focus {
+  border-color: var(--color-accent-emphasis) !important;
+  box-shadow: 0 0 0 2px var(--color-accent-subtle) !important;
+  outline: none !important;
+}
+
+.gsc-reply-box button:hover {
+  background: var(--color-accent-muted) !important;
+  outline: none !important;
+}
+
+/* ============================================
+   评论框按钮（评论、取消等）
+   ============================================ */
+.gsc-comment-box-buttons button {
+  transition: all 0.2s ease !important;
+}
+
+.gsc-comment-box-buttons button:focus {
+  border-color: var(--color-accent-emphasis) !important;
+  box-shadow: 0 0 0 2px var(--color-accent-subtle) !important;
+  outline: none !important;
+}
+
+/* ============================================
+   通用按钮样式
+   ============================================ */
+.btn {
+  border-radius: 0.375rem !important;
+  font-weight: 500 !important;
+  transition: all 0.2s ease !important;
+}
+
+.btn:focus {
+  border-color: var(--color-accent-emphasis) !important;
+  box-shadow: 0 0 0 2px var(--color-accent-subtle) !important;
+  outline: none !important;
+}
+
+/* 主要按钮 */
+.btn-primary {
+  background: var(--color-accent-fg) !important;
+  color: var(--color-canvas-default) !important;
+  border: 1px solid var(--color-accent-fg) !important;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--color-fg-default) !important;
+  transform: translateY(-1px) !important;
+}
+
+.btn-primary:disabled {
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
+}
+
+/* 次要按钮 */
+.btn:not(.btn-primary) {
+  background: transparent !important;
+  color: var(--color-fg-default) !important;
+  border: 1px solid var(--color-border-default) !important;
+}
+
+.btn:not(.btn-primary):hover {
+  background: var(--color-accent-muted) !important;
+}
+
+/* ============================================
+   按钮组（最早/最新切换）
+   ============================================ */
+.BtnGroup-item {
+  transition: all 0.2s ease !important;
+  border-radius: 0.375rem !important;
+}
+
+.BtnGroup-item .btn {
+  border: none !important;
+  background: transparent !important;
+  transition: none !important;
+}
+
+.BtnGroup-item .btn:focus {
+  box-shadow: none !important;
+  border-color: transparent !important;
+}
+
+.BtnGroup-item:hover .btn {
+  background: transparent !important;
+}
+
+.BtnGroup-item--selected {
+  background: var(--color-accent-muted) !important;
+}
+
+.BtnGroup-item--selected .btn {
+  color: var(--color-fg-default) !important;
+  background: transparent !important;
+}
+
+.BtnGroup-item:hover {
+  background: var(--color-accent-subtle) !important;
+}
+
+.BtnGroup-item:focus-within {
+  background: var(--color-accent-muted) !important;
+  box-shadow: 0 0 0 2px var(--color-accent-subtle) !important;
+  outline: none !important;
+}
+
+.gsc-right-header {
+  border: 1px solid var(--color-border-default) !important;
+  border-radius: 0.375rem !important;
+  background: transparent !important;
+}
+
+/* ============================================
+   反应按钮和表情
+   ============================================ */
+.gsc-reactions-button,
+.gsc-social-reaction-summary-item,
+.gsc-emoji-button {
+  border-radius: 0.375rem !important;
+}
+
+.gsc-reactions-popover.open.top:after{
+  background: var(--color-canvas-default) !important;
+}
+
+/* ============================================
+   标签和徽章
+   ============================================ */
+.gsc-comment-author-badge {
+  border-radius: 0.375rem !important;
+}
+
+/* ============================================
+   移除不必要的阴影
+   ============================================ */
+.gsc-comment-box,
+.gsc-comment,
+.gsc-reactions-menu,
+.gsc-reactions-popover {
+  box-shadow: none !important;
+}

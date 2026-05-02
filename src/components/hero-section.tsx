@@ -36,14 +36,14 @@ export function HeroSection({
   demoImageDark,
 }: HeroSectionProps) {
   return (
-    <section className="flex flex-col items-center justify-center pt-12 text-center bg-gradient-to-b from-white to-teal-50/30 dark:from-gray-950 dark:to-teal-950/30">
+    <section className="flex flex-col items-center justify-center pt-12 text-center bg-gradient-to-b from-fd-background to-fd-muted dark:from-fd-background dark:to-fd-muted">
       {version && (
         <div className="mt-20 mb-4 sm:mb-6">
           <Link
             href="https://github.com/Robert-Stackflow/Formulaic"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium text-orange-800 dark:text-orange-200 bg-orange-100 dark:bg-orange-900/30 border border-orange-200 dark:border-orange-700 rounded-full hover:bg-orange-200 dark:hover:bg-orange-900/50 hover:shadow-sm transition-all"
+            className="inline-flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium text-fd-primary bg-fd-accent border border-fd-border rounded-full hover:bg-fd-secondary hover:shadow-sm transition-all"
           >
             <span>🎉</span>
             <span className="opacity-80">Released </span>
@@ -57,14 +57,14 @@ export function HeroSection({
         {title}
       </h1>
 
-      <p className="mt-4 sm:mt-6 max-w-2xl text-base sm:text-lg lg:text-xl text-gray-600 dark:text-gray-200 px-4">
+      <p className="mt-4 sm:mt-6 max-w-2xl text-base sm:text-lg lg:text-xl text-fd-muted-foreground px-4">
         {subtitle}
       </p>
 
       <div className="mt-6 sm:mt-8 flex flex-row gap-3 sm:gap-4 w-auto mx-auto">
         <Link
           href={primaryCta.href}
-          className="inline-flex items-center justify-center px-6 py-3 sm:px-6 sm:py-3 text-sm sm:text-base font-medium text-white bg-[var(--color-fd-primary)] border border-transparent rounded-lg shadow-lg hover:brightness-90 focus:outline-none focus:ring-2 focus:ring-[var(--color-fd-primary)] focus:ring-offset-2 transition-all"
+          className="inline-flex items-center justify-center px-6 py-3 sm:px-6 sm:py-3 text-sm sm:text-base font-medium text-fd-primary-foreground bg-fd-primary border border-transparent rounded-lg shadow-lg hover:brightness-90 focus:outline-none focus:ring-2 focus:ring-fd-ring focus:ring-offset-2 transition-all"
         >
           {primaryCta.text}
         </Link>
@@ -72,7 +72,7 @@ export function HeroSection({
           href={secondaryCta.href}
           target={secondaryCta.external ? "_blank" : undefined}
           rel={secondaryCta.external ? "noopener noreferrer" : undefined}
-          className="inline-flex items-center justify-center gap-2 px-6 py-3 sm:px-6 sm:py-3 text-sm sm:text-base font-medium text-teal-700 dark:text-teal-300 bg-white dark:bg-gray-800 border border-teal-200 dark:border-teal-600 rounded-lg hover:bg-teal-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 transition-all"
+          className="inline-flex items-center justify-center gap-2 px-6 py-3 sm:px-6 sm:py-3 text-sm sm:text-base font-medium text-fd-primary bg-fd-card border border-fd-border rounded-lg hover:bg-fd-accent focus:outline-none focus:ring-2 focus:ring-fd-ring focus:ring-offset-2 transition-all"
         >
           {secondaryCta.text}
           <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
