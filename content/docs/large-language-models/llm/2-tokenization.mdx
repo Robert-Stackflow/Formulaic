@@ -9,12 +9,12 @@ description: 介绍 Transformer 输入表示的分词方法（Tokenization）及
 
 ## 什么是 Tokenization
 
-- Transformer 模型接收的输入是向量序列，而原始的自然语言文本是离散的词/子词/字符
+- Transformer 模型接收的输入是向量序列，而原始的自然语言文本是离散的词 / 子词 / 字符
 - 因此，需要完成两个核心步骤，来将文本转换为模型可处理的输入表示：
   - 分词 / 编码（Tokenization）
   - 向量化表示（Token Embedding） + 位置信息（Positional Encoding）
 
-- Transformer 模型不直接处理单词的字符串，而是先将文本转换为token 序列：
+- Transformer 模型不直接处理单词的字符串，而是先将文本转换为 token 序列：
 
   | 方法                  | 原理                                                 | 优缺点                                                                      |
   | --------------------- | ---------------------------------------------------- | --------------------------------------------------------------------------- |
@@ -154,12 +154,12 @@ description: 介绍 Transformer 输入表示的分词方法（Tokenization）及
 - WordPiece 的核心思想是最大化序列的似然概率，假设序列 $S$ 被切分为 $[t_1, t_2, \dots, t_n]$，则序列概率为：
 
   $$
-  \log P(S) = \sum_{i=1}^{n} \log P(t_i)
+  \log P (S) = \sum_{i=1}^{n} \log P (t_i)
   $$
 
 - 在构建词表时，WordPiece 每次选择合并两个子词 $A$ 和 $B$，使合并后的子词 $AB$ 最大化语言模型的序列概率，即最大化互信息：
   $$
-  \text{score}(A, B) = \frac{P(AB)}{P(A)P(B)}
+  \text {score}(A, B) = \frac {P (AB)}{P (A) P (B)}
   $$
 - 直观理解：如果 `e` 和 `d` 在语料中经常连续出现（如 `ed` 表示过去时后缀），合并它们可以增加整个语料的序列概率，从而更符合语言模型的统计规律。
 
@@ -176,18 +176,18 @@ description: 介绍 Transformer 输入表示的分词方法（Tokenization）及
 ## Unigram
 
 - 基本思想
-  - 与 BPE 或 WordPiece 的“自底向上合并子词”不同，Unigram使用的是自顶向下的剪枝式（pruning）子词学习
+  - 与 BPE 或 WordPiece 的 “自底向上合并子词” 不同，Unigram 使用的是自顶向下的剪枝式（pruning）子词学习
   - 它从一个规模较大的初始候选词表 $V_0$ 出发，再逐步移除贡献最小的子词，直到达到目标词表大小
   - 初始词表通常由预分词器切分结果以及语料中的高频子串构成，每个子词都带有一个重要性评分，用于衡量它对覆盖语料的重要程度
   - 每轮迭代删除评分最低的约 10%\~20% ，同时确保语料中的单词仍能由剩余子词组合而成
 
 - Unigram 的优化目标是最大化训练语料的似然概率
-  - 设训练语料为词序列 $(x_1, x_2, \dots, x_N)$，每个词 $x_i$ 的所有可能 tokenization 方案集合为 $S(x_i)$，每种方案概率 $p(x)$
+  - 设训练语料为词序列 $(x_1, x_2, \dots, x_N)$，每个词 $x_i$ 的所有可能 tokenization 方案集合为 $S (x_i)$，每种方案概率 $p (x)$
 
   - 其损失为：
 
     $$
-    \text{Loss} = - \sum_{i=1}^{N} \log \left( \sum_{x \in S(x_i)} p(x) \right)
+    \text {Loss} = - \sum_{i=1}^{N} \log \left (\sum_{x \in S (x_i)} p (x) \right)
     $$
 
   - 含义如下：
@@ -213,7 +213,7 @@ description: 介绍 Transformer 输入表示的分词方法（Tokenization）及
 ## SentencePiece
 
 - 基本思想
-  - SentencePiece不是具体的分词算法，而是一个通用 Tokenizer 框架，内部可使用多种算法，包括 BPE、Unigram、word-level、character-level 或混合策略
+  - SentencePiece 不是具体的分词算法，而是一个通用 Tokenizer 框架，内部可使用多种算法，包括 BPE、Unigram、word-level、character-level 或混合策略
   - 它的主要设计目标是提供一个无需预分词、无需依赖空格的统一 Tokenizer 管线
 
 - 传统 tokenizer（如 WordPiece）通常依赖空格与标点进行切词，存在以下限制：
@@ -275,10 +275,10 @@ description: 介绍 Transformer 输入表示的分词方法（Tokenization）及
 
 - 经过 Token Embedding，每个 token 被映射为一个向量，维度为 `d_model`（如 512 或 768）
 
-- 本质上就是 Word2Vec / GloVe 中的embedding lookup table
+- 本质上就是 Word2Vec / GloVe 中的 embedding lookup table
 
   $$
-  E \in \mathbb{R}^{V \times d_{model}}
+  E \in \mathbb {R}^{V \times d_{model}}
   $$
   - $V$ = 词表大小
 
@@ -347,4 +347,4 @@ description: 介绍 Transformer 输入表示的分词方法（Tokenization）及
 
   - 例如，`tokenization` 可能被拆分为 `token` + `##ization`
 
-- 更多关于 `tokenizers` 库的详细方法对比（如 `encode_plus`, `batch_encode_plus`）与参数说明，可参考：[3. tokenizers 库相关参数.md](../l.%20其他相关框架与知识/3.%20tokenizers%20库相关参数.md)
+- 更多关于 `tokenizers` 库的详细方法对比（如 `encode_plus`, `batch_encode_plus`）与参数说明，可参考：[3. tokenizers 库相关参数.md](../l.%20 其他相关框架与知识 / 3.%20tokenizers%20 库相关参数.md)

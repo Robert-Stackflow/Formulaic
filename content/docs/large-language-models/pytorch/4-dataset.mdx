@@ -5,7 +5,7 @@ description: 介绍 PyTorch 中数据集（Dataset）和加载器（DataLoader�
 
 ## Dataset
 
-- Dataset 是一个“样本索引 → 单条样本数据”的映射
+- Dataset 是一个 “样本索引 → 单条样本数据” 的映射
 
 - 它只回答一个问题：给定第 i 个样本，应该返回什么？
 
@@ -16,7 +16,7 @@ description: 介绍 PyTorch 中数据集（Dataset）和加载器（DataLoader�
     self.samples[i]
     ```
 
-  - 读取样本：从磁盘/内存/网络读取样本
+  - 读取样本：从磁盘 / 内存 / 网络读取样本
 
   - 返回模型可用的最小结构，如 Tensor / 数值 / 字典，返回的是单条样本，而不是 batch
 
@@ -92,7 +92,7 @@ description: 介绍 PyTorch 中数据集（Dataset）和加载器（DataLoader�
     }
     ```
 
-  - NamedTuple / dataclass：更强的类型约束，适合大型工程
+  - NamedTuple /dataclass：更强的类型约束，适合大型工程
 
 - Map-style Dataset（标准 Dataset）
 
@@ -107,7 +107,7 @@ description: 介绍 PyTorch 中数据集（Dataset）和加载器（DataLoader�
 
 - 对于 Map-style Dataset，因为能 index，PyTorch 可以：
   - shuffle（通过 sampler）
-  - 切分数据（train / val）
+  - 切分数据（train /val）
   - 分布式切 shard
   - resume（按 index 恢复）
   - random access augmentation
@@ -163,10 +163,10 @@ description: 介绍 PyTorch 中数据集（Dataset）和加载器（DataLoader�
 - DataLoader 本质上是一个样本调度 + 批构造 + 并行加载的编排流程
 
 - DataLoader 不考虑数据语义，只做四件事：
-  - 决定“按什么顺序”取样本
-  - 决定“一次取多少”
-  - 决定“谁来取”（主进程 / worker）
-  - 决定“怎么拼成 batch”
+  - 决定 “按什么顺序” 取样本
+  - 决定 “一次取多少”
+  - 决定 “谁来取”（主进程 /worker）
+  - 决定 “怎么拼成 batch”
 
 - 最常见的 Map-style Dataset 的迭代流程
 
@@ -250,9 +250,9 @@ description: 介绍 PyTorch 中数据集（Dataset）和加载器（DataLoader�
   - DistributedSampler（分布式）
 
 - num_workers
-  - num_workers = 0：所有 dataset[i] 在主进程，容易调试，但读取数据集太慢
-  - num_workers > 0：fork / spawn 出 worker 进程，每个 worker 各自持有一份 Dataset，worker 并行调用 `__getitem__`
-  - 注意，Dataset 会被 pickle，因此不能依赖共享状态，不能在 Dataset 里存 socket / file handler（除非手动管理）
+  - num_workers = 0：所有 dataset [i] 在主进程，容易调试，但读取数据集太慢
+  - num_workers > 0：fork /spawn 出 worker 进程，每个 worker 各自持有一份 Dataset，worker 并行调用 `__getitem__`
+  - 注意，Dataset 会被 pickle，因此不能依赖共享状态，不能在 Dataset 里存 socket /file handler（除非手动管理）
 
 - DataLoader 不该处理的事
   - 不该理解样本结构
@@ -514,7 +514,7 @@ description: 介绍 PyTorch 中数据集（Dataset）和加载器（DataLoader�
   - num_workers = 同时跑 Dataset.\_\_getitem\_\_ 的子进程数量
   - Dataset 里通常包含文件读取、解码、tokenize、augmentation，这些 CPU-bound / IO-bound 操作非常适合多进程
   - 本地 SSD + 简单处理，num_workers 一般设置为 4-8
-  - 重预处理（tokenize / decode），num_workers 一般设置为 8-16
+  - 重预处理（tokenize /decode），num_workers 一般设置为 8-16
   - 网络存储，num_workers 一般取决于带宽大小
   - num_workers 不是越大越好，num_workers 越大，CPU 占用越高，导致 worker 队列阻塞，性能反而会下降
 
@@ -536,7 +536,7 @@ description: 介绍 PyTorch 中数据集（Dataset）和加载器（DataLoader�
         batch = move_to_device(batch, device, non_blocking=True)
     ```
 
-  - 当 GPU 训练/ batch size 较大/数据复制的 IO 开销成为瓶颈时，可以考虑启用 pin_memory
+  - 当 GPU 训练 /batch size 较大 / 数据复制的 IO 开销成为瓶颈时，可以考虑启用 pin_memory
 
   - 当启用 pin_memory 时，一定要配合 non_blocking 使用
 

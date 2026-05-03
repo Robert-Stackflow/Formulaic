@@ -5,7 +5,7 @@ description: 介绍 PyTorch 中的标准训练流程，包括训练/验证模式
 
 ## 标准训练流程
 
-- 标准训练流程 = 训练/验证模式切换 → 取 batch → 前向 → loss → 反向 → 更新 → 清理状态 → 记录
+- 标准训练流程 = 训练 / 验证模式切换 → 取 batch → 前向 → loss → 反向 → 更新 → 清理状态 → 记录
 
 - 最外层结构（epoch 级）
 
@@ -218,7 +218,7 @@ description: 介绍 PyTorch 中的标准训练流程，包括训练/验证模式
   scaler.update()
   ```
 
-- AMP 并不会减少显存里的参数大小，其参数仍是 fp32，而显存节省主要来自激活/中间结果
+- AMP 并不会减少显存里的参数大小，其参数仍是 fp32，而显存节省主要来自激活 / 中间结果
 
 - AMP 不保证一定更快，当 batch 很小或者 CPU/IO 瓶颈时收益有限
 
@@ -253,10 +253,10 @@ description: 介绍 PyTorch 中的标准训练流程，包括训练/验证模式
 
   - 但这个 hook 看到的是 grad 张量本身，而 AMP 的流程是 backward 结束、scaler.unscale\_() 改写 grad 的数值，此时 DDP hook 同步的是 unscale 后的结果
 
-- GradScaler 不会影响多卡一致性，因为所有 rank 用的是同一个 loss scale 策略，如果某个 rank 出现 inf / nan，scaler.step() 会在所有 rank 跳过更新
+- GradScaler 不会影响多卡一致性，因为所有 rank 用的是同一个 loss scale 策略，如果某个 rank 出现 inf /nan，scaler.step () 会在所有 rank 跳过更新
 
 - 推理阶段的混合精度与训练阶段的 AMP
-  - 训练的 AMP 是“数值安全工程”，而推理的混合精度是“纯性能工程”
+  - 训练的 AMP 是 “数值安全工程”，而推理的混合精度是 “纯性能工程”
 
   - 推理阶段的流程
 
@@ -267,7 +267,7 @@ description: 介绍 PyTorch 中的标准训练流程，包括训练/验证模式
     model.half()
     ```
 
-  - 推理阶段无需计算梯度，数值问题主要来自 softmax / normalization，而这些算子会由 autocast 保留为 fp32，因此不需要 GradScaler
+  - 推理阶段无需计算梯度，数值问题主要来自 softmax /normalization，而这些算子会由 autocast 保留为 fp32，因此不需要 GradScaler
 
   - 对比
 
@@ -393,13 +393,13 @@ description: 介绍 PyTorch 中的标准训练流程，包括训练/验证模式
   - Dataset 定义「样本是什么」
   - DataLoader 定义「batch 如何产生」
   - DistributedSampler 决定「每张卡拿哪些样本」
-  - model = DDP(model)
+  - model = DDP (model)
   - forward 在 autocast 里
   - loss 计算（fp32）
-  - scaler.scale(loss).backward()
+  - scaler.scale (loss).backward ()
   - scaler.unscale\_(optimizer)
   - 可选：gradient clipping
-  - optimizer.step()
+  - optimizer.step ()
 
 - 第一步，实现 Dataset
 

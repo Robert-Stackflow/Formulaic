@@ -155,7 +155,7 @@ description: 介绍 Build LLM from Scratch，包括 Tokenization、Batching、Mo
 
 - 例如，GPT-2 可能会将未登录词 `unfamiliarword` 划分为 `unfam`、`iliar`、`word`
 
-- BPE 的原始实现如下（[gpt-2/src/encoder.py at master · openai/gpt-2](https://github.com/openai/gpt-2/blob/master/src/encoder.py)）：
+- BPE 的原始实现如下（[gpt-2/src/encoder.py at master・openai/gpt-2](https://github.com/openai/gpt-2/blob/master/src/encoder.py)）：
 
   ```python
   """Byte pair encoding utilities"""
@@ -707,7 +707,7 @@ description: 介绍 Build LLM from Scratch，包括 Tokenization、Batching、Mo
   - 步骤 3：最终结果和 Embedding Layer 查表取出的行向量完全一样
   - 独热编码有一个致命问题：极度稀疏（比如 4 维独热向量只有 1 个 1，其余都是 0）
   - 当用稀疏的独热向量做矩阵乘法时，99% 的计算都是「0 乘任意数 = 0」，完全是无用的计算浪费
-  - Embedding Layer 的查表操作，直接跳过了所有 0 的计算，根据 ID 直接取对应行，没有任何无用计算，计算量从「O ( token 总数 × 嵌入维度)」降到了「O (1)（索引）」，在大词汇量场景下（LLM 的核心场景），效率提升是数量级的
+  - Embedding Layer 的查表操作，直接跳过了所有 0 的计算，根据 ID 直接取对应行，没有任何无用计算，计算量从「O (token 总数 × 嵌入维度)」降到了「O (1)（索引）」，在大词汇量场景下（LLM 的核心场景），效率提升是数量级的
 
 - Linear 举例
 
@@ -752,7 +752,7 @@ description: 介绍 Build LLM from Scratch，包括 Tokenization、Batching、Mo
   token_embedding_layer = torch.nn.Embedding(vocab_size, output_dim)
   ```
 
-- 如果处理后的输入中，每个batch 包含 8 个输入序列，每个输入序列包含 4 个 token，那么处理的张量维度即为 8 × 4 × 256
+- 如果处理后的输入中，每个 batch 包含 8 个输入序列，每个输入序列包含 4 个 token，那么处理的张量维度即为 8 × 4 × 256
 
   ```python
   max_length = 4
@@ -1010,7 +1010,7 @@ description: 介绍 Build LLM from Scratch，包括 Tokenization、Batching、Mo
 
 - 首先介绍自注意力机制的一个高度简化版本，该版本不包含任何可训练权重
 
-- 此简化版本仅作演示之用，并非Transformer模型中实际使用的注意力机制
+- 此简化版本仅作演示之用，并非 Transformer 模型中实际使用的注意力机制
 
 - 假设给定输入序列 $x^{(1)}$ 至 $x^{(T)}$
   - 该输入为文本（例如句子 “Your journey starts with one step”），且已转换为 token 嵌入向量
@@ -1023,7 +1023,7 @@ description: 介绍 Build LLM from Scratch，包括 Tokenization、Batching、Mo
   - 注意力权重决定了计算 $z^{(2)}$ 时，每个输入元素对该加权和的贡献程度
   - 简言之，可将 $z^{(2)}$ 理解为 $x^{(2)}$​ 的修正版本，该版本同时融合了与当前任务相关的所有其他输入元素的信息
 
-- 按照惯例，未归一化的注意力权重被称为“注意力分数”，而求和为 1 的归一化注意力分数则被称为“注意力权重”
+- 按照惯例，未归一化的注意力权重被称为 “注意力分数”，而求和为 1 的归一化注意力分数则被称为 “注意力权重”
 
 - 假设经过嵌入后得到的输入向量如下
 
@@ -1171,7 +1171,7 @@ description: 介绍 Build LLM from Scratch，包括 Tokenization、Batching、Mo
   - 键向量：$k^{(i)} = x^{(i)}\,W_k $
   - 值向量：$v^{(i)} = x^{(i)}\,W_v $​
 
-- 输入向量 $x$ 与查询向量 $q$​ 的嵌入维度可相同也可不同，具体取决于模型的设计思路与实际实现方式；GPT系列模型中，这一输入维度与输出维度通常保持一致；但为便于演示说明、让计算过程更易理解，本节将选用不同的输入和输出维度
+- 输入向量 $x$ 与查询向量 $q$​ 的嵌入维度可相同也可不同，具体取决于模型的设计思路与实际实现方式；GPT 系列模型中，这一输入维度与输出维度通常保持一致；但为便于演示说明、让计算过程更易理解，本节将选用不同的输入和输出维度
 
   ```python
   x_2 = inputs[1] # second input element
@@ -1434,7 +1434,7 @@ description: 介绍 Build LLM from Scratch，包括 Tokenization、Batching、Mo
 - 为了抵消这个影响，PyTorch 的`nn.Dropout`会在训练模式下自动对保留的神经元输出做缩放补偿，公式是
 
   $$
-  o=i\times\frac{1}{1-p}
+  o=i\times\frac {1}{1-p}
   $$
 
 - 在推理模式下，dropout 不会丢弃、也不会缩放
@@ -2834,7 +2834,7 @@ description: 介绍 Build LLM from Scratch，包括 Tokenization、Batching、Mo
   - 在计算方差的平方根前，还会加入一个极小值 $eps$，避免方差为 0 时出现除零错误
 
 - 有偏方差
-  - 在上述方差计算过程中，将 `unbiased` 设为 `False`，表示采用公式 $\frac{\sum_i(x_i-\bar{x})^2}{n}$ 计算方差（其中 $n$ 为样本量，即特征数或列数）
+  - 在上述方差计算过程中，将 `unbiased` 设为 `False`，表示采用公式 $\frac {\sum_i (x_i-\bar {x})^2}{n}$ 计算方差（其中 $n$ 为样本量，即特征数或列数）
   - 该公式未引入贝塞尔校正（即把分母设为 $n-1$​），因此得到的是方差的有偏估计值
   - 对于大语言模型而言，其嵌入维度 $n$ 通常极大，使用 $n$ 和 $n−1$ 作为分母计算出的结果差异微乎其微
   - 但 GPT-2 模型的归一化层在训练时采用的是有偏方差计算方式，后续内容中会加载预训练权重，为保证与该权重的兼容性，此处也沿用了这一设置
@@ -2862,20 +2862,20 @@ description: 介绍 Build LLM from Scratch，包括 Tokenization、Batching、Mo
 
 - 在深度学习领域，ReLU（Rectified Linear Unit）激活函数因实现简洁，且在各类神经网络结构中均能取得良好效果，成为了应用最广泛的激活函数之一
 
-- 而在大语言模型中，除了传统的 ReLU，还会用到多种其他类型的激活函数；其中最具代表性的两种是GELU（Gaussian Error Linear Unit）和 SwiGLU（Swish-Gated Linear Unit）
+- 而在大语言模型中，除了传统的 ReLU，还会用到多种其他类型的激活函数；其中最具代表性的两种是 GELU（Gaussian Error Linear Unit）和 SwiGLU（Swish-Gated Linear Unit）
 
-- GELU 和 SwiGLU 是更为复杂的平滑型激活函数——前者融入了高斯分布相关计算，后者则结合了 Sigmoid 门控线性单元，二者均能为深度学习模型带来更优的性能表现；这一点与结构简单、为分段线性函数的 ReLU 形成了鲜明对比
+- GELU 和 SwiGLU 是更为复杂的平滑型激活函数 —— 前者融入了高斯分布相关计算，后者则结合了 Sigmoid 门控线性单元，二者均能为深度学习模型带来更优的性能表现；这一点与结构简单、为分段线性函数的 ReLU 形成了鲜明对比
 
-- GELU 激活函数有多种实现方式，其标准定义如下，其中$Φ(x)$代表标准高斯分布的累积分布函数
+- GELU 激活函数有多种实现方式，其标准定义如下，其中 $Φ(x)$ 代表标准高斯分布的累积分布函数
 
   $$
-  \text{GELU}(x)=x\cdot\Phi(x)
+  \text {GELU}(x)=x\cdot\Phi (x)
   $$
 
 - 实际工程中，人们通常会采用一种计算成本更低的近似实现方式：
 
   $$
-  \text{GELU}(x) \approx 0.5 \cdot x \cdot \left(1 + \tanh\left[\sqrt{\frac{2}{\pi}} \cdot \left(x + 0.044715 \cdot x^3\right)\right]\right)
+  \text {GELU}(x) \approx 0.5 \cdot x \cdot \left (1 + \tanh\left [\sqrt {\frac {2}{\pi}} \cdot \left (x + 0.044715 \cdot x^3\right)\right]\right)
   $$
 
 - GELU 实现
@@ -5023,7 +5023,7 @@ description: 介绍 Build LLM from Scratch，包括 Tokenization、Batching、Mo
   | 词典大小            | 50257             | 32000                  | 沿用 32000                 |
   | MHA 头数            | 25                | 32                     | 32（改为 GQA）             |
   | TransformerBlock 数 | 48                | 32                     | 沿用 32                    |
-  | 位置编码            | 1024 绝对位置编码 | 4096 RoPE（绝对+相对） | 8192 RoPE（修改后的 RoPE） |
+  | 位置编码            | 1024 绝对位置编码 | 4096 RoPE（绝对 + 相对） | 8192 RoPE（修改后的 RoPE） |
   | 嵌入维度            | 1600              | 4096                   | 沿用 4096                  |
   | FFN 激活函数        | GELU              | SiLU/Swish             | 沿用 SiLU/Swish            |
   | FFN 隐藏层维度      | 6400              | 11008                  | 14336                      |
@@ -5036,10 +5036,10 @@ description: 介绍 Build LLM from Scratch，包括 Tokenization、Batching、Mo
 
 - 层归一化会利用均值和方差对输入做归一化处理，而均方根层归一化仅使用均方根进行计算，这一改进提升了计算效率
 
-- 均方根层归一化的运算公式如下，其中$x$为输入，$\gamma$为可训练参数（向量），$\epsilon$为用于避免除零错误的小常数：
+- 均方根层归一化的运算公式如下，其中 $x$ 为输入，$\gamma$ 为可训练参数（向量），$\epsilon$ 为用于避免除零错误的小常数：
 
   $$
-  y_i = \frac{x_i}{\text{RMS}(x)} \gamma_i, \quad \text{其中} \quad \text{RMS}(x) = \sqrt{\epsilon + \frac{1}{n} \sum x_i^2}
+  y_i = \frac {x_i}{\text {RMS}(x)} \gamma_i, \quad \text {其中} \quad \text {RMS}(x) = \sqrt {\epsilon + \frac {1}{n} \sum x_i^2}
   $$
 
 - RMSNorm 的实现
@@ -5090,10 +5090,10 @@ description: 介绍 Build LLM from Scratch，包括 Tokenization、Batching、Mo
 
 #### SiLU
 
-- 替换 GELU 激活函数为 SiLU 激活函数，也被称作Swish函数，公式如下：
+- 替换 GELU 激活函数为 SiLU 激活函数，也被称作 Swish 函数，公式如下：
 
   $$
-  \text{silu}(x) = x \cdot \sigma(x), \quad \text{其中} \sigma(x) \text{为 Sigmoid函数}
+  \text {silu}(x) = x \cdot \sigma (x), \quad \text {其中} \sigma (x) \text {为 Sigmoid 函数}
   $$
 
 - SiLU 的代码实现
@@ -5131,7 +5131,7 @@ description: 介绍 Build LLM from Scratch，包括 Tokenization、Batching、Mo
 - Llama 使用了 SiLU 的一个 GLU 变体，即 SwiGLU，其公式如下
 
   $$
-  \text{SwiGLU}(x) = \text{SiLU}(\text{Linear}_1(x)) * (\text{Linear}_2(x))
+  \text {SwiGLU}(x) = \text {SiLU}(\text {Linear}_1 (x)) * (\text {Linear}_2 (x))
   $$
 
 - 这里有两个线性层，\* 表示逐元素乘法，而第三个线性层被应用于门控之后
@@ -5770,10 +5770,10 @@ description: 介绍 Build LLM from Scratch，包括 Tokenization、Batching、Mo
   - 下述公式中，旋转位置编码的基准值 $\theta$ 已从 Llama 2 的 10000 上调至 Llama 3 的 500000
 
     $$
-    \Theta = \left\{\theta_i = \text{base}^{\frac{-2(i-1)}{d}}, i \in \left[1, 2, ..., d/2\right]\right\}
+    \Theta = \left\{\theta_i = \text {base}^{\frac {-2 (i-1)}{d}}, i \in \left [1, 2, ..., d/2\right]\right\}
     $$
 
-  - 上述 $\theta$ 值为一组预定义参数，用于确定旋转矩阵中的旋转角度，其中$d$代表嵌入空间的维度
+  - 上述 $\theta$ 值为一组预定义参数，用于确定旋转矩阵中的旋转角度，其中 $d$ 代表嵌入空间的维度
 
 - 将基准值从 10000 提升至 500000，会让频率随维度的增加衰减得更快，这意味着高维分量对应的旋转角度相较以往更小，因此整体的频率范围会呈现压缩趋势，而非扩展趋势
 
@@ -7636,7 +7636,7 @@ description: 介绍 Build LLM from Scratch，包括 Tokenization、Batching、Mo
 
   ![](/img/llm/olmo3-pipeline.webp)
 
-- YaRN 风格的 RoPE实现
+- YaRN 风格的 RoPE 实现
 
   ```python
   import math
@@ -7898,11 +7898,11 @@ description: 介绍 Build LLM from Scratch，包括 Tokenization、Batching、Mo
   | 对比维度       | 文本分类微调                                                                                       | 指令微调（Instruction Tuning）                                                                                    |
   | -------------- | -------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
   | 核心目标       | 让模型学习文本到预定义类别的映射，完成判别式任务                                                   | 让模型学习理解人类指令意图，并生成符合指令要求、格式规范的自然语言响应，完成生成式任务                            |
-  | 数据形式       | 输入为单文本/文本对，标签为预定义离散类别（如情感分类的{正面,负面,中性}、文本匹配的{匹配,不匹配}） | 输入为指令+输入（可选） 的组合，输出为人工标注的自然语言答案（无固定类别，如指令“总结下文”+文本，输出为文本总结） |
-  | 模型输出       | 离散的类别标签/类别概率分布（如[0.05, 0.9, 0.05]对应负面、正面、中性）                             | 连续的自然语言序列（可长可短，如问答的短句、摘要的长句、创作的段落）                                              |
-  | 任务性质       | 判别式任务（分类、回归、匹配，属于“判断”类）                                                       | 生成式任务（遵循指令的开放式/半开放式生成，属于“创作/回答”类）                                                    |
-  | 损失函数       | 多采用交叉熵损失（针对类别概率的监督损失），目标是最小化预测类别与真实类别的差距                   | 多采用自回归负对数似然损失（NLLL），目标是最小化模型生成序列与真实答案序列的字符/词级差距                         |
-  | 模型能力导向   | 强化模型对文本特征的判别能力，仅适配单一/少数分类任务，泛化性极窄                                  | 强化模型对自然语言指令的理解和执行能力，适配多类生成任务，泛化性极广（可零样本/少样本适配新指令任务）             |
+  | 数据形式       | 输入为单文本 / 文本对，标签为预定义离散类别（如情感分类的 {正面，负面，中性}、文本匹配的 {匹配，不匹配}） | 输入为指令 + 输入（可选） 的组合，输出为人工标注的自然语言答案（无固定类别，如指令 “总结下文”+ 文本，输出为文本总结） |
+  | 模型输出       | 离散的类别标签 / 类别概率分布（如 [0.05, 0.9, 0.05] 对应负面、正面、中性）                             | 连续的自然语言序列（可长可短，如问答的短句、摘要的长句、创作的段落）                                              |
+  | 任务性质       | 判别式任务（分类、回归、匹配，属于 “判断” 类）                                                       | 生成式任务（遵循指令的开放式 / 半开放式生成，属于 “创作 / 回答” 类）                                                    |
+  | 损失函数       | 多采用交叉熵损失（针对类别概率的监督损失），目标是最小化预测类别与真实类别的差距                   | 多采用自回归负对数似然损失（NLLL），目标是最小化模型生成序列与真实答案序列的字符 / 词级差距                         |
+  | 模型能力导向   | 强化模型对文本特征的判别能力，仅适配单一 / 少数分类任务，泛化性极窄                                  | 强化模型对自然语言指令的理解和执行能力，适配多类生成任务，泛化性极广（可零样本 / 少样本适配新指令任务）             |
   | 输入输出范式   | 范式固定且单一（如`[CLS]文本[SEP]`→ 类别），不同分类任务范式可能不同                               | 范式统一为指令范式（如`指令：XXX 输入：XXX 输出：XXX`），所有任务复用同一范式                                     |
   | 微调后模型形态 | 仍为分类模型，无法直接做生成任务，任务间无法迁移                                                   | 仍为生成模型，可兼容大模型原生的生成能力，指令任务间可快速迁移                                                    |
 
@@ -8063,7 +8063,7 @@ description: 介绍 Build LLM from Scratch，包括 Tokenization、Batching、Mo
 
 - 这里，也会将验证集和测试集的文本填充至训练集最长序列的长度
 
-- 需要注意的是，验证集和测试集中那些长度超过训练集最长样本的文本，会在SpamDataset 类中通过代码 `encoded_text[:self.max_length]` 进行截断处理
+- 需要注意的是，验证集和测试集中那些长度超过训练集最长样本的文本，会在 SpamDataset 类中通过代码 `encoded_text[:self.max_length]` 进行截断处理
 
   ```python
   val_dataset = SpamDataset(
@@ -8212,7 +8212,7 @@ description: 介绍 Build LLM from Scratch，包括 Tokenization、Batching、Mo
 
 - 其中，输出的每一行都是一个输入对应的输出，维度为 2，分别表示正负类的概率
 
-- 注意力该机制会让每个输入token 与其他所有输入 token 建立关联，而基于因果注意力机制，第四个（即最后一个）token 包含了所有 token 中最丰富的信息，因为它是唯一能整合所有其他 token 信息的 token；因此，后续会重点关注最后的 token，并基于它来微调模型，完成垃圾信息分类任务
+- 注意力该机制会让每个输入 token 与其他所有输入 token 建立关联，而基于因果注意力机制，第四个（即最后一个）token 包含了所有 token 中最丰富的信息，因为它是唯一能整合所有其他 token 信息的 token；因此，后续会重点关注最后的 token，并基于它来微调模型，完成垃圾信息分类任务
 
   ```python
   print("Last output token:", outputs[:, -1, :])
@@ -8597,7 +8597,7 @@ description: 介绍 Build LLM from Scratch，包括 Tokenization、Batching、Mo
           return len(self.data)
   ```
 
-- 前面的实现会对数据集中的所有样本都进行了填充，使其长度统一，而这里采用一种更复杂的方法——设计一个可传递给数据加载器（data loader）的自定义 “整理（collate）” 函数，其会对每个批次（batch）中的训练样本进行填充，使同批次内样本长度统一（但不同批次的样本长度可以不同）
+- 前面的实现会对数据集中的所有样本都进行了填充，使其长度统一，而这里采用一种更复杂的方法 —— 设计一个可传递给数据加载器（data loader）的自定义 “整理（collate）” 函数，其会对每个批次（batch）中的训练样本进行填充，使同批次内样本长度统一（但不同批次的样本长度可以不同）
 
 ![](/img/llm/build-llm-from-scratch-instruction-finetuning-dataset-batch-padding.webp)
 
@@ -9179,10 +9179,10 @@ description: 介绍 Build LLM from Scratch，包括 Tokenization、Batching、Mo
   ![](/img/llm/build-llm-from-scratch-dpo-loss.webp)
 
 - 对于上述公式，各部分含义如下：
-  - “期望值” $\mathbb{E}$ 是统计学术语，代表随机变量（即方括号内表达式）的平均值或均值；对 $-\mathbb{E}$ 进行优化，能让模型更好地与用户偏好对齐
-  - 变量 $\pi_{\theta}$ 即所谓的“策略”（该术语源自强化学习），代表希望优化的大型语言模型（LLM）；$\pi_{ref}$ 是“参考大型语言模型”，通常指优化前的原始模型（在训练初期，$\pi_{\theta}$ 与 $\pi_{ref}$ 通常是相同的）
-  - $\beta$ 是一个超参数，用于控制 $\pi_{\theta}$ 与参考模型之间的“差异度”；增大 $\beta$ 会降低 $\pi_{\theta}$ 与 $\pi_{ref}$ 在对数概率上的差异对整体损失函数的影响，进而减小两个模型之间的差异度
-  - Logistic Sigmoid 函数记为 $\sigma(\centerdot)$​，会将“偏好响应”与“拒绝响应”的对数几率（即 Logistic Sigmoid 函数内部的项）转换为一个概率分数
+  - “期望值” $\mathbb {E}$ 是统计学术语，代表随机变量（即方括号内表达式）的平均值或均值；对 $-\mathbb {E}$ 进行优化，能让模型更好地与用户偏好对齐
+  - 变量 $\pi_{\theta}$ 即所谓的 “策略”（该术语源自强化学习），代表希望优化的大型语言模型（LLM）；$\pi_{ref}$ 是 “参考大型语言模型”，通常指优化前的原始模型（在训练初期，$\pi_{\theta}$ 与 $\pi_{ref}$ 通常是相同的）
+  - $\beta$ 是一个超参数，用于控制 $\pi_{\theta}$ 与参考模型之间的 “差异度”；增大 $\beta$ 会降低 $\pi_{\theta}$ 与 $\pi_{ref}$ 在对数概率上的差异对整体损失函数的影响，进而减小两个模型之间的差异度
+  - Logistic Sigmoid 函数记为 $\sigma (\centerdot)$​，会将 “偏好响应” 与 “拒绝响应” 的对数几率（即 Logistic Sigmoid 函数内部的项）转换为一个概率分数
 
 - 损失函数计算如下
 
@@ -9386,7 +9386,7 @@ description: 介绍 Build LLM from Scratch，包括 Tokenization、Batching、Mo
   ```
 
 - 简要回顾：
-  - 整体流程为：通过模型计算对数几率（logits） → 由对数几率计算对数概率（compute_logprobs） → 由对数概率计算DPO 损失（compute_dpo_loss）
+  - 整体流程为：通过模型计算对数几率（logits） → 由对数几率计算对数概率（compute_logprobs） → 由对数概率计算 DPO 损失（compute_dpo_loss）
   - 编写 `compute_dpo_loss_batch` 函数，用以简化上述整个计算流程
   - 工具函数 `compute_dpo_loss_loader` 会将 `compute_dpo_loss_batch` 函数作用于数据加载器（DataLoader）
   - `evaluate_dpo_loss_loader` 函数则会将 `compute_dpo_loss_batch` 函数同时作用于训练集和验证集的数加载器，实现损失日志的记录

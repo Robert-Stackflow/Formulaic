@@ -4,8 +4,8 @@ description: 介绍大语言模型推理系统的基本架构
 ---
 
 - 需要讨论的问题
-  - 为什么input比output 贵
-  - 大模型的latency（延迟）和throughput（吞吐量）
+  - 为什么 input 比 output 贵
+  - 大模型的 latency（延迟）和 throughput（吞吐量）
 - 参考资料
   - 书籍
     - Hands-On LLM Serving and Optimization
@@ -213,7 +213,7 @@ description: 介绍大语言模型推理系统的基本架构
   - Per-output Token Latency（TPOT, Time Per Output Token）：解码阶段生成每个 token 的平均时间
   - Latency：从输入到最后一个 token 输出的总时间
   - Latency ≈ TTFT + TPOT × 输出 token 数
-  - Latency 是“面向用户体验”的指标，即首个 token 多久能出来？一次对话要等多久？
+  - Latency 是 “面向用户体验” 的指标，即首个 token 多久能出来？一次对话要等多久？
 - 内存（Memory）
   - Model Size：存储模型权重所需的内存
   - KV Cache Size：存储 KV cache 所需的内存
@@ -224,7 +224,7 @@ description: 介绍大语言模型推理系统的基本架构
   - Throughput 描述的是单位时间内服务的吞吐能力，关注资源利用率
   - Throughput 通常通过 batching、并行、调度提升，而此时，单个请求的 latency 可能因此变差
 - Batching 是 latency 和 throughput 分叉的根源
-  - Naive / static batching：提升 throughput，但是短请求被最长请求拖慢，拉高 latency
+  - Naive /static batching：提升 throughput，但是短请求被最长请求拖慢，拉高 latency
   - Continuous batching：动态合并请求，提高 GPU 利用率，在多数场景下同时改善 throughput，并控制 latency，是当前 LLM serving 的核心技术之一（vLLM、FastGen 等）
   - 但即便如此 Continuous batching 仍然是以系统视角优化 throughput，是否牺牲 latency，取决于调度策略与负载情况
 - 使用什么指标
@@ -241,7 +241,7 @@ description: 介绍大语言模型推理系统的基本架构
     - 模型权重（Model Weights）
     - KV Cache（随 prompt + completion 增长）
     - 中间激活与临时张量（通常可忽略在量级上）
-  - 因此，是否能在单卡或少量 GPU上完成推理，取决于模型参数量 × 精度、Prompt 长度 + Completion 长度 × Batch Size
+  - 因此，是否能在单卡或少量 GPU 上完成推理，取决于模型参数量 × 精度、Prompt 长度 + Completion 长度 × Batch Size
   - 显存不足时，系统只能拆模型（模型并行）或 Offload 到 CPU / NVMe，而这会直接把问题引向第二个瓶颈：通信
 
 - 通信（Communication）：跑不跑得满
@@ -273,7 +273,7 @@ description: 介绍大语言模型推理系统的基本架构
 - 计算（Compute）：跑得有多快
 
 - GPU 利用率
-  - GPU 的理论 FLOPs 几乎永远是“上限”，而不是“实际值”，现实中 GPU 利用率受以下因素限制：
+  - GPU 的理论 FLOPs 几乎永远是 “上限”，而不是 “实际值”，现实中 GPU 利用率受以下因素限制：
     - 通信等待（HBM / NVLink / 网络）
 
     - Kernel launch 开销
@@ -297,7 +297,7 @@ description: 介绍大语言模型推理系统的基本架构
     - Decoding_FLOPs_Per_Step = 2 × Batch_size × Parameters
     - 总 decoding 计算量：Decoding_FLOPs = 2 × Batch_size × Completion_size × Parameters
     - 对应吞吐量上限：Throughput ≈ GPU_FLOPs / Decoding_FLOPs_Per_Step
-    - 这也解释了TPS 主要由模型规模和 GPU 算力决定，与 prompt 长度关系较小（因为 KV cache 已就绪）
+    - 这也解释了 TPS 主要由模型规模和 GPU 算力决定，与 prompt 长度关系较小（因为 KV cache 已就绪）
 
 #### 举例说明
 
@@ -322,14 +322,14 @@ description: 介绍大语言模型推理系统的基本架构
   - 计算：
     - Prefilling 阶段是大矩阵乘（算力密集）
     - Decoding 阶段是小 GEMM + attention（更容易被通信拖慢）
-- Prefilling FLOPs 估计：$Prefilling_{FLOPs} = 2 \times 1 \times 1024 \times 32\text{B} = 65.5 \text{ TFLOPs}$
-- 理论 TTFT（不考虑利用率）：$TTFT_{theoretical} = \frac{Prefilling_FLOPs}{GPU_FLOPS} = \frac{65.5}{148} \approx 0.44 \text{ s}$​，即理论 TTFT ≈ 440 ms
-- 假设 GPU 实际利用率约 60%：$TTFT_{actual} \approx \frac{0.44}{0.6} \approx 0.73 \text{ s}$​，则单请求输入 1024 tokens，TTFT 大约在 700~800 ms 这个量级
-- 单 token 的 Decoding FLOPs：$Decoding_{FLOPs_{per\ token}} = 2 \times Batch_size \times Parameters = 2 \times 1 \times 32\text{B} = 0.064 \text{ TFLOPs}$
-- 理论 TPS（单请求）：$TPS_{theoretical} = \frac{GPU_FLOPS}{Decoding_FLOPs_{per\ token}}= \frac{148}{0.064} \approx 2312 \text{ token/s}$
-- 考虑 GPU 利用率：$TPS_{actual} \approx 2312 \times 0.6 \approx 1380 \text{ token/s}$​​，单请求 Decoding 阶段的 TPS 大致在 1200~1500 token/s
-- 生成每个 token 的时间：$TPOT \approx \frac{1}{TPS} \approx \frac{1}{1380} \approx 0.72 \text{ ms}$
-- 生成 1024 个 token：$Latency = TTFT + TPOT \times Output_{tokens} \approx 730\text{ ms} + 1024 \times 0.72\text{ ms}= 730\text{ ms} + 737\text{ ms}\approx 1.47 \text{ s}$
+- Prefilling FLOPs 估计：$Prefilling_{FLOPs} = 2 \times 1 \times 1024 \times 32\text {B} = 65.5 \text {TFLOPs}$
+- 理论 TTFT（不考虑利用率）：$TTFT_{theoretical} = \frac {Prefilling_FLOPs}{GPU_FLOPS} = \frac {65.5}{148} \approx 0.44 \text {s}$​，即理论 TTFT ≈ 440 ms
+- 假设 GPU 实际利用率约 60%：$TTFT_{actual} \approx \frac {0.44}{0.6} \approx 0.73 \text {s}$​，则单请求输入 1024 tokens，TTFT 大约在 700~800 ms 这个量级
+- 单 token 的 Decoding FLOPs：$Decoding_{FLOPs_{per\ token}} = 2 \times Batch_size \times Parameters = 2 \times 1 \times 32\text {B} = 0.064 \text {TFLOPs}$
+- 理论 TPS（单请求）：$TPS_{theoretical} = \frac {GPU_FLOPS}{Decoding_FLOPs_{per\ token}}= \frac {148}{0.064} \approx 2312 \text {token/s}$
+- 考虑 GPU 利用率：$TPS_{actual} \approx 2312 \times 0.6 \approx 1380 \text {token/s}$​​，单请求 Decoding 阶段的 TPS 大致在 1200~1500 token/s
+- 生成每个 token 的时间：$TPOT \approx \frac {1}{TPS} \approx \frac {1}{1380} \approx 0.72 \text {ms}$
+- 生成 1024 个 token：$Latency = TTFT + TPOT \times Output_{tokens} \approx 730\text {ms} + 1024 \times 0.72\text {ms}= 730\text {ms} + 737\text {ms}\approx 1.47 \text {s}$
 
 ### 解码算法改进
 
@@ -363,7 +363,7 @@ description: 介绍大语言模型推理系统的基本架构
 
   - Early exiting：按难度裁剪计算，但中间层信息有限
 
-  - Cascade inference：系统级“分流”，难点在调度准确性
+  - Cascade inference：系统级 “分流”，难点在调度准确性
 
 ### 架构设计改进
 
@@ -373,10 +373,10 @@ description: 介绍大语言模型推理系统的基本架构
   - 即通过减小模型深度、共享权重或压缩词表等方式降低推理成本，例如使用浅层编码器或解码器结构
   - 然而，这类方法本质上以削减模型容量为代价，通常会对下游任务性能造成不可避免的影响
 - 注意力机制简化（Attention Simplification）
-  - 标准自注意力的计算与存储复杂度为 $O(L^2)$，在长上下文推理中成为主要瓶颈
+  - 标准自注意力的计算与存储复杂度为 $O (L^2)$，在长上下文推理中成为主要瓶颈
   - 大量工作提出通过稀疏化、核函数化或低秩分解等方式构造近似注意力，从而降低复杂度
   - 近期研究进一步结合多种思想，通过滑动窗口注意力（Sliding Window Attention）、哈希注意力（Hash-based Attention）、膨胀注意力（Dilated Attention）或稀疏注意力（Scissorhands）等手段，减少上下文长度或 KV cache 的规模
-  - 此外，一类方法通过上下文压缩（Context Compression）将历史上下文表示为少量“软 token”，或依据重要性直接丢弃、重写不关键的 token（也称语义压缩）
+  - 此外，一类方法通过上下文压缩（Context Compression）将历史上下文表示为少量 “软 token”，或依据重要性直接丢弃、重写不关键的 token（也称语义压缩）
   - 尽管这些方法显著降低了推理开销，但在复杂真实场景中，由于上下文信息不完整，仍可能带来信息损失和生成质量下降
 
 - 激活共享（Activation Sharing）通过复用中间层计算结果进一步减少推理成本
@@ -392,7 +392,7 @@ description: 介绍大语言模型推理系统的基本架构
   - 随着模型规模持续扩大，MoE 被认为是实现高效扩展的重要方向，但其动态路由特性也对分布式通信调度与 GPU kernel 实现提出了更高要求
 
 - 最后，一些工作尝试用循环单元（Recurrent Unit）替代 Transformer 的注意力模块，以实现线性时间和空间复杂度的推理
-  - 例如 RWKV 和 RetNet 结合线性注意力或状态空间模型，通过递归状态更新建模 token 间依赖，从根本上消除 $O(L^2)$ 的注意力瓶颈
+  - 例如 RWKV 和 RetNet 结合线性注意力或状态空间模型，通过递归状态更新建模 token 间依赖，从根本上消除 $O (L^2)$ 的注意力瓶颈
   - 这类模型在推理效率方面展现出显著优势，并在一定程度上保持了并行训练能力
   - 然而，循环结构能否在长上下文理解和复杂生成任务中全面替代 Transformer，目前仍是一个开放问题
 
@@ -414,7 +414,7 @@ description: 介绍大语言模型推理系统的基本架构
 
 - 非结构化剪枝（Unstructured Pruning）
   - 相关方法通常可实现 50%–60% 的参数稀疏度，并可进一步推广至半结构化 N:M 稀疏模式（如 2:4、4:8），从而利用 NVIDIA 稀疏张量核心实现显著推理加速
-  - 在此基础上，一些方法通过低秩分解将权重近似为“小型稠密矩阵 + 稀疏矩阵”的组合，以在压缩率和精度之间取得更优平衡
+  - 在此基础上，一些方法通过低秩分解将权重近似为 “小型稠密矩阵 + 稀疏矩阵” 的组合，以在压缩率和精度之间取得更优平衡
   - Flash-LLM 通过为非结构化稀疏矩阵乘法提供高效实现，降低了稀疏推理的工程门槛
   - 进一步地，PowerInfer 观察到剪枝后神经元访问具有明显偏斜性，提出 GPU–CPU 混合推理框架，使不同设备分别负责不同子集的神经元计算，从系统层面放大剪枝带来的收益
 
@@ -463,18 +463,18 @@ description: 介绍大语言模型推理系统的基本架构
 
   - 除系统层面的内存管理外，一部分工作从应用层入手提升 KV cache 的利用效率
     - Prompt Cache 通过规范化 Prompt 的结构，使得系统提示等固定模块对应的注意力状态可以在不同请求之间复用，从而减少重复的预填充计算
-    - AttentionStore 则重点关注 ChatGPT 等应用的多轮对话场景，解决用户会话不活跃时 LLM 引擎丢弃 KV 缓存、会话活跃时重新计算导致额外预填充成本的问题。AttentionStore 利用 CPU 内存/磁盘保存非活跃会话的 KV cache，并通过计算与加载重叠、智能的预取和淘汰策略，降低多轮交互中的额外 prefill 开销
+    - AttentionStore 则重点关注 ChatGPT 等应用的多轮对话场景，解决用户会话不活跃时 LLM 引擎丢弃 KV 缓存、会话活跃时重新计算导致额外预填充成本的问题。AttentionStore 利用 CPU 内存 / 磁盘保存非活跃会话的 KV cache，并通过计算与加载重叠、智能的预取和淘汰策略，降低多轮交互中的额外 prefill 开销
 
 - 长上下文
   - 随着 LLM 应用对长上下文需求的增长，KV Cache 的大小会随 token 数量增加而扩大，这使得 KV cache 的规模往往超过单张 GPU 的显存容量，进一步加剧了内存压力
 
-  - 针对这一问题，一类方法通过分布式执行来扩展可用上下文长度——即序列并行（SP）
+  - 针对这一问题，一类方法通过分布式执行来扩展可用上下文长度 —— 即序列并行（SP）
     - Ring Attention 将注意力和前馈计算按块划分，并分布到多个设备上执行，同时重叠 KV cache 的通信与计算，使得最大上下文长度能够随设备数量线性扩展
-    - Infinite-LLM 采用类似的思路，将 KV cache 拆分为更小的 rBlocks 等小型可管理单元，在 GPU 和 CPU 之间通过动态内存共享与协调机制进行管理——内存卸载
+    - Infinite-LLM 采用类似的思路，将 KV cache 拆分为更小的 rBlocks 等小型可管理单元，在 GPU 和 CPU 之间通过动态内存共享与协调机制进行管理 —— 内存卸载
 
   - 另一类方法关注跨请求和单请求内部的统一优化
     - MemServe 引入分布式内存池 MemPool，对整个集群范围内的 KV cache 进行集中管理，并结合全局调度策略，最大化 KV cache 的复用率，统一处理 LLM 服务的请求间和请求内优化
-    - 当上下文长度超过 GPU 内存上限时，多数系统需要将 KV cache 卸载到 CPU，而 InfiniGen 通过预演注意力计算来预测关键的 KV Cache 条目，仅将最重要的部分预取到 GPU，从而显著减少数据传输成本——内存卸载
+    - 当上下文长度超过 GPU 内存上限时，多数系统需要将 KV cache 卸载到 CPU，而 InfiniGen 通过预演注意力计算来预测关键的 KV Cache 条目，仅将最重要的部分预取到 GPU，从而显著减少数据传输成本 —— 内存卸载
     - LoongServe 则提出弹性序列并行（Elastic Sequence Parallelism，ESP）机制，动态适应请求间及请求不同阶段（预填充和解码）的资源使用差异，减少长序列服务时的 KV 缓存迁移开销和碎片化
 
 - 压缩 KV Cache
@@ -542,7 +542,7 @@ description: 介绍大语言模型推理系统的基本架构
 
 ### Kernel 优化
 
-- 这一类方法聚焦在内核级（kernel-level）的推理优化，目标是把语言模型推理流水线中最耗时的算子做到“极限快”，充分榨干硬件性能
+- 这一类方法聚焦在内核级（kernel-level）的推理优化，目标是把语言模型推理流水线中最耗时的算子做到 “极限快”，充分榨干硬件性能
 - 由于推理阶段不需要反向传播，相比训练阶段有更多自由度，因此可以进行更激进的内核合并与算子重排
 - 内核融合（kernel fusion）
   - 通过把多个原本独立的算子合并成一个 GPU kernel，减少 kernel 启动开销和中间结果的显存访问
@@ -554,7 +554,7 @@ description: 介绍大语言模型推理系统的基本架构
 
 - 面向注意力的定制内核（tailored attention kernels）
   - 由于自回归生成的特殊性，注意力计算通常分为两种场景
-    - 一是首轮的上下文阶段（prefill / prompt phase），需要并行处理整段输入
+    - 一是首轮的上下文阶段（prefill /prompt phase），需要并行处理整段输入
     - 二是后续的生成阶段（decode phase），每一步只生成一个 token，并依赖缓存的 KV
   - 针对前者，xFormers 等工作利用在线 softmax 技术，将整个注意力计算高效地映射到 GPU 上
   - 针对后者，优化重点转向最大化线程占用率、减少对高带宽显存（HBM）的访问，例如通过并行 batch 维度和 head 维度，或将 KV cache 分块处理
@@ -603,7 +603,7 @@ description: 介绍大语言模型推理系统的基本架构
   - Huang 等人提出了三种优化技术，以缓解 MoE 推理中的效率问题：
     - 动态门控（Dynamic Gating）：允许每个专家处理的 token 数量动态变化，避免静态门控带来的资源过度预留，从而减少计算浪费、通信开销和内存占用
 
-    - 专家缓冲（Expert Buffering）：利用专家激活的稀疏性和时间局部性，将频繁使用的“热”专家缓存在 GPU 内存中，而将低活跃专家缓存在 CPU 内存中，降低 GPU 的静态内存压力
+    - 专家缓冲（Expert Buffering）：利用专家激活的稀疏性和时间局部性，将频繁使用的 “热” 专家缓存在 GPU 内存中，而将低活跃专家缓存在 CPU 内存中，降低 GPU 的静态内存压力
 
     - 专家负载均衡（Expert Load Balancing）：针对 token 在专家之间分配不均导致的性能瓶颈，通过负载均衡机制实现更均匀的计算分布，提升整体推理性能
 
@@ -612,7 +612,7 @@ description: 介绍大语言模型推理系统的基本架构
 - 推理流水线优化聚焦于从算子级到系统级消除 LLM 推理中的性能瓶颈，包括 GPU kernel 设计、数据流组织以及多请求协同执行等问题
 - FlashDecoding++
   - 针对推理引擎的性能进行系统性优化，重点解决 softmax 同步开销、GPU kernel 效率以及整体数据流设计中的问题
-  - 在解码阶段，推理通常涉及形状较“扁平”的线性 GEMM 运算，其中参与矩阵乘法的 batch 维度远小于其他维度，导致 GPU 利用率不高
+  - 在解码阶段，推理通常涉及形状较 “扁平” 的线性 GEMM 运算，其中参与矩阵乘法的 batch 维度远小于其他维度，导致 GPU 利用率不高
   - FlashDecoding++ 通过引入双缓冲机制（double buffering），将计算与数据传输进行重叠，从而隐藏输入矩阵加载过程中的内存访问延迟，显著加速了这类 flat GEMM 运算
 
 - Parrot
@@ -625,7 +625,7 @@ description: 介绍大语言模型推理系统的基本架构
 
 ### 现有推理框架
 
-| 系统名称                         | TP  | PP  | 异构/存储卸载 | 调度优化 | 初始阶段计算            | 增量阶段计算   | 优先优化延迟 | 优先优化吞吐 | 主要特性                          |
+| 系统名称                         | TP  | PP  | 异构 / 存储卸载 | 调度优化 | 初始阶段计算            | 增量阶段计算   | 优先优化延迟 | 优先优化吞吐 | 主要特性                          |
 | -------------------------------- | --- | --- | ------------- | -------- | ----------------------- | -------------- | ------------ | ------------ | --------------------------------- |
 | FasterTransformer                | √   | √   |               |          | cuBLAS GEMM             | FusedAttention | √            |              | 手写高性能内核，轻量级运行时      |
 | FlexFlow-Serve                   | √   | √   | √             | √        | cuBLAS GEMM             | TreeAttention  | √            |              | 支持 SpecInfer，极低推理延迟      |

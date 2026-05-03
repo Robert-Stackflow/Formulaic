@@ -14,47 +14,46 @@ description: 从优化问题的形式化定义出发，引入梯度下降，并�
 
 ### 什么是优化问题
 
-- 在机器学习与统计建模中，**优化问题**指的是在参数空间中寻找一组参数 $\theta \in \mathbb{R}^d$，使某个目标函数达到最小（或最大）值
-- 以最小化为例，标准形式可写为（其中 $L(\theta)$ 通常表示损失函数或经验风险）
+- 在机器学习与统计建模中，** 优化问题 ** 指的是在参数空间中寻找一组参数 $\theta \in \mathbb {R}^d$，使某个目标函数达到最小（或最大）值
+- 以最小化为例，标准形式可写为（其中 $L (\theta)$ 通常表示损失函数或经验风险）
   $$
-  \min_{\theta} \; L(\theta)
+  \min_{\theta} \; L (\theta)
   $$
-- 在监督学习中，$L(\theta)$ 往往由样本损失的平均构成：
+- 在监督学习中，$L (\theta)$ 往往由样本损失的平均构成：
   $$
-  L(\theta) = \frac{1}{N} \sum_{i=1}^N L_i(\theta)
+  L (\theta) = \frac {1}{N} \sum_{i=1}^N L_i (\theta)
   $$
 - 这一形式将学习问题转化为一个连续参数空间中的数值优化问题，其核心困难在于：
   - 参数维度通常很高
-  - $L(\theta)$ 一般是非凸函数
+  - $L (\theta)$ 一般是非凸函数
   - 无法通过解析方式直接求解最优解
 
 ### 什么是梯度下降
 
-- 在目标函数 $L(\theta)$ 可微的前提下，其一阶导数（梯度）提供了函数在当前点的局部变化信息
-- 梯度 $\nabla L(\theta)$ 定义为：
+- 在目标函数 $L (\theta)$ 可微的前提下，其一阶导数（梯度）提供了函数在当前点的局部变化信息
+- 梯度 $\nabla L (\theta)$ 定义为：
   $$
-  \nabla L(\theta)
+  \nabla L (\theta)
   =
-  \left[
-  \frac{\partial L}{\partial \theta_1},
-  \frac{\partial L}{\partial \theta_2},
+  \left [\frac {\partial L}{\partial \theta_1},
+  \frac {\partial L}{\partial \theta_2},
   \dots,
-  \frac{\partial L}{\partial \theta_d}
+  \frac {\partial L}{\partial \theta_d}
   \right]^T
   $$
 - 根据多元微积分中的一阶泰勒展开，在 $\theta_t$ 附近有：
   $$
-  L(\theta_t + \Delta \theta)
+  L (\theta_t + \Delta \theta)
   \approx
-  L(\theta_t) + \nabla L(\theta_t)^T \Delta \theta
+  L (\theta_t) + \nabla L (\theta_t)^T \Delta \theta
   $$
-- 若希望 $L(\theta)$ 在下一步下降最快，应选择使上式下降幅度最大的方向，即令：
+- 若希望 $L (\theta)$ 在下一步下降最快，应选择使上式下降幅度最大的方向，即令：
   $$
-  \Delta \theta \propto - \nabla L(\theta_t)
+  \Delta \theta \propto - \nabla L (\theta_t)
   $$
-- 由此得到**梯度下降（Gradient Descent）**的基本更新规则（其中 $\eta > 0$ 为学习率，用于控制更新步长）：
+- 由此得到 ** 梯度下降（Gradient Descent）** 的基本更新规则（其中 $\eta > 0$ 为学习率，用于控制更新步长）：
   $$
-  \theta_{t+1} = \theta_t - \eta \nabla L(\theta_t)
+  \theta_{t+1} = \theta_t - \eta \nabla L (\theta_t)
   $$
 - 梯度下降可以被理解为：在每一步中，用目标函数的局部线性近似来指导参数更新，从而逐步逼近极小值点
 
@@ -65,34 +64,34 @@ description: 从优化问题的形式化定义出发，引入梯度下降，并�
 - 当损失函数由全体样本的平均构成时，其梯度具有如下形式：
 
   $$
-  \nabla L(\theta) = \frac{1}{N} \sum_{i=1}^N \nabla L_i(\theta)
+  \nabla L (\theta) = \frac {1}{N} \sum_{i=1}^N \nabla L_i (\theta)
   $$
 
 - 这意味着每一次参数更新都需要遍历全部数据样本
 
-- 在数据规模较大时，这种“全梯度下降”在计算上难以承受，也不适用于在线或流式学习场景
+- 在数据规模较大时，这种 “全梯度下降” 在计算上难以承受，也不适用于在线或流式学习场景
 
 ### 批量梯度下降
 
-- 在批量梯度下降（Batch Gradient Descent）中，每一步更新都使用**全部训练样本**来计算梯度
+- 在批量梯度下降（Batch Gradient Descent）中，每一步更新都使用 ** 全部训练样本 ** 来计算梯度
 - 对应的梯度形式为：
   $$
-  g(\theta_t)
+  g (\theta_t)
   =
-  \nabla L(\theta_t)
+  \nabla L (\theta_t)
   =
-  \frac{1}{N} \sum_{i=1}^N \nabla L_i(\theta_t)
+  \frac {1}{N} \sum_{i=1}^N \nabla L_i (\theta_t)
   $$
 - 更新规则为：
   $$
-  \theta_{t+1} = \theta_t - \eta g(\theta_t)
+  \theta_{t+1} = \theta_t - \eta g (\theta_t)
   $$
 - 这一方式的关键特征在于梯度是精确的（在经验风险意义下），更新方向稳定，优化轨迹平滑
-- 但其隐含代价是：**单次更新成本随样本数线性增长**，在大规模数据场景下难以应用
+- 但其隐含代价是：** 单次更新成本随样本数线性增长 **，在大规模数据场景下难以应用
 
 ### 随机梯度下降
 
-- 为降低单次更新的计算成本，可以将梯度计算从“全体样本”降为“单个样本”，即随机梯度下降（Stochastic Gradient Descent, SGD）
+- 为降低单次更新的计算成本，可以将梯度计算从 “全体样本” 降为 “单个样本”，即随机梯度下降（Stochastic Gradient Descent, SGD）
 - 在第 $t$ 步，随机抽取一个样本 $i_t$，构造梯度估计：
   $$
   g_t = \nabla L_{i_t}(\theta_t)
@@ -103,7 +102,7 @@ description: 从优化问题的形式化定义出发，引入梯度下降，并�
   $$
 - 在概率意义下，有：
   $$
-  \mathbb{E}[g_t] = \nabla L(\theta_t)
+  \mathbb {E}[g_t] = \nabla L (\theta_t)
   $$
 - 即随机梯度是全梯度的无偏估计
 
@@ -120,9 +119,9 @@ description: 从优化问题的形式化定义出发，引入梯度下降，并�
   $$
   g_t
   =
-  \frac{1}{|B_t|}
+  \frac {1}{|B_t|}
   \sum_{i \in B_t}
-  \nabla L_i(\theta_t)
+  \nabla L_i (\theta_t)
   $$
 - 更新规则仍为：
   $$
@@ -150,7 +149,7 @@ description: 从优化问题的形式化定义出发，引入梯度下降，并�
   - 在标准 SGD 中，梯度通常包含较强的随机噪声，尤其是在狭长谷地或各向异性（曲率不均）的损失地形中，参数更新容易在陡峭方向上来回摆动，从而减慢沿平坦方向的前进速度
   ![img](/img/llm/without_momentum.gif)
   - 单步更新完全依赖当前梯度，使得优化过程对瞬时噪声高度敏感，历史梯度中所蕴含的稳定方向信息被忽略
-  - 动量方法的核心思想是：将参数更新视为一个**具有“惯性”的动态过程**，通过累积历史梯度来平滑噪声，并在长期一致的方向上加速收敛
+  - 动量方法的核心思想是：将参数更新视为一个 ** 具有 “惯性” 的动态过程 **，通过累积历史梯度来平滑噪声，并在长期一致的方向上加速收敛
   ![img](/img/llm/with_momentum.gif)
 
 ### Momentum
@@ -158,7 +157,7 @@ description: 从优化问题的形式化定义出发，引入梯度下降，并�
 - 通过引入动量变量 $v_t$，对历史梯度进行指数加权平均：
 
   $$
-  v_t = \beta v_{t-1} + \eta \nabla_{\theta} \mathcal{L}(\theta_t)
+  v_t = \beta v_{t-1} + \eta \nabla_{\theta} \mathcal {L}(\theta_t)
   $$
   - 其中 $\beta \in [0,1)$ 控制历史梯度的保留程度，通常设置为 0.9
 
@@ -170,7 +169,7 @@ description: 从优化问题的形式化定义出发，引入梯度下降，并�
 
 - 本质上，当利用动量时，可以看作将一个球推下山坡，球在向下滚动的过程中会积累动量，速度变得越来越快（如果存在空气阻力，即 $\beta< 1$，会达到最终速度）
 
-- 这种机制在梯度方向长期一致的维度上实现“加速”，同时在噪声较大的方向上起到平滑作用
+- 这种机制在梯度方向长期一致的维度上实现 “加速”，同时在噪声较大的方向上起到平滑作用
 
 ### NAG
 
@@ -180,7 +179,7 @@ description: 从优化问题的形式化定义出发，引入梯度下降，并�
   - $\theta_t-\beta v_{t-1}$ 提供了参数下一个位置的近似值，让我们大致了解参数的变化方向
 
     $$
-    v_t = \beta v_{t-1} + \eta \nabla_{\theta} \mathcal{L}(\theta_t-\beta v_{t-1})\\
+    v_t = \beta v_{t-1} + \eta \nabla_{\theta} \mathcal {L}(\theta_t-\beta v_{t-1})\\
     \theta_{t+1} = \theta_t - v_t
     $$
 
@@ -208,14 +207,14 @@ description: 从优化问题的形式化定义出发，引入梯度下降，并�
 
 - 对于与频繁出现的特征相关的参数采用较小的更新（即较低的学习率），而对于与不常出现的特征相关的参数采用较大的更新（即较高的学习率），因此，Adagrad 非常适合处理稀疏数据
 
-- 之前的实现会一次性更新所有参数 $\boldsymbol{\theta}$，这是因为每个参数 $\theta_i$ 都使用了相同的学习率 $\eta$，而 Adagrad 算法会在每一个时间步 $t$ 为每个参数 $\theta_i$ 分配不同的学习率
+- 之前的实现会一次性更新所有参数 $\boldsymbol {\theta}$，这是因为每个参数 $\theta_i$ 都使用了相同的学习率 $\eta$，而 Adagrad 算法会在每一个时间步 $t$ 为每个参数 $\theta_i$ 分配不同的学习率
 
 - 首先介绍 Adagrad 的单参数更新规则，再将其向量化
 
 - 为了简化表达，用 $g_t$ 表示时间步 $t$ 的梯度，$g_{t,i}$ 则表示目标函数在时间步 $t$ 对参数 $\theta_i$ 的偏导数：
 
   $$
-  g_{t,i} = \nabla_{\theta_i} J(\theta_{t,i})
+  g_{t,i} = \nabla_{\theta_i} J (\theta_{t,i})
   $$
 
 - 在随机梯度下降（SGD）中，每个时间步 $t$ 对参数 $\theta_i$ 的更新规则为：
@@ -227,16 +226,16 @@ description: 从优化问题的形式化定义出发，引入梯度下降，并�
 - Adagrad 在其更新规则中，会根据参数 $\theta_i$ 过往计算得到的梯度，在每个时间步 $t$ 为该参数单独调整全局学习率 $\eta$：
 
   $$
-  \theta_{t+1,i} = \theta_{t,i} - \frac{\eta}{\sqrt{G_{t,ii} + \epsilon}} \cdot g_{t,i}
+  \theta_{t+1,i} = \theta_{t,i} - \frac {\eta}{\sqrt {G_{t,ii} + \epsilon}} \cdot g_{t,i}
   $$
-  - $G_t \in \mathbb{R}^{d \times d}$ 是一个对角矩阵，其对角线上的第 $i$ 个元素 $G_{t,ii}$ 代表截至时间步 $t$，参数 $\theta_i$ 对应的所有梯度的平方和
-  - $\epsilon$是一个平滑项，用于避免出现除以零的情况（通常取值为$1e-8$​量级）
+  - $G_t \in \mathbb {R}^{d \times d}$ 是一个对角矩阵，其对角线上的第 $i$ 个元素 $G_{t,ii}$ 代表截至时间步 $t$，参数 $\theta_i$ 对应的所有梯度的平方和
+  - $\epsilon$ 是一个平滑项，用于避免出现除以零的情况（通常取值为 $1e-8$​量级）
   - 有趣的是，如果去掉平方根运算，该算法的性能会大幅下降
 
-- 由于 $G_t$ 的对角线上存储了所有参数 $\boldsymbol{\theta}$ 的过往梯度平方和，可以通过矩阵与向量的哈达玛积（$\odot$）来实现向量化更新：
+- 由于 $G_t$ 的对角线上存储了所有参数 $\boldsymbol {\theta}$ 的过往梯度平方和，可以通过矩阵与向量的哈达玛积（$\odot$）来实现向量化更新：
 
   $$
-  \theta_{t+1} = \theta_t - \frac{\eta}{\sqrt{G_t + \epsilon}} \odot g_t
+  \theta_{t+1} = \theta_t - \frac {\eta}{\sqrt {G_t + \epsilon}} \odot g_t
   $$
 
 - Adagrad 最主要的优势之一是无需手动调优学习率，大多数实现中直接使用默认值 $0.01$ 即可
@@ -262,10 +261,10 @@ description: 从优化问题的形式化定义出发，引入梯度下降，并�
 - 为了清晰表达，先以参数更新向量 $\Delta\theta_t$ 的形式重写基础 SGD 的更新规则：
 
   $$
-  \begin{align*}
+  \begin {align*}
   \Delta\theta_t &= -\eta \cdot g_{t,i} \\
   \theta_{t+1} &= \theta_t + \Delta\theta_t
-  \end{align*}
+  \end {align*}
   $$
 
 - 之前推导的 Adagrad 参数更新向量形式为：
@@ -305,10 +304,10 @@ $$
 - 将之前更新规则中的学习率 $\eta$ 替换为 $RMS [\Delta\theta]_{t-1}$，最终得到 Adadelta 的更新规则：
 
   $$
-  \begin{align*}
+  \begin {align*}
   \Delta\theta_t &= -\frac {RMS [\Delta\theta]_{t-1}}{RMS [g]_t} g_t \\
   \theta_{t+1} &= \theta_t + \Delta\theta_t
-  \end{align*}
+  \end {align*}
   $$
 
 - 使用 Adadelta 时，甚至无需设置默认学习率，因为它已从更新规则中被完全移除
@@ -322,7 +321,7 @@ $$
 - 实际上，RMSProp 的更新规则与之前推导的 Adadelta 第一个更新向量完全一致：
 
   $$
-  E[g^2]_t = \gamma E[g^2]_{t-1} + (1 - \gamma) g_t^2\\
+  E [g^2]_t = \gamma E [g^2]_{t-1} + (1 - \gamma) g_t^2\\
   \theta_{t+1} = \theta_t - \frac {\eta}{\sqrt {E [g^2]_t + \epsilon}} g_t
   $$
   - 其中 $\gamma$ 控制统计量的平滑程度， $\epsilon$ 用于数值稳定，防止除零
@@ -330,13 +329,13 @@ $$
 - RMSProp 的核心思想是将学习率除以梯度平方的指数衰减平均值
 - Hinton 建议将衰减系数 $\gamma$ 设为 0.9，而学习率 $\eta$ 的一个良好默认值为 0.001
 
-- 这种按维度缩放的更新方式有效缓解了梯度尺度不一致的问题，使得每个参数都能以“合适的步长”更新
+- 这种按维度缩放的更新方式有效缓解了梯度尺度不一致的问题，使得每个参数都能以 “合适的步长” 更新
 
 - 然而，RMSProp 的更新方向仍完全由当前梯度 $g_t$ 决定，未显式建模梯度在时间维度上的方向一致性
 
 - 从优化思想上看：
-  - 动量方法主要解决“**方向是否稳定**”的问题
-  - RMSProp 主要解决“**不同方向该走多快**”的问题
+  - 动量方法主要解决 “** 方向是否稳定 **” 的问题
+  - RMSProp 主要解决 “** 不同方向该走多快 **” 的问题
   - 二者分别从一阶与二阶统计角度改进 SGD，也为后续将二者统一起来的 Adam 方法奠定了基础
 
 ## Adam（自适应矩估计）
@@ -346,8 +345,8 @@ $$
 - RMSProp 通过对梯度平方的滑动平均建模二阶统计量，能够自适应调整每个参数的学习率，但忽略了梯度方向在时间维度上的一致性
 
 - Adam（Adaptive Moment Estimation）是一种为每个参数计算自适应学习率的优化方法，它将二者视为互补信息：
-  - 一阶矩刻画“往哪个方向走更稳定”
-  - 二阶矩刻画“在不同维度上该走多大步长”
+  - 一阶矩刻画 “往哪个方向走更稳定”
+  - 二阶矩刻画 “在不同维度上该走多大步长”
   - 从而在噪声较大、梯度尺度不均的场景中显著提升优化稳定性
 
 - Adam 在 Adadelta 和 RMSProp 的基础上，不仅维护了梯度平方的指数衰减平均值 $v_t$，还额外维护了梯度的指数衰减平均值 $m_t$（类似动量机制）
@@ -362,7 +361,7 @@ $$
     $$
     m_t = \beta_1 m_{t-1} + (1 - \beta_1) g_t
     $$
-    - 其中 $g_t = \nabla_{\theta} \mathcal{L}(\theta_t)$，$\beta_1$ 控制动量的“记忆长度”
+    - 其中 $g_t = \nabla_{\theta} \mathcal {L}(\theta_t)$，$\beta_1$ 控制动量的 “记忆长度”
 
   - 二阶矩估计（梯度平方的指数滑动平均）：
 
@@ -376,15 +375,15 @@ $$
   - 为修正这一偏差，计算偏差校正（Bias Correction）后的一阶矩和二阶矩估计：
 
     $$
-    \hat{m}_t = \frac{m_t}{1 - \beta_1^t},
+    \hat {m}_t = \frac {m_t}{1 - \beta_1^t},
     \qquad
-    \hat{v}_t = \frac{v_t}{1 - \beta_2^t}
+    \hat {v}_t = \frac {v_t}{1 - \beta_2^t}
     $$
     - 由于 $m_0 = 0, v_0 = 0$，在训练早期滑动平均会系统性偏小，偏差校正用于恢复无偏估计
 
   - 使用校正后的矩估计，可以得到 Adam 的参数更新规则：
     $$
-    \theta_{t+1} = \theta_t - \eta \frac{\hat{m}_t}{\sqrt{\hat{v}_t} + \epsilon}
+    \theta_{t+1} = \theta_t - \eta \frac {\hat {m}_t}{\sqrt {\hat {v}_t} + \epsilon}
     $$
     - 其中 $\epsilon$ 用于数值稳定，防止除零
 
@@ -411,10 +410,10 @@ $$
 - 在 AdaMax 中，用无穷范数约束的 $u_t$ 替代原有的 $v_t$：
 
   $$
-  \begin{align*}
+  \begin {align*}
   u_t &= \beta_2^\infty v_{t-1} + (1-\beta_2^\infty)|g_t|^\infty \\
   &= \max (\beta_2 \cdot v_{t-1}, |g_t|)
-  \end{align*}
+  \end {align*}
   $$
 
 - 将 $u_t$ 代入 Adam 的更新方程（用 $u_t$ 替换 $\sqrt {\hat {v}_t} + \epsilon$），得到 AdaMax 的更新规则：
@@ -438,11 +437,11 @@ $$
 - 首先，回顾标准动量机制的更新规则：
 
   $$
-  \begin{align*}
+  \begin {align*}
   g_t &= \nabla_{\theta_t} J (\theta_t) \\
   m_t &= \gamma m_{t-1} + \eta g_t \\
   \theta_{t+1} &= \theta_t - m_t
-  \end{align*}
+  \end {align*}
   $$
 
 - 其中 $J$ 是目标函数，$\gamma$ 是动量衰减系数，$\eta$ 是步长。展开第三式可得：
@@ -453,24 +452,24 @@ $$
 
 - 这表明动量机制的更新由两部分组成：沿之前动量向量方向的一步，以及沿当前梯度方向的一步
 
-- NAG 通过在计算梯度之前先用动量更新参数，从而在梯度方向上迈出更精准的一步,只需修改梯度 $g_t$ 即可得到 NAG 的更新规则：
+- NAG 通过在计算梯度之前先用动量更新参数，从而在梯度方向上迈出更精准的一步，只需修改梯度 $g_t$ 即可得到 NAG 的更新规则：
 
   $$
-  \begin{align*}
+  \begin {align*}
   g_t &= \nabla_{\theta_t} J (\theta_t - \gamma m_{t-1}) \\
   m_t &= \gamma m_{t-1} + \eta g_t \\
   \theta_{t+1} &= \theta_t - m_t
-  \end{align*}
+  \end {align*}
   $$
 
 - Dozat 提出了对 NAG 的另一种修改方式：不再两次应用动量步骤（一次更新梯度 $g_t$，一次更新参数 $\theta_{t+1}$），而是直接用 “前瞻” 动量向量来更新当前参数：
 
   $$
-  \begin{align*}
+  \begin {align*}
   g_t &= \nabla_{\theta_t} J (\theta_t) \\
   m_t &= \gamma m_{t-1} + \eta g_t \\
   \theta_{t+1} &= \theta_t - (\gamma m_t + \eta g_t)
-  \end{align*}
+  \end {align*}
   $$
 
 - 注意，这里不再像之前展开的动量更新规则那样使用前一时刻的动量向量 $m_{t-1}$，而是用当前动量向量 $m_t$ 来 “前瞻”
@@ -480,30 +479,30 @@ $$
 - 首先，回顾 Adam 的更新规则（注意 $v_t$ 无需修改）：
 
   $$
-  \begin{align*}
+  \begin {align*}
   m_t &= \beta_1 m_{t-1} + (1-\beta_1) g_t \\
   \hat {m}_t &= \frac {m_t}{1-\beta_1^t} \\
   \theta_{t+1} &= \theta_t - \frac {\eta}{\sqrt {\hat {v}_t} + \epsilon} \hat {m}_t
-  \end{align*}
+  \end {align*}
   $$
 
 - 将 $\hat {m}_t$ 和 $m_t$ 的定义代入并展开第二式，可得：
 
   $$
-  \theta_{t+1} = \theta_t - \frac {\eta}{\sqrt {\hat {v}_t} + \epsilon} \left ( \frac {\beta_1 m_{t-1}}{1-\beta_1^t} + \frac {(1-\beta_1) g_t}{1-\beta_1^t} \right)
+  \theta_{t+1} = \theta_t - \frac {\eta}{\sqrt {\hat {v}_t} + \epsilon} \left (\frac {\beta_1 m_{t-1}}{1-\beta_1^t} + \frac {(1-\beta_1) g_t}{1-\beta_1^t} \right)
   $$
 
 - 注意，$\frac {\beta_1 m_{t-1}}{1-\beta_1^t}$ 正是前一时刻动量向量的偏差校正估计，可以用 $\hat {m}_{t-1}$ 来替换它：
 
   $$
-  \theta_{t+1} = \theta_t - \frac {\eta}{\sqrt {\hat {v}_t} + \epsilon} \left ( \beta_1 \hat {m}_{t-1} + \frac {(1-\beta_1) g_t}{1-\beta_1^t} \right)
+  \theta_{t+1} = \theta_t - \frac {\eta}{\sqrt {\hat {v}_t} + \epsilon} \left (\beta_1 \hat {m}_{t-1} + \frac {(1-\beta_1) g_t}{1-\beta_1^t} \right)
   $$
 
 - 为了简化，忽略分母是 $1-\beta_1^t$ 而非 $1-\beta_1^{t-1}$ 的细节，因为下一步会替换类似的分母，该式与之前展开的动量更新规则非常相似
 
 - 现在，只需将前一时刻动量向量的偏差校正估计 $\hat {m}_{t-1}$ 替换为当前动量向量的偏差校正估计 $\hat {m}_t$，即可得到 Nadam 的更新规则：
   $$
-  \theta_{t+1} = \theta_t - \frac {\eta}{\sqrt {\hat {v}_t} + \epsilon} \left ( \beta_1 \hat {m}_t + \frac {(1-\beta_1) g_t}{1-\beta_1^t} \right)
+  \theta_{t+1} = \theta_t - \frac {\eta}{\sqrt {\hat {v}_t} + \epsilon} \left (\beta_1 \hat {m}_t + \frac {(1-\beta_1) g_t}{1-\beta_1^t} \right)
   $$
 
 ## AMSGrad
@@ -535,12 +534,12 @@ $$
 - 完整的 AMSGrad 更新规则（不含偏差校正）如下：
 
   $$
-  \begin{align*}
+  \begin {align*}
   m_t &= \beta_1 m_{t-1} + (1-\beta_1) g_t \\
   v_t &= \beta_2 v_{t-1} + (1-\beta_2) g_t^2 \\
   \hat {v}_t &= \max (\hat {v}_{t-1}, v_t) \\
   \theta_{t+1} &= \theta_t - \frac {\eta}{\sqrt {\hat {v}_t} + \epsilon} m_t
-  \end{align*}
+  \end {align*}
   $$
 
 - 作者观察到，在小型数据集和 CIFAR-10 上，AMSGrad 的性能优于或与 Adam 相当；但在更大规模的实验中，它的表现与 Adam 相似或更差
@@ -554,7 +553,7 @@ $$
 - 在原始 Adam 中，权重衰减通常通过在损失函数中加入 $L_2$ 正则项实现：
 
   $$
-  \mathcal{L}' = \mathcal{L} + \frac{\lambda}{2} ||\theta||_2^2
+  \mathcal {L}' = \mathcal {L} + \frac {\lambda}{2} ||\theta||_2^2
   $$
 
 - 这会导致正则项的梯度也被送入 Adam 的自适应缩放机制中，使得：
@@ -572,15 +571,15 @@ $$
   =
   \theta_t
   -
-  \eta \frac{\hat{m}_t}{\sqrt{\hat{v}_t} + \epsilon}
+  \eta \frac {\hat {m}_t}{\sqrt {\hat {v}_t} + \epsilon}
   -
   \eta \lambda \theta_t
   $$
   - 其中 $\lambda$ 明确表示权重衰减系数，而不是损失函数的一部分
 
-- 这种解耦方式使得权重衰减真正起到“限制参数规模”的作用，而不会被自适应学习率机制削弱或放大，因此在 Transformer 等大模型中表现更稳定、可控
+- 这种解耦方式使得权重衰减真正起到 “限制参数规模” 的作用，而不会被自适应学习率机制削弱或放大，因此在 Transformer 等大模型中表现更稳定、可控
 
-- Adam 解决了“怎么走得稳、走得快”的问题，而 AdamW 进一步解决了“如何正确地约束参数规模”的问题，这也是为什么 AdamW 成为 Transformer 训练中的事实标准优化器
+- Adam 解决了 “怎么走得稳、走得快” 的问题，而 AdamW 进一步解决了 “如何正确地约束参数规模” 的问题，这也是为什么 AdamW 成为 Transformer 训练中的事实标准优化器
 
 - 超参数的设置
   - 学习率 $\alpha$ / $\eta_t$：决定整体更新步长，是最关键的超参数，在 Transformer 中通常与 warmup + 衰减调度联合使用

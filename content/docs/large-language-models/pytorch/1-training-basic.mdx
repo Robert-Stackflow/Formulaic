@@ -4,8 +4,8 @@ description: 介绍深度学习的基本概念、训练流程、常见技术（�
 ---
 
 - 参考资料
-  - [简介 · PyTorch实用教程（第二版）](https://tingsongyu.github.io/PyTorch-Tutorial-2nd/)
-  - [深入浅出PyTorch — 深入浅出PyTorch](https://datawhalechina.github.io/thorough-pytorch/index.html)
+  - [简介・PyTorch 实用教程（第二版）](https://tingsongyu.github.io/PyTorch-Tutorial-2nd/)
+  - [深入浅出 PyTorch — 深入浅出 PyTorch](https://datawhalechina.github.io/thorough-pytorch/index.html)
   - [前言 — 动手学深度学习 2.0.0 documentation](https://zh.d2l.ai/chapter_preface/index.html)
 
 ## 深度学习任务的一般流程
@@ -63,20 +63,20 @@ description: 介绍深度学习的基本概念、训练流程、常见技术（�
   - Effective batch size（有效批次大小）：一次参数更新相当于处理的总样本数：
 
 $$
-\text{effective batch size} = \text{per\_device\_train\_batch\_size} \times \text{gradient\_accumulation\_steps} \times \text{GPU 数量}
+\text {effective batch size} = \text {per\_device\_train\_batch\_size} \times \text {gradient\_accumulation\_steps} \times \text {GPU 数量}
 $$
 
 - Epoch 内 step 数：
 
 $$
-\text{steps per epoch} = \lceil \frac{\text{训练集样本数}}{\text{effective batch size}} \rceil
+\text {steps per epoch} = \lceil \frac {\text {训练集样本数}}{\text {effective batch size}} \rceil
 $$
 
 - Epoch（轮次）：模型完整遍历训练集一次，每条样本至少被使用一次
 - 这样，训练过程既控制了显存占用，又保证了有效的梯度更新
 
 - 根据批次的规模，训练可以划分为全量训练（Batch Gradient Descent）、小批量训练（Mini-batch Gradient Descent）、单样本训练（Stochastic Gradient Descent, SGD）
-- 梯度是模型在当前参数下的损失函数相对于参数的导数，表示“如何微调模型的每个参数，能最快降低损失”
+- 梯度是模型在当前参数下的损失函数相对于参数的导数，表示 “如何微调模型的每个参数，能最快降低损失”
   - 梯度通过反向传播（backpropagation）算法计算得到
   - 在每个 batch 上，先做一次前向传播得到预测结果和损失值，然后反向传播计算该 batch 的损失对所有参数的梯度，最后用这些梯度更新参数（利用优化器，如 SGD、Adam）
 
@@ -86,11 +86,11 @@ $$
 - Scheduler 的任务就是：自动在训练过程中根据一定策略调整学习率，达到更高效、更稳定的训练效果
 - Scheduler 通常和优化器一起使用，在每个 step 或 epoch 后自动调整学习率
 - 常用的调度策略：
-  - 每隔几步降低学习率：如 StepLR(optimizer, step_size=10, gamma=0.1) 表示每 10 个 epoch 把学习率乘以 0.1
-  - 指数衰减：如 ExponentialLR(optimizer, gamma=0.95) 表示每个 epoch 学习率变为原来的 95%
-  - 性能停滞时降低：如 ReduceLROnPlateau(optimizer, mode=‘min’, patience=3) 表示当验证集 loss 连续 3 轮没有下降，就降低学习率
-  - 余弦退火：如 CosineAnnealingLR(optimizer, T_max=50) 表示学习率按照余弦曲线下降，可用于 fine-tuning 阶段
-  - 快速升高后慢慢下降，适合快速收敛：如 OneCycleLR(optimizer, max_lr=0.1, steps_per_epoch=100, epochs=10) 表示先升后降，更快收敛，常用于 NLP 和迁移学习
+  - 每隔几步降低学习率：如 StepLR (optimizer, step_size=10, gamma=0.1) 表示每 10 个 epoch 把学习率乘以 0.1
+  - 指数衰减：如 ExponentialLR (optimizer, gamma=0.95) 表示每个 epoch 学习率变为原来的 95%
+  - 性能停滞时降低：如 ReduceLROnPlateau (optimizer, mode=‘min’, patience=3) 表示当验证集 loss 连续 3 轮没有下降，就降低学习率
+  - 余弦退火：如 CosineAnnealingLR (optimizer, T_max=50) 表示学习率按照余弦曲线下降，可用于 fine-tuning 阶段
+  - 快速升高后慢慢下降，适合快速收敛：如 OneCycleLR (optimizer, max_lr=0.1, steps_per_epoch=100, epochs=10) 表示先升后降，更快收敛，常用于 NLP 和迁移学习
 
 ### 随机种子
 
@@ -103,7 +103,7 @@ $$
   | Dropout             | 每次随机丢弃部分神经元              |
   | 权重初始化          | 网络参数从正态分布随机采样          |
   | minibatch 采样      | 从数据集中随机取一个 batch          |
-  | GPU 并行计算        | 某些操作在不同平台/线程上有细微差异 |
+  | GPU 并行计算        | 某些操作在不同平台 / 线程上有细微差异 |
 
 - 通过设置随机种子，使得程序的随机性变得可控，使得同样的代码、同样的数据，运行多次得到的结果始终一致（可复现）
 
@@ -302,7 +302,7 @@ $$
 
   - Early Stopping：在验证集性能不再提升时提前终止训练，防止过度拟合训练集
 
-  - 数据增强（Data Augmentation）：虽不直接参与损失计算，但等价于对模型施加了平滑/正则限制（如对抗扰动）
+  - 数据增强（Data Augmentation）：虽不直接参与损失计算，但等价于对模型施加了平滑 / 正则限制（如对抗扰动）
 
   - 权重剪枝（Weight Pruning）：将不重要的连接置零，从而压缩模型、减少过拟合
 
@@ -337,7 +337,7 @@ $$
   - $FN$（False Negative）：预测为负，实际为正
 
 - 几乎所有常见的分类指标，本质上都是这四个数的不同组合与加权。理解这一点非常重要，因为它意味着：指标之间不是独立的，它们是在强调不同类型错误的代价结构
-- 混淆矩阵的价值不在于它本身，而在于它告诉你的不是“模型好不好”，而是“模型在哪种错误上更偏向哪一边”
+- 混淆矩阵的价值不在于它本身，而在于它告诉你的不是 “模型好不好”，而是 “模型在哪种错误上更偏向哪一边”
 
 ### Accuracy
 
@@ -347,12 +347,12 @@ $$
   - Overall Accuracy 是最直观的指标，表示所有样本中预测正确的比例，其定义为
 
     $$
-    \text{OA} = \frac{TP + TN}{TP + FP + TN + FN}
+    \text {OA} = \frac {TP + TN}{TP + FP + TN + FN}
     $$
 
-  - 它评价的是模型的整体分类正确率，但隐含假设是“各类样本的重要性相同、分布相对均衡”
+  - 它评价的是模型的整体分类正确率，但隐含假设是 “各类样本的重要性相同、分布相对均衡”
 
-  - 一旦类别不平衡，比如正类极少，OA 很容易被多数类“刷高”，而掩盖模型对少数类的严重失效
+  - 一旦类别不平衡，比如正类极少，OA 很容易被多数类 “刷高”，而掩盖模型对少数类的严重失效
 
 - Average Accuracy（AA）
   - Average Accuracy 通常指对每一类分别计算分类准确率，然后再取平均
@@ -360,38 +360,38 @@ $$
   - 以多分类为例，第 $i$ 类的分类准确率为
 
     $$
-    \text{Acc}*i = \frac{TP_i}{N_i}
+    \text {Acc}*i = \frac {TP_i}{N_i}
     $$
 
   - 其中 $N_i$ 是该类的真实样本数，则
 
     $$
-    \text{AA} = \frac{1}{C} \sum*{i=1}^C \text{Acc}_i
+    \text {AA} = \frac {1}{C} \sum*{i=1}^C \text {Acc}_i
     $$
 
-  - AA 的核心意义在于对类别不平衡进行显式校正，它不再让“大类”天然拥有更大的话语权，因此在遥感分类、医学影像等长尾分布场景中比 OA 更可信
+  - AA 的核心意义在于对类别不平衡进行显式校正，它不再让 “大类” 天然拥有更大的话语权，因此在遥感分类、医学影像等长尾分布场景中比 OA 更可信
 
 ### Precision / Recall
 
-- Accuracy 只关心“对不对”，而 Precision 和 Recall 开始区分“错在哪里”
+- Accuracy 只关心 “对不对”，而 Precision 和 Recall 开始区分 “错在哪里”
 
 - Recall（召回率）
   - Recall 衡量的是：真实为正的样本中，有多少被模型找出来了
 
     $$
-    \text{Recall} = \frac{TP}{TP + FN}
+    \text {Recall} = \frac {TP}{TP + FN}
     $$
 
-  - 它对“漏报”（False Negative）非常敏感，常用于医学诊断、异常检测等场景，因为漏掉真正的重要样本代价极高
+  - 它对 “漏报”（False Negative）非常敏感，常用于医学诊断、异常检测等场景，因为漏掉真正的重要样本代价极高
 
 - Precision（精确率）
   - Precision 衡量的是：模型预测为正的样本中，有多少是真的正类
 
     $$
-    \text{Precision} = \frac{TP}{TP + FP}
+    \text {Precision} = \frac {TP}{TP + FP}
     $$
 
-  - 它对“误报”（False Positive）非常敏感，比如垃圾邮件过滤、告警系统中，误报会带来很高的人工成本
+  - 它对 “误报”（False Positive）非常敏感，比如垃圾邮件过滤、告警系统中，误报会带来很高的人工成本
 
 - Precision 与 Recall 本质上是一对张力关系：阈值调高通常提高 Precision、降低 Recall，阈值调低则相反
 
@@ -399,16 +399,16 @@ $$
   - F1 是 Precision 和 Recall 的调和平均，其定义为
 
     $$
-    \text{F1} = \frac{2 \cdot \text{Precision} \cdot \text{Recall}}{\text{Precision} + \text{Recall}}
+    \text {F1} = \frac {2 \cdot \text {Precision} \cdot \text {Recall}}{\text {Precision} + \text {Recall}}
     $$
 
-  - 使用调和平均而不是算术平均，是为了对“短板”更敏感：只要 Precision 或 Recall 其中之一很低，F1 就会被显著拉低
+  - 使用调和平均而不是算术平均，是为了对 “短板” 更敏感：只要 Precision 或 Recall 其中之一很低，F1 就会被显著拉低
 
   - 因此 F1 更适合用作综合性能的单一标量指标，尤其在类别不平衡问题中
 
-  - 在多分类任务中，F1 又会衍生出 macro-F1、micro-F1、weighted-F1，本质差异仍然是“是否按类别权重平均”
+  - 在多分类任务中，F1 又会衍生出 macro-F1、micro-F1、weighted-F1，本质差异仍然是 “是否按类别权重平均”
 
-### PR / AP / mAP
+### PR / AP /mAP
 
 - PR 曲线：阈值连续变化下的性能全貌
   - Precision 和 Recall 都依赖于分类阈值，而 PR 曲线通过扫描所有可能阈值，刻画 Precision–Recall 的整体权衡关系
@@ -420,7 +420,7 @@ $$
   - AP 定义为 PR 曲线下面积，本质上是对 Precision 在 Recall 维度上的积分
 
     $$
-    \text{AP} = \int_0^1 \text{Precision}(r),dr
+    \text {AP} = \int_0^1 \text {Precision}(r),dr
     $$
 
   - 在目标检测中，AP 通常是在固定 IoU 阈值（如 IoU ≥ 0.5）下计算的，用来衡量某一个类别的检测性能
@@ -429,7 +429,7 @@ $$
   - mAP 是对所有类别 AP 的平均
 
     $$
-    \text{mAP} = \frac{1}{C} \sum_{i=1}^C \text{AP}_i
+    \text {mAP} = \frac {1}{C} \sum_{i=1}^C \text {AP}_i
     $$
 
   - 在现代检测基准（如 COCO）中，mAP 往往还会进一步扩展为在多个 IoU 阈值（如 0.5:0.95）上求平均，用以同时评价定位精度与分类置信度排序能力
@@ -440,45 +440,45 @@ $$
   - IoU 用于衡量预测区域与真实区域的重叠程度，其定义为
 
     $$
-    \text{IoU} = \frac{|A \cap B|}{|A \cup B|}
+    \text {IoU} = \frac {|A \cap B|}{|A \cup B|}
     $$
 
   - 其中 $A$ 为预测区域，$B$ 为真实区域
 
   - IoU 是目标检测与语义分割中的核心指标，它不关心分类概率，只关注几何对齐质量
 
-  - 在检测中，IoU 通常被用作“是否算一次正确检测”的判定条件
+  - 在检测中，IoU 通常被用作 “是否算一次正确检测” 的判定条件
 
   - 在分割中，IoU 直接作为性能指标，甚至作为训练损失（如 IoU loss、Dice loss）
 
 - 置信度：概率、校准与可解释性问题
-  - 模型输出的“置信度”通常是 softmax 或 sigmoid 概率，但这并不等价于真实概率
+  - 模型输出的 “置信度” 通常是 softmax 或 sigmoid 概率，但这并不等价于真实概率
   - 一个模型可以在 AP、F1 上表现很好，却在概率意义上严重失真
   - 因此，置信度评价往往涉及：
     - calibration（校准）：预测概率与真实频率是否一致
     - reliability diagram、ECE（Expected Calibration Error）等指标
     - 阈值敏感任务中的风险控制与决策可靠性
 
-  - 在实际系统中，排序能力由 AP / mAP 决定，决策可靠性由置信度校准决定，这是两条经常被混淆但本质不同的评价维度
+  - 在实际系统中，排序能力由 AP /mAP 决定，决策可靠性由置信度校准决定，这是两条经常被混淆但本质不同的评价维度
 
-- Kappa 系数：去除“随机一致性”的评价
-  - Kappa 系数用于衡量预测与真实标签之间的一致性，同时扣除了“随机猜对”的可能性，其定义为
+- Kappa 系数：去除 “随机一致性” 的评价
+  - Kappa 系数用于衡量预测与真实标签之间的一致性，同时扣除了 “随机猜对” 的可能性，其定义为
 
     $$
-    \kappa = \frac{p_o - p_e}{1 - p_e}
+    \kappa = \frac {p_o - p_e}{1 - p_e}
     $$
 
   - 其中 $p_o$ 是实际观测一致率（即 OA），$p_e$ 是在类别边缘分布已知的情况下随机一致的期望值
 
-  - Kappa 特别适合用于人工标注一致性评估或类别分布极不均衡的任务，因为它能避免 OA 在随机情况下被误判为“看起来还不错”
+  - Kappa 特别适合用于人工标注一致性评估或类别分布极不均衡的任务，因为它能避免 OA 在随机情况下被误判为 “看起来还不错”
 
 - 总的来说
   - 混淆矩阵是结构基础
-  - Accuracy 关注“总体正确性”
-  - Precision / Recall / F1 关注“错误代价结构”
-  - PR / AP / mAP 关注“排序与阈值鲁棒性”
-  - IoU 关注“空间一致性”
-  - 置信度与 Kappa 关注“可信度与一致性”
+  - Accuracy 关注 “总体正确性”
+  - Precision / Recall / F1 关注 “错误代价结构”
+  - PR / AP /mAP 关注 “排序与阈值鲁棒性”
+  - IoU 关注 “空间一致性”
+  - 置信度与 Kappa 关注 “可信度与一致性”
 
 ## NumPy
 
@@ -492,7 +492,7 @@ $$
   - 一个指向数据（内存或内存映射文件中的一块数据）的指针
   - 数据类型或 dtype，描述在数组中的固定大小值的格子
   - 一个表示数组形状（shape）的元组，表示各维度大小的元组
-  - 一个跨度元组（stride），其中的整数指的是为了前进到当前维度下一个元素需要"跨过"的字节数
+  - 一个跨度元组（stride），其中的整数指的是为了前进到当前维度下一个元素需要 "跨过" 的字节数
 
 ### 数据类型（dtype）
 
@@ -511,7 +511,7 @@ $$
   | 字节串      | `bytes_`                           |
   | Python 对象 | `object_`                          |
   | 时间类型    | `datetime64 / timedelta64`         |
-  | 结构化类型  | structured / record dtype          |
+  | 结构化类型  | structured /record dtype          |
 
 - 在数值计算和深度学习中，真正高频使用的只有 `int64 / float32 / float64`，其中 `float32` 是性能与显存占用的黄金平衡点
 
@@ -543,7 +543,7 @@ $$
   | `dtype`    | 元素类型                                                                                                               |
   | `itemsize` | 单元素字节数                                                                                                           |
   | `nbytes`   | 总字节数                                                                                                               |
-  | `strides`  | 每个维度跳过的字节数，理解 view / transpose / reshape 的钥匙，本质上是：<br/> “沿某个轴移动一步，在内存里要跳多少字节” |
+  | `strides`  | 每个维度跳过的字节数，理解 view /transpose/reshape 的钥匙，本质上是：<br/> “沿某个轴移动一步，在内存里要跳多少字节” |
   | `flags`    | 内存布局信息（C_CONTIGUOUS 等）                                                                                        |
 
 - 数据访问相关
@@ -553,9 +553,9 @@ $$
   | `data` | 底层 buffer（只读视角） |
   | `base` | 如果是 view，指向原数组 |
 
-### 创建/生成
+### 创建 / 生成
 
-- 数组创建不是只有 `np.array`，而是一整套“语义明确的入口”
+- 数组创建不是只有 `np.array`，而是一整套 “语义明确的入口”
 
 - 从 Python 对象创建
 
@@ -633,7 +633,7 @@ $$
 
 ### 归约
 
-- 归约是“把一个维度压缩掉”
+- 归约是 “把一个维度压缩掉”
 
   ```python
   a.sum()
@@ -703,7 +703,7 @@ $$
 
 - 参考资料：[Pandas 教程](https://www.runoob.com/pandas/pandas-tutorial.html)
 
-- Pandas 主要用于数据分析与操作（表格/结构化数据），核心数据结构为 `DataFrame`、`Series`
+- Pandas 主要用于数据分析与操作（表格 / 结构化数据），核心数据结构为 `DataFrame`、`Series`
 
 - 导入 Pandas
 
@@ -845,12 +845,12 @@ $$
 
 - 参考资料：[Matplotlib Pyplot](https://www.runoob.com/matplotlib/matplotlib-pyplot.html)
 
-- matplotlib 是一个通用二维（以及有限三维）绘图库，核心目标不是“好看”，而是可控、可复现、可精确表达数据关系
+- matplotlib 是一个通用二维（以及有限三维）绘图库，核心目标不是 “好看”，而是可控、可复现、可精确表达数据关系
 
 - 它的设计哲学非常偏工程和科学计算，而不是交互或美学，这一点会体现在 API 的复杂度上
 
 - matplotlib 的核心思想是：图不是一张图片，而是一棵对象树（figure → axes → artists）
-  - `Figure` 表示一整张画布，可以理解为“一页”
+  - `Figure` 表示一整张画布，可以理解为 “一页”
   - `Axes` 表示一个具体的坐标系（不是 axis），也就是你真正画数据的地方
   - `Artist` 是一切可见元素的统称，包括线、点、文字、刻度、图例等
 
@@ -867,7 +867,7 @@ $$
 
 - matplotlib 提供了两套使用方式
   - pyplot（状态机风格）
-    - `pyplot` 是一个状态机接口，内部维护“当前 figure / 当前 axes”
+    - `pyplot` 是一个状态机接口，内部维护 “当前 figure / 当前 axes”
     - 优点是上手快，缺点是复杂图容易失控、多子图时可读性差、不利于封装和复用
 
     - 代码示例
@@ -893,7 +893,7 @@ $$
       ax.set_ylabel("y")
       ```
 
-  - 一个经验法则是：脚本 / demo 用 pyplot，工程 /论文 /长期代码用 OO 接口
+  - 一个经验法则是：脚本 /demo 用 pyplot，工程 / 论文 / 长期代码用 OO 接口
 
 - 创建 Figure 和 Axes
   - 代码示例
@@ -924,7 +924,7 @@ $$
     ax.imshow(img)
     ```
 
-  - 坐标轴控制：`Axis`（xaxis / yaxis）是 `Axes` 的子对象，但通常不需要直接操作它
+  - 坐标轴控制：`Axis`（xaxis /yaxis）是 `Axes` 的子对象，但通常不需要直接操作它
 
     ```
     ax.set_xlim(0, 10)
@@ -989,7 +989,7 @@ $$
   fig.savefig("fig.png", dpi=300)
   ```
 
-- matplotlib 有“后端”概念，用于区分屏幕显示（TkAgg、Qt）或文件输出（Agg、PDF）；一般不需要关心后端，除非在服务器或无显示环境
+- matplotlib 有 “后端” 概念，用于区分屏幕显示（TkAgg、Qt）或文件输出（Agg、PDF）；一般不需要关心后端，除非在服务器或无显示环境
 
 - 完整示例
 

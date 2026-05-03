@@ -8,10 +8,10 @@ description: 介绍 tokenizers 库的四大方法与参数使用
 
 | 方法                 | 输入          | 输出                                             | 作用层级                  | 是否支持批量 | 是否自动 padding/truncation | 常用场景                      |
 | -------------------- | ------------- | ------------------------------------------------ | ------------------------- | ------------ | --------------------------- | ----------------------------- |
-| `tokenizer.tokenize` | 文本(str)     | token 字符串列表                                 | 分词                      | 否           | 否                          | 调试分词行为、研究 token 切分 |
-| `tokenizer.encode`   | 文本(str)     | token ID 列表                                    | 将文本进行分词并编码到 ID | 否           | 否                          | 推理循环、dataset 预处理      |
-| `tokenizer.decode`   | token ID 列表 | 文本(str)                                        | 将 ID 解码为文本 | 否 | 无意义       | 将输出 token 还原文本       |
-| `tokenizer(…)`       | 文本/文本列表 | BatchEncoding（含 input_ids、attention_mask 等） | 完整模型输入构建      | 是           | 是                          | 训练/推理一般使用方式         |
+| `tokenizer.tokenize` | 文本 (str)     | token 字符串列表                                 | 分词                      | 否           | 否                          | 调试分词行为、研究 token 切分 |
+| `tokenizer.encode`   | 文本 (str)     | token ID 列表                                    | 将文本进行分词并编码到 ID | 否           | 否                          | 推理循环、dataset 预处理      |
+| `tokenizer.decode`   | token ID 列表 | 文本 (str)                                        | 将 ID 解码为文本 | 否 | 无意义       | 将输出 token 还原文本       |
+| `tokenizer(…)`       | 文本 / 文本列表 | BatchEncoding（含 input_ids、attention_mask 等） | 完整模型输入构建      | 是           | 是                          | 训练 / 推理一般使用方式         |
 
 ## tokenizer.tokenize — 分词接口
 
@@ -51,7 +51,7 @@ ids = tokenizer.encode(
 print(ids)
 ```
 
-- 输出返回 list[int]
+- 输出返回 list [int]
 
 ```
 [101, 7592, 2088, 999, 102]
@@ -78,7 +78,7 @@ print(decoded)
 Hello world!
 ```
 
-## tokenizer(…) — 完整的模型输入构建接口
+## tokenizer (…) — 完整的模型输入构建接口
 
 - `tokenizer(text)` 等价于调用 `tokenizer.__call__()`，是最常用的接口
 
@@ -143,7 +143,7 @@ print(batch)
 }
 ```
 
-### 示例 3：返回 offset_mapping（NER / span tasks）
+### 示例 3：返回 offset_mapping（NER /span tasks）
 
 ```python
 out = tokenizer(
@@ -204,10 +204,10 @@ print("tokenizer():", inputs)
 
 | 参数名                         | 类型            | 默认值            | 功能分类     | 专业解释                                                                       |
 | ------------------------------ | --------------- | ----------------- | ------------ | ------------------------------------------------------------------------------ |
-| text / text_pair           | str / list[str] | 必填              | 输入文本     | 主输入文本与可选的配对文本（如句对任务）                                     |
-| add_special_tokens         | bool            | True              | 输入控制     | 是否在序列开头/结尾添加特殊 tokens，如 `[CLS]` / `[SEP]` / `<bos>` / `<eos>` |
-| padding                    | bool / str      | False             | 填充控制     | 是否进行 padding。可选 `"max_length"`、`"longest"` 或 False                |
-| truncation                 | bool / str      | False             | 截断控制     | 是否截断文本。可选True、`"longest_first"`、`"only_first"`、`"only_second"`  |
+| text /text_pair           | str /list [str] | 必填              | 输入文本     | 主输入文本与可选的配对文本（如句对任务）                                     |
+| add_special_tokens         | bool            | True              | 输入控制     | 是否在序列开头 / 结尾添加特殊 tokens，如 `[CLS]` /`[SEP]` /`<bos>` /`<eos>` |
+| padding                    | bool /str      | False             | 填充控制     | 是否进行 padding。可选 `"max_length"`、`"longest"` 或 False                |
+| truncation                 | bool /str      | False             | 截断控制     | 是否截断文本。可选 True、`"longest_first"`、`"only_first"`、`"only_second"`  |
 | max_length                 | int             | None              | 长度控制     | 输出序列最大长度（包含特殊 token），超长序列可截断或滑窗处理                 |
 | stride                     | int             | 0                 | 长文本滑窗   | 滑动窗口步长，用于长文本 split，配合 `return_overflowing_tokens=True` 使用   |
 | return_overflowing_tokens  | bool            | False             | 长文本处理   | 返回因滑窗产生的多个子序列                                                   |
@@ -273,33 +273,33 @@ batch = tokenizer(
 公式上，在自注意力中，原始的注意力权重计算为：
 
 $$
-A = \text{softmax}\Big(\frac{Q K^T}{\sqrt{d_k}}\Big)
+A = \text {softmax}\Big (\frac {Q K^T}{\sqrt {d_k}}\Big)
 $$
 
 加入 mask 后，计算变为：
 
 $$
 A'_{ij} =
-\begin{cases}
-\frac{\exp(Q_i \cdot K_j / \sqrt{d_k})}{\sum_{k \in \text{valid}} \exp(Q_i \cdot K_k / \sqrt{d_k})}, & j \in \text{valid positions} \\
-0, & j \in \text{padding positions}
-\end{cases}
+\begin {cases}
+\frac {\exp (Q_i \cdot K_j / \sqrt {d_k})}{\sum_{k \in \text {valid}} \exp (Q_i \cdot K_k / \sqrt {d_k})}, & j \in \text {valid positions} \\
+0, & j \in \text {padding positions}
+\end {cases}
 $$
 
 或者在实现中常见做法：
 
 $$
-A' = \text{softmax}\Big(\frac{Q K^T}{\sqrt{d_k}} + M\Big)
+A' = \text {softmax}\Big (\frac {Q K^T}{\sqrt {d_k}} + M\Big)
 $$
 
 其中 (M) 为 mask matrix：
 
 $$
 M_{ij} =
-\begin{cases}
-0, & \text{token } j \text{是有效 token} \\
--10^9 \text{或}-\infty, & \text{token } j \text{是 padding}
-\end{cases}
+\begin {cases}
+0, & \text {token} j \text {是有效 token} \\
+-10^9 \text {或}-\infty, & \text {token} j \text {是 padding}
+\end {cases}
 $$
 
 这样 softmax 后 padding token 对注意力输出几乎无贡献。
@@ -362,27 +362,27 @@ attention_mask:            [0, 1,    1,    1,    1]
 给定 batch 的 input_ids：
 
 $$
-X = [x_1, x_2, ..., x_L], \quad x_i \in \text{vocab ids}
+X = [x_1, x_2, ..., x_L], \quad x_i \in \text {vocab ids}
 $$
 
 定义 pad_token_id：
 
 $$
-\text{pad\_id} \in \text{vocab}
+\text {pad\_id} \in \text {vocab}
 $$
 
 则 attention_mask 生成公式：
 
 $$
-\text{attention\_mask}_i =
-\begin{cases}
-1, & x_i \neq \text{pad\_id} \\
-0, & x_i = \text{pad\_id}
-\end{cases}
+\text {attention\_mask}_i =
+\begin {cases}
+1, & x_i \neq \text {pad\_id} \\
+0, & x_i = \text {pad\_id}
+\end {cases}
 $$
 
 ### 注意事项
 
 - attention_mask 是 每层 Transformer 公用，会被直接加入 self-attention 计算
 - 可用于 padding、截断、多长度序列
-- 与 token_type_ids / position_ids 配合使用，确保模型识别有效 token 和 segment
+- 与 token_type_ids /position_ids 配合使用，确保模型识别有效 token 和 segment

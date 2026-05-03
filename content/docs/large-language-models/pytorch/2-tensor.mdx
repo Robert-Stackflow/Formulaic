@@ -18,11 +18,11 @@ description: 介绍 PyTorch 中的张量（Tensor）概念、创建、索引、�
 - Tensor 与 NumPy ndarray 的异同点
   - 都是多维数组，都支持切片、广播，API 风格相似
   - 但是 Tensor 额外支持设备、自动求导、计算图机制
-  - NumPy 是“静态计算”，而 Tensor 是“可学习的计算”
+  - NumPy 是 “静态计算”，而 Tensor 是 “可学习的计算”
 
 - 在 PyTorch 中，一个 Tensor 至少由下面五个维度刻画：
   - 数据本身（data）
-  - 形状（shape / size）
+  - 形状（shape /size）
   - 数据类型（dtype）
   - 所在设备（device）
   - 是否参与梯度计算（requires_grad）
@@ -32,7 +32,7 @@ description: 介绍 PyTorch 中的张量（Tensor）概念、创建、索引、�
   - 直接操作 `x.data` 会绕过 autograd，无法自动求导，累计梯度
   - 因此永远要通过 Tensor 本身操作数据
 
-- shape / size：Tensor 的结构
+- shape /size：Tensor 的结构
   - 可以通过以下方式查看 Tensor 的形状
 
     ```python
@@ -124,7 +124,7 @@ description: 介绍 PyTorch 中的张量（Tensor）概念、创建、索引、�
     z = x + y   # ❌
     ```
 
-  - `torch.device` 是一个设备描述对象，用来统一、显式地管理设备，方便写“CPU / GPU 通用代码”
+  - `torch.device` 是一个设备描述对象，用来统一、显式地管理设备，方便写 “CPU / GPU 通用代码”
 
     ```python
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -163,7 +163,7 @@ description: 介绍 PyTorch 中的张量（Tensor）概念、创建、索引、�
 
   - 对于普通 Tensor，默认为 False；而对于模型参数，默认为 True
 
-  - requires_grad 决定这个 Tensor 是否“被训练”
+  - requires_grad 决定这个 Tensor 是否 “被训练”
 
 - 完整示例
 
@@ -182,7 +182,7 @@ description: 介绍 PyTorch 中的张量（Tensor）概念、创建、索引、�
 - 在 PyTorch 里，Tensor 主要来自 6 个来源：
   - 从 Python 数据创建
   - 从 NumPy 创建
-  - 创建“指定形状”的 Tensor
+  - 创建 “指定形状” 的 Tensor
   - 创建随机 Tensor
   - 创建序列型 Tensor
   - 创建特殊结构 Tensor（单位阵、对角阵等）
@@ -230,7 +230,7 @@ description: 介绍 PyTorch 中的张量（Tensor）概念、创建、索引、�
 
   - 当数据本来就在 NumPy，不想额外拷贝时，才使用 `from_numpy`，否则使用 `torch.tensor` 更安全
 
-- 创建“指定形状”的 Tensor
+- 创建 “指定形状” 的 Tensor
   - `torch.zeros` 创建元素均为 0 的 Tensor
 
     ```python
@@ -436,7 +436,7 @@ description: 介绍 PyTorch 中的张量（Tensor）概念、创建、索引、�
     y[0] = 100  # 导致 x = [0, 100, 2, 3, 4, 5]
     ```
 
-  - 行 / 列切片：每个维度一个索引，`:` 表示“这个维度全要”
+  - 行 / 列切片：每个维度一个索引，`:` 表示 “这个维度全要”
 
     ```python
     x = torch.tensor([
@@ -497,7 +497,7 @@ description: 介绍 PyTorch 中的张量（Tensor）概念、创建、索引、�
 
 ## 形状变换
 
-- 形状变换不改数据，只改“怎么看这些数据”，除非显式拷贝，否则这些操作都只是“重排视角”
+- 形状变换不改数据，只改 “怎么看这些数据”，除非显式拷贝，否则这些操作都只是 “重排视角”
 
 - 从一个简单的 Tensor 开始，这是一块连续内存
 
@@ -505,7 +505,7 @@ description: 介绍 PyTorch 中的张量（Tensor）概念、创建、索引、�
   x = torch.tensor([0, 1, 2, 3, 4, 5])
   ```
 
-- `view`：最底层、也最“严格”的形状变换
+- `view`：最底层、也最 “严格” 的形状变换
   - 什么是 view
 
     ```python
@@ -529,7 +529,7 @@ description: 介绍 PyTorch 中的张量（Tensor）概念、创建、索引、�
     y[0, 0] = 100 # x = [100, 1, 2, 3, 4, 5]
     ```
 
-  - `-1` 的含义：`-1` 表示“自动推断”，只能出现一次
+  - `-1` 的含义：`-1` 表示 “自动推断”，只能出现一次
 
     ```python
     x = torch.arange(12)
@@ -567,7 +567,7 @@ description: 介绍 PyTorch 中的张量（Tensor）概念、创建、索引、�
     # shape: (3,)
     ```
 
-  - `unsqueeze(0)`：没有新数据，只是说“这一行是一整个 batch”
+  - `unsqueeze(0)`：没有新数据，只是说 “这一行是一整个 batch”
 
     ```python
     y = x.unsqueeze(0)
@@ -613,7 +613,7 @@ description: 介绍 PyTorch 中的张量（Tensor）概念、创建、索引、�
     # shape: (3, 1)
     ```
 
-  - 为什么要指定 dim？因为有时候不想把“重要的 1”误删，比如 batch
+  - 为什么要指定 dim？因为有时候不想把 “重要的 1” 误删，比如 batch
 
 - `transpose`：交换两个维度怎么看数据
   - 假设一个二维张量
@@ -637,7 +637,7 @@ description: 介绍 PyTorch 中的张量（Tensor）概念、创建、索引、�
     # shape: (3, 2)
     ```
 
-  - 数据顺序没变，“行和列的解释”换了，此时，y 不再是连续的
+  - 数据顺序没变，“行和列的解释” 换了，此时，y 不再是连续的
 
     ```python
     y.is_contiguous()  # False
@@ -713,7 +713,7 @@ description: 介绍 PyTorch 中的张量（Tensor）概念、创建、索引、�
   ```
 
 - 广播机制
-  - PyTorch 会尝试“补维度 + 扩展维度”，只在必要时做，不会真的复制数据
+  - PyTorch 会尝试 “补维度 + 扩展维度”，只在必要时做，不会真的复制数据
 
   - 向量 + 标量
 
@@ -796,7 +796,7 @@ description: 介绍 PyTorch 中的张量（Tensor）概念、创建、索引、�
 
 ## 线性代数运算
 
-- 线性代数运算 ≠ 逐元素运算，它们关心的是“维度如何对齐”
+- 线性代数运算 ≠ 逐元素运算，它们关心的是 “维度如何对齐”
 
   | 运算类型 | 例子             | 核心规则       |
   | -------- | ---------------- | -------------- |
@@ -937,7 +937,7 @@ description: 介绍 PyTorch 中的张量（Tensor）概念、创建、索引、�
 
 ## 归约操作（Reduce）
 
-- reduce = 沿某个维度，把多个值“压缩成一个”
+- reduce = 沿某个维度，把多个值 “压缩成一个”
 
 - 假设张量
 
@@ -964,7 +964,7 @@ description: 介绍 PyTorch 中的张量（Tensor）概念、创建、索引、�
   torch.mean(x, dim=1) # tensor([2., 5.])，shape: (2,)
   ```
 
-- max / min
+- max /min
 
   ```python
   torch.max(x) # 不指定 dim，即全局最大值
@@ -972,7 +972,7 @@ description: 介绍 PyTorch 中的张量（Tensor）概念、创建、索引、�
   # shape: values:  (2,)、indices: (2,)
   ```
 
-- argmax / argmin
+- argmax /argmin
 
   ```python
   torch.argmax(x, dim=1) # 只要 index，不要 value，即 tensor([2, 2])，其返回的是位置编号，dtype 为 torch.int64
@@ -994,10 +994,10 @@ description: 介绍 PyTorch 中的张量（Tensor）概念、创建、索引、�
   x - torch.mean(x, dim=1, keepdim=True) # (2,3) - (2,1)，可以广播对齐
   ```
 
-- 在归约操作中，dim 指的是“要消掉哪一根轴”
+- 在归约操作中，dim 指的是 “要消掉哪一根轴”
   - dim=0：跨 batch / 跨样本
   - dim=1：对每个样本内部算
-  - dim=2：对每个 token / feature 算
+  - dim=2：对每个 token /feature 算
 
 - 例如
 
@@ -1020,7 +1020,7 @@ description: 介绍 PyTorch 中的张量（Tensor）概念、创建、索引、�
                     [40, 50, 60]])   # shape: (2, 3)
   ```
 
-- cat ：沿某一维“接起来”，所有 Tensor 除 dim 以外的所有维度必须完全相同
+- cat ：沿某一维 “接起来”，所有 Tensor 除 dim 以外的所有维度必须完全相同
 
   ```python
   torch.cat(tensors, dim=...) # 沿 dim 方向“拉长”，其他维度必须完全一样
@@ -1125,7 +1125,7 @@ description: 介绍 PyTorch 中的张量（Tensor）概念、创建、索引、�
 - 原地操作的优势与风险
   - 省内存：不创建新 Tensor、对大模型 / 大 batch 很重要
   - 少一次分配 + 拷贝：在某些场景下更快、尤其是显存紧张时
-  - 破坏计算图：autograd 需要“旧值”，但原地操作却把它改掉了
+  - 破坏计算图：autograd 需要 “旧值”，但原地操作却把它改掉了
 
 - 与 autograd 的冲突
 
@@ -1161,7 +1161,7 @@ description: 介绍 PyTorch 中的张量（Tensor）概念、创建、索引、�
 
 ## 拷贝、共享与内存语义
 
-- Tensor = 元数据（shape / stride / dtype / device）+ 一块内存
+- Tensor = 元数据（shape /stride/dtype /device）+ 一块内存
 
 - 很多操作只改元数据（不拷贝）或明确拷贝一份新内存
 
@@ -1190,10 +1190,10 @@ description: 介绍 PyTorch 中的张量（Tensor）概念、创建、索引、�
 ## 自动微分
 
 - 训练模型的本质是在不断调整参数，让 loss 变小
-  - 假设模型有一堆参数 $\theta$，输入 $x$，输出 $\hat y = f(x; \theta)$，有一个损失函数 $L(\hat y, y)$，最终目标是
+  - 假设模型有一堆参数 $\theta$，输入 $x$，输出 $\hat y = f (x; \theta)$，有一个损失函数 $L (\hat y, y)$，最终目标是
 
     $$
-    \displaystyle\min_\theta L(f(x;\theta),y)
+    \displaystyle\min_\theta L (f (x;\theta),y)
     $$
 
   - 真正关心的是该把参数 $\theta$ 往哪个方向修改
@@ -1201,7 +1201,7 @@ description: 介绍 PyTorch 中的张量（Tensor）概念、创建、索引、�
   - 对单个参数 $\theta_i$ 而言，损失函数对参数 $\theta_i$ 的微分如下
 
     $$
-    \frac{\partial L}{\partial \theta_i}
+    \frac {\partial L}{\partial \theta_i}
     $$
 
   - 所以，没有梯度 → 参数不会动；梯度算错 → 模型直接废
@@ -1210,7 +1210,7 @@ description: 介绍 PyTorch 中的张量（Tensor）概念、创建、索引、�
   - 对于以下函数
 
     $$
-    y = ((x \cdot w + b)^2).sum()
+    y = ((x \cdot w + b)^2).sum ()
     $$
 
   - 如果手推链式法则，求每一层对上一层的偏导，再展开到每个参数，再一个三层的 MLP 中就已经开始崩溃
@@ -1220,7 +1220,7 @@ description: 介绍 PyTorch 中的张量（Tensor）概念、创建、索引、�
 - 数值微分（Numerical Differentiation）：每个参数都要算一次，求解速度慢，不稳定（$\epsilon$ 难以选择），精度差
 
   $$
-  \frac{f(x+\epsilon) - f(x)}{\epsilon}
+  \frac {f (x+\epsilon) - f (x)}{\epsilon}
   $$
 
 - 符号微分（Symbolic Differentiation）：容易表达式爆炸，不适合程序控制流程，是 TensorFlow 1.x 的路线
@@ -1237,7 +1237,7 @@ description: 介绍 PyTorch 中的张量（Tensor）概念、创建、索引、�
 
 ## 计算图
 
-- 计算图 = 描述“计算是怎么一步步算出来”的有向图
+- 计算图 = 描述 “计算是怎么一步步算出来” 的有向图
   - 节点（node）：一次计算 / 一个算子
   - 边（edge）：数据依赖关系
   - 它不是数学图，而是程序执行图
@@ -1260,7 +1260,7 @@ description: 介绍 PyTorch 中的张量（Tensor）概念、创建、索引、�
     ```
 
 - PyTorch 的计算图不是一个全局大对象，而是分散存在每个 Tensor 里的，每个 Tensor 都有三个和 autograd 有关的参数：`requires_grad`、`grad`、`grad_fn`
-  - `grad_fn`：每一个“非叶子 Tensor”，都会有 `grad_fn`
+  - `grad_fn`：每一个 “非叶子 Tensor”，都会有 `grad_fn`
 
     ```python
     import torch
@@ -1294,8 +1294,8 @@ description: 介绍 PyTorch 中的张量（Tensor）概念、创建、索引、�
   - backward：沿着 `grad_fn` 指向的路径，反向传播梯度，用链式法则
 
 - 动态计算图（Define-by-Run / Eager execution）
-  - 旧的 TensorFlow 实现采用静态计算图，先定义计算图，编译后，再加载数据进行执行，其控制流处理很麻烦，如 if / for 要用特殊 API
-  - 动态计算图则是书写 Python 代码后立刻执行并动态创建计算图，即 PyTorch 的计算图是“临时的”，只服务于当前这一次 forward
+  - 旧的 TensorFlow 实现采用静态计算图，先定义计算图，编译后，再加载数据进行执行，其控制流处理很麻烦，如 if /for 要用特殊 API
+  - 动态计算图则是书写 Python 代码后立刻执行并动态创建计算图，即 PyTorch 的计算图是 “临时的”，只服务于当前这一次 forward
   - 动态计算图中，每一次 forward 都是一次全新的建图，旧的计算图用完即被丢弃
 
 - 对于 Python 控制流而言，只有实际走过的那条路径才会被计入计算图中，没有走过的分支，不会进入计算图
@@ -1347,7 +1347,7 @@ description: 介绍 PyTorch 中的张量（Tensor）概念、创建、索引、�
   # 只要上游有一个 True，下游全 True
   ```
 
-- PyTorch 默认假设普通 Tensor 只是“数据”，不是“参数”
+- PyTorch 默认假设普通 Tensor 只是 “数据”，不是 “参数”
 
   ```python
   a = torch.tensor(2.0)
@@ -1398,9 +1398,9 @@ description: 介绍 PyTorch 中的张量（Tensor）概念、创建、索引、�
   ```
 
 - requires_grad 的传播规则
-  - **任意**输入 requires_grad=True，且该操作支持 autograd，则其输出 requires_grad=True
+  - ** 任意 ** 输入 requires_grad=True，且该操作支持 autograd，则其输出 requires_grad=True
 
-  - **所有**输入 requires_grad=False，则输出必为 False
+  - ** 所有 ** 输入 requires_grad=False，则输出必为 False
 
 - 哪些节点保存梯度 `.grad`
   - PyTorch 默认只给 Leaf Tensor 保存梯度
@@ -1444,7 +1444,7 @@ description: 介绍 PyTorch 中的张量（Tensor）概念、创建、索引、�
 - 反向传播必须有一个起点梯度，标量 loss 的起点是
 
   $$
-  \frac{\partial L}{\partial L}=1
+  \frac {\partial L}{\partial L}=1
   $$
 
 - 如果不是标量，必须手动给出
@@ -1557,7 +1557,7 @@ description: 介绍 PyTorch 中的张量（Tensor）概念、创建、索引、�
   └── metadata
   ```
 
-- 在深度学习/Autograd/显存语境下说的“激活（activations）”
+- 在深度学习 / Autograd / 显存语境下说的 “激活（activations）”
   - 不只是激活函数（ReLU / GELU）的输出，而是 forward 过程中，为了 backward 计算梯度而必须保留的所有中间 Tensor
   - 工程语境中的 activation 指的是 Linear 的输入、Attention 的 Q / K / V、Softmax 的输入与输出、LayerNorm 的均值 / 方差、MLP 中间层输出
   - 只要是 forward 算出来的，backward 要用到，都是 activation
@@ -1586,12 +1586,12 @@ description: 介绍 PyTorch 中的张量（Tensor）概念、创建、索引、�
 - Hessian 矩阵：在工程上一般使用 Hessian-vector product，PyTorch 内部用的就是 autograd 的链式法则
 
   $$
-  H_{ij}=\frac{\partial^2 f}{\partial x_i\partial x_j}
+  H_{ij}=\frac {\partial^2 f}{\partial x_i\partial x_j}
   $$
 
 - 自定义 `autograd.Function`
   - 自定义算子的用处
-    - 写 CUDA / fused op
+    - 写 CUDA /fused op
     - 控制 forward 中保存哪些 activation
     - 自定义不可微 / 分段可微操作
 
@@ -1610,18 +1610,18 @@ description: 介绍 PyTorch 中的张量（Tensor）概念、创建、索引、�
             return grad_out * 2 * x
     ```
 
-- 如何调试检查“梯度为 None”
+- 如何调试检查 “梯度为 None”
   - 参数：`requires_grad=False
   - Tensor 被 `detach()`，或在 `no_grad` 里
   - 计算图中，loss 和该参数没有连通
 
-- 如何调试检查“梯度为 0”
+- 如何调试检查 “梯度为 0”
   - 激活函数饱和（ReLU 死亡）
   - 初始化过大 / 过小
   - 梯度被裁剪成 0
   - loss scale 问题（fp16）
 
-- 如何调试检查“参数没有正确更新”
+- 如何调试检查 “参数没有正确更新”
   - `param.requires_grad == True`
   - `param.grad is not None`
   - `param.grad.norm() > 0`
@@ -1644,7 +1644,7 @@ description: 介绍 PyTorch 中的张量（Tensor）概念、创建、索引、�
     - 依赖 Python 解释器，不能直接在 C++ 或移动端运行
     - 动态图每次运行都需要解释和调度，性能可能不如静态图
     - 无法进行跨进程或跨平台优化
-  - TorchScript 就是为了解决这些问题，它可以把 PyTorch 模型“编译”成一个中间表示（IR，Intermediate Representation），然后这个 IR 可以在 Python 之外被执行，比如在 C++ 的 libtorch 或移动端环境
+  - TorchScript 就是为了解决这些问题，它可以把 PyTorch 模型 “编译” 成一个中间表示（IR，Intermediate Representation），然后这个 IR 可以在 Python 之外被执行，比如在 C++ 的 libtorch 或移动端环境
 
 - TorchScript 模型可以通过两种方式生成：
   - 追踪（Tracing）
@@ -1692,7 +1692,7 @@ description: 介绍 PyTorch 中的张量（Tensor）概念、创建、索引、�
   - `torch.jit.load(path)`：加载 TorchScript 模型
   - `script_module.forward(...)`：执行模型
 
-- 换句话说，`torch.jit` 就是 TorchScript 的“工具箱”，负责将 PyTorch 模型转换、保存和加载为可部署的静态表示
+- 换句话说，`torch.jit` 就是 TorchScript 的 “工具箱”，负责将 PyTorch 模型转换、保存和加载为可部署的静态表示
 
 ## einsum
 
@@ -1715,7 +1715,7 @@ description: 介绍 PyTorch 中的张量（Tensor）概念、创建、索引、�
 
   - `"axes_out"`：箭头右边表示输出张量，如果省略，默认对重复维度求和
 
-  - 表示维度的字符只能是26个英文字母 `'a' - 'z'`
+  - 表示维度的字符只能是 26 个英文字母 `'a' - 'z'`
 
   - einsum 的第二个参数表示实际的输入张量列表，其数量要与表达式中的输入张量数量对应
 
@@ -1747,13 +1747,13 @@ description: 介绍 PyTorch 中的张量（Tensor）概念、创建、索引、�
   - 矩阵乘法公式
 
     $$
-    C_{ik}=\sum_j A_{ij}B_{jk}
+    C_{ik}=\sum_j A_{ij} B_{jk}
     $$
 
   - 用 einsum 实现，将 $\sum$ 符号省去，更加简洁
 
     $$
-    C_{ik} = A_{ij}B_{jk}
+    C_{ik} = A_{ij} B_{jk}
     $$
 
   - 代码实现

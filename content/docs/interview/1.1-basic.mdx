@@ -340,7 +340,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
     - 扫描所有容器对象（list、dict、set、class…）
     - 标记：从根对象（全局变量、栈引用等）出发，遍历所有可达对象并标记
     - 清除：未被标记的对象判定为垃圾，直接回收
-    - 缺点是每次扫描全堆对象，效率较低，运行时会产生STW（Stop-The-World），短暂阻塞程序
+    - 缺点是每次扫描全堆对象，效率较低，运行时会产生 STW（Stop-The-World），短暂阻塞程序
   - Python 把对象分为 3 代：
     - 0 代：新创建对象
     - 1 代：0 代回收后存活的
@@ -494,7 +494,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
 - 讲一下 view、reshape 之间的区别？contiguous 的作用？
   - view：必须要求张量是连续 (contiguous) 的，非连续张量会直接报错；仅做视图操作，不开辟新内存，和原张量共享数据
   - reshape：不要求连续，张量连续时等价于 view（共享内存）；张量不连续时，会自动拷贝数据生成连续张量，开辟新内存
-  - contiguous：让非连续张量变成内存连续存储的张量，开辟新内存拷贝数据；只有连续张量才能使用view、permute后部分操作等，解决view报错的核心方法
+  - contiguous：让非连续张量变成内存连续存储的张量，开辟新内存拷贝数据；只有连续张量才能使用 view、permute 后部分操作等，解决 view 报错的核心方法
 - 讲一下 permute 和 transpose 的区别？
   - transpose：只能交换两个维度，单次操作仅调换 2 个轴的顺序
   - permute：可以一次性交换任意多个维度，支持重排所有维度
@@ -510,9 +510,9 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - 叶子张量是用户手动创建、未经过任何运算的张量（如模型参数`nn.Parameter`、手动初始化的`requires_grad=True`张量），是梯度计算的终点，反向传播后会保留梯度
   - 非叶子张量是由叶子张量经过运算得到的中间张量，反向传播后梯度默认被释放，不保留（可通过`retain_grad()`保留）
 - 如何禁止反向传播的梯度计算？
-  - torch.no_grad()：上下文管理器，最常用，包裹代码块内所有张量都不计算梯度，节省内存 / 加速
+  - torch.no_grad ()：上下文管理器，最常用，包裹代码块内所有张量都不计算梯度，节省内存 / 加速
   - requires_grad=False：创建张量时直接设置，永久关闭该张量梯度
-  - detach()：将张量从计算图分离，切断梯度传播
+  - detach ()：将张量从计算图分离，切断梯度传播
 - optimizer 为什么要进行 zero_grad？
   - PyTorch 梯度会默认累加（不自动清零），如果不调用`optimizer.zero_grad()`，上一轮迭代的梯度会累加到当前轮，导致梯度错误、模型无法收敛
 - 为什么要进行梯度裁剪？
@@ -532,8 +532,8 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
     | 动态范围    | 小                | 大（接近 FP32）     |
     | 硬件支持    | NVIDIA GPU 专用   | 新一代 CPU/GPU 通用 |
 
-  - 主要风险是精度溢出——FP16 易梯度下溢，BF16 易精度损失，二者都数值不稳定，可能导致训练不收敛、精度下降
-  - FP16表示范围小，反向传播时梯度值很小，会直接变成 0（梯度下溢），因此需要乘以一个 scale 系数放大梯度，避免下溢，更新参数前再还原，保证梯度有效
+  - 主要风险是精度溢出 ——FP16 易梯度下溢，BF16 易精度损失，二者都数值不稳定，可能导致训练不收敛、精度下降
+  - FP16 表示范围小，反向传播时梯度值很小，会直接变成 0（梯度下溢），因此需要乘以一个 scale 系数放大梯度，避免下溢，更新参数前再还原，保证梯度有效
 
 ### 推理
 
@@ -546,7 +546,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
     - 性能高、可部署，支持全图优化（算子融合、内存复用）；灵活性差
   - 动态图每次重建会不会很慢？
     - PyTorch 动态图只记录计算依赖，构图开销极小（微秒级）
-    - 真正耗时是GPU 算子执行，构图开销可忽略，训练 / 推理瓶颈在计算，不在构图
+    - 真正耗时是 GPU 算子执行，构图开销可忽略，训练 / 推理瓶颈在计算，不在构图
     - 可以通过 torch.compile 等转为静态图
 - PyTorch 如何导出静态图？都是什么格式的？
   - TorchScript（torch.jit）可以通过两种方式导出静态图
@@ -653,8 +653,8 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
     ```
 
   - PyTorch 2.x 可以自动集成 CUDA Graph
-    - torch.compile(mode="max-autotune") 会自动用 CUDA Graph
-    - torch.cuda.make_graphed_callables()：包装函数自动图化
+    - torch.compile (mode="max-autotune") 会自动用 CUDA Graph
+    - torch.cuda.make_graphed_callables ()：包装函数自动图化
   - 缺点
     - 类似 torch.jit.trace，完全静态，张量的形状、尺寸、内存地址必须固定，控制流也是固定的，重放时无法改变
     - 只能包含 GPU 操作，不能包含 CPU 同步（`.item()`, `print(x)`, `len(x)`），不能动态分配显存（`cudaMalloc`）
@@ -666,8 +666,8 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
     | 层级   | GPU 运行时（CUDA 核函数 / 内存）     | 深度学习框架（张量 / 算子 / 控制流）NVIDIA |
     | 范围   | 单 step 内所有 GPU 操作              | 模型前向计算逻辑（含网络结构）NVIDIA       |
     | 控制流 | 完全不支持（结构必须固定）           | TorchScript script/ONNX 支持 if/loop       |
-    | 优化   | 减少 CPU 启动开销                    | 算子融合、内存复用、常量折叠NVIDIA         |
-    | 部署   | 同 GPU、同内存布局                   | 跨平台、跨设备、跨框架NVIDIA               |
+    | 优化   | 减少 CPU 启动开销                    | 算子融合、内存复用、常量折叠 NVIDIA         |
+    | 部署   | 同 GPU、同内存布局                   | 跨平台、跨设备、跨框架 NVIDIA               |
     | 关系   | 可叠加：静态图 + CUDA Graph 双重加速 |                                            |
 
 - PyTorch 静态图对控制流的支持如何？如何适配控制流？
@@ -676,7 +676,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - ONNX（传统）：同 trace，不支持数据依赖控制流
   - 如何适配控制流
     - 用 scripting 代替 trace（适合简单 if/for）
-    - 条件改为编译期常量（self.flag/torch.jit.is_scripting()）
+    - 条件改为编译期常量（self.flag/torch.jit.is_scripting ()）
     - ONNX + 控制流算子：导出带 If/Loop 的 ONNX 图
 - 生产部署带控制流的模型，使用哪种方式？
   - 首选 TorchScript scripting + C++/LibTorch 部署，适合规则明确、分支少的模型
@@ -684,7 +684,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
 - 什么是 Triton？
   - Triton（Triton Inference Server） 是 NVIDIA 开源的高性能、多框架、跨平台的 AI 模型推理服务引擎，专门解决深度学习模型在生产环境中的部署、调度、性能与运维问题
   - 支持
-    - 框架：PyTorch (TorchScript)、TensorRT、ONNX、TensorFlow、OpenVINO、Python 后端NVIDIA
+    - 框架：PyTorch (TorchScript)、TensorRT、ONNX、TensorFlow、OpenVINO、Python 后端 NVIDIA
     - 硬件：NVIDIA GPU、x86/ARM CPU、AWS InferentiaNVIDIA
     - 接口：HTTP/REST、gRPC、C API
 
@@ -694,21 +694,21 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
 
 - ReLU、GeLU、SwiGLU 历史，ReLU 的缺点
   - sigmoid
-    - 即 $\sigma(x)=\frac{1}{1+e^{-x}}$
+    - 即 $\sigma (x)=\frac {1}{1+e^{-x}}$
     - 输出 0~1，会梯度消失，几乎不再单独使用
     - 只用来做门控，不做特征激活
   - ReLU 最古老（2011）
-    - 即 $ReLU(x)=\max(0,x)$
+    - 即 $ReLU (x)=\max (0,x)$
     - 死亡神经元：一旦输入负数，输出 = 0，梯度 = 0，神经元永远不更新，直接 “死了”
     - 输出不是零中心化：导致梯度下降震荡
     - 负数信息完全丢失：信息损失大
   - SiLU（Swish）
-    - 即 $SiLU(x)=x\times\sigma(x)$
+    - 即 $SiLU (x)=x\times\sigma (x)$
     - 正数：接近 x（线性）
     - 负数：平滑下落到 0（不是直接截断）
     - 处处可导，没有死神经元
   - GELU （2016 年，GPT、BERT 用）
-    - 即 $GELU(x)=x\cdot\Phi(x)$，$\Phi(x)$ 是标准正态分布的 CDF
+    - 即 $GELU (x)=x\cdot\Phi (x)$，$\Phi (x)$ 是标准正态分布的 CDF
     - 高斯误差线性单元，平滑、柔和、可导
     - 不会死亡神经元，训练更稳定
   - 门控线性单元的结构
@@ -721,10 +721,10 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
 
   - SwiGLU（2020 年之后，LLaMA、所有大模型都用，门控线性单元）
     - 不是普通激活函数，是门控线性单元
-    - 即 $SwiGLU(x) = SiLU(Wx) \otimes (Vx)$
+    - 即 $SwiGLU (x) = SiLU (Wx) \otimes (Vx)$
     - 门控机制，信息流动更精细，训练更稳、收敛更快
   - GeGLU（门控线性单元）
-    - 即 $GeGLU(x)=GELU(Wx)\otimes(Vx)$
+    - 即 $GeGLU (x)=GELU (Wx)\otimes (Vx)$
 
 ### 优化器
 
@@ -759,8 +759,8 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
 - RMSProp
 
   $$
-  E[g^2]_t = \beta_2 \, E[g^2]_{t-1} + (1-\beta_2)\, g_t^2 \\
-  \theta_{t+1} = \theta_t - \eta \,\frac{g_t}{\sqrt{E[g^2]_t + \epsilon}}
+  E [g^2]_t = \beta_2 \, E [g^2]_{t-1} + (1-\beta_2)\, g_t^2 \\
+  \theta_{t+1} = \theta_t - \eta \,\frac {g_t}{\sqrt {E [g^2]_t + \epsilon}}
   $$
   - 对每个参数，记录它历史梯度的平方和，代表这个参数梯度 “大不大”
     - 梯度一直很大的参数 → 分母变大 → 步长缩小
@@ -778,7 +778,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - 梯度带 L2
 
     $$
-    g_t = \nabla L(\theta_t) + \lambda \theta_t
+    g_t = \nabla L (\theta_t) + \lambda \theta_t
     $$
 
   - 一阶矩估计（动量）
@@ -796,14 +796,14 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - 偏差校正
 
     $$
-    \hat{m}_t = \frac{m_t}{1-\beta_1^t}\\
-    \hat{v}_t = \frac{v_t}{1-\beta_2^t}
+    \hat {m}_t = \frac {m_t}{1-\beta_1^t}\\
+    \hat {v}_t = \frac {v_t}{1-\beta_2^t}
     $$
 
   - 参数更新
 
     $$
-    \theta_{t+1} = \theta_t - \eta \cdot \frac{\hat{m}_t}{\sqrt{\hat{v}_t}+\epsilon}
+    \theta_{t+1} = \theta_t - \eta \cdot \frac {\hat {m}_t}{\sqrt {\hat {v}_t}+\epsilon}
     $$
 
   - L2 项 $\lambda \theta_t$ 被包含在梯度里，一起被 Adam 缩放，正则强度被扭曲
@@ -814,19 +814,19 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
     - 以一阶矩为例，期望展开：
 
       $$
-      \mathbb{E}[m_t] = (1-\beta_1)\sum_{i=1}^t \beta_1^{t-i}\mathbb{E}[g_i]
+      \mathbb {E}[m_t] = (1-\beta_1)\sum_{i=1}^t \beta_1^{t-i}\mathbb {E}[g_i]
       $$
 
     - 这是一个指数移动平均，真实梯度被系数 $(1-\beta_1)$ 压制，当 t 很小时：
 
       $$
-      \mathbb{E}[m_t] \ll \mathbb{E}[g]
+      \mathbb {E}[m_t] \ll \mathbb {E}[g]
       $$
 
     - 二阶矩同理：
 
       $$
-      \mathbb{E}[v_t] \ll \mathbb{E}[g^2]
+      \mathbb {E}[v_t] \ll \mathbb {E}[g^2]
       $$
 
   - 直接用原始值更新，会导致前期步长过小，训练启动很慢，容易陷入局部最优
@@ -838,7 +838,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - 只计算原始梯度
 
     $$
-    g_t = \nabla L(\theta_t)
+    g_t = \nabla L (\theta_t)
     $$
 
   - 动量 & 二阶矩（同 Adam）
@@ -851,42 +851,42 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - 偏差校正（同 Adam）
 
     $$
-    \hat{m}_t = \frac{m_t}{1-\beta_1^t} \\
-    \hat{v}_t = \frac{v_t}{1-\beta_2^t}
+    \hat {m}_t = \frac {m_t}{1-\beta_1^t} \\
+    \hat {v}_t = \frac {v_t}{1-\beta_2^t}
     $$
 
   - 关键：独立权重衰减 + 更新
 
     $$
-    \theta_{t+1} = \theta_t - \eta\left( \frac{\hat{m}_t}{\sqrt{\hat{v}_t}+\epsilon} \right) - \eta\lambda \theta_t
+    \theta_{t+1} = \theta_t - \eta\left (\frac {\hat {m}_t}{\sqrt {\hat {v}_t}+\epsilon} \right) - \eta\lambda \theta_t
     $$
 
   - 最后一项 $-\eta\lambda \theta_t$ 就是独立权重衰减，不参与动量、二阶矩计算
 
 - Lion（EvoLved Sign Momentum）
-  - 基于符号动量，不使用梯度本身，只用梯度的符号（$\text{sign}(g_t)$）更新；内存更小，只维护一阶动量，无二阶矩
+  - 基于符号动量，不使用梯度本身，只用梯度的符号（$\text {sign}(g_t)$）更新；内存更小，只维护一阶动量，无二阶矩
 
     $$
-    \begin{align*}
-    c_t &= \beta_1 \cdot m_{t-1} + (1-\beta_1) \cdot g_t \quad \text{（动量组合）} \\
-    m_t &= \beta_2 \cdot m_{t-1} + (1-\beta_2) \cdot g_t \quad \text{（更新动量）} \\
-    \theta_{t+1} &= \theta_t - \eta \cdot({\text{sign}(c_t)} + \lambda \cdot \theta_t)
-    \end{align*}
+    \begin {align*}
+    c_t &= \beta_1 \cdot m_{t-1} + (1-\beta_1) \cdot g_t \quad \text {（动量组合）} \\
+    m_t &= \beta_2 \cdot m_{t-1} + (1-\beta_2) \cdot g_t \quad \text {（更新动量）} \\
+    \theta_{t+1} &= \theta_t - \eta \cdot ({\text {sign}(c_t)} + \lambda \cdot \theta_t)
+    \end {align*}
     $$
     - $m_t$：只存一个动量
-    - $\text{sign}(x)$：符号函数 → 输出 +1 / 0 / -1
-    - $\lambda$：解耦权重衰减（同AdamW）
+    - $\text {sign}(x)$：符号函数 → 输出 +1 / 0 /-1
+    - $\lambda$：解耦权重衰减（同 AdamW）
 
-  - 用 sign() 代替自适应缩放
+  - 用 sign () 代替自适应缩放
     - Adam：$m_t$、$v_t$ → 每个参数步长不一样
-    - Lion：$\text{sign}(c_t)$ → 所有参数步长大小相同，只有方向不同
-  - 为什么 sign() 反而更好？
-    - 抗噪声：梯度噪声大时，$\text{sign}()$ 只看方向、不看大小 → 更稳
+    - Lion：$\text {sign}(c_t)$ → 所有参数步长大小相同，只有方向不同
+  - 为什么 sign () 反而更好？
+    - 抗噪声：梯度噪声大时，$\text {sign}()$ 只看方向、不看大小 → 更稳
     - 步长均匀：不会出现某些参数步长爆炸、某些几乎不动
     - 计算更快：少了除法、开方、平方 → 速度快 10%~15%
   - 训练大模型、视觉模型效果 often 优于 AdamW，对学习率更敏感，需要精细调参
     - 必须调小学习率（$\eta \approx 10^{-4}$ 而非 $10^{-3}$）
-    - 小模型/小batch有时不如Adam稳
+    - 小模型 / 小 batch 有时不如 Adam 稳
     - 稀疏特征场景略弱（因为没有自适应缩放）
 
 - Muon（Momentum Orthogonal Newton）
@@ -894,21 +894,21 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
     - Adam：把权重展平成向量，按单个参数逐元素更新，易出现方向冲突、冗余计算
     - Muon：把权重当成矩阵（如 Transformer 的 dmodel×dff），对动量做正交化，让更新方向 “彼此垂直、幅度一致”，消除冗余探索
     - 核心：让更新矩阵尽可能正交 → 防止各方向互相干扰、加速收敛
-  - 对权重矩阵 $W\in\mathbb{R}^{d\times k}$，动量矩阵 $M_t$ 也是 $d\times k$，每行代表一个参数向量的动量
+  - 对权重矩阵 $W\in\mathbb {R}^{d\times k}$，动量矩阵 $M_t$ 也是 $d\times k$，每行代表一个参数向量的动量
 
     $$
-    \begin{align*}
-    M_t &= \mu \cdot M_{t-1} + g_t \quad \text{（动量，矩阵形式）} \\
-    O_t &= \text{Newton-Schulz}(M_t) \approx (M_t M_t^\top)^{-1/2} M_t \quad \text{（正交化）} \\
+    \begin {align*}
+    M_t &= \mu \cdot M_{t-1} + g_t \quad \text {（动量，矩阵形式）} \\
+    O_t &= \text {Newton-Schulz}(M_t) \approx (M_t M_t^\top)^{-1/2} M_t \quad \text {（正交化）} \\
     W_{t+1} &= W_t - \eta \cdot O_t - \lambda \cdot W_t
-    \end{align*}
+    \end {align*}
     $$
     - $M_t$：动量矩阵
     - Newton-Schulz：快速迭代求 正交近似（$O_t^\top O_t\approx I$），将动量矩阵转为最近正交矩阵（等价于 SVD 后将奇异值矩阵置为单位阵，仅保留方向）
     - 结果：更新方向互相垂直、不互相抵消，各方向均匀收敛、不易震荡、更快到全局最优
 
 - 大规模 LLM 如何用 Muon？
-  - 混合优化：输入 / 输出层 / 偏置 / LayerNorm用 AdamW，隐藏层用 Muon（加权重衰减 + 逐参数 LR 校准）；配合 ZeRO-1 分布式，显存减半、通信可控
+  - 混合优化：输入 / 输出层 / 偏置 / LayerNorm 用 AdamW，隐藏层用 Muon（加权重衰减 + 逐参数 LR 校准）；配合 ZeRO-1 分布式，显存减半、通信可控
   - 稳定技巧：大模型加 MuonClip（QK-Clip），限制注意力头逻辑值，避免训练 “飙车失控”
 - AdamW 相比 Adam 的改进？
   - AdamW = 修正了 Adam 中 “权重衰减计算错误” 的版本
@@ -918,7 +918,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
     - 直接对参数做衰减
 
       $$
-      w=w-lr\cdot(grad+\lambda w)
+      w=w-lr\cdot (grad+\lambda w)
       $$
 
     - 正则效果更稳定、泛化更好，不会因为学习率变化而失效
@@ -935,37 +935,37 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - Dropout 从参数正则化转向到结构正则化，Dropout 并不是在目标函数中显式加项，而是在训练阶段随机破坏网络结构
   - 过拟合的一个重要原因是神经元之间互相依赖、互相配合去记忆噪声，而通过 Dropout，每次训练，网络结构都不一样，从而防止共适应
   - 其他正则化手段
-    - 数据层面：增加训练数据的多样性、数据清洗/去噪
-    - 模型/训练策略：早停（Early Stopping）、权重共享（Weight Sharing）、标签平滑（Label Smoothing）
+    - 数据层面：增加训练数据的多样性、数据清洗 / 去噪
+    - 模型 / 训练策略：早停（Early Stopping）、权重共享（Weight Sharing）、标签平滑（Label Smoothing）
 - 什么是标签平滑？
   - 标签平滑是一种正则化手段，将原本 one-hot 硬标签 [1,0,0...] 替换为软标签，把一小部分概率 $\epsilon$ 均匀分给其他类别
   - 目的是防止模型对训练样本过度自信、过拟合，让模型学习更泛化的决策边界，同时让输出分布更平滑，提升鲁棒性和泛化能力，常用于分类、检测等任务
   - 传统 CV/NLP 分类任务中，固定类别数 C（1000、10000 类），一个样本只对应一个硬标签，模型容易对标签过度自信、过拟合，所以用标签平滑做正则，让分布软一点
-  - 而大模型的训练其任务不是分类任务而是序列生成/语言建模，自回归预测下一个 token，每个位置都是一个多分类任务，在这种极端分类的情况下，正确 token 概率本来就很小，模型天然很难 "极端自信"，标签平滑的正则效果微乎其微
+  - 而大模型的训练其任务不是分类任务而是序列生成 / 语言建模，自回归预测下一个 token，每个位置都是一个多分类任务，在这种极端分类的情况下，正确 token 概率本来就很小，模型天然很难 "极端自信"，标签平滑的正则效果微乎其微
   - 相反地，标签平滑会直接损害困惑度（PPL）与建模能力，因为 LLM 的核心目标是精准你和真实文本的分布，标签平滑反而把正确 token 的概率挖掉一块强制分给所有其他无关 token，使得模型不敢给正确词高分，从而使得困惑度变差
 - LR
   - 为什么必须 warmup？
     - 前期模型参数随机、不稳定，直接用大 LR 会震荡、不收敛甚至 NaN，而 Warmup 让学习率从极小慢慢升到最大值，保证训练稳定启动
   - 为什么必须 decay？
     - 后期模型接近收敛，需要减小步长，精细微调权重，防止在最优解附近震荡，提高最终精度
-    - 同时也是一种隐式正则，缓解过拟合——LR 越来越小，权重更新幅度变小
+    - 同时也是一种隐式正则，缓解过拟合 ——LR 越来越小，权重更新幅度变小
   - LR 的 decay 策略有哪些？
     - 阶梯衰减
 
       $$
-      lr = lr_{base} \times \gamma^{\lfloor step / step\_size \rfloor}
+      lr = lr_{base} \times \gamma^{\lfloor step /step\_size \rfloor}
       $$
 
     - cosine decay
 
       $$
-      lr = 0.5 \times lr_{max} \times \big(1 + \cos(\frac{T_{cur}}{T_{max}} \pi)\big)
+      lr = 0.5 \times lr_{max} \times \big (1 + \cos (\frac {T_{cur}}{T_{max}} \pi)\big)
       $$
 
     - 多项式衰减
 
       $$
-      lr = lr_{base} \times (1 - \frac{T_{cur}}{T_{max}})^p
+      lr = lr_{base} \times (1 - \frac {T_{cur}}{T_{max}})^p
       $$
 
     - 指数衰减
@@ -974,10 +974,10 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
       lr = lr_{base} \times \gamma^{step}
       $$
 
-    - inverse sqrt / rsqrt decay（倒数平方根）
+    - inverse sqrt /rsqrt decay（倒数平方根）
 
       $$
-      lr \propto \frac{1}{\sqrt{step}}
+      lr \propto \frac {1}{\sqrt {step}}
       $$
 
 - Batch 越大，为什么梯度越平滑？
@@ -989,7 +989,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - 有效 LR ≈ 原 LR × 累积步数，大 batch 训练通常要线性放大 LR（linear scaling rule）
   - 大 batch 进行一次前向，统计更同步，批次归一化 BN 更准确
   - 而梯度累积分多次小 batch 算 BN，均值方差是分段统计的，统计有偏差，训练稳定性和最终效果略差于真实大 batch
-  - SGD 是在线更新——算一个 batch 就更一步，及时纠正方向；而梯度累积是攒够梯度再更新，中间模型参数一直不动，梯度信息偏旧，优化路径不如实时更新干净
+  - SGD 是在线更新 —— 算一个 batch 就更一步，及时纠正方向；而梯度累积是攒够梯度再更新，中间模型参数一直不动，梯度信息偏旧，优化路径不如实时更新干净
   - 真大 batch 往往泛化更好、更稳定，梯度累积只是模拟大 batch 的梯度量级，没有完全等价的训练效果
 - batch size 变大学习率怎么调整？
   - 线性缩放规则：Batch Size 扩大 k 倍 → 学习率也扩大 k 倍
@@ -1003,7 +1003,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - 公式
 
     $$
-    \text{CrossEntropy}(p,y)=-\Sigma y_i\log(\text{softmax}(p_i))
+    \text {CrossEntropy}(p,y)=-\Sigma y_i\log (\text {softmax}(p_i))
     $$
 
   - 第一步，先对 logits 做 softmax，把输出改为概率分布
@@ -1013,7 +1013,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
 
 - 什么是 Softmax Margin Loss
   - 在标准 Softmax 交叉熵基础上，人为加入 “间隔（Margin）” 的一类改进损失，核心目的是让类内更紧凑、类间更分离，学习判别性更强的特征（尤其用于人脸识别、细粒度分类、度量学习）
-- 什么是 pass@k / cons@k？
+- 什么是 pass@k /cons@k？
   - pass@k：对单个问题，模型生成 k 个候选答案，只要 至少 1 个正确，该问题记为 “通过”
   - cons@k：对单个问题，模型生成 k 个候选答案，要求：
     - 多数一致：k 个结果中 大多数相同（多数投票）
@@ -1021,9 +1021,9 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
 - 什么是精确率 (Precision) 和召回率 (Recall)？什么是 F1？
 
   $$
-  \text{Precision} = \frac{TP}{TP+FP}\\
-  \text{Recall} = \frac{TP}{TP+FN}\\
-  F1 = 2 \times \frac{\text{Precision} \times \text{Recall}}{\text{Precision} + \text{Recall}}
+  \text {Precision} = \frac {TP}{TP+FP}\\
+  \text {Recall} = \frac {TP}{TP+FN}\\
+  F1 = 2 \times \frac {\text {Precision} \times \text {Recall}}{\text {Precision} + \text {Recall}}
   $$
   - TP（真阳性）：预测有，且确实对
   - FP（假阳性）：预测有，但实际错 / 多余
@@ -1047,9 +1047,9 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
 - 什么是异构计算？
   - 同一系统中使用不同架构的处理器协同完成计算：CPU（通用控制） + GPU（高并行计算） + NPU/TPU（专用加速）
   - 优势：用专用芯片做擅长的事，实现性能、功耗、吞吐量的最优平衡
-  - 大模型场景：CPU负责调度、IO、数据加载；GPU负责矩阵计算与通信
+  - 大模型场景：CPU 负责调度、IO、数据加载；GPU 负责矩阵计算与通信
 - 异构系统的核心层次（自上而下）
-  - 应用层：Transformer 训练/推理、数据 pipeline、通信调度
+  - 应用层：Transformer 训练 / 推理、数据 pipeline、通信调度
   - 框架层：PyTorch、TensorFlow、DeepSpeed、Colossal-AI
   - 算子加速层：CUDA Kernel、FlashAttention、cuBLAS、cuDNN、Triton
   - 运行时层：CUDA Runtime、NCCL、MPI、UCC
@@ -1072,7 +1072,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - 通信瓶颈：跨卡跨机慢，用 NVLink、IB、压缩通信、拓扑感知调度
   - IO 瓶颈：数据加载慢，用 prefetch、多进程、内存映射
 
-### 显存/内存拷贝模型
+### 显存 / 内存拷贝模型
 
 - 两个域
   - Host：CPU 内存（DRAM，主存）

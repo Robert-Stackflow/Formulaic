@@ -23,7 +23,7 @@ description: 介绍 LlaMA Factory 的基本参数与微调流程
 
 ## 二、调优方法参数
 
-### 2.1 Freeze(冻结微调)
+### 2.1 Freeze (冻结微调)
 
 |          参数名称          | 类型 |  必需  | 介绍                                                         |
 | :------------------------: | :--: | :----: | :----------------------------------------------------------- |
@@ -39,8 +39,8 @@ description: 介绍 LlaMA Factory 的基本参数与微调流程
 |    **`lora_dropout`**    | float  |  必需  | LoRA 中权重随机丢弃的概率，防止过拟合，通常在 0 和 0.1 之间选择默认值为`0` |
 |     **`lora_rank`**      |  int   |  必需  | LoRA 微调的本征维数`r`，`r`越大可训练的参数越多默认值为`8`   |
 |      `lora_target`       |  str   |  必需  | 应用 LoRA 方法的模块名称使用逗号分隔多个模块，使用 `all` 指定所有模块默认值为 `all`可选如`"q_proj"` 和 `"v_proj"` ，这两者是` Transformer`中的查询投影和键投影层，通常是注意力机制的核心部分 |
-| **`loraplus_lr_ratio`**  | float  | 非必需 | LoRA+中的学习率比例($λ=η_B/η_A$)，其中${η_B}$和${η_A}$分别是适配层矩阵中$A$和$B$的学习率该值的理想取值与所选择的模型和任务有关默认值为`None` |
-| `loraplus_lr_embedding`  | float  | 非必需 | LoRA+嵌入层的学习率，默认值为 `1e-6`                         |
+| **`loraplus_lr_ratio`**  | float  | 非必需 | LoRA + 中的学习率比例 ($λ=η_B/η_A$)，其中 ${η_B}$ 和 ${η_A}$ 分别是适配层矩阵中 $A$ 和 $B$ 的学习率该值的理想取值与所选择的模型和任务有关默认值为`None` |
+| `loraplus_lr_embedding`  | float  | 非必需 | LoRA + 嵌入层的学习率，默认值为 `1e-6`                         |
 |       `use_rslora`       |  bool  |  必需  | 是否使用秩稳定缩放方法（Rank-Stabilized LoRA），默认值为`False` |
 |        `use_dora`        |  bool  |  必需  | 是否使用权重分解的 LoRA（Weight-Decomposed LoRA），默认值为`False` |
 |       `pissa_init`       |  bool  |  必需  | 是否初始化 PiSSA 适配器，默认值为`False`                     |
@@ -53,23 +53,23 @@ description: 介绍 LlaMA Factory 的基本参数与微调流程
 
 #### 2.3.1 LoRA+
 
-- 在 LoRA 中，适配器矩阵$A$和$B$的学习率相同
-- 在 LoRA+中，可以通过设置`loraplus_lr_ratio`来调整学习率比例
-- 适配器矩阵$A$的学习率${η_A}$即为优化器学习率，而适配器矩阵$B$的学习率${η_B}$为${λ\times η_A}$，其中$λ$为`loraplus_lr_ratio`的值
+- 在 LoRA 中，适配器矩阵 $A$ 和 $B$ 的学习率相同
+- 在 LoRA + 中，可以通过设置`loraplus_lr_ratio`来调整学习率比例
+- 适配器矩阵 $A$ 的学习率 ${η_A}$ 即为优化器学习率，而适配器矩阵 $B$ 的学习率 ${η_B}$ 为 ${λ\times η_A}$，其中 $λ$ 为`loraplus_lr_ratio`的值
 
 #### 2.3.2 rsLoRA
 
 - LoRA 通过添加低秩适配器进行微调，然而`lora_rank`的增大往往会导致梯度塌陷，使得训练变得不稳定这使得在使用较大的`lora_rank`进行 LoRA 微调时较难取得令人满意的效果
-- rsLoRA(Rank-Stabilized LoRA)通过修改缩放因子使得模型训练更加稳定
+- rsLoRA (Rank-Stabilized LoRA) 通过修改缩放因子使得模型训练更加稳定
 
 #### 2.3.3 DoRA
 
-- DoRA(Weight-Decomposed Low-Rank Adaptation)提出：尽管 LoRA 大幅降低了推理成本，但这种方式取得的性能与全量微调之间仍有差距
+- DoRA (Weight-Decomposed Low-Rank Adaptation) 提出：尽管 LoRA 大幅降低了推理成本，但这种方式取得的性能与全量微调之间仍有差距
 - DoRA 将权重矩阵分解为大小与单位方向矩阵的乘积，并进一步微调二者（对方向矩阵则进一步使用 LoRA 分解），从而实现 LoRA 与 Full Fine-tuning 之间的平衡
 
 #### 2.3.4 PiSSA
 
-- 在 LoRA 中，适配器矩阵$A$由`kaiming_uniform`初始化，而适配器矩阵$B$则全初始化为 0
+- 在 LoRA 中，适配器矩阵 $A$ 由`kaiming_uniform`初始化，而适配器矩阵 $B$ 则全初始化为 0
 - 这导致一开始的输入并不会改变模型输出并且使得梯度较小，收敛较慢
 - PiSSA 通过奇异值分解直接分解原权重矩阵进行初始化，可以更快更好地收敛
 
@@ -107,9 +107,9 @@ BAdam，一种内存高效的全参数优化算法，使用 BAdam 时，将`fine
 | :-------------------------: | :---------------: | ------------------------------------------------------------ |
 |         `use_badam`         |       bool        | 是否使用 BAdam 优化器，默认值为 `False`                      |
 |      **`badam_mode`**       |      Literal      | BAdam 的使用模式，可选值为 `layer` 或 `ratio`，默认值为 `layer` |
-|     `badam_start_block`     |   Optional[int]   | layer-wise BAdam 的起始块索引，默认值为 `None`               |
-|   **`badam_switch_mode`**   | Optional[Literal] | layer-wise BAdam 中块更新策略，可选值有： `ascending`, `descending`, `random`, `fixed`默认值为 `ascending` |
-| **`badam_switch_interval`** |   Optional[int]   | layer-wise BAdam 中块更新步数间隔使用 `-1` 禁用块更新，默认值为 `50` |
+|     `badam_start_block`     |   Optional [int]   | layer-wise BAdam 的起始块索引，默认值为 `None`               |
+|   **`badam_switch_mode`**   | Optional [Literal] | layer-wise BAdam 中块更新策略，可选值有： `ascending`, `descending`, `random`, `fixed`默认值为 `ascending` |
+| **`badam_switch_interval`** |   Optional [int]   | layer-wise BAdam 中块更新步数间隔使用 `-1` 禁用块更新，默认值为 `50` |
 |  **`badam_update_ratio`**   |       float       | ratio-wise BAdam 中的更新比例，默认值为 `0.05`               |
 |      `badam_mask_mode`      |      Literal      | BAdam 优化器的掩码模式，可选值为 `adjacent` 或 `scatter`，默认值为 `adjacent` |
 |       `badam_verbose`       |        int        | BAdam 优化器的详细输出级别，0 表示无输出，1 表示输出块前缀，2 表示输出可训练参数默认值为 `0` |
@@ -120,7 +120,7 @@ BAdam，一种内存高效的全参数优化算法，使用 BAdam 时，将`fine
 | --------------------------- | ------------------------------------------------------------ |
 | `dataset`                   | 在 `dataset_info.json` 中预设的数据集名称，以 `,` 分隔启用多个数据集 |
 | `template`                  | 数据处理模板设置为 `llama3`，表明按照适配 Llama 3 模型的格式预处理数据 |
-| `cutoff_len`                | 输入序列的最大长度2048 表示限制每条样本的最大 token 数       |
+| `cutoff_len`                | 输入序列的最大长度 2048 表示限制每条样本的最大 token 数       |
 | **`max_samples`**           | 数据集中的最大样本数量，设置为 1000，用于减少训练规模或调试  |
 | `overwrite_cache`           | 是否覆盖缓存的预处理数据，`true` 表示重新处理                |
 | `preprocessing_num_workers` | 数据预处理的并行线程数，设置为 16，提高处理效率              |
@@ -144,7 +144,7 @@ BAdam，一种内存高效的全参数优化算法，使用 BAdam 时，将`fine
 | **`learning_rate`**               |   2e-4    | 初始学习率，最关键的超参数之一，直接影响训练的稳定性和收敛性 |
 | **`num_train_epochs`**            |    3.0    | 训练总轮数，微调过程中，模型通常已经有良好的初始化，因此较少的轮数往往就足够 |
 | `lr_scheduler_type`               |  cosine   | 学习率调度策略，决定了学习率如何变化；`cosine` 表示采用余弦退火策略，能够有效降低后期的学习率，通常对大模型训练表现较好 |
-| `warmup_ratio`                    |    0.1    | 学习率预热阶段的比例，预热阶段可以防止训练一开始因为学习率过高而导致的梯度爆炸；`0.1`表示前 10%的训练步数用于学习率预热 |
+| `warmup_ratio`                    |    0.1    | 学习率预热阶段的比例，预热阶段可以防止训练一开始因为学习率过高而导致的梯度爆炸；`0.1`表示前 10% 的训练步数用于学习率预热 |
 | `bf16`                            |   true    | 是否启用 bfloat16 混合精度训练，启用可减小内存占用并加速训练 |
 | `ddp_timeout`                     | 180000000 | 分布式数据并行的超时时间，设置为非常大的值，确保分布式训练不会因为超时失败 |
 
@@ -154,7 +154,7 @@ BAdam，一种内存高效的全参数优化算法，使用 BAdam 时，将`fine
 
 | 参数名称                     | 典型值 | 解释                                         |
 | ---------------------------- | :----: | -------------------------------------------- |
-| `val_size`                   |  0.1   | 验证集比例，`0.1` 表示训练数据中 10%用于验证 |
+| `val_size`                   |  0.1   | 验证集比例，`0.1` 表示训练数据中 10% 用于验证 |
 | `per_device_eval_batch_size` |   1    | 每张 GPU 上的验证批量大小                    |
 | `eval_strategy`              | steps  | 验证策略， `steps`表示每隔固定步数进行验证   |
 | `eval_steps`                 |  500   | 验证间隔步数，与 `save_steps` 保持一致       |

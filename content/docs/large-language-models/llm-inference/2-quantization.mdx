@@ -36,13 +36,13 @@ description: 介绍量化技术在 LLM 推理中的应用
 
   ![Dynamic Range and Percision](/img/llm/dynamic-range-and-percision.png)
 
-- 由于 1字节内存包含 8 个比特位，那么所需内存的计算公式如下
+- 由于 1 字节内存包含 8 个比特位，那么所需内存的计算公式如下
 
   $$
-  \text{memory}=\frac{\text{nr\_bits}}{8}\times \text{nr\_params}
+  \text {memory}=\frac {\text {nr\_bits}}{8}\times \text {nr\_params}
   $$
 
-- 假设一个 70B（700亿）参数的模型，加载该模型所需的内存如下：
+- 假设一个 70B（700 亿）参数的模型，加载该模型所需的内存如下：
 
   ![70B params memory](/img/llm/70b-params-memory.png)
 
@@ -80,7 +80,7 @@ description: 介绍量化技术在 LLM 推理中的应用
 
 - 实际上，无需将 FP32 全范围 [-3.4e38, 3.4e38] 映射到 INT8，只需要找到一种方法，把模型的参数范围映射到 INT8 中
 
-- 常见的压缩/映射方法包括对称量化和非对称量化，都属于线性映射的形式
+- 常见的压缩 / 映射方法包括对称量化和非对称量化，都属于线性映射的形式
 
 ### 对称量化
 
@@ -96,25 +96,25 @@ description: 介绍量化技术在 LLM 推理中的应用
   - 首先计算缩放因子，其中 $b$ 是需要量化到的比特数
 
     $$
-    s=\frac{2^{b-1}-1}{\alpha}
+    s=\frac {2^{b-1}-1}{\alpha}
     $$
 
   - 然后对输入 $x$ 进行量化
 
     $$
-    x_{\text{quantized}}=\text{round}(s\cdot x)
+    x_{\text {quantized}}=\text {round}(s\cdot x)
     $$
 
   - 例如，对于以下例子
 
     ![asbmax Quantization example](/img/llm/absmax-quantization-example.png)
 
-  - 计算得到：$s=\frac{127}{10.8}=11.76$，$x_{\text{quantized}}=\text{round}(11.76\cdot x)$
+  - 计算得到：$s=\frac {127}{10.8}=11.76$，$x_{\text {quantized}}=\text {round}(11.76\cdot x)$
 
   - 为了恢复原始的 FP32 值，可以使用之前计算的缩放因子进行反量化（dequantize）
 
     $$
-    x_{\text{dequantized}}=\frac{X_{\text{quantized}}}{s}
+    x_{\text {dequantized}}=\frac {X_{\text {quantized}}}{s}
     $$
 
   - 示例如下
@@ -135,28 +135,28 @@ description: 介绍量化技术在 LLM 推理中的应用
 
   ![zero-point quantization overview](/img/llm/zero-point-quantization-overview.png)
 
-- 可以看到，量化前后，0 的位置发生了变化，这是由于在 [-7.59,10.8] 这个范围内，最小值/最大值到 0 的距离不同
+- 可以看到，量化前后，0 的位置发生了变化，这是由于在 [-7.59,10.8] 这个范围内，最小值 / 最大值到 0 的距离不同
 
 - 由于位置发生了偏移，必须计算 INT8 范围的零点来进行线性映射，计算过程如下
 
   $$
-  s=\frac{2^b-1}{\alpha-\beta}\\
-  z=\text{round}(-s\cdot\beta)-z^{b-1}\qquad(\text{zeropoint})\\
-  x_{\text{quantized}}=\text{round}(s\cdot x+z)
+  s=\frac {2^b-1}{\alpha-\beta}\\
+  z=\text {round}(-s\cdot\beta)-z^{b-1}\qquad (\text {zeropoint})\\
+  x_{\text {quantized}}=\text {round}(s\cdot x+z)
   $$
 
 - 对于示例，计算过程如下
 
   $$
-  s=\frac{255}{10.8--7.59}=13.86\\
-  z=\text{round}(-13.86\cdot-7.59)-128=-23\\
-  x_{\text{quantized}}=\text{round}(13.86\cdot x+-23)
+  s=\frac {255}{10.8--7.59}=13.86\\
+  z=\text {round}(-13.86\cdot-7.59)-128=-23\\
+  x_{\text {quantized}}=\text {round}(13.86\cdot x+-23)
   $$
 
 - 将量化后的 INT8 值反量化为 FP32 的公式如下
 
   $$
-  x_{\text{dequantized}}=\frac{x_{quantized}-z}{s}
+  x_{\text {dequantized}}=\frac {x_{quantized}-z}{s}
   $$
 
 - 对称量化和非对称量化的对比
@@ -204,7 +204,7 @@ description: 介绍量化技术在 LLM 推理中的应用
 
 - 大致来说，有两种可以校准权重和激活的量化方式
   - Post-Training Quantization（PTQ）：在训练后量化
-  - Quantization Aware Training（QAT）：在训练/微调期间量化
+  - Quantization Aware Training（QAT）：在训练 / 微调期间量化
 
 ## Post-Training Quantization
 
@@ -236,10 +236,10 @@ description: 介绍量化技术在 LLM 推理中的应用
 
 - 在推理时，全局使用提前计算得到的这些值来量化激活值，准确性较低，但是速度更快
 
-### LLM.int8()
+### LLM.int8 ()
 
 - 参考资料
-  - [LLM.int8(): 8-bit Matrix Multiplication for Transformers at Scale](https://arxiv.org/abs/2208.07339)
+  - [LLM.int8 (): 8-bit Matrix Multiplication for Transformers at Scale](https://arxiv.org/abs/2208.07339)
 
 ### AWQ
 
@@ -277,8 +277,8 @@ description: 介绍量化技术在 LLM 推理中的应用
 - 通过这一过程，能够计算得到量化误差（q），利用预先计算出的逆海森矩阵（$h_1$）对其加权，本质上是基于权重的重要性来计算加权的量化误差
 
   $$
-  q=\frac{x_1-x_1^{\prime}}{h_1}\\
-  q=\frac{.5-.297}{.2}=.203
+  q=\frac {x_1-x_1^{\prime}}{h_1}\\
+  q=\frac {.5-.297}{.2}=.203
   $$
 
 - 然后，将这种加全量化误差重新分配到该行的其他权重上，有助于位置网络的整体功能和输出
@@ -309,7 +309,7 @@ description: 介绍量化技术在 LLM 推理中的应用
 
 - 对于给定的 sub 块，可以使用 absmax 量化方法
 
-- 首先用 sub 块信息计算缩放因子，然后再用 super 块的缩放因子量化 sub 块的缩放因子，从而得到 sub 块的“真实”的缩放因子
+- 首先用 sub 块信息计算缩放因子，然后再用 super 块的缩放因子量化 sub 块的缩放因子，从而得到 sub 块的 “真实” 的缩放因子
 
 - super 块的缩放因子的精度通常高于 sub 块的缩放因子
 
@@ -348,21 +348,21 @@ description: 介绍量化技术在 LLM 推理中的应用
   - 对于每一个算子，量化参数通过以下公式得到：
     - 缩放因子 $ S $：
       $$
-      S = \frac{R_{max} - R_{min}}{Q_{max} - Q_{min}}
+      S = \frac {R_{max} - R_{min}}{Q_{max} - Q_{min}}
       $$
     - 零点偏移 $ Z $：
       $$
-      Z = Q_{max} - \frac{R_{max}}{S}
+      Z = Q_{max} - \frac {R_{max}}{S}
       $$
     - 量化值 $ Q $：
 
       $$
-      Q = \frac{R}{S} + Z
+      Q = \frac {R}{S} + Z
       $$
 
-    - $ R*{min}, R*{max} $：原始浮点数据的最小/最大值
+    - $ R*{min}, R*{max} $：原始浮点数据的最小 / 最大值
 
-    - $ Q*{min}, Q*{max} $：目标量化格式的最小/最大值（如 INT8 为 -128 和 127）
+    - $ Q*{min}, Q*{max} $：目标量化格式的最小 / 最大值（如 INT8 为 -128 和 127）
     - $ R $：原始浮点数据
     - $ S $：缩放因子，用于将浮点范围映射到整数范围
     - $ Z $：零点偏移，用于对齐浮点零点与整数零点
@@ -370,11 +370,11 @@ description: 介绍量化技术在 LLM 推理中的应用
   - FakeQuant 量化和反量化的完整过程可表示为：
 
     $$
-    \begin{align*}
-    Q(x) &= \text{FakeQuant}(x) \\
-    &= \text{DeQuant}(\text{Quant}(x)) \\
-    &= s * \left( \text{Clamp}(\text{round}(x/s) - z) + z \right)
-    \end{align*}
+    \begin {align*}
+    Q (x) &= \text {FakeQuant}(x) \\
+    &= \text {DeQuant}(\text {Quant}(x)) \\
+    &= s * \left (\text {Clamp}(\text {round}(x/s) - z) + z \right)
+    \end {align*}
     $$
 
   - 量化：将浮点输入 $ x $ 除以缩放因子 $ s $，四舍五入为整数，再减去零点 $ z $，并通过 Clamp 限制在整数范围内
@@ -384,24 +384,24 @@ description: 介绍量化技术在 LLM 推理中的应用
 - 反向传播
   - 在反向传播过程中，模型需要计算损失函数相对于每个权重和输入的梯度，梯度通过 FakeQuant 节点进行传递，这些节点将量化误差反映到梯度计算中，模型参数的更新因此包含了量化误差的影响，使模型更适应量化后的部署环境
 
-  - 按照前向传播的公式，因为量化后的权重是离散的，反向传播的时候对$W$求导数为 0：
+  - 按照前向传播的公式，因为量化后的权重是离散的，反向传播的时候对 $W$ 求导数为 0：
 
     $$
-    \frac{\partial Q(W)}{\partial W} = 0
+    \frac {\partial Q (W)}{\partial W} = 0
     $$
 
   - 因为梯度为 0，所以网络学习不到任何内容，权重 $W$ 也不会更新：
 
     $$
-    g_W = \frac{\partial L}{\partial W} = \frac{\partial L}{\partial Q(W)} \cdot \frac{\partial Q(W)}{\partial W} = 0
+    g_W = \frac {\partial L}{\partial W} = \frac {\partial L}{\partial Q (W)} \cdot \frac {\partial Q (W)}{\partial W} = 0
     $$
 
-  - 这里可以使用直通估计器（Straight-Through Estimator，简称STE）简单地将梯度通过量化层传递，近似来计算梯度，这使得模型能够在前向传播中进行量化模拟，但在反向传播中仍然更新高精度的浮点参数
+  - 这里可以使用直通估计器（Straight-Through Estimator，简称 STE）简单地将梯度通过量化层传递，近似来计算梯度，这使得模型能够在前向传播中进行量化模拟，但在反向传播中仍然更新高精度的浮点参数
 
-  - STE 近似假设量化操作的梯度为1，从而允许梯度直接通过量化节点：
+  - STE 近似假设量化操作的梯度为 1，从而允许梯度直接通过量化节点：
 
     $$
-    g_W = \frac{\partial L}{\partial W} = \frac{\partial L}{\partial Q(W)}
+    g_W = \frac {\partial L}{\partial W} = \frac {\partial L}{\partial Q (W)}
     $$
 
   - 如果被量化的值在 $[x_{min},x_{max}]$ 范围内，STE 近似的结果为 1，否则为 0。这种方法使模型能够在训练期间适应量化噪声，从而在实际部署时能够更好地处理量化误差
@@ -436,7 +436,7 @@ description: 介绍量化技术在 LLM 推理中的应用
 
   ![bitlinear ywx](/img/llm/bitlinear-ywx.png)
 
-- BitLinear 层与 QAT 类似，在训练过程中执行“伪”量化，以分析权重和激活量化的效果（下图中的 $\beta$ 指得平均绝对值）
+- BitLinear 层与 QAT 类似，在训练过程中执行 “伪” 量化，以分析权重和激活量化的效果（下图中的 $\beta$ 指得平均绝对值）
 
   ![bitlinear detail](/img/llm/bitlinear-detail.png)
 

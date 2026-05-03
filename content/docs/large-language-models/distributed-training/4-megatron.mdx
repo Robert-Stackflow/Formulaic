@@ -4,10 +4,10 @@ description: 介绍 Megatron 框架的设计模式、训练流程以及代码实
 ---
 
 - 参考文章
-  - [分析transformer模型的参数量、计算量、中间激活、KV cache](https://zhuanlan.zhihu.com/p/624740065)
-  - [图解大模型系列之：Megatron源码解读1，分布式环境初始化](https://zhuanlan.zhihu.com/p/629121480)
-  - [图解大模型训练之：Megatron源码解读2，模型并行](https://zhuanlan.zhihu.com/p/634377071)
-  - [图解大模型训练系列之：Megatron源码解读3，分布式混合精度训练](https://zhuanlan.zhihu.com/p/662700424)
+  - [分析 transformer 模型的参数量、计算量、中间激活、KV cache](https://zhuanlan.zhihu.com/p/624740065)
+  - [图解大模型系列之：Megatron 源码解读 1，分布式环境初始化](https://zhuanlan.zhihu.com/p/629121480)
+  - [图解大模型训练之：Megatron 源码解读 2，模型并行](https://zhuanlan.zhihu.com/p/634377071)
+  - [图解大模型训练系列之：Megatron 源码解读 3，分布式混合精度训练](https://zhuanlan.zhihu.com/p/662700424)
 
 ## 训练一般流程
 
@@ -317,7 +317,7 @@ description: 介绍 Megatron 框架的设计模式、训练流程以及代码实
 - 然后就可以开始进行训练循环，这里设置的 \_SEQUENCE_LENGTH 为 1024
   - 首先清空优化器的梯度值
   - 进行一次前向传播和反向传播梯度计算
-  - 然后调用 finalize_model_grads 来 all-reduce TP 中的非 TP 并行梯度/DP 中的所有梯度
+  - 然后调用 finalize_model_grads 来 all-reduce TP 中的非 TP 并行梯度 / DP 中的所有梯度
   - 优化器根据梯度更新参数
 
   ```python
@@ -392,7 +392,7 @@ description: 介绍 Megatron 框架的设计模式、训练流程以及代码实
   - build_train_valid_test_data_iterators：通过 train_valid_test_dataset_provider 设置 train/val/test 数据集
   - train：通过 forward_step_func 执行训练循环
   - save_checkpoint：保存 checkpoint
-  - evaluate_and_print_results：执行验证/测试
+  - evaluate_and_print_results：执行验证 / 测试
   - 结束训练并清理资源
 
 - pretrain 的关键参数
@@ -449,7 +449,7 @@ description: 介绍 Megatron 框架的设计模式、训练流程以及代码实
 
 ## 初始化 Megatron
 
-- 初始化Megatron做了如下事：
+- 初始化 Megatron 做了如下事：
   - 定义模型的切割框架
   - 在此框架上，初始化进程，分配 GPU，设置进程组（DP/TP/PP）
 
@@ -458,26 +458,26 @@ description: 介绍 Megatron 框架的设计模式、训练流程以及代码实
   ![initial-megatron](/img/llm\initial-megatron.jpg)
 
 - 示例的分组
-  - MP：模型并行组（Model Parallism）。假设一个完整的模型需要布在8块GPU上，则如图所示，我们共布了2个model replica（2个MP）。MP组为：`[[g0, g1, g4, g5, g8, g9, g12, g13], [g2, g3, g6, g7, g10, g11, g14, g15]]`
-  - TP：张量并行组（Tensor Parallism）。对于一个模型的每一层，我们将其参数纵向切开，分别置于不同的GPU上，则图中一共有8个TP组。TP组为：`[[g0, g1], [g4, g5],[g8, g9], [g12, g13], [g2, g3], [g6, g7], [g10, g11], [g14, g15]]`
-  - PP：流水线并行组（Pipeline Parallism）。对于一个模型，我们将其每一层都放置于不同的GPU上，则图中一共有4个PP组。PP组为：`[[g0, g4, g8, g12], [g1, g5, g9, g13], [g2, g6, g10, g14], [g3, g7, g11, g15]]`
-  - DP：数据并行组（Data Parallism）。经过上述切割，对维护有相同模型部分的GPU，我们就可以做数据并行，则图中共有8个DP组。DP组为`[[g0, g2], [g1, g3], [g4, g6], [g5, g7], [g8, g10], [g9, g11], [g12, g14], [g13, g15]]`
+  - MP：模型并行组（Model Parallism）。假设一个完整的模型需要布在 8 块 GPU 上，则如图所示，我们共布了 2 个 model replica（2 个 MP）。MP 组为：`[[g0, g1, g4, g5, g8, g9, g12, g13], [g2, g3, g6, g7, g10, g11, g14, g15]]`
+  - TP：张量并行组（Tensor Parallism）。对于一个模型的每一层，我们将其参数纵向切开，分别置于不同的 GPU 上，则图中一共有 8 个 TP 组。TP 组为：`[[g0, g1], [g4, g5],[g8, g9], [g12, g13], [g2, g3], [g6, g7], [g10, g11], [g14, g15]]`
+  - PP：流水线并行组（Pipeline Parallism）。对于一个模型，我们将其每一层都放置于不同的 GPU 上，则图中一共有 4 个 PP 组。PP 组为：`[[g0, g4, g8, g12], [g1, g5, g9, g13], [g2, g6, g10, g14], [g3, g7, g11, g15]]`
+  - DP：数据并行组（Data Parallism）。经过上述切割，对维护有相同模型部分的 GPU，我们就可以做数据并行，则图中共有 8 个 DP 组。DP 组为`[[g0, g2], [g1, g3], [g4, g6], [g5, g7], [g8, g10], [g9, g11], [g12, g14], [g13, g15]]`
 
 - 分组的原则
-  - MP设定原则：MP其实由TP+PP共同决定；在开始训练前，需要我们根据实际模型，预估训练时显存消耗（特别注意峰值显存），来为模型安排GPU资源
-  - TP、DP和PP设定原则
+  - MP 设定原则：MP 其实由 TP+PP 共同决定；在开始训练前，需要我们根据实际模型，预估训练时显存消耗（特别注意峰值显存），来为模型安排 GPU 资源
+  - TP、DP 和 PP 设定原则
     - 一般而言，通讯量 TP>DP>PP
     - 通讯量大的尽量放入一台机器内，因为机器内带宽高
-    - 所以在图例中，TP 和 DP 不跨机，PP跨机
-    - 在使用 Megatron 时，很多项目不使用 PP，而仅用 TP+DP ，此时一般将 TP 放入一台机器内，令 DP 跨机（比如codegeex）
+    - 所以在图例中，TP 和 DP 不跨机，PP 跨机
+    - 在使用 Megatron 时，很多项目不使用 PP，而仅用 TP+DP ，此时一般将 TP 放入一台机器内，令 DP 跨机（比如 codegeex）
 
 - 分组的目的
   - 分配进程
-    - 确认分组方案后，在每块GPU上启动一个进程（process），每个进程独立执行自己所维护的那部分模型的计算，实现并行训练
-    - 进程0~15，为一个进程大组（group），其下的每一个DP/MP/PP组，为一个进程子组（subgroup）
+    - 确认分组方案后，在每块 GPU 上启动一个进程（process），每个进程独立执行自己所维护的那部分模型的计算，实现并行训练
+    - 进程 0~15，为一个进程大组（group），其下的每一个 DP/MP/PP 组，为一个进程子组（subgroup）
   - 组间通讯
     - 确认 DP/TP/PP 组，并分配好进程后，就能进一步设置不同进程间的通讯方案
-    - 例如属于一个 DP 组的 g0 和 g2 需要进行梯度通讯，属于一个 PP组的 g4 和 g8 需要进行层间输出结果的通讯
+    - 例如属于一个 DP 组的 g0 和 g2 需要进行梯度通讯，属于一个 PP 组的 g4 和 g8 需要进行层间输出结果的通讯
 
 - 代码实现
 
@@ -712,11 +712,11 @@ description: 介绍 Megatron 框架的设计模式、训练流程以及代码实
 
 - 总的来说，使用 `torch.distributed.new_group(ranks)` 在进程大组下设置子组
 
-- ranks 是 list of list，表示对进程序号的划分，例如设置 DP 组，则ranks为 `[[0,2], [1,3]...]`，以此类推
+- ranks 是 list of list，表示对进程序号的划分，例如设置 DP 组，则 ranks 为 `[[0,2], [1,3]...]`，以此类推
 
 - 将划分结果存在全局变量中（例如`_DATA_PARALLEL_GROUP`），方便在后续切割模型时使用
 
-- 同时，定义以下函数，使得对于任意一个进程，都能查到它在DP/TP/PP组中的局部序号（local_rank），以及它对应的DP/TP/PP组的world_size，这也是为后续切割模型使用
+- 同时，定义以下函数，使得对于任意一个进程，都能查到它在 DP/TP/PP 组中的局部序号（local_rank），以及它对应的 DP/TP/PP 组的 world_size，这也是为后续切割模型使用
 
   ```python
   def get_tensor_model_parallel_group():
@@ -742,14 +742,14 @@ description: 介绍 Megatron 框架的设计模式、训练流程以及代码实
       return torch.distributed.get_rank(group=get_tensor_model_parallel_group())
   ```
 
-- 为什么还有一个embedding_group?
-  - 在GPT类模型中，输入层和输出层共享一个 word_embedding
+- 为什么还有一个 embedding_group?
+  - 在 GPT 类模型中，输入层和输出层共享一个 word_embedding
   - 因此，在计算完梯度，更新 embedding 权重前，输入和输出层需要进行通讯，保证 word_embedding 完全一致
   - 也即 PP 组中的第一个和最后一个进程需要通讯
-  - 设置进程子组的目的就是进一步划分通讯组，因此这里再添加一个embedding_group
+  - 设置进程子组的目的就是进一步划分通讯组，因此这里再添加一个 embedding_group
 
 - DeepSpeed ZeRO-R
-  - 在实际应用中，通常采用 DeepSpeed-Megatron 的方式，借助微软DeepSpeed 库，通过 ZeRO 技术，帮助我们更好节省显存
+  - 在实际应用中，通常采用 DeepSpeed-Megatron 的方式，借助微软 DeepSpeed 库，通过 ZeRO 技术，帮助我们更好节省显存
 
 ## 模型并行
 
@@ -785,12 +785,12 @@ description: 介绍 Megatron 框架的设计模式、训练流程以及代码实
   - 设置学习率 `get_learning_rate_scheduler`
 
 - `get_model(model_provider)`
-  - 在 CPU 上定义模型，Pytorch 默认在 CPU 上定义模型 (nn.Module) `model_provider` 是一个函数，调用它即可返回CPU版的模型
+  - 在 CPU 上定义模型，Pytorch 默认在 CPU 上定义模型 (nn.Module) `model_provider` 是一个函数，调用它即可返回 CPU 版的模型
   - 将模型从 CPU 搬运至 GPU 上
     - 借助 DeepSpeed 管理，利用其管理模型的分布式，DP 组间的显存优化
     - 手动搬运管理
-      - 显存搬运：手动将模型搬运到当前进程所对应的GPU上
-      - 权重精度设定：在模型训练中，把权重精度从fp32降至fp16，是一种节省显存的好办法；如果使用混合精度训练，需要将模型搬运到 GPU 上后，修改模型精度
+      - 显存搬运：手动将模型搬运到当前进程所对应的 GPU 上
+      - 权重精度设定：在模型训练中，把权重精度从 fp32 降至 fp16，是一种节省显存的好办法；如果使用混合精度训练，需要将模型搬运到 GPU 上后，修改模型精度
       - 初始化 DP 组：定义 DP 组间 forward、backward 和梯度计算与通讯等方法；TP/PP 组的这些方法是认为定义的并且在定义 CPU 模型时就已经设计好；而 DP 组可以直接使用 DistributedDataParallel，并在此基础上添加对碎片化内存的管理、对计算梯度时的精度控制
 
 - 代码实现
@@ -882,14 +882,14 @@ description: 介绍 Megatron 框架的设计模式、训练流程以及代码实
   ![img](/img/llm\codegeex-structure.jpg)
 
 - 模型结构
-  - `CodeGeeX` : 定义一块GPU上的模型，它由`TransformerLanguageModel` 和`_VocabParallelCrossEntropy`这两个核心类组成
-  - `TransformerLanguageModel`：定义每块GPU上输入层embedding和中间block层的结构
-  - `Embedding`: 定义每块GPU上输入层embedding结构及相关计算，输出结果已AllReduce（TP组间）
-  - `ParallelTransformer`：定义每块GPU上所有中间blocks的结构及相关计算，输出结果已AllReduce（TP组间）
-  - `ParallelTransformerLayer`: 定义每块GPU上单个block的结构及相关计算，输出结果已AllReduce（TP组间）
-  - `ParallelSelfAttention` : 定义每块GPU上单个block中，attention的结构及相关计算，输出结果已AllReduce（TP组间）
-  - `ParallelMLP` : 定义每块GPU上单个block中，mlp层的结构及相关计算，输出结果已AllReduce（TP组间）
-  - `_VocabParallelCrossEntropy`: torch.autograd.Function，定义每块GPU上，输出层embedding、softmax和loss等结构及相关计算
+  - `CodeGeeX` : 定义一块 GPU 上的模型，它由`TransformerLanguageModel` 和`_VocabParallelCrossEntropy`这两个核心类组成
+  - `TransformerLanguageModel`：定义每块 GPU 上输入层 embedding 和中间 block 层的结构
+  - `Embedding`: 定义每块 GPU 上输入层 embedding 结构及相关计算，输出结果已 AllReduce（TP 组间）
+  - `ParallelTransformer`：定义每块 GPU 上所有中间 blocks 的结构及相关计算，输出结果已 AllReduce（TP 组间）
+  - `ParallelTransformerLayer`: 定义每块 GPU 上单个 block 的结构及相关计算，输出结果已 AllReduce（TP 组间）
+  - `ParallelSelfAttention` : 定义每块 GPU 上单个 block 中，attention 的结构及相关计算，输出结果已 AllReduce（TP 组间）
+  - `ParallelMLP` : 定义每块 GPU 上单个 block 中，mlp 层的结构及相关计算，输出结果已 AllReduce（TP 组间）
+  - `_VocabParallelCrossEntropy`: torch.autograd.Function，定义每块 GPU 上，输出层 embedding、softmax 和 loss 等结构及相关计算
 
 - 这里对于模型的每一层输出，都需要在 TP 组间进行 all-reduce，来保证下一层拿到的输入也是完整的
 
@@ -994,13 +994,13 @@ description: 介绍 Megatron 框架的设计模式、训练流程以及代码实
 
 ### Embedding
 
-- Embedding 类定义了word/position/segment embedding，并定义输入 X 经过embedding 层的计算方法
+- Embedding 类定义了 word/position/segment embedding，并定义输入 X 经过 embedding 层的计算方法
 
   ![img](/img/llm\megatron-embedding.jpg)
 
-- `self.word_embeddings`：来自自定义的 `VocabParallelEmbedding` ,含“Parallel”则意味着参数在TP组间做了切割，因此 `self.word_embeddings` 是切割后的 WE
+- `self.word_embeddings`：来自自定义的 `VocabParallelEmbedding` , 含 “Parallel” 则意味着参数在 TP 组间做了切割，因此 `self.word_embeddings` 是切割后的 WE
 
-- `self.position_embeddings` 和 `self.tokentype_embeddings` 这两者都和输入 X相关，而输入 X 是不做切割的，因此这两者也无需切割
+- `self.position_embeddings` 和 `self.tokentype_embeddings` 这两者都和输入 X 相关，而输入 X 是不做切割的，因此这两者也无需切割
 
 - 代码实现
 
@@ -1125,7 +1125,7 @@ description: 介绍 Megatron 框架的设计模式、训练流程以及代码实
 
 ### VocabParallelEmbedding
 
-- VocabParallelEmbedding 用于定义分布式的word embedding
+- VocabParallelEmbedding 用于定义分布式的 word embedding
 
   ![VocabParallelEmbedding](/img/llm\megatron- VocabParallelEmbedding.jpg)
 
@@ -1264,11 +1264,11 @@ description: 介绍 Megatron 框架的设计模式、训练流程以及代码实
 
 - f 和 g 为一对共轭算子，可对应理解为两个 torch.autograd.Function 类，该类下可按需重写 forward 和 backward 方法：
 
-- f：对应代码中的 class \_CopyToModelParallelRegion(torch.autograd.Function)
+- f：对应代码中的 class \_CopyToModelParallelRegion (torch.autograd.Function)
   - forward 方法：直接复制输入数据；
   - backward 方法：对梯度执行 AllReduce 操作
 
-- g：对应代码中的 class \_GatherFromModelParallelRegion(torch.autograd.Function)
+- g：对应代码中的 class \_GatherFromModelParallelRegion (torch.autograd.Function)
   - forward 方法：对输出执行 all-gather 操作；
   - backward 方法：对梯度执行 split 操作（每张卡经 all-gather 后已持有完整的 Y，以 Y 为起点计算梯度后，沿列维度 split 即可得到 Y1 和 Y2 的梯度）
 
@@ -1655,16 +1655,16 @@ description: 介绍 Megatron 框架的设计模式、训练流程以及代码实
 
 - 在 Transformer 中，输出层会额外训练一个线性矩阵，来计算 logit；而此处，可以用输入层 WE 的转置来代替这个线性矩阵
 
-- 这是由于在 Megatron 交叉熵的计算逻辑中，可以将 $X*WE^T$​ 结果理解成“X与WE间的相似度”，例如对Y1来说，它的第一行中的每个logit，表示第一个token与词表里每个词的相似度
+- 这是由于在 Megatron 交叉熵的计算逻辑中，可以将 $X*WE^T$​ 结果理解成 “X 与 WE 间的相似度”，例如对 Y1 来说，它的第一行中的每个 logit，表示第一个 token 与词表里每个词的相似度
 
 - 注意到每个进程上只维护部分 WE
-  - 例如，假设词表共有10个单词，WE1 维护前5个单词，WE2 维护后5个单词
-  - 因此，对Y1，它的第一行中的每个logit，表示第一个token与词表中前5个词的相似度；对Y2，它的第一行中的每个logit，表示第一个token与词表中后5个词的相似度
+  - 例如，假设词表共有 10 个单词，WE1 维护前 5 个单词，WE2 维护后 5 个单词
+  - 因此，对 Y1，它的第一行中的每个 logit，表示第一个 token 与词表中前 5 个词的相似度；对 Y2，它的第一行中的每个 logit，表示第一个 token 与词表中后 5 个词的相似度
 
 - 首先求解最大值，得到基于全局的最大 logit 值，再进行减法来防止计算溢出
 
   $$
-  \text{Softmax}(x_i) = \frac{\exp(x_i - \max(x))}{\sum_j \exp(x_j - \max(x))}
+  \text {Softmax}(x_i) = \frac {\exp (x_i - \max (x))}{\sum_j \exp (x_j - \max (x))}
   $$
 
 - 在这里，all-reduce 操作是取全局最大值，而不是进行相加操作
@@ -1687,7 +1687,7 @@ description: 介绍 Megatron 框架的设计模式、训练流程以及代码实
   - 对每个进程的本地 logit 矩阵 `Y1` 和 `Y2`，按行计算指数和：
 
     $$
-    e_i = \sum_{j} \exp(Y_{i,j})
+    e_i = \sum_{j} \exp (Y_{i,j})
     $$
 
   - 得到局部归一化项 `e1` 和 `e2`
@@ -1698,11 +1698,11 @@ description: 介绍 Megatron 框架的设计模式、训练流程以及代码实
 - 我们的优化目标是最小化以下损失值：
 
   $$
-  \text{Loss} = \frac{e - L}{e}
+  \text {Loss} = \frac {e - L}{e}
   $$
 
 - 其中：
-  - 分子 `e - L` 表示“token 与所有词的相似度总和”减去“token 与真值词的相似度”，代表了模型预测与真实目标之间的差距
+  - 分子 `e - L` 表示 “token 与所有词的相似度总和” 减去 “token 与真值词的相似度”，代表了模型预测与真实目标之间的差距
   - 分母 `e` 作为归一化项，确保损失值在 [0, 1] 范围内，便于训练和梯度传播
 
 - 代码实现
@@ -1825,18 +1825,18 @@ description: 介绍 Megatron 框架的设计模式、训练流程以及代码实
   - 如果 exponent 全为 0，此时数值范围很小
     - 如果 fraction 位全为 0，则表示数字 0
 
-    - 如果 fraction 位不全为 0，则表示一个很小的数字（fraction表示由fraction位的bitmap换算成十进制后的结果）
+    - 如果 fraction 位不全为 0，则表示一个很小的数字（fraction 表示由 fraction 位的 bitmap 换算成十进制后的结果）
       $$
-      (-1)^{\text{signbit}} \cdot 2^{-14} \cdot \left(0 + \frac{\text{fraction}}{1024}\right)
+      (-1)^{\text {signbit}} \cdot 2^{-14} \cdot \left (0 + \frac {\text {fraction}}{1024}\right)
       $$
 
-  - 如果exponent位全为1，此时意味着表达的数值可能非常大
+  - 如果 exponent 位全为 1，此时意味着表达的数值可能非常大
     - 如果 fraction 位全为 0，则表示 ±inf（超过了 FP16 的表达范围）
     - 如果 fraction 不全为 0，则表示 NAN
 
   - 其他情况
     $$
-    (-1)^{\text{signbit}} * 2^{(\text{exponent}-15)} * \left(1 + \frac{\text{fraction}}{1024}\right)
+    (-1)^{\text {signbit}} * 2^{(\text {exponent}-15)} * \left (1 + \frac {\text {fraction}}{1024}\right)
     $$
 
 - 计算示例
@@ -1844,20 +1844,20 @@ description: 介绍 Megatron 框架的设计模式、训练流程以及代码实
   | Binary             | Hex  | Value                                                                      | Notes                              |
   | ------------------ | ---- | -------------------------------------------------------------------------- | ---------------------------------- |
   | 0 00000 0000000000 | 0000 | 0                                                                          |                                    |
-  | 0 00000 0000000001 | 0001 | $2^{-14} \times \left(0 + \frac{1}{1024}\right) \approx 0.000000059604645$ | smallest positive subnormal number |
-  | 0 00000 1111111111 | 03ff | $2^{-14} \times \left(0 + \frac{1023}{1024}\right) \approx 0.000060975552$ | largest subnormal number           |
-  | 0 00001 0000000000 | 0400 | $2^{-14} \times \left(1 + \frac{0}{1024}\right) \approx 0.00006103515625$  | smallest positive normal number    |
-  | 0 01101 0101010101 | 3555 | $2^{-2} \times \left(1 + \frac{341}{1024}\right) \approx 0.33325195$       | nearest value to 1/3               |
-  | 0 01110 1111111111 | 3bff | $2^{-1} \times \left(1 + \frac{1023}{1024}\right) \approx 0.99951172$      | largest number less than one       |
-  | 0 01111 0000000000 | 3c00 | $2^{0} \times \left(1 + \frac{0}{1024}\right) = 1$                         | one                                |
-  | 0 01111 0000000001 | 3c01 | $2^{0} \times \left(1 + \frac{1}{1024}\right) \approx 1.00097656$          | smallest number larger than one    |
-  | 0 11110 1111111111 | 7bff | $2^{15} \times \left(1 + \frac{1023}{1024}\right) = 65504$                 | largest normal number              |
+  | 0 00000 0000000001 | 0001 | $2^{-14} \times \left (0 + \frac {1}{1024}\right) \approx 0.000000059604645$ | smallest positive subnormal number |
+  | 0 00000 1111111111 | 03ff | $2^{-14} \times \left (0 + \frac {1023}{1024}\right) \approx 0.000060975552$ | largest subnormal number           |
+  | 0 00001 0000000000 | 0400 | $2^{-14} \times \left (1 + \frac {0}{1024}\right) \approx 0.00006103515625$  | smallest positive normal number    |
+  | 0 01101 0101010101 | 3555 | $2^{-2} \times \left (1 + \frac {341}{1024}\right) \approx 0.33325195$       | nearest value to 1/3               |
+  | 0 01110 1111111111 | 3bff | $2^{-1} \times \left (1 + \frac {1023}{1024}\right) \approx 0.99951172$      | largest number less than one       |
+  | 0 01111 0000000000 | 3c00 | $2^{0} \times \left (1 + \frac {0}{1024}\right) = 1$                         | one                                |
+  | 0 01111 0000000001 | 3c01 | $2^{0} \times \left (1 + \frac {1}{1024}\right) \approx 1.00097656$          | smallest number larger than one    |
+  | 0 11110 1111111111 | 7bff | $2^{15} \times \left (1 + \frac {1023}{1024}\right) = 65504$                 | largest normal number              |
   | 0 11111 0000000000 | 7c00 | $\infty$                                                                   | infinity                           |
   | 1 00000 0000000000 | 8000 | $-0$                                                                       |                                    |
   | 1 10000 0000000000 | c000 | $-2$                                                                       |                                    |
   | 1 11111 0000000000 | fc00 | $-\infty$                                                                  | negative infinity                  |
 
-- fp16的表达范围是：5.95e⁻⁸ ~ 65504（取的是绝对值的表达范围，负向同理），超过这个表达范围，则会发生数据的上溢和下溢情况
+- fp16 的表达范围是：5.95e⁻⁸ ~ 65504（取的是绝对值的表达范围，负向同理），超过这个表达范围，则会发生数据的上溢和下溢情况
 
 ### FP32
 
@@ -1883,7 +1883,7 @@ description: 介绍 Megatron 框架的设计模式、训练流程以及代码实
 
 - 对比 bf16 和 fp16：bf16 的 exponent 位更多了，fraction 位更少了；这意味着 bf16 表达的数值范围比 fp16 更宽广，但其表达精度却不如 fp16
 
-  | Format | Epsilon(ε) |
+  | Format | Epsilon (ε) |
   | ------ | ---------- |
   | FP32   | 0.00000012 |
   | FP16   | 0.00097656 |
@@ -1891,7 +1891,7 @@ description: 介绍 Megatron 框架的设计模式、训练流程以及代码实
 
 - Epsilon 是各浮点表示形式下使得 $1+\varepsilon > 1$ 成立的最小浮点数值
 
-- bf16的表达精度不如fp16和fp32，那会出现什么问题呢？
+- bf16 的表达精度不如 fp16 和 fp32，那会出现什么问题呢？
   - 尽管 BF16 的数值精度低于 FP16 和 FP32，这在理论上可能对模型收敛产生一定影响，但在实际训练中，其表现却相当稳健
   - 核心原因在于，对模型训练过程而言，数值表示范围的宽广度往往比单纯的精度更为关键
   - 当数值范围不足时，极易引发上溢（inf）或下溢（nan）问题，导致对应训练步骤失效，而包含非法值的梯度也无法用于有效更新模型权重
@@ -1931,7 +1931,7 @@ description: 介绍 Megatron 框架的设计模式、训练流程以及代码实
 
 - 梯度反缩放（Unscaled gradients）
   - 梯度以 FP16 精度存储，但在用于更新模型权重前，必须转换为 FP32 精度，并同时执行 unscale 操作，将梯度恢复至原始值
-  - 理论上说，当梯度从fp16转变为fp32时，fp16的梯度已经没用了，因此可以将其从存储中移除
+  - 理论上说，当梯度从 fp16 转变为 fp32 时，fp16 的梯度已经没用了，因此可以将其从存储中移除
 
 - 梯度裁剪（Clip gradients）
   - 将梯度转换为 FP32 精度后，可执行梯度裁剪（clip）操作，以此进一步规避梯度爆炸或梯度消失问题
@@ -1965,7 +1965,7 @@ description: 介绍 Megatron 框架的设计模式、训练流程以及代码实
 
   - 但在实际计算中，由于 FP16 的舍入误差，这一更新会被近似为 $2^{-3}$，导致权重看似没有变化
 
-  - 这是因为 FP16 的尾数精度有限，当梯度的数量级远小于权重本身时，梯度的贡献会被舍入误差完全抵消，使得本轮训练对权重更新没有任何实际影响，相当于“白训练”了
+  - 这是因为 FP16 的尾数精度有限，当梯度的数量级远小于权重本身时，梯度的贡献会被舍入误差完全抵消，使得本轮训练对权重更新没有任何实际影响，相当于 “白训练” 了
 
 - 梯度下溢
   - 在训练后期，约有 67% 的梯度值会小于 $2^{−24}$，而这恰好是 FP16 数值表示范围的下界
@@ -1990,14 +1990,14 @@ description: 介绍 Megatron 框架的设计模式、训练流程以及代码实
 - 常量损失放大
   - 若训练全程采用固定的缩放因子 `loss_scale` 对损失（Loss）进行缩放，该策略被称为「常量损失放大」，具体执行流程如下：
 
-  - 损失放大阶段（Scale up）：在反向传播（backward）阶段，将 Loss 值放大 $2^{\text{loss\_scale}}$ 倍，基于放大后的 Loss 计算梯度，并将梯度以 FP16 精度存储（兼顾显存效率）
+  - 损失放大阶段（Scale up）：在反向传播（backward）阶段，将 Loss 值放大 $2^{\text {loss\_scale}}$ 倍，基于放大后的 Loss 计算梯度，并将梯度以 FP16 精度存储（兼顾显存效率）
 
   - 梯度反缩放阶段（Scale down），当需要用梯度更新权重时，执行以下操作：
     - 梯度校验：先检查放大后的梯度是否出现上溢（inf/nan）—— 尽管放大 Loss 解决了梯度下溢问题，但可能引发梯度上溢；
 
     - 权重更新判定：
       - 若梯度存在上溢，直接跳过本轮（step）的权重更新；
-      - 若梯度无异常，则对 FP16 梯度执行反缩放（unscale）：将梯度值缩小 $2^{\text{loss\_scale}}$ 倍，并转换为 FP32 精度，用于本轮权重更新
+      - 若梯度无异常，则对 FP16 梯度执行反缩放（unscale）：将梯度值缩小 $2^{\text {loss\_scale}}$ 倍，并转换为 FP32 精度，用于本轮权重更新
 
 - 常量损失放大的核心问题
   - 该策略看似可行，但存在一个关键缺陷：固定 `loss_scale` 的取值难以适配训练全程
@@ -2043,25 +2043,25 @@ description: 介绍 Megatron 框架的设计模式、训练流程以及代码实
     - 若梯度大于 `max`，则置为 `max`
   - 难点：阈值的选取依赖经验，难以找到普适的最优值
 
-- 基于梯度向量范数的裁剪（L2范数裁剪）
-  - 定义梯度向量：设 $g_1 = \frac{\partial J(\mathbf{w})}{\partial w_1}$，$g_2 = \frac{\partial J(\mathbf{w})}{\partial w_2}$，则梯度向量 $\mathbf{g} = [g_1, g_2]$，其 L2 范数为：
+- 基于梯度向量范数的裁剪（L2 范数裁剪）
+  - 定义梯度向量：设 $g_1 = \frac {\partial J (\mathbf {w})}{\partial w_1}$，$g_2 = \frac {\partial J (\mathbf {w})}{\partial w_2}$，则梯度向量 $\mathbf {g} = [g_1, g_2]$，其 L2 范数为：
 
     $$
-    \|\mathbf{g}\|_2 = \sqrt{g_1^2 + g_2^2}
+    \|\mathbf {g}\|_2 = \sqrt {g_1^2 + g_2^2}
     $$
 
   - 裁剪规则：设定裁剪阈值 $c$
-    - 当 $\|\mathbf{g}\|_2 > c$ 时：
+    - 当 $\|\mathbf {g}\|_2 > c$ 时：
 
       $$
-      \mathbf{g} = \frac{c}{\|\mathbf{g}\|_2} \cdot \mathbf{g}
+      \mathbf {g} = \frac {c}{\|\mathbf {g}\|_2} \cdot \mathbf {g}
       $$
 
     - 即对梯度向量进行等比例缩放，使其范数恰好等于 $c$
 
-    - 当 $\|\mathbf{g}\|_2 \le c$​ 时：梯度保持不变
+    - 当 $\|\mathbf {g}\|_2 \le c$​ 时：梯度保持不变
 
-- 缩放因子 $\frac{c}{\|\mathbf{g}\|_2}$ 是一个标量，其作用与学习率 $\alpha$ 类似，都是对梯度进行缩放以控制更新步长
+- 缩放因子 $\frac {c}{\|\mathbf {g}\|_2}$ 是一个标量，其作用与学习率 $\alpha$ 类似，都是对梯度进行缩放以控制更新步长
 
 ### 优化器实现
 
@@ -2774,13 +2774,13 @@ description: 介绍 Megatron 框架的设计模式、训练流程以及代码实
   ```
 
 - 这行代码中 `detach()` 和 `clone()` 是缺一不可的，我们可以分别分析只使用其中一个的问题，以及两者结合的原因
-  - 只使用 clone() 的问题
+  - 只使用 clone () 的问题
     - `clone()` 的作用是深拷贝：会开辟新的内存空间，完整复制原参数的数值，生成一个独立的张量
     - 克隆后的张量仍保留在计算图中，其 `requires_grad=True`（继承原参数的梯度属性）
     - 这会导致反向传播时，框架会试图对这份 fp32 的 `main_param` 计算梯度 —— 但这与混合精度训练的逻辑完全冲突
     - 根据混合精度流程图，梯度是由 fp16 的 `model_param` 在前向 / 反向计算中生成的，`main_param` 只负责接收转换后的梯度进行更新，本身不参与梯度计算
     - 若 `main_param` 参与梯度计算，会造成梯度重复计算、计算图混乱，最终导致训练数值错误或显存爆炸
-  - 只使用 detach() 的问题
+  - 只使用 detach () 的问题
     - `detach()` 的作用是脱离计算图：会让张量与原计算图断开关联，`requires_grad=False`，不再参与梯度计算
     - 但仅用 `detach()` 存在关键问题：
     - `detach()` 不会开辟新内存，返回的张量与原 fp16 的 `param` 共享同一块内存空间

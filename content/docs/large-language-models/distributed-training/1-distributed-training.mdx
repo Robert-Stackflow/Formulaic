@@ -8,10 +8,10 @@ description: 介绍分布式训练的基本概念与技术
   - [Accelerating PyTorch Model Training](https://magazine.sebastianraschka.com/p/accelerating-pytorch-model-training)
   - NVIDIA 分布式训练手册：[Parallelisms Guide — Megatron Bridge](https://docs.nvidia.com/nemo/megatron-bridge/0.2.0/parallelisms.html)
 - 参考文章
-  - [图解大模型训练之：数据并行上篇(DP, DDP与ZeRO)](https://zhuanlan.zhihu.com/p/617133971)
-  - [图解大模型训练之：数据并行下篇( DeepSpeed ZeRO，零冗余优化)](https://zhuanlan.zhihu.com/p/618865052)
-  - [图解大模型训练之：张量模型并行(TP)，Megatron-LM](https://zhuanlan.zhihu.com/p/622212228)
-  - [图解大模型训练之：流水线并行（Pipeline Parallelism），以Gpipe为例](https://zhuanlan.zhihu.com/p/613196255)
+  - [图解大模型训练之：数据并行上篇 (DP, DDP 与 ZeRO)](https://zhuanlan.zhihu.com/p/617133971)
+  - [图解大模型训练之：数据并行下篇 ( DeepSpeed ZeRO，零冗余优化)](https://zhuanlan.zhihu.com/p/618865052)
+  - [图解大模型训练之：张量模型并行 (TP)，Megatron-LM](https://zhuanlan.zhihu.com/p/622212228)
+  - [图解大模型训练之：流水线并行（Pipeline Parallelism），以 Gpipe 为例](https://zhuanlan.zhihu.com/p/613196255)
 
 ## 什么是分布式训练
 
@@ -22,7 +22,7 @@ description: 介绍分布式训练的基本概念与技术
   - 反向传播计算梯度
   - 利用梯度更新参数
 - 分布式训练关心的三个核心问题
-  - 内存占用（Memory Usage）：这是一个硬性限制——如果一次训练步骤无法装入内存，训练就无法继续进行
+  - 内存占用（Memory Usage）：这是一个硬性限制 —— 如果一次训练步骤无法装入内存，训练就无法继续进行
   - 计算效率（Compute Efficiency）：希望硬件的大部分时间都用于实际计算，因此需要减少花在数据传输上的时间，或等待其他 GPU 完成工作的空闲时间
   - 通信开销（Communication Overhead）：希望将通信带来的额外开销降到最低，因为通信会使 GPU 处于空闲状态
     - 为此，需要尽可能充分利用节点内（速度更快）和节点间（速度较慢）的带宽，并尽量将通信与计算进行重叠
@@ -127,14 +127,14 @@ description: 介绍分布式训练的基本概念与技术
 ### Batch Size
 
 - Batch Size 和训练时间的关系
-  - 每个 epoch 的优化器步数 = 总样本数/批次大小
+  - 每个 epoch 的优化器步数 = 总样本数 / 批次大小
   - 而每个优化器步数需要进行的操作
     - 前向传播（forward）
     - 反向传播（backward）
     - 梯度同步 / 累积（多卡时）
     - 参数更新（optimizer step）
   - backward 通常是 forward 的 2–3 倍计算量，optimizer step 涉及大量参数读写，在数据并行中还要做梯度通信（all-reduce），所以一次 step 的固定开销很大
-  - 训练的总时间 ≈ steps×( 固定成本 + 每个批次的计算时间)，而当 batch 很小时固定成本占比变大，GPU 更容易空转
+  - 训练的总时间 ≈ steps×(固定成本 + 每个批次的计算时间)，而当 batch 很小时固定成本占比变大，GPU 更容易空转
   - 固定成本包括
     - Kernel launch 开销（GPU）：每个算子都要 launch kernel，kernel launch 本身有不可忽略的延迟，batch 小时，算子算得快，但 launch 时间不变
     - 反向传播的调度与同步：autograd 图的遍历，backward 中的算子依赖管理
@@ -146,7 +146,7 @@ description: 介绍分布式训练的基本概念与技术
   - 这种表示方式使得训练规模在数值上基本不依赖于训练过程中所使用的具体输入序列长度
   - 通常而言 Batch Size Tokens = Batch Size Samples × Sample Token Length
   - Llama 1 使用约 4M tokens 的 batch size 训练了 1.4T tokens，而 DeepSeek 使用约 60M tokens 的 batch size 训练了 14T tokens
-- 在将模型训练扩展到大规模 batch size 时，面临的首要挑战就是内存不足问题——即，当 GPU 内存不足以容纳 batch 大小时，应该如何应对
+- 在将模型训练扩展到大规模 batch size 时，面临的首要挑战就是内存不足问题 —— 即，当 GPU 内存不足以容纳 batch 大小时，应该如何应对
 
 ### Activations
 
@@ -162,9 +162,8 @@ description: 介绍分布式训练的基本概念与技术
   - 整个模型的损失函数是高度嵌套的函数复合：
 
     $$
-    \mathcal{L}=
-    \mathcal{L}\Big(
-    \phi^{(L)}(W^{(L)} \phi^{(L-1)}(\cdots \phi^{(1)}(W^{(1)} x)))
+    \mathcal {L}=
+    \mathcal {L}\Big (\phi^{(L)}(W^{(L)} \phi^{(L-1)}(\cdots \phi^{(1)}(W^{(1)} x)))
     \Big)
     $$
 
@@ -174,29 +173,29 @@ description: 介绍分布式训练的基本概念与技术
   - 考虑某一层参数的梯度：
 
     $$
-    \frac{\partial \mathcal{L}}{\partial W^{(l)}}
+    \frac {\partial \mathcal {L}}{\partial W^{(l)}}
     $$
 
   - 由链式法则：
 
     $$
-    \frac{\partial \mathcal{L}}{\partial W^{(l)}}=
-    \frac{\partial \mathcal{L}}{\partial z^{(l)}}
+    \frac {\partial \mathcal {L}}{\partial W^{(l)}}=
+    \frac {\partial \mathcal {L}}{\partial z^{(l)}}
     \cdot
-    \frac{\partial z^{(l)}}{\partial W^{(l)}}
+    \frac {\partial z^{(l)}}{\partial W^{(l)}}
     $$
 
   - 而线性层有：
 
     $$
-    \frac{\partial z^{(l)}}{\partial W^{(l)}} = a^{(l-1)}
+    \frac {\partial z^{(l)}}{\partial W^{(l)}} = a^{(l-1)}
     $$
 
   - 因此：
 
     $$
-    \frac{\partial \mathcal{L}}{\partial W^{(l)}}=
-    \frac{\partial \mathcal{L}}{\partial z^{(l)}} a^{(l-1)}
+    \frac {\partial \mathcal {L}}{\partial W^{(l)}}=
+    \frac {\partial \mathcal {L}}{\partial z^{(l)}} a^{(l-1)}
     $$
 
   - 可见，前一层的激活值 $a^{(l-1)}$ 是权重梯度计算中不可缺失的因子，如果前向传播时没有保存 $a^{(l-1)}$，反向传播在数学上就无法进行
@@ -205,30 +204,30 @@ description: 介绍分布式训练的基本概念与技术
   - 激活层：
 
     $$
-    a^{(l)} = \phi(z^{(l)})
+    a^{(l)} = \phi (z^{(l)})
     $$
 
   - 反向传播需要：
 
     $$
-    \frac{\partial \mathcal{L}}{\partial z^{(l)}}=
-    \frac{\partial \mathcal{L}}{\partial a^{(l)}}
+    \frac {\partial \mathcal {L}}{\partial z^{(l)}}=
+    \frac {\partial \mathcal {L}}{\partial a^{(l)}}
     \cdot
     \phi'(z^{(l)})
     $$
 
   - 而 $\phi'(z^{(l)})$ 在实际中必须通过前向结果确定：
-    - ReLU：$\phi'(z) = \mathbf{1}[z > 0]$，需要知道 forward 时哪些 $z$ 为正
-    - Sigmoid：$\phi'(z) = \sigma(z)(1 - \sigma(z))$，通常直接由已存的 $a^{(l)}$ 计算
+    - ReLU：$\phi'(z) = \mathbf {1}[z> 0]$，需要知道 forward 时哪些 $z$ 为正
+    - Sigmoid：$\phi'(z) = \sigma (z)(1 - \sigma (z))$，通常直接由已存的 $a^{(l)}$ 计算
     - GELU / SiLU：梯度是激活值或其数值近似的函数
   - 非线性层的梯度不是常数，必须依赖 forward 的激活信息
 
-- 激活值是“边上的数值”
+- 激活值是 “边上的数值”
   - 自动微分会将模型表示为计算图，其中节点是张量，而边则是算子
   - 反向传播会在图上计算：
 
     $$
-    \frac{\partial y}{\partial x}
+    \frac {\partial y}{\partial x}
     $$
 
   - 这些局部的 Jacobian 几乎都依赖前向阶段的具体数值
@@ -239,13 +238,13 @@ description: 介绍分布式训练的基本概念与技术
   - 总复杂度变为：
 
     $$
-    O(\text{layers} \times \text{forward})
+    O (\text {layers} \times \text {forward})
     $$
 
   - 而不是标准的：
 
     $$
-    O(\text{forward} + \text{backward})
+    O (\text {forward} + \text {backward})
     $$
 
   - 这在深层网络（尤其是 Transformer）中是不可接受的
@@ -267,31 +266,31 @@ description: 介绍分布式训练的基本概念与技术
 - 反向传播对权重更新需求损失相对于各权重的偏导，按链式求导法则得：
 
   $$
-  \frac{\partial l}{\partial W_4} = \frac{\partial l}{\partial x_4} \cdot \frac{\partial x_4}{\partial W_4} = [-2(y - x_4)] \cdot x_3\\
-  \frac{\partial l}{\partial W_3} = \frac{\partial l}{\partial x_4} \cdot \frac{\partial x_4}{\partial x_3} \cdot \frac{\partial x_3}{\partial W_3} = [[-2(y - x_4)] \cdot W_4] \cdot x_2\\
-  \frac{\partial l}{\partial W_2} = \frac{\partial l}{\partial x_4} \cdot \frac{\partial x_4}{\partial x_3} \cdot \frac{\partial x_3}{\partial x_2} \cdot \frac{\partial x_2}{\partial W_2} = [[-2(y - x_4)] \cdot W_4 \cdot W_3] \cdot x_1\\
-  \frac{\partial l}{\partial W_1} = \frac{\partial l}{\partial x_4} \cdot \frac{\partial x_4}{\partial x_3} \cdot \frac{\partial x_3}{\partial x_2} \cdot \frac{\partial x_2}{\partial x_1} \cdot \frac{\partial x_1}{\partial W_1} = [[-2(y - x_4)] \cdot W_4 \cdot W_3 \cdot W_2] \cdot x
+  \frac {\partial l}{\partial W_4} = \frac {\partial l}{\partial x_4} \cdot \frac {\partial x_4}{\partial W_4} = [-2 (y - x_4)] \cdot x_3\\
+  \frac {\partial l}{\partial W_3} = \frac {\partial l}{\partial x_4} \cdot \frac {\partial x_4}{\partial x_3} \cdot \frac {\partial x_3}{\partial W_3} = [[-2 (y - x_4)] \cdot W_4] \cdot x_2\\
+  \frac {\partial l}{\partial W_2} = \frac {\partial l}{\partial x_4} \cdot \frac {\partial x_4}{\partial x_3} \cdot \frac {\partial x_3}{\partial x_2} \cdot \frac {\partial x_2}{\partial W_2} = [[-2 (y - x_4)] \cdot W_4 \cdot W_3] \cdot x_1\\
+  \frac {\partial l}{\partial W_1} = \frac {\partial l}{\partial x_4} \cdot \frac {\partial x_4}{\partial x_3} \cdot \frac {\partial x_3}{\partial x_2} \cdot \frac {\partial x_2}{\partial x_1} \cdot \frac {\partial x_1}{\partial W_1} = [[-2 (y - x_4)] \cdot W_4 \cdot W_3 \cdot W_2] \cdot x
   $$
 
 - 权重矩阵 $W_i$ 的梯度计算包含两项，一是第 $i+1$ 层反传回来的值（记为 $l_{i+1}$），二是第 $i-1$ 层的中间激活值（记为 $x_{i-1}$），因此可简化为：
 
   $$
-  \frac{\partial l}{\partial W_i} = l_{i+1} \cdot x_{i-1}
+  \frac {\partial l}{\partial W_i} = l_{i+1} \cdot x_{i-1}
   $$
 
 - MHA 层公式
 
   $$
   Q = x \cdot W_Q, K = x \cdot W_K, V = x \cdot W_V\\
-  x_{self} = \text{Dropout}\left[ \text{softmax}\left( \frac{Q \cdot K^T}{\sqrt{d}} \right) \right] \cdot V\\
-  x_{attn} = \text{LN}\left[ \text{Dropout}(x_{self} \cdot w_o) + x \right]
+  x_{self} = \text {Dropout}\left [\text {softmax}\left (\frac {Q \cdot K^T}{\sqrt {d}} \right) \right] \cdot V\\
+  x_{attn} = \text {LN}\left [\text {Dropout}(x_{self} \cdot w_o) + x \right]
   $$
 
 - FFN 层公式
 
   $$
-  x_{ffn} = \text{GeLU}(x_{attn} \cdot W_{ff1}) \cdot W_{ff2}\\
-  x_o = \text{LN}\left[ \text{Dropout}(x_{ffn}) + x_{attn} \right]
+  x_{ffn} = \text {GeLU}(x_{attn} \cdot W_{ff1}) \cdot W_{ff2}\\
+  x_o = \text {LN}\left [\text {Dropout}(x_{ffn}) + x_{attn} \right]
   $$
 
 - MHA 层输入为 x，输出为 $x_{attn}$；FFN 层输入为 $x_{attn}$，输出为 $x_o$
@@ -309,24 +308,24 @@ description: 介绍分布式训练的基本概念与技术
   | $K = x \cdot W_K$                                                                        | $[b, a, s, ha] = [b, s, h]$ | $2bsh$           |
   | $V = x \cdot W_V$                                                                        | $[b, a, s, ha] = [b, s, h]$ | $2bsh$           |
   | $Q \cdot K^T$                                                                            | $[b, a, s, s]$              | $2bas^2$         |
-  | $\text{softmax}\left( \frac{Q \cdot K^T}{\sqrt{d}} \right)$                              | $[b, a, s, s]$              | $2bas^2$         |
-  | $\text{Dropout}\left[ \text{softmax}\left( \frac{Q \cdot K^T}{\sqrt{d}} \right) \right]$ | $[b, a, s, s]$              | $bas^2$          |
-  | $x_{self} = \text{Dropout}[...] \cdot V$                                                 | $[b, a, s, ha] = [b, s, h]$ | $2bsh$           |
+  | $\text {softmax}\left (\frac {Q \cdot K^T}{\sqrt {d}} \right)$                              | $[b, a, s, s]$              | $2bas^2$         |
+  | $\text {Dropout}\left [\text {softmax}\left (\frac {Q \cdot K^T}{\sqrt {d}} \right) \right]$ | $[b, a, s, s]$              | $bas^2$          |
+  | $x_{self} = \text {Dropout}[...] \cdot V$                                                 | $[b, a, s, ha] = [b, s, h]$ | $2bsh$           |
   | $x_{self} \cdot W_o$                                                                     | $[b, s, h]$                 | $2bsh$           |
-  | $\text{Dropout}(x_{self} \cdot w_o)$                                                     | $[b, s, h]$                 | $bsh$            |
-  | $x_{attn} = \text{LN}[...] + x$                                                          | $[b, s, h]$                 | $2bsh$           |
+  | $\text {Dropout}(x_{self} \cdot w_o)$                                                     | $[b, s, h]$                 | $bsh$            |
+  | $x_{attn} = \text {LN}[...] + x$                                                          | $[b, s, h]$                 | $2bsh$           |
 
 - FFN 层激活值及显存占用
 
   | 计算项                                          | 维度         | 显存大小（字节） |
   | ----------------------------------------------- | ------------ | ---------------- |
   | $x_{attn} \cdot W_{ff1}$                        | $[b, s, 4h]$ | $8bsh$           |
-  | $\text{GeLU}(x_{attn} \cdot W_{ff1})$           | $[b, s, 4h]$ | $8bsh$           |
-  | $x_{ffn} = \text{GeLU}(...) \cdot W_{ff2}$      | $[b, s, h]$  | $2bsh$           |
-  | $\text{Dropout}(x_{ffn})$                       | $[b, s, h]$  | $bsh$            |
-  | $\text{LN}[\text{Dropout}(x_{ffn}) + x_{attn}]$ | $[b, s, h]$  | $2bsh$           |
+  | $\text {GeLU}(x_{attn} \cdot W_{ff1})$           | $[b, s, 4h]$ | $8bsh$           |
+  | $x_{ffn} = \text {GeLU}(...) \cdot W_{ff2}$      | $[b, s, h]$  | $2bsh$           |
+  | $\text {Dropout}(x_{ffn})$                       | $[b, s, h]$  | $bsh$            |
+  | $\text {LN}[\text {Dropout}(x_{ffn}) + x_{attn}]$ | $[b, s, h]$  | $2bsh$           |
 
-- 单 Transformer 层总显存——将 MHA 和 FFN 层显存相加：
+- 单 Transformer 层总显存 —— 将 MHA 和 FFN 层显存相加：
 
   $$
   2bsh+2bsh+2bsh+2bas^2+2bas^2+bas^2+2bsh+2bsh+bsh+2bsh+8bsh+8bsh+2bsh+bsh+2bsh \\= 34bsh + 5bas^2
@@ -342,7 +341,7 @@ description: 介绍分布式训练的基本概念与技术
   - embedding 层功能：将输入的 token ID 转为向量
   - 输出矩阵维度：$[batch\_size, seq\_length, hidden\_size] = [b, s, h]$
   - 显存占用：$2bsh$ 字节
-- 整个模型的中间激活值总显存——结合 Transformer 层和 embedding 层，整个模型的中间激活值显存为：
+- 整个模型的中间激活值总显存 —— 结合 Transformer 层和 embedding 层，整个模型的中间激活值显存为：
 
   $$
   l * (34bsh + 5bas^2) + 2bsh
@@ -371,7 +370,7 @@ description: 介绍分布式训练的基本概念与技术
     - 因此，在实践中，通常会丢弃 attention 相关的激活，而保存计算代价高但内存占用相对可控的前馈网络部分的激活值
     - 以 GPT-3（175B）模型为例，这种选择性重计算策略可以在仅增加约 2.7% 的计算开销的情况下，实现约 70% 的激活显存降低
 - HFU 与 MFU
-  - HFU（Hardware FLOPS Utilization）：统计硬件实际执行的计算量，包括由于重计算（checkpoint / recomputation）带来的额外 FLOPs，用来衡量当前训练实现对硬件算力的利用程度
+  - HFU（Hardware FLOPS Utilization）：统计硬件实际执行的计算量，包括由于重计算（checkpoint /recomputation）带来的额外 FLOPs，用来衡量当前训练实现对硬件算力的利用程度
   - MFU（Model FLOPS Utilization）：只统计模型在一次 forward + backward 中理论上必须执行的计算量，不包含重计算，用来衡量模型本身的计算效率，与具体实现策略弱相关
 - 如今大多数训练框架都会使用 FlashAttention，其在其优化策略中原生集成了选择性激活重计算，即在反向传播时重新计算 attention 的分数和矩阵，而不是在前向传播时把它们存下来
 - 优先重计算的对象，必须满足以下两个条件：
@@ -388,133 +387,131 @@ description: 介绍分布式训练的基本概念与技术
 ### 梯度累积（Gradient Accumulation）
 
 - 激活重计算无法解决 Batch Size 带来的线性增长
-  - 激活重计算的核心是减少了“每个样本”的 activation 常数项，特别是 Attention 中的 $S^2$ 激活，把“存激活”变成“多算一点”
-  - 然而，它不能解决 batch 维度即 $B$ 本身带来的线性增长，即重计算降低的是“每个样本需要多少显存”，但 batch size 决定的是“要存多少个样本的激活”
+  - 激活重计算的核心是减少了 “每个样本” 的 activation 常数项，特别是 Attention 中的 $S^2$ 激活，把 “存激活” 变成 “多算一点”
+  - 然而，它不能解决 batch 维度即 $B$ 本身带来的线性增长，即重计算降低的是 “每个样本需要多少显存”，但 batch size 决定的是 “要存多少个样本的激活”
   - 假设：单样本 activation（使用 FlashAttention + checkpoint）= 1.2 GB，那么有
     - $B=1$ → 1.2 GB
     - $B=8$ → 9.6 GB
     - $B=16$​ → 19.2 GB
 - 梯度累积的核心思想是把一个大 batch 拆成多个小 micro-batch，一次只在显存里放一个 micro-batch 的激活，但在数学上等价于用大 batch 更新参数
 - 相关术语
-  - micro-batch size（mbs）：每一次 forward / backward 实际送进模型的 batch 大小
-  - global batch size（gbs）：两次 optimizer step 之间，模型“等效看到”的总 batch 大小
-  - grad_acc（gradient accumulation steps）：在执行一次 optimizer.step() 之前，累计多少次梯度
+  - micro-batch size（mbs）：每一次 forward /backward 实际送进模型的 batch 大小
+  - global batch size（gbs）：两次 optimizer step 之间，模型 “等效看到” 的总 batch 大小
+  - grad_acc（gradient accumulation steps）：在执行一次 optimizer.step () 之前，累计多少次梯度
   - 显然，gbs = mbs × grad_acc
 - 梯度累积示意图
 
 ![image.png](/img/llm/gradaccumulation_diag.png)
 
 - 梯度累积的过程
-  - 假设：$\text{mbs}=2$、$\text{grad\_acc}=4$、$\text{gbs}=8$
+  - 假设：$\text {mbs}=2$、$\text {grad\_acc}=4$、$\text {gbs}=8$
   - 第 $i$ 次 micro-batch：forward（仅 2 个样本），backward，得到梯度 $g_i$​，但是不更新参数
   - 优化时，实际使用的是平均梯度
 
     $$
-    \bar{g} = \frac{1}{4} \sum_{i=1}^4 g_i
+    \bar {g} = \frac {1}{4} \sum_{i=1}^4 g_i
     $$
 
-  - 这样，在任意时刻，显存里只有一个 micro-batch 的激活，只要 $\text{mbs}$​ 固定，激活显存就是常数
+  - 这样，在任意时刻，显存里只有一个 micro-batch 的激活，只要 $\text {mbs}$​ 固定，激活显存就是常数
 
-- 梯度为什么要“取平均”而不是“取和”？
+- 梯度为什么要 “取平均” 而不是 “取和”？
   - 如果不取平均，梯度会随 grad_acc 线性放大，等价于隐式改变 learning rate
   - 取平均后，与 batch size 无关，学习率无需调整
 
     $$
-    \bar{g}=\mathbb{E}_{\text{batch}}[\nabla \mathcal{L}]
+    \bar {g}=\mathbb {E}_{\text {batch}}[\nabla \mathcal {L}]
     $$
 
 - 两种优化技术的对比
   - activation recomputation 控制每个样本的激活大小，降低常数项
   - gradient accumulation 控制同时在显存中的样本数，降低 $B$
 - 与激活重计算相同，梯度累积的真实代价也是计算量（FLOPs）
-  - forward / backward 次数增加：
+  - forward /backward 次数增加：
 
     $$
-    \text{compute} \propto \text{grad\_acc}
+    \text {compute} \propto \text {grad\_acc}
     $$
 
   - wall-clock time 增加，但可以换来更大等效 batch、更稳定的优化、显存可控
 
-- 自然而然地，不同的 micro batch 的前向和后向传播是可以并行运行的，它们彼此之间相互独立，唯一的区别只是输入样本不同，而这正是一个信号——可以把训练扩展到多张 GPU 上
+- 自然而然地，不同的 micro batch 的前向和后向传播是可以并行运行的，它们彼此之间相互独立，唯一的区别只是输入样本不同，而这正是一个信号 —— 可以把训练扩展到多张 GPU 上
 
 ### 两种优化后的激活显存
 
 - 统一符号：
-  - $B_{\text{micro}}$：micro-batch size
-  - $B_{\text{global}}$：global batch size
-  - $N_{\text{acc}}$：gradient accumulation steps
+  - $B_{\text {micro}}$：micro-batch size
+  - $B_{\text {global}}$：global batch size
+  - $N_{\text {acc}}$：gradient accumulation steps
   - $S$：sequence length
   - $d$：hidden size
   - $H$：attention heads
   - $L$：Transformer layers
-  - $B = B_{\text{global}} = B_{\text{micro}} \times N_{\text{acc}}$
+  - $B = B_{\text {global}} = B_{\text {micro}} \times N_{\text {acc}}$
 - 不使用任何优化（baseline）的 activation 显存（每一层）
   - token-wise 激活：
 
     $$
-    O(B \times S \times d)
+    O (B \times S \times d)
     $$
 
   - attention softmax：
 
     $$
-    O(B \times H \times S^2)
+    O (B \times H \times S^2)
     $$
 
   - 因此总 activation memory：
 
     $$
-    M_{\text{act}}
+    M_{\text {act}}
     \sim
     L \cdot
-    \Big(
+    \Big (
     B \cdot S \cdot d
     +
     B \cdot H \cdot S^2
     \Big)
     $$
 
-- 加上FlashAttention（去掉 $S^2$）
-  - FlashAttention 的本质是不保存 $P=\text{softmax}(QK^\top)$，backward 时重算
+- 加上 FlashAttention（去掉 $S^2$）
+  - FlashAttention 的本质是不保存 $P=\text {softmax}(QK^\top)$，backward 时重算
   - 于是 $BHS^2$ 级别的 activation 被消除，只剩 token-wise 激活
 
     $$
-    M_{\text{act}}
+    M_{\text {act}}
     \sim
     L \cdot
-    \big(
+    \big (
     B \cdot S \cdot d
     \big)
     $$
 
-  - 但此时 $B = B_{\text{global}}$，所以 batch size 一大，activation 仍然线性爆炸
+  - 但此时 $B = B_{\text {global}}$，所以 batch size 一大，activation 仍然线性爆炸
 
-- 加上 gradient accumulation（把 $B_{\text{global}}$ 变成 $B_{\text{micro}}$）
-  - gradient accumulation 的关键作用是，显存中同时存在的 batch = micro-batch，于是 $B \Rightarrow B_{\text{micro}}$，公式变为
+- 加上 gradient accumulation（把 $B_{\text {global}}$ 变成 $B_{\text {micro}}$）
+  - gradient accumulation 的关键作用是，显存中同时存在的 batch = micro-batch，于是 $B \Rightarrow B_{\text {micro}}$，公式变为
 
     $$
-    M_{\text{act}}
+    M_{\text {act}}
     \sim
     L \cdot
-    \big(
-    B_{\text{micro}} \cdot S \cdot d
+    \big (B_{\text {micro}} \cdot S \cdot d
     \big)
     $$
 
   - global batch size 与 activation 显存彻底解耦
 
 - 加上 checkpoint（降低 layer 维度）
-  - checkpoint 的本质是：不存每一层的 activation，只存少数“锚点层”
-  - 假设每 $k$ 层存一个 checkpoint，需要存的层数约为 $\frac{L}{k}$
+  - checkpoint 的本质是：不存每一层的 activation，只存少数 “锚点层”
+  - 假设每 $k$ 层存一个 checkpoint，需要存的层数约为 $\frac {L}{k}$
   - 则 activation 显存变为：
 
     $$
-    M_{\text{act}}
+    M_{\text {act}}
     \sim
-    \frac{L}{k}
+    \frac {L}{k}
     \cdot
-    \big(
-    B_{\text{micro}} \cdot S \cdot d
+    \big (B_{\text {micro}} \cdot S \cdot d
     \big)
     $$
 
@@ -527,9 +524,9 @@ description: 介绍分布式训练的基本概念与技术
     - 在 BF16 混合精度下，需要使用 FP32 额外存储模型参数副本（主权重），即 $4N$
   - 模型梯度：参数量乘以每个参数的字节数
     - FP32 精度：$4N$
-    - BF16混合精度：$2N$​
+    - BF16 混合精度：$2N$​
     - 在 BF16 混合精度下，需要使用 FP32 额外存储模型梯度副本，即 $4N$
-  - 优化器状态：Adam优化器需要额外存储动量和方差，每个 4 字节，以实现数值稳定性，即 $8N$
+  - 优化器状态：Adam 优化器需要额外存储动量和方差，每个 4 字节，以实现数值稳定性，即 $8N$
   - 用于计算梯度的激活值：通常是主要显存瓶颈
   - CUDA 内核一般需要占用 1-2 GB
 - 这些内容以张量的形式存储，并具有不同的形状和精度
@@ -561,7 +558,7 @@ description: 介绍分布式训练的基本概念与技术
 ### 基本思想
 
 - 在多张 GPU 上各自复制一份完整的模型，然后让每张 GPU 并行地对不同的 micro-batch 执行前向和反向传播
-- 由于并行化发生在数据维度上，因此被称为“数据并行”
+- 由于并行化发生在数据维度上，因此被称为 “数据并行”
 - 数据并行本质上就是梯度累积的并行化版本
   - 梯度累积是单卡时序累加，数据并行是多卡空间并行累加
   - 梯度累积中，同一张卡，时间换 batch，梯度串行累加
@@ -576,8 +573,8 @@ description: 介绍分布式训练的基本概念与技术
   - 这个操作发生在反向传播阶段、optimizer step 之前
 - 一般而言，计算 GPU 称为 Worker，梯度聚合 GPU 称为 Server，在实际应用中，为了减少通讯量，一般可以选择一个 Worker 同时作为 Server
 - 数据并行需要解决的问题
-  - 存储开销大，因为每个 GPU 都存储了一份完整的模型，造成冗余——通过 ZeRO 解决
-  - 通讯开销大，Server 需要和每一个 Worker 进行梯度传输，当 Server 和 Worker 不在一台机器上时，Server 的带宽将会成为整个系统的计算效率瓶颈——通过 Ring AllReduce 解决
+  - 存储开销大，因为每个 GPU 都存储了一份完整的模型，造成冗余 —— 通过 ZeRO 解决
+  - 通讯开销大，Server 需要和每一个 Worker 进行梯度传输，当 Server 和 Worker 不在一台机器上时，Server 的带宽将会成为整个系统的计算效率瓶颈 —— 通过 Ring AllReduce 解决
 
 ### 朴素数据并行
 
@@ -599,7 +596,7 @@ description: 介绍分布式训练的基本概念与技术
 - 在反向传播中，最后一层的梯度最先算完，越靠前的层，梯度越晚算完
 - 因此某一层的梯度一旦计算完成，就已经可以立刻进行 all-reduce，而不必等待整个模型的 backward 结束
 - 在 PyTorch 中，可以通过给每个参数注册 backward hook 来实现：当某个参数的梯度刚刚计算完成，就立刻触发一次 all-reduce
-- 此时其他参数的梯度仍在计算，backward 仍在继续，梯度同步被“切碎”，并嵌入到 backward 过程中
+- 此时其他参数的梯度仍在计算，backward 仍在继续，梯度同步被 “切碎”，并嵌入到 backward 过程中
 - 这样，大部分通信时间被隐藏在计算时间里，GPU 等待通信的空闲时间大幅减少数据并行的整体效率显著提升
 
 ![image.png](/img/llm/dp_overlap2.svg)
@@ -609,11 +606,11 @@ description: 介绍分布式训练的基本概念与技术
 - 在第一步优化中，每个参数的梯度一旦计算完成，就立刻触发一次 all-reduce
 - 这在逻辑上是正确的，但在工程上存在问题，因为
   - GPU 和通信库（NCCL）非常不擅长处理大量小张量
-  - 每次 all-reduce 都有固定启动开销，而频繁的小张量通信，kernel launch 多、NCCL 调度频繁、网络带宽利用率低，结果导致通信被“碎片化”了
+  - 每次 all-reduce 都有固定启动开销，而频繁的小张量通信，kernel launch 多、NCCL 调度频繁、网络带宽利用率低，结果导致通信被 “碎片化” 了
 - 解决思路：不要对每个参数的梯度单独 all-reduce，而是把多个梯度拼在一起，一次性同步，这就是梯度分桶
 - 典型流程：
   - 框架预先定义若干个 bucket（按大小，比如 25 MB）
-  - 反向传播时，当某个参数梯度计算完成后，会被拷贝/映射进对应的 bucket
+  - 反向传播时，当某个参数梯度计算完成后，会被拷贝 / 映射进对应的 bucket
   - 当一个 bucket 被填满，或其包含的梯度全部完成，就立刻触发一次 all-reduce，而 backward 则继续执行其他层
   - 这样，就变成了 bucket 粒度的 overlap，而不是 parameter 粒度的 overlap
 - 优点在于，减少 kernel / NCCL 启动次数、提高带宽利用率、具有更少的同步点（sync points）
@@ -622,12 +619,12 @@ description: 介绍分布式训练的基本概念与技术
 
 - 只需要梯度累积的最后一次才会更新参数
   - 在数据并行中，每张 GPU 对自己的 micro-batch 做 forward/backward，然后用 all-reduce 同步梯度
-  - 而在每张卡的梯度累积中，连续做多次 forward/backward，暂不更新参数，最后一次再 optimizer.step()
+  - 而在每张卡的梯度累积中，连续做多次 forward/backward，暂不更新参数，最后一次再 optimizer.step ()
   - 如果把数据并行直接套在梯度累积上，最直接的实现是每一次 backward，都自动触发一次 all-reduce
   - 但这是完全没有必要的，梯度只是被累加，并不会立刻用来更新参数，中间步骤的同步是纯粹的通信开销
   - 因此，梯度累积期间不需要保持不同 GPU 之间的梯度一致
 - 正确做法是，前 $K-1$ 次 backward 不做梯度同步，第 $K$​ 次 backward 正常 all-reduce
-- PyTorch DDP 提供了一个非常直接的机制：model.no_sync()，其语义是在这个作用域内，禁止 DDP 在 backward 时触发 all-reduce
+- PyTorch DDP 提供了一个非常直接的机制：model.no_sync ()，其语义是在这个作用域内，禁止 DDP 在 backward 时触发 all-reduce
 
   ```py
   for k in range(K):
@@ -641,11 +638,11 @@ description: 介绍分布式训练的基本概念与技术
   optimizer.zero_grad()
   ```
 
-- 通过延迟同步，解决了“梯度同步频率过高”的问题，从而降低通信开销
+- 通过延迟同步，解决了 “梯度同步频率过高” 的问题，从而降低通信开销
 - 通信缓冲区
   - NCCL / GPU DMA 更擅长处理连续内存，而非连续张量需要额外 copy，增加延迟
   - 因此在执行通信操作时，张量必须在内存中连续，以避免冗余的内存副本
-  - 为了实现最佳效果，工程上通常会预先分配一大块激活大小的连续缓冲区，把梯度 / bucket 拷贝进去做通信
+  - 为了实现最佳效果，工程上通常会预先分配一大块激活大小的连续缓冲区，把梯度 /bucket 拷贝进去做通信
   - 虽然这提高了通信效率，但是这些通信缓冲区也会占用额外显存，部分提高训练期间的显存使用峰值
 
 ### Ring - AllReduce
@@ -671,23 +668,23 @@ description: 介绍分布式训练的基本概念与技术
 
   ![ddp-5](/img/llm\ddp-5.jpg)
 
-- 3次更新之后，每块 GPU 上都有一块梯度拥有了对应位置完整的聚合
+- 3 次更新之后，每块 GPU 上都有一块梯度拥有了对应位置完整的聚合
 - 此时，Reduce-Scatter 阶段结束，进入 All-Gather 阶段，其目标是把红色块的梯度广播到其余 GPU 对应的位置上
-- All-Gather 操作依然按照“相邻GPU对应位置进行通讯”的原则，但对应位置的梯度不再做相加，而是直接替换
+- All-Gather 操作依然按照 “相邻 GPU 对应位置进行通讯” 的原则，但对应位置的梯度不再做相加，而是直接替换
 - All-Gather 以红色块作为起点，经过 3 轮迭代后，每块 GPU 上都汇总到了完整的梯度
 
   ![ddp-6](/img/llm\ddp-6.jpg)
 
-- 设模型参数量为 $\Phi$，GPU 个数为 $N$，梯度总量为 $\Phi$，每个梯度块大小为 $\frac{\Phi}{N}$
+- 设模型参数量为 $\Phi$，GPU 个数为 $N$，梯度总量为 $\Phi$，每个梯度块大小为 $\frac {\Phi}{N}$
 - DP（DataParallel）通讯量分析
   - Server 承载通讯量：$N\Phi$
   - Workers 承载通讯量：$N\Phi$
   - 全卡总通讯量：$2N\Phi$
   - 仅由 Server 负责数据搬运，通讯负载集中在单卡，在多机远距离场景下通讯时间会显著增加
 - Ring - AllReduce 通讯量分析
-  - Reduce-Scatter 阶段：单卡通讯量为 $(N-1)\frac{\Phi}{N}$
-  - All-Gather 阶段：单卡通讯量为 $(N-1)\frac{\Phi}{N}$
-  - 单卡总通讯量：$2(N-1)\frac{\Phi}{N}$，当 $N$ 很大时，近似为 $2\Phi$
+  - Reduce-Scatter 阶段：单卡通讯量为 $(N-1)\frac {\Phi}{N}$
+  - All-Gather 阶段：单卡通讯量为 $(N-1)\frac {\Phi}{N}$
+  - 单卡总通讯量：$2 (N-1)\frac {\Phi}{N}$，当 $N$ 很大时，近似为 $2\Phi$
   - 全卡总通讯量：$2N\Phi$​
   - 通讯负载均衡到每个 Worker，每个时刻都有 GPU 参与通讯，适合多机多卡场景
 
@@ -698,7 +695,7 @@ description: 介绍分布式训练的基本概念与技术
   - 于是等效的批次大小
 
     $$
-    \text{Global Batch Size}
+    \text {Global Batch Size}
     = gbs = mbs \times grad\_acc \times dp
     $$
 
@@ -708,17 +705,17 @@ description: 介绍分布式训练的基本概念与技术
       - 数据并行：不同 GPU 同时做 forward/backward，wall-clock 时间显著下降，是真正的并行加速
       - 而梯度累积：多次 forward/backward 必须顺序执行，只省显存，不省时间，甚至会拉长一次 optimizer step 的耗时
     - 因此工程经验是能用数据并行解决的 batch size，绝不用 grad_acc，只有当 GPU 不够用时，才增加 grad_acc
-  - 通过二者配合，activation 显存 ∝ $mbs$，通信频率 ∝ $\frac{1}{K}$（有 `no_sync`），参数更新频率 ∝ $\frac{1}{K}$
+  - 通过二者配合，activation 显存 ∝ $mbs$，通信频率 ∝ $\frac {1}{K}$（有 `no_sync`），参数更新频率 ∝ $\frac {1}{K}$
 
 - 大规模情况下的环延迟问题
   - 当数据并行规模扩展到 512 张 GPU 甚至更多 时（具体阈值取决于网络拓扑和带宽），梯度同步中的 all-reduce 通信会出现一个新的瓶颈
   - 此时，不再是带宽受限，而是被 ring latency（环延迟）限制
   - 在 ring all-reduce 中，GPU 被组织成一个逻辑环，梯度数据需要在环上逐跳传播，即使数据量不大，也必须等信号绕完整个环一圈
-  - 当 GPU 数量很大时，环变长，单次 all-reduce 的最小耗时被“信号传播时间”锁死
+  - 当 GPU 数量很大时，环变长，单次 all-reduce 的最小耗时被 “信号传播时间” 锁死
   - 而这部分时间无法通过并行计算掩盖，无法被 backward 继续重叠
-- 大规模情况下“通信与计算重叠”开始失效
-  - 在中小规模 DP 下，backward 计算时间足够长，all-reduce 可以“藏”在计算后面，GPU 几乎不空闲
-  - 但在超大规模时：单卡计算量 ∝ $\frac{1}{dp}$，通信延迟 ≈ 常数或缓慢下降，于是通信时间 > 可重叠的计算时间
+- 大规模情况下 “通信与计算重叠” 开始失效
+  - 在中小规模 DP 下，backward 计算时间足够长，all-reduce 可以 “藏” 在计算后面，GPU 几乎不空闲
+  - 但在超大规模时：单卡计算量 ∝ $\frac {1}{dp}$，通信延迟 ≈ 常数或缓慢下降，于是通信时间 > 可重叠的计算时间
   - 从而导致 backward 结束了，但通信还没结束，GPU 被迫等待
 - 大规模情况下的后果
   - 计算效率下降：GPU 有更多空转时间，FLOPs 利用率下降
@@ -765,11 +762,11 @@ description: 介绍分布式训练的基本概念与技术
 
 - 以上计算中没有考虑激活值
   - activation 不仅与模型参数相关，还与 batch size 相关
-  - activation 的存储不是必须的，存储 activation 只是为了在用链式法则进行backward 的过程中，计算梯度更快一些，但也可以通过只保留最初的输入 X，重新做 forward 来得到每一层的 activation
+  - activation 的存储不是必须的，存储 activation 只是为了在用链式法则进行 backward 的过程中，计算梯度更快一些，但也可以通过只保留最初的输入 X，重新做 forward 来得到每一层的 activation
   - 因为 activation 的这种灵活性，纳入它后不方便衡量系统性能随模型增大的真实变动情况，因此在这里不考虑它
-- DP 扩展的关键误区是“用更多 GPU 做数据并行，单卡显存会变小”
+- DP 扩展的关键误区是 “用更多 GPU 做数据并行，单卡显存会变小”
   - DP 只分数据，不分模型状态，所以 GPU 数量变多，但是单卡显存不变，甚至通信更繁杂，这就是为什么 DP 无法训练超出单卡显存上限的模型
-  - 这就是从 DP 走向 ZeRO 的本质转折——为什么所有 GPU 都要保存同一份模型状态？
+  - 这就是从 DP 走向 ZeRO 的本质转折 —— 为什么所有 GPU 都要保存同一份模型状态？
 - 基于此，在标准数据并行中，每张 GPU 都有：
   - 一份完整模型参数（W）：只在进行前向传播和反向传播时使用
   - 一份完整梯度（G）：只在 All-Reduce 和更新参数时使用
@@ -781,9 +778,9 @@ description: 介绍分布式训练的基本概念与技术
 - ZeRO 的全称是 Zero Redundancy Optimizer，指的是在数据并行组内，不再冗余存储模型状态，每个 GPU 只保留一部分
 - ZeRO 的不同阶段
   - ZeRO Stage 0：标准的数据并行
-  - ZeRO Stage 1：划分 optimizer state，这是由于 optimizer state 占用最大（Adam），因此 optimizer state 在 DP 组内按参数分片，每张 GPU 只保存 $\frac{1}{dp}$ 的 optimizer state，但参数、梯度仍然是完整的
-  - ZeRO Stage 2：再划分梯度，梯度也按参数分片，每张 GPU 只保存 $\frac{1}{dp}$ 的梯度，此时 backward 后不再做完整 all-reduce，而是 reduce-scatter + all-gather
-  - ZeRO Stage 3：划分参数，这是最激进的一步，参数本身也被分片，单张 GPU 上没有完整模型，在 forward / backward 时用到某一层参数就临时 all-gather，用完立刻释放
+  - ZeRO Stage 1：划分 optimizer state，这是由于 optimizer state 占用最大（Adam），因此 optimizer state 在 DP 组内按参数分片，每张 GPU 只保存 $\frac {1}{dp}$ 的 optimizer state，但参数、梯度仍然是完整的
+  - ZeRO Stage 2：再划分梯度，梯度也按参数分片，每张 GPU 只保存 $\frac {1}{dp}$ 的梯度，此时 backward 后不再做完整 all-reduce，而是 reduce-scatter + all-gather
+  - ZeRO Stage 3：划分参数，这是最激进的一步，参数本身也被分片，单张 GPU 上没有完整模型，在 forward /backward 时用到某一层参数就临时 all-gather，用完立刻释放
 - ZeRO 不同阶段的显存占用
   - 回顾模型训练所需的显存占用
     - 模型参数（半精度，即 BF16 / FP16）：$2\Psi$
@@ -800,40 +797,40 @@ description: 介绍分布式训练的基本概念与技术
 
   ![dp_zero1.gif](/img/llm/dp_zero1.gif)
   - 在普通的数据并行中，所有 DP rank 在反向传播结束后都会拿到完全相同的梯度，并且各自独立地执行一模一样的优化器更新，这显然存在大量重复计算和重复存储，那么能不能既避免这些重复工作，又同时降低显存占用？
-  - 在 ZeRO-1 中，优化器状态（optimizer states）被切分成 $N_d$ 份，这意味着每个 DP rank 只保存 $\frac{1}{N_d}$ 的优化器状态
+  - 在 ZeRO-1 中，优化器状态（optimizer states）被切分成 $N_d$ 份，这意味着每个 DP rank 只保存 $\frac {1}{N_d}$ 的优化器状态
 
 - 下图以 1G 模型（FP32 精度下）为例，一共有 2 张显卡
   - 灰色部分一直占用的显存：每张 GPU 上都存放完整的 FP16 精度模型，这部分显存是固定占用的，专门负责前向传播和反向传播的计算，不会被释放
   - 橙色部分一直被占用的显存：FP16 模型被按卡 “切块” 后转成 FP32 精度，存到优化器中（`partiton_fp16.copy().float().detach()`），这部分显存只负责权重更新，且脱离计算图（detach）—— 意味着它不参与前 / 反向计算，仅作为优化器更新的 “数据源”
 
   ![zeo1-1](/img/llm\zero1-1.jpg)
-  - 因此在一次 optimizer step 中，只有 $\frac{1}{N_d}$​​ 的 FP32 参数会在该 rank 上被更新
+  - 因此在一次 optimizer step 中，只有 $\frac {1}{N_d}$​​ 的 FP32 参数会在该 rank 上被更新
 
 - 权重更新的触发条件
   - 在上图中，前 3 个 step 没有出发优化器更新，因为这时梯度还存在 nan/inf，不需要更新权重，因此优化器的两个动量参数不会初始化，fp32 优化器状态也不会向 fp16 模型同步，显存占用和权重值都保持不变
   - 触发 Adam 动量初始化：首次正常更新参数时会执行的操作（前 3 步因梯度异常未触发），初始化后动量参数会占用少量额外显存，但不影响核心的 fp16/fp32 显存块
   - 在第 4 个 step，梯度正常，触发两个操作
     - 首先执行 `fp16._copy(fp32)`：把 fp32 优化器中更新后的权重 “原位复制” 到 fp16 模型中（原位复制 = 不需要新分配显存，所以 fp16 的 500MB 显存块始终存在）
-    - 然后执行 all-gather：同步各卡的 fp16 权重，保证模型参数一致性——把各个 rank 上更新好的参数切片重新收集，使每个 DP rank 再次拥有完整、同步的模型参数，产生单卡通讯量 $\Phi$
+    - 然后执行 all-gather：同步各卡的 fp16 权重，保证模型参数一致性 —— 把各个 rank 上更新好的参数切片重新收集，使每个 DP rank 再次拥有完整、同步的模型参数，产生单卡通讯量 $\Phi$
 
   ![zero1-flow](/img/llm\zero1-flow.jpg)
 
 - 经过 ZeRO-1 优化的显存计算
 
-  |          | 显存公式                      | 显存（单位GB）$K=12,\ \Phi=7.5B,\ N_d=64$ | 单卡通讯量 |
+  |          | 显存公式                      | 显存（单位 GB）$K=12,\ \Phi=7.5B,\ N_d=64$ | 单卡通讯量 |
   | -------- | ----------------------------- | ----------------------------------------- | ---------- |
-  | 朴素DP   | $(2 + 2 + K)\Phi$             | 120GB                                     | $2\Phi$    |
-  | $P_{os}$ | $(2 + 2 + \frac{K}{N_d})\Phi$ | 31.4GB                                    | $3\Phi$    |
+  | 朴素 DP   | $(2 + 2 + K)\Phi$             | 120GB                                     | $2\Phi$    |
+  | $P_{os}$ | $(2 + 2 + \frac {K}{N_d})\Phi$ | 31.4GB                                    | $3\Phi$    |
 
 - 通信发生时机
 
   | 阶段         | 通讯操作          | 通讯量  | 核心目的                          |
   | ------------ | ----------------- | ------- | --------------------------------- |
-  | 反向传播后   | `all-reduce` 梯度 | $2\Phi$ | 同步所有卡的完整梯度（和DDP一致） |
-  | 优化器更新后 | 无额外通讯        | 0       | 仅更新本地 $\frac{1}{N}$ 的OS     |
+  | 反向传播后   | `all-reduce` 梯度 | $2\Phi$ | 同步所有卡的完整梯度（和 DDP 一致） |
+  | 优化器更新后 | 无额外通讯        | 0       | 仅更新本地 $\frac {1}{N}$ 的 OS     |
   | 参数同步     | `all-gather` 参数 | $\Phi$  | 保证参数一致                      |
 
-- 优化器状态只在“参数更新（optimizer step）”阶段用到，而不是在反向传播阶段
+- 优化器状态只在 “参数更新（optimizer step）” 阶段用到，而不是在反向传播阶段
   - 反向传播（backward）：输入激活值、参数，输出梯度 \
     abla W，不使用优化器状态
   - 参数更新（optimizer step）：输入梯度（\
@@ -841,26 +838,26 @@ description: 介绍分布式训练的基本概念与技术
   - 以 AdaW 为例
 
     $$
-    \begin{align*}
+    \begin {align*}
     m_t &= \beta_1 m_{t-1} + (1-\beta_1)\nabla W_t \\
     v_t &= \beta_2 v_{t-1} + (1-\beta_2)(\nabla W_t)^2 \\
-    W_t &= W_{t-1} - \eta \frac{m_t}{\sqrt{v_t}+\epsilon}
-    \end{align*}
+    W_t &= W_{t-1} - \eta \frac {m_t}{\sqrt {v_t}+\epsilon}
+    \end {align*}
     $$
 
 - 具体训练步骤
   - 前向传播：每个 DP rank 使用完整的 BF16 参数，但处理的是不同的 micro-batch
   - 反向传播：每个 DP rank 计算基于各自的数据计算梯度
   - All-reduce 梯度：all-reduce（或等价的 reduce-scatter + all-gather），每个 rank 拿到完整梯度
-  - 局部优化器更新：每个 rank 只更新 $\frac{1}{N_d}$ 的优化器状态，得到对应的 $\frac{1}{N_d}$ FP32 参数，再转换成 $\frac{1}{N_d}$​ BF16 参数
+  - 局部优化器更新：每个 rank 只更新 $\frac {1}{N_d}$ 的优化器状态，得到对应的 $\frac {1}{N_d}$ FP32 参数，再转换成 $\frac {1}{N_d}$​ BF16 参数
   - All-gather 参数：对 BF16 参数执行 all-gather，把缺失的参数切片同步回每个 rank（这是 ZeRO-1 新增的通信步骤）
 - 在通信与计算重叠方面，主要有两种策略
 
   ![dp_zero1_overlap.svg](/img/llm/dp_zero1_overlap.svg)
   - 在 optimizer step 中重叠：每更新完一部分参数，就立刻开始 all-gather，与后续参数更新并行
   - 在 forward 中重叠：将某一层参数的 all-gather，与该层的前向计算重叠
-  - 但这些优化实现复杂，需要精细的 hook / bucket 管理，实践中通常直接使用 PyTorch 的 FSDP / ZeRO-3 实现，并把整个模型作为一个 FSDP unit
-  - 在 ZeRO-1 中，优化器状态已经被切分，每个 rank 实际只更新 $\frac{1}{N_d}$ 参数，那么既然只需要一部分梯度来更新，为什么还要在每个 rank 上保留完整梯度？——这也就是 ZeRO Stage 2 的出发点
+  - 但这些优化实现复杂，需要精细的 hook /bucket 管理，实践中通常直接使用 PyTorch 的 FSDP / ZeRO-3 实现，并把整个模型作为一个 FSDP unit
+  - 在 ZeRO-1 中，优化器状态已经被切分，每个 rank 实际只更新 $\frac {1}{N_d}$ 参数，那么既然只需要一部分梯度来更新，为什么还要在每个 rank 上保留完整梯度？—— 这也就是 ZeRO Stage 2 的出发点
 
 ### ZeRO Stage 2：切分梯度
 
@@ -868,29 +865,29 @@ description: 介绍分布式训练的基本概念与技术
 
   ![dp_zero2.gif](/img/llm/dp_zero2.gif)
   - 既然在每个 DP rank 上，只需要与其本地优化器状态分片对应的那部分梯度，那么也可以像切分优化器状态一样，把梯度本身也切分
-  - 在 ZeRO-2 中，每个 rank 只保留 $\frac{1}{N_d}$ 的梯度分片，因此反向传播时不再对梯度执行 all-reduce，而是直接执行 reduce-scatter，只需要保证每个 GPU 上所维持的那块梯度是聚合梯度
+  - 在 ZeRO-2 中，每个 rank 只保留 $\frac {1}{N_d}$ 的梯度分片，因此反向传播时不再对梯度执行 all-reduce，而是直接执行 reduce-scatter，只需要保证每个 GPU 上所维持的那块梯度是聚合梯度
   - 相比 all-reduce 的通信量为 $2\Phi$，reduce-scatter 的参数量仅为 $\Phi$
-  - 与切分优化器状态时每张 GPU 只需要维护它自己的 FP32 参数分片，如果使用 FP32 梯度累积，那么每个 rank 只需要保留 $\frac{1}{N_d}$ 的 FP32 梯度
+  - 与切分优化器状态时每张 GPU 只需要维护它自己的 FP32 参数分片，如果使用 FP32 梯度累积，那么每个 rank 只需要保留 $\frac {1}{N_d}$ 的 FP32 梯度
   - 这些 FP32 梯度来自 reduce-scatter 后的 BF16 梯度，只用于更新本地的优化器状态分片
-  - 在 optimizer step 中，这 $\frac{1}{N_d}$​​​ 的 FP32 梯度仅用于更新本 rank 持有的优化器状态和对应的参数分片
+  - 在 optimizer step 中，这 $\frac {1}{N_d}$​​​ 的 FP32 梯度仅用于更新本 rank 持有的优化器状态和对应的参数分片
   - 在进行梯度分片后，最终也需要对 W 做一次 all-gather，来保证 W 是完整更新后的
 
   ![zero2-flow](/img/llm\zero2-flow.jpg)
 
 - 显存和通信量分析
 
-  | 方法           | 显存公式                      | 显存（单位GB）$K=12,\ \Phi=7.5B,\ N_d=64$ | 单卡通讯量 |
+  | 方法           | 显存公式                      | 显存（单位 GB）$K=12,\ \Phi=7.5B,\ N_d=64$ | 单卡通讯量 |
   | :------------- | :---------------------------- | :---------------------------------------- | :--------- |
-  | 朴素DP         | $(2 + 2 + K)\Phi$             | 120GB                                     | $2\Phi$    |
-  | $P_{os}$       | $(2 + 2 + \frac{K}{N_d})\Phi$ | 31.4GB                                    | $3\Phi$    |
-  | $P_{os} + P_g$ | $(2 + \frac{2 + K}{N_d})\Phi$ | 16.6GB                                    | $2\Phi$    |
+  | 朴素 DP         | $(2 + 2 + K)\Phi$             | 120GB                                     | $2\Phi$    |
+  | $P_{os}$       | $(2 + 2 + \frac {K}{N_d})\Phi$ | 31.4GB                                    | $3\Phi$    |
+  | $P_{os} + P_g$ | $(2 + \frac {2 + K}{N_d})\Phi$ | 16.6GB                                    | $2\Phi$    |
 
 - 通信时机
 
   | 阶段                       | 通讯操作              | 通讯量 | 核心目的                                                      |
   | -------------------------- | --------------------- | ------ | ------------------------------------------------------------- |
-  | 反向传播后（梯度计算完成） | `reduce-scatter` 梯度 | $\Phi$ | 把完整梯度拆分成 $\frac{1}{N}$ 分片，每张卡只留自己负责的分片 |
-  | 优化器更新后               | 无额外通讯            | 0      | 用本地分片梯度更新本地分片OS                                  |
+  | 反向传播后（梯度计算完成） | `reduce-scatter` 梯度 | $\Phi$ | 把完整梯度拆分成 $\frac {1}{N}$ 分片，每张卡只留自己负责的分片 |
+  | 优化器更新后               | 无额外通讯            | 0      | 用本地分片梯度更新本地分片 OS                                  |
   | 参数同步                   | `all-gather` 参数     | $\Phi$ | 保证参数一致                                                  |
 
 - 优化器状态只需要分片对应的那部分梯度的数学推导
@@ -903,15 +900,15 @@ description: 介绍分布式训练的基本概念与技术
   - Adam / SGD 的更新是逐参数独立的：
 
     $$
-    W^{(i)} \leftarrow W^{(i)} - \eta \cdot f(\nabla W^{(i)}, \text{opt\_state}^{(i)})
+    W^{(i)} \leftarrow W^{(i)} - \eta \cdot f (\nabla W^{(i)}, \text {opt\_state}^{(i)})
     $$
 
-  - 因此，对于rank $i$，只更新 $W^{(i)}$，只需要 \
-    abla W^{(i)}，只需要 $\text{opt\_state}^{(i)}$
+  - 因此，对于 rank $i$，只更新 $W^{(i)}$，只需要 \
+    abla W^{(i)}，只需要 $\text {opt\_state}^{(i)}$
 
 - 与 ZeRO Stage 对比：
   - 在通信层面，ZeRO-2 与 ZeRO-1 几乎完全一致，都包含 reduce-scatter（梯度）、all-gather（参数）
-  - 唯一的区别在于 ZeRO-2 会在通信完成后立即释放不再需要的梯度内存，梯度从“逻辑切分” → “物理只存在一份”
+  - 唯一的区别在于 ZeRO-2 会在通信完成后立即释放不再需要的梯度内存，梯度从 “逻辑切分” → “物理只存在一份”
   - 因此可以说：在通信角度，ZeRO-2 等价于 vanilla DP / ZeRO-1，在显存角度，ZeRO-2 明显优于 ZeRO-1
   - 除了实现复杂度更高之外，ZeRO-2 相比 ZeRO-1 几乎没有额外运行时开销，因此在实践中 ZeRO-2 通常是比 ZeRO-1 更优的选择
 - ZeRO-2 在梯度累积场景下的通信量
@@ -920,7 +917,7 @@ description: 介绍分布式训练的基本概念与技术
     - ZeRO-1
       - 每个 worker 本地持有完整梯度
       - 每一步反向：直接在本地累加梯度（无任何通信）
-      - 累积 K 步后：只做1 次 reduce-scatter（X） + 1 次 all-gather（X）
+      - 累积 K 步后：只做 1 次 reduce-scatter（X） + 1 次 all-gather（X）
       - 总通信量 = 2X（累积 K 步，通信量不增加）
     - ZeRO-2
       - 梯度累加的前提：必须保留每一步的梯度，但 Stage2 每个 worker 只存 1/N 梯度；
@@ -941,9 +938,9 @@ description: 介绍分布式训练的基本概念与技术
   - PyTorch 对这一阶段的原生实现称为 FSDP（Fully Sharded Data Parallelism）
 - 基本流程
   - 参数的初始化和切割
-    - 将<u>某一块参数</u>先传送到 rank0 上，并将这块参数从 rank0 广播到各个 GPU 上，此时每张 GPU 都拥有完整的 rank0
+    - 将 <u> 某一块参数 </u> 先传送到 rank0 上，并将这块参数从 rank0 广播到各个 GPU 上，此时每张 GPU 都拥有完整的 rank0
     - 将 param 展平为 1D 张量，并进行 padding（防止参数数量不能被 dp_size 整除）
-    - 计算每一块 GPU 上所维护的 1D param 的范围（即 start_index, end_index），然后按照这个范围取出每块 GPU 上应该维护的param chunk，接着释放不是自己所维护的 param chunk
+    - 计算每一块 GPU 上所维护的 1D param 的范围（即 start_index, end_index），然后按照这个范围取出每块 GPU 上应该维护的 param chunk，接着释放不是自己所维护的 param chunk
   - 每块 GPU 只保存部分参数，将一个 batch 的数据分为若干份，每个 GPU 处理一份
   - 前向传播时，对 W 做一次 All-Gather，取回分布在其他 GPU 上的参数，得到一份完整参数，单卡通信量为 $\Phi$，前向传播完成后立即抛弃不属于该 GPU 维护的参数
   - 反向传播时，对 W 做一次 All-Gather，取回完整的 W，单卡通信量为 $\Phi$，反向传播完成后立即抛弃不属于该 GPU 维护的参数
@@ -957,7 +954,7 @@ description: 介绍分布式训练的基本概念与技术
     - 对高维张量（如 Conv）：按通道 / 空间维度分片
   - 与此相对应地
     - PP 是将模型按层进行切分，每张卡持有完整的部分层参数
-    - TP 是将矩阵按照行/列切分，通过矩阵乘法的原理来实现
+    - TP 是将矩阵按照行 / 列切分，通过矩阵乘法的原理来实现
   - 通过这种方式，有三个好处
     - 全局显存完美均衡，消除负载倾斜
       - 按层整体切分，不同 Transformer 层参数量差异极大，Embedding、LMHead、FFN 等大层容易单卡 OOM，负载严重倾斜
@@ -974,10 +971,10 @@ description: 介绍分布式训练的基本概念与技术
 
   | 训练策略             | 显存计算公式                  | 实际显存占用（GB） | 单卡通讯量 |
   | :------------------- | :---------------------------- | :----------------- | :--------- |
-  | 朴素DP               | $(2 + 2 + K)\Phi$             | 120                | $2\Phi$    |
-  | $P_{os}$             | $(2 + 2 + \frac{K}{N_d})\Phi$ | 31.4               | $3\Phi$    |
-  | $P_{os} + P_g$       | $(2 + \frac{2 + K}{N_d})\Phi$ | 16.6               | $2\Phi$    |
-  | $P_{os} + P_g + P_p$ | $\frac{2 + 2 + K}{N_d}\Phi$   | 1.9                | $3\Phi$    |
+  | 朴素 DP               | $(2 + 2 + K)\Phi$             | 120                | $2\Phi$    |
+  | $P_{os}$             | $(2 + 2 + \frac {K}{N_d})\Phi$ | 31.4               | $3\Phi$    |
+  | $P_{os} + P_g$       | $(2 + \frac {2 + K}{N_d})\Phi$ | 16.6               | $2\Phi$    |
+  | $P_{os} + P_g + P_p$ | $\frac {2 + 2 + K}{N_d}\Phi$   | 1.9                | $3\Phi$    |
 
 - 通信时机
 
@@ -1018,10 +1015,10 @@ description: 介绍分布式训练的基本概念与技术
 - 前向传播、反向传播
   - 前向传播、反向传播是整个训练流程中算力消耗最高、访存最频繁的核心阶段
   - 为了避免频繁数据拷贝拖慢计算速度，保障计算流水不中断，将该环节强依赖的数据全程驻留 GPU 显存
-  - 包含半精度权重 W(FP16)、网络层中间激活值 activation 等关键张量，保证前反向推理高速执行
+  - 包含半精度权重 W (FP16)、网络层中间激活值 activation 等关键张量，保证前反向推理高速执行
 - 参数更新
   - 参数更新阶段运算逻辑简单、计算量极低，对低延迟访存的需求弱，是异构卸载的最优落地场景，因此将参数更新相关的低频访问张量统一卸载至 CPU 内存托管
-  - 涵盖备份的全精度主权重 W(FP32)、各类优化器状态（动量、方差等 FP32 精度参数）、反向传播产出的半精度梯度 gradients (FP16)
+  - 涵盖备份的全精度主权重 W (FP32)、各类优化器状态（动量、方差等 FP32 精度参数）、反向传播产出的半精度梯度 gradients (FP16)
 - 异步调度策略
   - 反向计算完成后，异步将梯度搬运至 CPU，依托 CPU 完成优化器更新、权重高精度修正
   - 更新结束后，仅按需同步必要的半精度权重回 GPU 用于下一轮迭代
@@ -1047,12 +1044,12 @@ description: 介绍分布式训练的基本概念与技术
     - 设置机制，对碎片化的存储空间进行重新整合，整理出连续的存储空间
     - 防止出现总存储足够，但连续存储不够而引起的存储请求失败
 - DP 和 ZeRO 的局限性
-  - 可以看到，激活值不能像参数、梯度、optimizer state 那样做 shard（分片），原因不是工程上“没实现”，而是在数据并行中，激活值天生就不是冗余的
-  - 每个 GPU 拿到的是不同的 micro-batch，不同 GPU 上的激活值数值不同、语义不同，它们不是“同一份数据的多份拷贝”，而 sharding 的前提是有重复
+  - 可以看到，激活值不能像参数、梯度、optimizer state 那样做 shard（分片），原因不是工程上 “没实现”，而是在数据并行中，激活值天生就不是冗余的
+  - 每个 GPU 拿到的是不同的 micro-batch，不同 GPU 上的激活值数值不同、语义不同，它们不是 “同一份数据的多份拷贝”，而 sharding 的前提是有重复
   - 但是，激活值恰恰又会随着批次的增加而线性增长，这是迫切需要被解决的
-  - ZeRO Stage 3 的本质是复制计算，切分存储，每个 GPU 执行完整模型的 forward / backward，但只存自己负责的一小片参数 / 梯度 / optimizer state，因此 forward 需要 all-gather 参数，backward 需要 reduce-scatter 梯度，这也就导致 ZeRO-3 的核心成本不是计算，而是“参数通信”
+  - ZeRO Stage 3 的本质是复制计算，切分存储，每个 GPU 执行完整模型的 forward /backward，但只存自己负责的一小片参数 / 梯度 /optimizer state，因此 forward 需要 all-gather 参数，backward 需要 reduce-scatter 梯度，这也就导致 ZeRO-3 的核心成本不是计算，而是 “参数通信”
   - 与 ZeRO 的核心思想不同，张量并行（Tensor Parallelism）的出发点是切分计算本身
-  - TP 不是“减少冗余副本”，而是把一个 layer 的数学运算本身拆到多个 GPU 上做，每个 GPU 只计算模型的一部分，只持有这一部分对应的参数，激活值也只是一部分
+  - TP 不是 “减少冗余副本”，而是把一个 layer 的数学运算本身拆到多个 GPU 上做，每个 GPU 只计算模型的一部分，只持有这一部分对应的参数，激活值也只是一部分
 
 ### 配置说明
 
@@ -1097,7 +1094,7 @@ description: 介绍分布式训练的基本概念与技术
 
 - 参数说明
 
-  | 参数名称                                     | 可选值/类型                                     | 示例         | 含义                                                                                |
+  | 参数名称                                     | 可选值 / 类型                                     | 示例         | 含义                                                                                |
   | -------------------------------------------- | ----------------------------------------------- | ------------ | ----------------------------------------------------------------------------------- |
   | `train_batch_size`                           | 整数                                            | 32           | 每个训练步骤的批量大小                                                              |
   | `gradient_accumulation_steps`                | 整数                                            | 1            | 每隔多少步进行一次梯度更新（梯度累积）                                              |
@@ -1191,14 +1188,14 @@ description: 介绍分布式训练的基本概念与技术
     | 3. 优化 Checkpoint 管理 | - 默认使用 `SHARDED_STATE_DICT` 存储分片检查点，每个 Rank 仅保存自身负责的参数与元数据，无需提前 `all-gather`，存储效率大幅提升。<br/>- 支持异步 Checkpoint 保存：先将参数复制到 CPU，主训练线程继续运行，读写进程异步写入磁盘，减少 I/O 阻塞 |
     | 4. 稳定的内存管理       | 不再依赖 `torch.Tensor.record_stream`（易导致非确定性行为），改用底层 CUDA 多流同步，实现稳定可预测的内存行为，减少训练中断与性能波动                                                                                                        |
     | 5. 通信与计算重叠优化   | - 默认启用 FSDP1 中需手动配置的 `BACKWARD_PRE` 预取选项。<br/>- 新增隐式预取（implicit prefetching），更好地重叠 `all-gather` 通信与计算，隐藏通信延迟，提升 GPU 利用率                                                                       |
-    | 6. 更好的兼容性         | 对 FP8 等混合精度类型、2D/3D 并行策略（如数据并行+张量并行+流水线并行）的支持更完善，适配更复杂的大规模训练场景                                                                                                                              |
+    | 6. 更好的兼容性         | 对 FP8 等混合精度类型、2D/3D 并行策略（如数据并行 + 张量并行 + 流水线并行）的支持更完善，适配更复杂的大规模训练场景                                                                                                                              |
 
 ## 张量并行（Tensor Parallelism）
 
 ### 基本思想
 
 - 张量并行（Tensor Parallelism，TP）是一种能够对权重、梯度、优化器状态，甚至激活值进行分片的并行算法，而且不需要在计算前将它们全部聚合
-- 设输入数据为 X，参数为W，X 的维度 = (b, s, h)，W的维度 = (h, h')，其中：
+- 设输入数据为 X，参数为 W，X 的维度 = (b, s, h)，W 的维度 = (h, h')，其中：
   - `b`：batch_size，表示批量大小
   - `s`：sequence_length，表示输入序列的长度
   - `h`：hidden_size，表示每个 token 向量的维度
@@ -1208,22 +1205,22 @@ description: 介绍分布式训练的基本概念与技术
 
     $$
     A \cdot B
-    = A \cdot [B_1\;B_2\; \cdots ]
-    = [AB_1 \;A B_2\; \cdots ]
+    = A \cdot [B_1\;B_2\; \cdots]
+    = [AB_1 \;A B_2\; \cdots]
     $$
 
   - 按行拆分 $A$：
 
     $$
     A \cdot B
-    =\begin{bmatrix}
+    =\begin {bmatrix}
     A_1 \\
     A_2 \\
     \vdots
-    \end{bmatrix}
-    \begin{bmatrix}
+    \end {bmatrix}
+    \begin {bmatrix}
     B_1 & B_2 & \cdots
-    \end{bmatrix}
+    \end {bmatrix}
     =\sum_{i=1}^{n} A_i B_i
     $$
 
@@ -1258,8 +1255,8 @@ description: 介绍分布式训练的基本概念与技术
 
     ![tp-column-bwd](/img/llm\tp-column-bwd.jpg)
 
-  - g 的反向传播：$\frac{\partial L}{\partial W_i} = \frac{\partial L}{\partial Y_i} * \frac{\partial Y_i}{\partial W_i}$
-  - f 的反向传播：对于损失 L，X 既参与了 XW1 的计算，也参与了 XW2 的计算，因此有 $\frac{\partial L}{\partial X} = \frac{\partial L}{\partial X} \bigg|\mathbf{1} + \frac{\partial L}{\partial X} \bigg|\mathbf{2}$，其中 $\frac{\partial L}{\partial X} \bigg|\mathbf{i}$ 表示第 i 块 GPU 上计算到 X 时的梯度
+  - g 的反向传播：$\frac {\partial L}{\partial W_i} = \frac {\partial L}{\partial Y_i} * \frac {\partial Y_i}{\partial W_i}$
+  - f 的反向传播：对于损失 L，X 既参与了 XW1 的计算，也参与了 XW2 的计算，因此有 $\frac {\partial L}{\partial X} = \frac {\partial L}{\partial X} \bigg|\mathbf {1} + \frac {\partial L}{\partial X} \bigg|\mathbf {2}$，其中 $\frac {\partial L}{\partial X} \bigg|\mathbf {i}$ 表示第 i 块 GPU 上计算到 X 时的梯度
 
 - 行并行（Row-wise / Row-linear Sharding）
 
@@ -1275,45 +1272,45 @@ description: 介绍分布式训练的基本概念与技术
     ![tp-row-bwd](/img/llm\tp-row-bwd.jpg)
 
   - 其中，f 和 g 分别表示两个算子，每个算子都包括一组 forward + backward 操作
-  - g 的反向传播：假定现在对 $W_i$ 求梯度，可以根据链式法则推出 $\frac{\partial L}{\partial W_i} = \frac{\partial L}{\partial Y} * \frac{\partial Y}{\partial Y_i} * \frac{\partial Y_i}{\partial W_i} = \frac{\partial L}{\partial Y} * \frac{\partial Y_i}{\partial W_i}$，因此只需要把 $\frac{\partial L}{\partial Y}$ 同时广播到两块 GPU 上，两块 GPU 就可以独自计算各自权重的梯度
-  - f 的反向传播：$\frac{\partial L}{\partial X} = \text{concat}\left[\frac{\partial L}{\partial X_1}, \frac{\partial L}{\partial X_2}\right]$​
+  - g 的反向传播：假定现在对 $W_i$ 求梯度，可以根据链式法则推出 $\frac {\partial L}{\partial W_i} = \frac {\partial L}{\partial Y} * \frac {\partial Y}{\partial Y_i} * \frac {\partial Y_i}{\partial W_i} = \frac {\partial L}{\partial Y} * \frac {\partial Y_i}{\partial W_i}$，因此只需要把 $\frac {\partial L}{\partial Y}$ 同时广播到两块 GPU 上，两块 GPU 就可以独自计算各自权重的梯度
+  - f 的反向传播：$\frac {\partial L}{\partial X} = \text {concat}\left [\frac {\partial L}{\partial X_1}, \frac {\partial L}{\partial X_2}\right]$​
 
 - 在 Megatron-LM 中，权重的切分操作就是由这两个基础算子组合而成
 
 ### 两个矩阵相乘
 
 - 如果左矩阵按行划分，右矩阵按列划分
-  - 假设用 $N$ 块GPU做张量并行，拆分规则如下：
-  - A 的行切割（Row Parallel），将 $A \in \mathbb{R}^{h \times h'}$ 按行切分为 $N$ 份，即：
+  - 假设用 $N$ 块 GPU 做张量并行，拆分规则如下：
+  - A 的行切割（Row Parallel），将 $A \in \mathbb {R}^{h \times h'}$ 按行切分为 $N$ 份，即：
 
     $$
-    A = \begin{bmatrix} A_1 \\ A_2 \\ \vdots \\ A_N \end{bmatrix}
+    A = \begin {bmatrix} A_1 \\ A_2 \\ \vdots \\ A_N \end {bmatrix}
     $$
 
-  - 其中每份 $A_i \in \mathbb{R}^{h/N \times h'}$，对应输入维度的切片
-  - 为了匹配矩阵乘法，输入 $X$ 也必须按最后一维（h维）行切分为 $N$ 份：
+  - 其中每份 $A_i \in \mathbb {R}^{h/N \times h'}$，对应输入维度的切片
+  - 为了匹配矩阵乘法，输入 $X$ 也必须按最后一维（h 维）行切分为 $N$ 份：
 
     $$
-    X = \begin{bmatrix} X_1 & X_2 & \dots & X_N \end{bmatrix}
+    X = \begin {bmatrix} X_1 & X_2 & \dots & X_N \end {bmatrix}
     $$
 
-  - 每份 $X_i \in \mathbb{R}^{(b, s, h/N)}$，对应 $X$ 的第 $i$ 个行切片
-  - B 的列切割（Column Parallel），将 $B \in \mathbb{R}^{h' \times h}$ 按列切分为 $N$ 份，即：
+  - 每份 $X_i \in \mathbb {R}^{(b, s, h/N)}$，对应 $X$ 的第 $i$ 个行切片
+  - B 的列切割（Column Parallel），将 $B \in \mathbb {R}^{h' \times h}$ 按列切分为 $N$ 份，即：
 
     $$
-    B = \begin{bmatrix} B_1 & B_2 & \dots & B_N \end{bmatrix}
+    B = \begin {bmatrix} B_1 & B_2 & \dots & B_N \end {bmatrix}
     $$
 
-  - 每份 $B_i \in \mathbb{R}^{h' \times h/N}$，对应输出维度的切片
+  - 每份 $B_i \in \mathbb {R}^{h' \times h/N}$，对应输出维度的切片
 
 - 第一步：计算 $X \cdot A$，根据分块矩阵乘法，行切割后的 $XA$ 计算为：
 
   $$
-  \begin{align*}
-  X \cdot A &= \begin{bmatrix} X_1 & X_2 & \dots & X_N \end{bmatrix} \cdot \begin{bmatrix} A_1 \\ A_2 \\ \vdots \\ A_N \end{bmatrix} \\
+  \begin {align*}
+  X \cdot A &= \begin {bmatrix} X_1 & X_2 & \dots & X_N \end {bmatrix} \cdot \begin {bmatrix} A_1 \\ A_2 \\ \vdots \\ A_N \end {bmatrix} \\
   &= X_1A_1 + X_2A_2 + \dots + X_NA_N \\
   &= \sum_{i=1}^N X_iA_i
-  \end{align*}
+  \end {align*}
   $$
   - 维度验证：$X_iA_i$ 维度为 $(b, s, h')$，求和后 $XA$ 维度仍为 $(b, s, h')$，与原始计算一致
   - 关键问题：每个 GPU 仅能计算自己的 $X_iA_i$，无法直接得到完整的 $XA$，必须通过 All-Reduce 求和才能得到完整张量
@@ -1322,37 +1319,37 @@ description: 介绍分布式训练的基本概念与技术
   - GELU 是非线性激活函数，不满足加法可分性：
 
     $$
-    \text{GELU}\left(\sum_{i=1}^N X_iA_i\right) \neq \sum_{i=1}^N \text{GELU}(X_iA_i)
+    \text {GELU}\left (\sum_{i=1}^N X_iA_i\right) \neq \sum_{i=1}^N \text {GELU}(X_iA_i)
     $$
 
   - 因此，必须先通过 All-Reduce 得到完整的 $XA$，再对完整张量做 GELU：
 
     $$
-    \text{GELU}(XA) = \text{GELU}\left(\sum_{i=1}^N X_iA_i\right)
+    \text {GELU}(XA) = \text {GELU}\left (\sum_{i=1}^N X_iA_i\right)
     $$
 
-  - 维度：$\text{GELU}(XA)$ 维度仍为 $(b, s, h')$，与输入一致
+  - 维度：$\text {GELU}(XA)$ 维度仍为 $(b, s, h')$，与输入一致
   - 通信代价：必须在 GELU 前做一次全局 All-Reduce，这是该方案的致命缺陷
 
-- 第二步：计算 $\text{GELU}(XA) \cdot B$（B列切割后的最终结果）
+- 第二步：计算 $\text {GELU}(XA) \cdot B$（B 列切割后的最终结果）
   - B 列切割后，分块矩阵乘法为：
 
     $$
-    \begin{align*}
-    \text{GELU}(XA) \cdot B &= \text{GELU}(XA) \cdot \begin{bmatrix} B_1 & B_2 & \dots & B_N \end{bmatrix} \\
-    &= \begin{bmatrix} \text{GELU}(XA)B_1 & \text{GELU}(XA)B_2 & \dots & \text{GELU}(XA)B_N \end{bmatrix}
-    \end{align*}
+    \begin {align*}
+    \text {GELU}(XA) \cdot B &= \text {GELU}(XA) \cdot \begin {bmatrix} B_1 & B_2 & \dots & B_N \end {bmatrix} \\
+    &= \begin {bmatrix} \text {GELU}(XA) B_1 & \text {GELU}(XA) B_2 & \dots & \text {GELU}(XA) B_N \end {bmatrix}
+    \end {align*}
     $$
 
-  - 将完整的 $\text{GELU}(XA)$ 广播到所有 GPU，再由每个 GPU 独立计算自己的切片
+  - 将完整的 $\text {GELU}(XA)$ 广播到所有 GPU，再由每个 GPU 独立计算自己的切片
 
-- 所有GPU计算完成后，将各切片按列拼接，得到最终输出 $Y$：
+- 所有 GPU 计算完成后，将各切片按列拼接，得到最终输出 $Y$：
 
   $$
-  Y = \text{GELU}(XA)B = \begin{bmatrix} \text{GELU}\left(\sum_{i=1}^N X_iA_i\right)B_1 & \dots & \text{GELU}\left(\sum_{i=1}^N X_iA_i\right)B_N \end{bmatrix}
+  Y = \text {GELU}(XA) B = \begin {bmatrix} \text {GELU}\left (\sum_{i=1}^N X_iA_i\right) B_1 & \dots & \text {GELU}\left (\sum_{i=1}^N X_iA_i\right) B_N \end {bmatrix}
   $$
 
-- 每个 $\text{GELU}(XA)B_i$ 维度为 $(b, s, h/N)$，拼接后 $Y$ 维度为 $(b, s, h)$，与原始计算一致
+- 每个 $\text {GELU}(XA) B_i$ 维度为 $(b, s, h/N)$，拼接后 $Y$ 维度为 $(b, s, h)$，与原始计算一致
 
 ### MLP 层的并行化
 
@@ -1361,7 +1358,7 @@ description: 介绍分布式训练的基本概念与技术
 - MLP 通常是：
 
 $$
-X \xrightarrow{W_1} H \xrightarrow{\text{activation}} \xrightarrow{W_2} Y
+X \xrightarrow {W_1} H \xrightarrow {\text {activation}} \xrightarrow {W_2} Y
 $$
 
 - Megatron 的拆分方法如下
@@ -1380,45 +1377,45 @@ $$
 - 算子的计算过程
   - f 的 forward 计算：把输入 X 广播到两块 GPU 上，每块 GPU 即可独立进行 forward
   - g 的 forward 计算：每块 GPU 上的 forward 计算完毕，得到 Z1 和 Z2 后，GPU 间进行一次 all-reduce，相加得到 Z
-  - g 的 backward 计算：把 $\frac{\partial{L}}{\partial{Z}}$ 广播到两块 GPU 上，每块 GPU 即可独立进行梯度计算
-  - f 的 backward 计算：当当前层的梯度计算完毕，需要传递到下一层继续做梯度计算时，需要求得 $\frac{\partial{L}}{\partial{X}}$​，此时两块 GPU 进行一次 all-reduce，将各自的梯度相加
+  - g 的 backward 计算：把 $\frac {\partial {L}}{\partial {Z}}$ 广播到两块 GPU 上，每块 GPU 即可独立进行梯度计算
+  - f 的 backward 计算：当当前层的梯度计算完毕，需要传递到下一层继续做梯度计算时，需要求得 $\frac {\partial {L}}{\partial {X}}$​，此时两块 GPU 进行一次 all-reduce，将各自的梯度相加
 - 如果用 Row → Column：
   - 由于 GELU 函数的性质
 
     ![tp-mlp-glu](/img/llm\tp-mlp-glu.jpg)
 
-  - GELU的标准计算公式为：
+  - GELU 的标准计算公式为：
 
     $$
-    \text{GELU}(x) = x \cdot \Phi(x) = x \cdot \frac{1}{2}\left[1 + \text{erf}\left(\frac{x}{\sqrt{2}}\right)\right]
+    \text {GELU}(x) = x \cdot \Phi (x) = x \cdot \frac {1}{2}\left [1 + \text {erf}\left (\frac {x}{\sqrt {2}}\right)\right]
     $$
 
-  - 其中 $\Phi(x)$ 是标准正态分布的累积分布函数，关键非线性性质：
-    - 不满足加法可分性：$\text{GELU}(Y_1 + Y_2)\neq \text{GELU}(Y_1) + \text{GELU}(Y_2)$（非线性函数的核心特征，无法拆分加法后分别激活再求和）
-    - 满足列/通道可分性：$\text{GELU}([Y_1, Y_2]) = [\text{GELU}(Y_1), \text{GELU}(Y_2)]$（对张量的最后一维做列拆分后，每个子张量可独立做 GELU 计算，结果直接拼接即可）
+  - 其中 $\Phi (x)$ 是标准正态分布的累积分布函数，关键非线性性质：
+    - 不满足加法可分性：$\text {GELU}(Y_1 + Y_2)\neq \text {GELU}(Y_1) + \text {GELU}(Y_2)$（非线性函数的核心特征，无法拆分加法后分别激活再求和）
+    - 满足列 / 通道可分性：$\text {GELU}([Y_1, Y_2]) = [\text {GELU}(Y_1), \text {GELU}(Y_2)]$（对张量的最后一维做列拆分后，每个子张量可独立做 GELU 计算，结果直接拼接即可）
   - 必须在 GELU 计算前，做一次 All-Reduce，将所有 GPU 的 $X_iA_i$ 相加得到完整的 $XA$，再广播到所有 GPU 做 GELU
   - 引入了额外的全局通信，破坏了 GPU 计算的独立性，大幅增加通信开销，完全违背张量并行「减少通信、提升效率」的设计目标
 
 - A 列切 + B 行切的完整公式
 
   $$
-  \begin{align*}
-  Y &= \text{GELU}(X[A_1\ A_2]) \begin{bmatrix}B_1\\B_2\end{bmatrix} \\
-  &= \text{GELU}([XA_1\ \ XA_2]) \begin{bmatrix}B_1\\B_2\end{bmatrix} \\
-  &= \big[\text{GELU}(XA_1)\ \ \text{GELU}(XA_2)\big] \begin{bmatrix}B_1\\B_2\end{bmatrix} \\
-  &= \text{GELU}(XA_1)B_1 + \text{GELU}(XA_2)B_2
-  \end{align*}
+  \begin {align*}
+  Y &= \text {GELU}(X [A_1\ A_2]) \begin {bmatrix} B_1\\B_2\end {bmatrix} \\
+  &= \text {GELU}([XA_1\ \ XA_2]) \begin {bmatrix} B_1\\B_2\end {bmatrix} \\
+  &= \big [\text {GELU}(XA_1)\ \ \text {GELU}(XA_2)\big] \begin {bmatrix} B_1\\B_2\end {bmatrix} \\
+  &= \text {GELU}(XA_1) B_1 + \text {GELU}(XA_2) B_2
+  \end {align*}
   $$
   - 从而只需在最后进行一次 all-reduce 通信
 
 - A 行切 + B 列切的完整公式
 
   $$
-  \begin{align*}
-  Y &= \text{GELU}\big( (X_1\ X_2)\begin{bmatrix}A_1\\A_2\end{bmatrix} \big) [B_1\ B_2] \\
-  &= \text{GELU}(X_1A_1 + X_2A_2)\ [B_1\ B_2] \\
-  &= \big[\ \text{GELU}(X_1A_1{+}X_2A_2)B_1 \ \ \ \text{GELU}(X_1A_1{+}X_2A_2)B_2\ \big]
-  \end{align*}
+  \begin {align*}
+  Y &= \text {GELU}\big ((X_1\ X_2)\begin {bmatrix} A_1\\A_2\end {bmatrix} \big) [B_1\ B_2] \\
+  &= \text {GELU}(X_1A_1 + X_2A_2)\ [B_1\ B_2] \\
+  &= \big [\ \text {GELU}(X_1A_1 {+} X_2A_2) B_1 \ \ \ \text {GELU}(X_1A_1 {+} X_2A_2) B_2\ \big]
+  \end {align*}
   $$
   - 可见，必须在 GELU 之前做 all-reduce
 
@@ -1437,7 +1434,7 @@ $$
 - `k_dim`, `v_dim` 满足:
 
   $$
-  k\_dim = v\_dim = d\_model // num\_heads = h // num\_heads
+  k\_dim = v\_dim = d\_model //num\_heads = h //num\_heads
   $$
 
 - 那么对于多头注意力，可以直接沿着 k_dim 的列方向切割 QKV 矩阵，这样三个权重矩阵的维度都变为 [d_model, k_dim//2]，每个 head 上单独做矩阵计算，最后将计算结果 concat 起来即可
@@ -1520,17 +1517,17 @@ $$
 - 张量并行中的前向传播瓶颈
   - 在张量并行的前向传播中，每一层 decoder 的前向传播中，都会遇到一个 all-reduce 的同步点，这个同步点无法与计算完全重叠
   - 这是因为在 LayerNorm 之前，必须先将各个 TP rank 上的部分结果合并
-    - 前面的线性层 / Attention / MLP 是 TP 分片计算的，但在 LayerNorm 之前，必须通过 all-gather / all-reduce，使得每个 TP rank 都拿到完整的激活值
+    - 前面的线性层 / Attention / MLP 是 TP 分片计算的，但在 LayerNorm 之前，必须通过 all-gather /all-reduce，使得每个 TP rank 都拿到完整的激活值
     - 也就是说，对任意 TP rank $r$：
 
       $$
-      x^{(r)} = x \quad \text{（逐元素完全相同）}
+      x^{(r)} = x \quad \text {（逐元素完全相同）}
       $$
 
     - 这是 LayerNorm 的一个硬约束：它需要对完整 hidden dimension 做统计量（均值、方差），不能在 shard 上算
 
       $$
-      \text{LN}(x) = \gamma \cdot \frac{x - \mu(x)}{\sqrt{\sigma^2(x) + \epsilon}} + \beta
+      \text {LN}(x) = \gamma \cdot \frac {x - \mu (x)}{\sqrt {\sigma^2 (x) + \epsilon}} + \beta
       $$
 
   - LayerNorm 的前向一致 ⇒ 反向梯度天然一致
@@ -1543,20 +1540,20 @@ $$
       $$
 
     - 对所有 TP rank $r$ 都成立
-    - 因此 LayerNorm 的梯度在各 TP rank 上是“天然一致”的，不需要 all-reduce 来同步
+    - 因此 LayerNorm 的梯度在各 TP rank 上是 “天然一致” 的，不需要 all-reduce 来同步
 
-  - Dropout 要“同步随机种子”
+  - Dropout 要 “同步随机种子”
     - Dropout 本质上引入了随机性，其等价于：
 
       $$
-      y = x \odot m,\quad m \sim \text{Bernoulli}(p)
+      y = x \odot m,\quad m \sim \text {Bernoulli}(p)
       $$
       - 其中 $m$ 是一个随机 mask
 
     - 如果 TP rank 使用不同的随机种子，即便输入 $x$ 在 TP rank 上是一样的，但是 rank 0 用 mask $m^{(0)}$，rank 1 用 mask $m^{(1)}$，且 m^{(0)}\
       eq m^{(1)}，那么 y^{(0)}\
       eq y^{(1)}
-    - 接下来会发生灾难性的后果——backward 梯度不同、LayerNorm 前提被破坏、参数更新不一致、训练数值不再等价于单卡
+    - 接下来会发生灾难性的后果 ——backward 梯度不同、LayerNorm 前提被破坏、参数更新不一致、训练数值不再等价于单卡
 
   - 一些系统（如 Megatron-LM、Nanotron）通过以下方式缓解这一问题：
     - 在 FC1 计算过程中部分重叠 all-gather
@@ -1564,9 +1561,9 @@ $$
     - 剩余部分仍在继续计算
 
 - 激活内存与通信的权衡
-  - 引入额外的通信：ZeRO 的通信如 all-reduce / reduce-scatter，发生在 backward 阶段，可以和反向计算流水重叠；而张量并行在模型的前向计算路径（LayerNorm 之前）中直接引入了多种分布式通信原语，而这些通信很难被完全隐藏或与计算重叠
-  - 激活内存的节省被破坏：张量并行确实可以将矩阵乘法中的中间激活值分片到多个 GPU，从而减少单卡激活内存占用；但仍然存在限制，对于 LayerNorm 等操作，仍然需要收集完整激活，因此并不能获得“完全”的激活内存节省
-  - 吞吐率的下降：TP 引入了强依赖于网络条件的通信需求，由于某些 all-reduce 操作无法被完全隐藏，它们会直接落在前向传播的关键路径上——也就是决定前向传播最短完成时间的那条操作链
+  - 引入额外的通信：ZeRO 的通信如 all-reduce /reduce-scatter，发生在 backward 阶段，可以和反向计算流水重叠；而张量并行在模型的前向计算路径（LayerNorm 之前）中直接引入了多种分布式通信原语，而这些通信很难被完全隐藏或与计算重叠
+  - 激活内存的节省被破坏：张量并行确实可以将矩阵乘法中的中间激活值分片到多个 GPU，从而减少单卡激活内存占用；但仍然存在限制，对于 LayerNorm 等操作，仍然需要收集完整激活，因此并不能获得 “完全” 的激活内存节省
+  - 吞吐率的下降：TP 引入了强依赖于网络条件的通信需求，由于某些 all-reduce 操作无法被完全隐藏，它们会直接落在前向传播的关键路径上 —— 也就是决定前向传播最短完成时间的那条操作链
   - 因此，最终性能是以下因素之间的权衡结果：计算与显存节省带来的收益和额外通信开销带来的损失
 
 ### TP 与 DP 的结合
@@ -1577,8 +1574,8 @@ $$
 
 - 其中，node 表示一台机器，一般在同一台机器的 GPU 间做张量模型并行，而在不同的机器上做数据并行
 - 通讯量分析（关注每层 Transformer）
-  - 在张量模型并行中，设每次通讯量为 $\Phi_{TP}$，从上面分析中知道每层做 4 次AllReduce，其通讯总量为 $8\Phi_{TP}$；其中，$\Phi_{TP} = b * s * h$，则通讯总量为 $8 * b * s * h$
-  - 在数据并行中，设每次通讯量为 $\Phi_{DP}$，每层做 1 次AllReduce（先不考虑ZeRO 拆分权重的情况），其通讯总量为 $2\Phi_{DP}$；其中，通讯的主要是梯度，则 $\Phi_{DP} = h * h$，总通讯量为 $2 * h * h$
+  - 在张量模型并行中，设每次通讯量为 $\Phi_{TP}$，从上面分析中知道每层做 4 次 AllReduce，其通讯总量为 $8\Phi_{TP}$；其中，$\Phi_{TP} = b * s * h$，则通讯总量为 $8 * b * s * h$
+  - 在数据并行中，设每次通讯量为 $\Phi_{DP}$，每层做 1 次 AllReduce（先不考虑 ZeRO 拆分权重的情况），其通讯总量为 $2\Phi_{DP}$；其中，通讯的主要是梯度，则 $\Phi_{DP} = h * h$，总通讯量为 $2 * h * h$
   - 因此，要比较的就是 $8 * b * s * h$ 和 $2 * h * h$。忽略常数和共同项，我们最终比较的是：
 
     $$
@@ -1594,7 +1591,7 @@ $$
     ![img](/img/llm\tp-bwd.jpg)
 
   - 而在 DP 中，本层计算完梯度后，既可以将本层的梯度转发出去，和属于同一个 DP 组的 GPU 进行 all-reduce，同时继续进行下一层的反向传播
-  - 也即，在DP组中，下一层不依赖上一层的梯度聚合结果，因此 DP 对带宽的需求相较来说没有那么高
+  - 也即，在 DP 组中，下一层不依赖上一层的梯度聚合结果，因此 DP 对带宽的需求相较来说没有那么高
 
     ![img](/img/llm\dp-bwd.jpg)
 
@@ -1610,8 +1607,8 @@ $$
 - 以 LayerNorm 为例解释为什么要沿序列维度处理
 
   $$
-  \text{LayerNorm}(x) = \gamma \cdot \frac{x - \mu}{\sqrt{\sigma^2 + \epsilon}} + \beta\\
-  \mu = \text{mean}(x), \quad \sigma^2 = \text{var}(x)
+  \text {LayerNorm}(x) = \gamma \cdot \frac {x - \mu}{\sqrt {\sigma^2 + \epsilon}} + \beta\\
+  \mu = \text {mean}(x), \quad \sigma^2 = \text {var}(x)
   $$
   - $\mu$ 和 $\sigma^2$ 是沿隐藏维度 $h$ 计算的均值和方差
   - LayerNorm 需要访问完整的 hidden_dim 才能计算正确
@@ -1621,7 +1618,7 @@ $$
 - 基本思想
   - SP 通过沿序列维度切分激活来分摊显存压力
   - 每个 GPU 只处理自己序列分片的 LayerNorm 或 Dropout
-  - 激活显存需求从 $O(B \cdot S \cdot H)$ 被切分到 $O(B \cdot S/N_{seq} \cdot H)$，$N_{seq}$​​ 是 SP 切分的 GPU 数
+  - 激活显存需求从 $O (B \cdot S \cdot H)$ 被切分到 $O (B \cdot S/N_{seq} \cdot H)$，$N_{seq}$​​ 是 SP 切分的 GPU 数
 
 ### MLP 激活大小
 
@@ -1629,7 +1626,7 @@ $$
 
   ![mlp-activation](/img/llm\mlp-activation.jpg)
 
-- MLP 是 Transformer 中“全连接层+激活函数+dropout”的核心模块，其流程为：
+- MLP 是 Transformer 中 “全连接层 + 激活函数 + dropout” 的核心模块，其流程为：
   `输入 → 线性层A (h→4h) → GELU → 线性层B (4h→h) → Dropout → 输出`
 - 线性矩阵 A (h → 4h) 的输入
   - 输入张量的形状：$b \times s \times h$（batch × 序列长度 × 隐藏维度）
@@ -1649,37 +1646,37 @@ $$
 - 总的激活值大小为 $19bsh$
 - 为什么这里 dropout 的输入不计算激活值
   - 设 dropout 输入为 $Z'$，输出为 $Z$，损失值为 $L$
-  - 离 $Z'$ 最近的带参矩阵为 $B$，那么我们可以通过求 $\frac{\partial L}{\partial B}$ 的具体形式，来判断 $Z'$ 在 bwd 中是否有用
+  - 离 $Z'$ 最近的带参矩阵为 $B$，那么我们可以通过求 $\frac {\partial L}{\partial B}$ 的具体形式，来判断 $Z'$ 在 bwd 中是否有用
   - 在 fwd 的过程中，有：
     - $Z' = YB$
-    - $Z = \text{dropout}(Z') = Z' \odot M$
+    - $Z = \text {dropout}(Z') = Z' \odot M$
     - $M$ 表示 dropout_mask 矩阵，$\odot$ 表示 element-wise product
-    - $f(Z) = L$
+    - $f (Z) = L$
   - 在 bwd 的过程中，有：
 
     $$
-    \begin{align*}
-    \frac{\partial L}{\partial B} &= \frac{\partial L}{\partial Z} \cdot \frac{\partial Z}{\partial Z'} \cdot \frac{\partial Z'}{\partial B} \\
-    &= Y^T \left( \frac{\partial L}{\partial Z} \odot M \right)
-    \end{align*}
+    \begin {align*}
+    \frac {\partial L}{\partial B} &= \frac {\partial L}{\partial Z} \cdot \frac {\partial Z}{\partial Z'} \cdot \frac {\partial Z'}{\partial B} \\
+    &= Y^T \left (\frac {\partial L}{\partial Z} \odot M \right)
+    \end {align*}
     $$
 
   - 由此可知，在整个链式推导的过程中，不会用到 $Z'$​，即不用保存 dropout 的输入
 
-- GELU的输入为什么算作激活值？
+- GELU 的输入为什么算作激活值？
   - 设 GELU 输入为 $Y'$（为了作区分，这里符号表达和图中稍许不同），输出为 $Y$
-  - 离 $Y'$ 最近的带参矩阵为 $A$，那么可以通过求 $\frac{\partial L}{\partial A}$ 的具体形式，来判断 $Y'$ 在 bwd 中是否有用
+  - 离 $Y'$ 最近的带参矩阵为 $A$，那么可以通过求 $\frac {\partial L}{\partial A}$ 的具体形式，来判断 $Y'$ 在 bwd 中是否有用
   - 在 fwd 的过程中，有：
     - $Y' = XA$
-    - $Y = GELU(Y') = Y' * \sigma(1.702Y')$，其中 $\sigma$ 是 sigmoid 函数
-    - $f(Y) = L$，这里为了表达简练，直接把 $Y$ 到最后损失 $L$ 的过程写成映射函数 $f$
+    - $Y = GELU (Y') = Y' * \sigma (1.702Y')$，其中 $\sigma$ 是 sigmoid 函数
+    - $f (Y) = L$，这里为了表达简练，直接把 $Y$ 到最后损失 $L$ 的过程写成映射函数 $f$
   - 在 bwd 的过程中，我们有：
 
     $$
-    \begin{align*}
-    \frac{\partial L}{\partial A} &= \frac{\partial L}{\partial Y} \cdot \frac{\partial Y}{\partial Y'} \cdot \frac{\partial Y'}{\partial A} \\
-    &= X^T \left( \frac{\partial L}{\partial Y} \odot \left[ \sigma(1.702Y')\left(1 + 1.702Y'(1 - \sigma(1.702Y'))\right) \right] \right)
-    \end{align*}
+    \begin {align*}
+    \frac {\partial L}{\partial A} &= \frac {\partial L}{\partial Y} \cdot \frac {\partial Y}{\partial Y'} \cdot \frac {\partial Y'}{\partial A} \\
+    &= X^T \left (\frac {\partial L}{\partial Y} \odot \left [\sigma (1.702Y')\left (1 + 1.702Y'(1 - \sigma (1.702Y'))\right) \right] \right)
+    \end {align*}
     $$
 
   - 其中和 $\sigma$ 相关的那一串，就是 GELU 函数反向传播时的 $Y$ 对 $Y'$ 的偏导，本质上就是因为在链式传导到 GELU 这一项时需要用到 $Y'$，所以才将 $Y'$ 作为激活值保存
@@ -1688,23 +1685,23 @@ $$
   - 在 fwd 的过程中，有：
     - $Y' = XA$
     - $Y = 3 * Y'$
-    - $f(Y) = L$，这里为了表达简练，直接把 $Y$ 到最后损失 $L$ 的过程写成映射函数 $f$
+    - $f (Y) = L$，这里为了表达简练，直接把 $Y$ 到最后损失 $L$ 的过程写成映射函数 $f$
   - 在 bwd 过程中，有：
 
   $$
-  \begin{align*}
-  \frac{\partial L}{\partial A} &= \frac{\partial L}{\partial Y} \cdot \frac{\partial Y}{\partial Y'} \cdot \frac{\partial Y'}{\partial A} \\
-  &= 3X^T \left( \frac{\partial L}{\partial Y} \right)
-  \end{align*}
+  \begin {align*}
+  \frac {\partial L}{\partial A} &= \frac {\partial L}{\partial Y} \cdot \frac {\partial Y}{\partial Y'} \cdot \frac {\partial Y'}{\partial A} \\
+  &= 3X^T \left (\frac {\partial L}{\partial Y} \right)
+  \end {align*}
   $$
   - 所以，此时不需要保存 $Y'$
 
 - 决定一份数据是否能作为激活值保存下来的要点就在于它会不会在 bwd 的链式传导过程中被使用
 - 可以计算纯 tp 下单张卡维护的激活值大小：
   - 首先，对于 `LayerNorm` 前、后的激活值 X，每张卡都是重复保存的，这里占存储 $2 * 2bsh = 4bsh$
-  - 接着，进入 mlp 的 tp 计算，每张卡上单独计算一部分结果，这里激活值天然就是切开保存的，占存储 $\frac{8bsh + 8bsh}{t} = \frac{16bsh}{t}$
+  - 接着，进入 mlp 的 tp 计算，每张卡上单独计算一部分结果，这里激活值天然就是切开保存的，占存储 $\frac {8bsh + 8bsh}{t} = \frac {16bsh}{t}$
   - 最终计算完毕，由于 tp 会对输出结果先做 all-reduce，让每张卡上拿到完整的输出 Z 后再做 dropout，所以 dropout mask 相关的激活值也是重复存储的，占大小 $bsh$
-  - 综上，纯 tp 情况下单卡的激活值大小为 $5bsh + \frac{16bsh}{t}$
+  - 综上，纯 tp 情况下单卡的激活值大小为 $5bsh + \frac {16bsh}{t}$
   - 所以，为了降低单卡的激活值大小，目标就是把这冗余的 $5bsh$​​ 切分到多卡上
 
 ### Attention 激活大小
@@ -1718,28 +1715,28 @@ $$
 - Attn 过程：
   - 输入 `X` 会被作为激活值保存，大小为 `2bsh`
   - `X` 经过带参矩阵 `Wq, Wk, Wv` 后的结果 `Q, K, V` 会被作为激活值保存，大小为 `3 * 2bsh = 6bsh`
-  - $S' = softmax(QK^T)$ 的结果会被作为激活值保存，大小为 $2bas^2$
-  - $S = dropout(S')$ 的结果、dropout mask 矩阵会被作为激活值保存，大小分别为 $2bas^2$, $bas^2$
+  - $S' = softmax (QK^T)$ 的结果会被作为激活值保存，大小为 $2bas^2$
+  - $S = dropout (S')$ 的结果、dropout mask 矩阵会被作为激活值保存，大小分别为 $2bas^2$, $bas^2$
   - Linear proj 的输入会被作为激活值保存，大小为 `2bsh`
   - 最后一个 dropout 操作的 mask 矩阵会被作为激活值保存，大小为 `bsh`
   - 总结来看，Attention 过程的激活值大小 = $11bsh + 5bas^2$
-- 那么到底是该保存 $QK^T$ 的结果，还是该保存 $softmax(QK^T)$ 的结果呢？从上图来看最终保存的是后者，可这是为什么呢？
+- 那么到底是该保存 $QK^T$ 的结果，还是该保存 $softmax (QK^T)$ 的结果呢？从上图来看最终保存的是后者，可这是为什么呢？
 - 还是沿用之前的思路解决这个问题：判断一份数据到底是不是激活值，不要靠想，要靠动手推，检查它是否在 bwd 的链式推导中起了作用
   - 对于 fwd 过程，有：
     - $Q = X * W_q$
     - $K = X * W_k$
     - $D = QK^T$
-    - $S' = softmax(D)$
-    - $S = dropout(S')$，其中 $M$ 是 dropout mask 矩阵
-    - $L = f(S)$，$f$ 是损失函数。这里为了表达简练，直接把 $S$ 到最后损失 $L$ 的过程写成映射函数 $f$
+    - $S' = softmax (D)$
+    - $S = dropout (S')$，其中 $M$ 是 dropout mask 矩阵
+    - $L = f (S)$，$f$ 是损失函数。这里为了表达简练，直接把 $S$ 到最后损失 $L$ 的过程写成映射函数 $f$
     - 所以其实我们现在就是在讨论，是保留 $D$，还是保留 $S'$ 的问题
   - 对于 bwd 过程，假设现在想去求 $L$ 对带参矩阵 $W_q$ 的偏导：
 
     $$
-    \begin{align*}
-    \frac{\partial L}{\partial W_q} &= \frac{\partial L}{\partial S} \cdot \frac{\partial S}{\partial S'} \cdot \frac{\partial S'}{\partial D} \cdot \frac{\partial D}{\partial Q} \cdot \frac{\partial Q}{\partial W_q} \\
-    &= X^T \left[ \left( \frac{\partial L}{\partial S} \odot M \right) \cdot \left( diag(S') - S'S^T \right) * K \right]
-    \end{align*}
+    \begin {align*}
+    \frac {\partial L}{\partial W_q} &= \frac {\partial L}{\partial S} \cdot \frac {\partial S}{\partial S'} \cdot \frac {\partial S'}{\partial D} \cdot \frac {\partial D}{\partial Q} \cdot \frac {\partial Q}{\partial W_q} \\
+    &= X^T \left [\left ( \frac {\partial L}{\partial S} \odot M \right) \cdot \left (diag (S') - S'S^T \right) * K \right]
+    \end {align*}
     $$
 
   - 这里 $diag$ 一项，其实就是 softmax 的输出 ($S'$) 对 softmax 的输入 ($D$) 求偏导的结果。通过上面的过程可以发现，真正有用的是 softmax 的输出，所以才选择保存 $S'$
@@ -1760,39 +1757,39 @@ $$
 - 通过 seq 维度切分解决 LayerNorm 与 Dropout 的激活值冗余问题，配合`all-gather`/`reduce-scatter`通信算子实现张量并行（TP）下的激活值高效存储与梯度传导，并用边算边通讯隐藏通信开销
 - 设切分卡数为 $t$，核心优化围绕 `LayerNorm` 前后的激活值与 Dropout Mask 展开：
   - LayerNorm 输入切分：将输入 $X$ 按 `seq维度` 切开为 `seq_chunk`，每张卡仅维护部分序列
-  - 因 `LayerNorm` 在 `token维度` 计算，切分不影响计算正确性，输入激活值由 $2bsh$ 降至 $\frac{2bsh}{t}$
-  - LayerNorm 输出切分：输入切分后输出天然切开，激活值同步由 $2bsh$ 降至 $\frac{2bsh}{t}$
-  - Dropout Mask 切分：每张卡仅维护自身 `seq_chunk` 对应的 Mask，激活值由 $bsh$ 降至 $\frac{bsh}{t}$
+  - 因 `LayerNorm` 在 `token维度` 计算，切分不影响计算正确性，输入激活值由 $2bsh$ 降至 $\frac {2bsh}{t}$
+  - LayerNorm 输出切分：输入切分后输出天然切开，激活值同步由 $2bsh$ 降至 $\frac {2bsh}{t}$
+  - Dropout Mask 切分：每张卡仅维护自身 `seq_chunk` 对应的 Mask，激活值由 $bsh$ 降至 $\frac {bsh}{t}$
   - 优化结果：纯 TP 下与输入输出相关的 $5bsh$​ 冗余激活值被完全拆分
 - 前向传播（forward）流程与通信策略
 
   | 步骤          | 操作                                    | 激活值规模        | 核心目的                                                                |
   | ------------- | --------------------------------------- | ----------------- | ----------------------------------------------------------------------- |
-  | g 的 forward  | 执行all-gather，获取完整输入张量        | -                 | 满足TP计算对完整输入的要求                                              |
-  | 2. TP核心计算 | 正常执行TP流程                          | $\frac{16bsh}{t}$ | 按张量并行逻辑完成计算，输出$Z1、Z2$（尺寸均为$(b, s, h)$）             |
-  | 3. 结果聚合   | 替换传统`allreduce`，执行reduce-scatter | -                 | 仅获取自身`seq_chunk`对应的完整$Z$（尺寸为$(b, s/t, h)$），杜绝结果冗余 |
-  | 4. 独立计算   | 每张卡对自身$Z$执行Dropout              | $\frac{bsh}{t}$   | 基于切分Mask完成随机失活，无冗余存储                                    |
+  | g 的 forward  | 执行 all-gather，获取完整输入张量        | -                 | 满足 TP 计算对完整输入的要求                                              |
+  | 2. TP 核心计算 | 正常执行 TP 流程                          | $\frac {16bsh}{t}$ | 按张量并行逻辑完成计算，输出 $Z1、Z2$（尺寸均为 $(b, s, h)$）             |
+  | 3. 结果聚合   | 替换传统`allreduce`，执行 reduce-scatter | -                 | 仅获取自身`seq_chunk`对应的完整 $Z$（尺寸为 $(b, s/t, h)$），杜绝结果冗余 |
+  | 4. 独立计算   | 每张卡对自身 $Z$ 执行 Dropout              | $\frac {bsh}{t}$   | 基于切分 Mask 完成随机失活，无冗余存储                                    |
 
 - 反向传播（backward）流程与通信优化
 
   | 步骤                   | 操作                                                                             | 核心作用                            | 性能优化手段                                                         |
   | ---------------------- | -------------------------------------------------------------------------------- | ----------------------------------- | -------------------------------------------------------------------- |
-  | 1. 梯度准备            | 执行all-gather，获取完整的$\frac{\partial L}{\partial Z}$                        | 为梯度反向传导提供完整输入          | -                                                                    |
-  | 2. 梯度传导至LayerNorm | 执行all-gather获取完整的$Y$（LayerNorm输出）                                     | 保证梯度顺利传导至LayerNorm层       | 边算边通讯：梯度未传导至此时提前启动通信，将通信开销覆盖在计算时间中 |
-  | 3. 梯度聚合            | 执行reduce-scatter，获取自身`seq_chunk`对应的完整$\frac{\partial L}{\partial X}$ | 为LayerNorm层的梯度计算提供正确输入 | -                                                                    |
+  | 1. 梯度准备            | 执行 all-gather，获取完整的 $\frac {\partial L}{\partial Z}$                        | 为梯度反向传导提供完整输入          | -                                                                    |
+  | 2. 梯度传导至 LayerNorm | 执行 all-gather 获取完整的 $Y$（LayerNorm 输出）                                     | 保证梯度顺利传导至 LayerNorm 层       | 边算边通讯：梯度未传导至此时提前启动通信，将通信开销覆盖在计算时间中 |
+  | 3. 梯度聚合            | 执行 reduce-scatter，获取自身`seq_chunk`对应的完整 $\frac {\partial L}{\partial X}$ | 为 LayerNorm 层的梯度计算提供正确输入 | -                                                                    |
 
-- 最终的单卡维护的激活值大小由 $5bsh + \frac{16t}{s^2h}$ 降到了 $\frac{21bsh}{t}$​
+- 最终的单卡维护的激活值大小由 $5bsh + \frac {16t}{s^2h}$ 降到了 $\frac {21bsh}{t}$​
 - Attention 层前后的处理逻辑类似，最终激活值优化结果如下
 
   | 并行策略       | 单卡激活值大小公式                                   | 核心解读                                                                          |
   | :------------- | :--------------------------------------------------- | :-------------------------------------------------------------------------------- |
-  | 无并行处理     | $sbh\left(34 + 5\frac{as}{ht}\right)$                | 基础基准，无任何张量/序列切分，激活值全量存储                                     |
-  | 纯 TP 处理     | $sbh\left(10 + \frac{24}{t} + 5\frac{as}{ht}\right)$ | 仅按张量维度切分，`10` 为 LayerNorm、Dropout 等非切分固定开销，是 SP 优化核心靶点 |
-  | TP+SP 联合处理 | $sbh\left(\frac{34}{t} + 5\frac{as}{ht}\right)$      | 结合张量与序列维度双重切分，覆盖了 TP 遗留的固定开销，进一步降低单卡激活值占用    |
+  | 无并行处理     | $sbh\left (34 + 5\frac {as}{ht}\right)$                | 基础基准，无任何张量 / 序列切分，激活值全量存储                                     |
+  | 纯 TP 处理     | $sbh\left (10 + \frac {24}{t} + 5\frac {as}{ht}\right)$ | 仅按张量维度切分，`10` 为 LayerNorm、Dropout 等非切分固定开销，是 SP 优化核心靶点 |
+  | TP+SP 联合处理 | $sbh\left (\frac {34}{t} + 5\frac {as}{ht}\right)$      | 结合张量与序列维度双重切分，覆盖了 TP 遗留的固定开销，进一步降低单卡激活值占用    |
 
 ### TP + SP 后的变化
 
-![ in forward: f = no-op ; f* = all-reduce ; g = all-gather ; g* = reduce-scatter             in backward: f = all-reduce ; f* = no-op ; g = reduce-scatter ; g* = all-gather            SP region needs full hidden_dim](/img/llm/tp_sp_diagram.png)
+![in forward: f = no-op ; f* = all-reduce ; g = all-gather ; g* = reduce-scatter             in backward: f = all-reduce ; f* = no-op ; g = reduce-scatter ; g* = all-gather            SP region needs full hidden_dim](/img/llm/tp_sp_diagram.png)
 
 - 首先，TP 中引入了两个操作标记 f 和 f\*，它们是一对共轭操作（conjugate pair）
 
@@ -1804,7 +1801,7 @@ $$
 - 共轭对的含义：在每个传递中，当一个是 no-op，另一个是 all-reduce；在另一传递中刚好相反
 - SP 处理沿序列维度切分的操作（如 LayerNorm、Dropout）：
   - 在 SP 区域，避免使用 all-reduce，因为 all-reduce 需要收集完整的激活，增加峰值显存，这不是 SP 的目的
-  - g / g\* 操作用于 TP ↔ SP 的转换：
+  - g /g\* 操作用于 TP ↔ SP 的转换：
 
   | 操作 | 功能说明                                              |
   | ---- | ----------------------------------------------------- |
@@ -1836,7 +1833,7 @@ $$
   - TP + SP：每次激活只存部分序列或部分隐藏维度
 
     $$
-    \text{max activation} = B \cdot S \cdot \frac{H}{tp}
+    \text {max activation} = B \cdot S \cdot \frac {H}{tp}
     $$
 
   - 显著减轻 GPU 显存压力
@@ -1891,28 +1888,28 @@ $$
     - 因此一般将 TP 的并行度限制在每个节点的 GPU 数量以内，例如 TP ≤ 8
   - TP≤8：节点内通信（NVLink）
     - 带宽极高（600GB/s 量级），延迟极低
-    - all-reduce / all-gather / reduce-scatter 相对“便宜”
+    - all-reduce /all-gather/reduce-scatter 相对 “便宜”
     - TP / TP+SP 的通信还能勉强忍受
   - TP>8：跨节点通信（EFA）
     - 带宽骤降（~100–400Gbps），延迟显著上升
     - TP 中的通信是在前向关键路径上的，无法像 ZeRO 那样大规模 overlap
-    - 结果：每一层的通信都直接拉长 forward / backward 的 critical path，于是 per-GPU throughput 急剧下降
+    - 结果：每一层的通信都直接拉长 forward /backward 的 critical path，于是 per-GPU throughput 急剧下降
 
 - LayerNorm 的 all-reduce 操作
   - 在 SP 区域，每个 TP rank 只看到 不同的 sequence 子区间
   - LayerNorm 的参数（$\gamma, \beta$）是对整个 hidden 维度共享，对 sequence 不共享
-  - 因此 rank 0：用 $x[:, 0:s/2, :]$ 算出来一组梯度，rank 1：用 $x[:, s/2:s, :]$​ 算出来另一组梯度
+  - 因此 rank 0：用 $x [:, 0:s/2, :]$ 算出来一组梯度，rank 1：用 $x [:, s/2:s, :]$​ 算出来另一组梯度
   - LayerNorm 的参数是逻辑上全模型共享，物理上每个 TP rank 各自一份
   - 如果不做 all-reduce 操作，那么 $\nabla \gamma^{(0)}\neq \nabla \gamma^{(1)}$，参数会立刻发散
-  - 所以必须进行全量规约，即 $\nabla \gamma \leftarrow \text{AllReduce}(\nabla \gamma^{(i)})$
-  - 由于LayerNorm 参数量极少：只有 $2h$（$\gamma,\beta$），相比 QKV / MLP 的 $O(h^2)$，可以忽略不计
+  - 所以必须进行全量规约，即 $\nabla \gamma \leftarrow \text {AllReduce}(\nabla \gamma^{(i)})$
+  - 由于 LayerNorm 参数量极少：只有 $2h$（$\gamma,\beta$），相比 QKV / MLP 的 $O (h^2)$，可以忽略不计
 - TP+SP 仍然存在的问题
-  - 即便用了 SP，在 TP 区域（attention / MLP）仍然需要 $(b, s, \frac{h}{tp})$ 的激活值，因为 $s$ 是完整的
-  - 当 $s = 32k / 64k / 128k$ 时，attention 激活（尤其是 QK / softmax）仍然爆炸
-  - 这也是 TP+SP 不能解决“超长上下文”的本质问题，为此引出上下文并行（Context Parallelism）解决上下文太长的问题
-  - 同时，由于 TP 的通信在 forward / backward 关键路径，当模型太大时，TP 不得不跨节点，延迟和带宽无法忍受，吞吐量会断崖式下降，为此引出流水线并行（Pipeline Parallelism）解决模型太大的问题
+  - 即便用了 SP，在 TP 区域（attention / MLP）仍然需要 $(b, s, \frac {h}{tp})$ 的激活值，因为 $s$ 是完整的
+  - 当 $s = 32k / 64k / 128k$ 时，attention 激活（尤其是 QK /softmax）仍然爆炸
+  - 这也是 TP+SP 不能解决 “超长上下文” 的本质问题，为此引出上下文并行（Context Parallelism）解决上下文太长的问题
+  - 同时，由于 TP 的通信在 forward /backward 关键路径，当模型太大时，TP 不得不跨节点，延迟和带宽无法忍受，吞吐量会断崖式下降，为此引出流水线并行（Pipeline Parallelism）解决模型太大的问题
 
-### 通信-计算掩盖
+### 通信 - 计算掩盖
 
 - Megatron 对 TP 的通信优化示意图如下
 
@@ -1936,9 +1933,9 @@ $$
 - 可以使用 all-gather overlap p2p 进行优化（tp_comm_overlap_ag）
   - 在初始阶段，GPU0 上存放着输入块 $A_0$ 和模型权重分块 $B_0$，GPU1 上存放着输入块 $A_1$ 和模型权重分块 $B_1$
   - Overlap 执行步骤如下：
-    - 在 GPU0 上，先将 $A_0$ 发送至 GPU1，同时启动 GEMM 计算 $\text{gemm}(A_0, B_0)$ 得到 $C_{00}$，实现计算与通信的重叠
-    - 在 GPU1 上，先将 $A_1$ 发送至 GPU0，同时启动 GEMM 计算 $\text{gemm}(A_1, B_1)$ 得到 $C_{11}$，实现计算与通信的重叠
-    - 待 GPU0 完成 $C_{00}$ 的计算并收到 $A_1$ 后，即可继续执行 $\text{gemm}(A_1, B_0)$ 得到 $C_{10}$；GPU1 同理，在完成 $C_{11}$ 并收到 $A_0$ 后，执行 $\text{gemm}(A_0, B_1)$ 得到 $C_{01}$
+    - 在 GPU0 上，先将 $A_0$ 发送至 GPU1，同时启动 GEMM 计算 $\text {gemm}(A_0, B_0)$ 得到 $C_{00}$，实现计算与通信的重叠
+    - 在 GPU1 上，先将 $A_1$ 发送至 GPU0，同时启动 GEMM 计算 $\text {gemm}(A_1, B_1)$ 得到 $C_{11}$，实现计算与通信的重叠
+    - 待 GPU0 完成 $C_{00}$ 的计算并收到 $A_1$ 后，即可继续执行 $\text {gemm}(A_1, B_0)$ 得到 $C_{10}$；GPU1 同理，在完成 $C_{11}$ 并收到 $A_0$ 后，执行 $\text {gemm}(A_0, B_1)$ 得到 $C_{01}$
   - 在 overlap 模式下，无需等待输入数据完成 All-Gather 后再启动计算，从而有效缩短了整体运行时间
 
   ![img](/img/llm\all-gather-overlap-2.jpg)
@@ -2008,7 +2005,7 @@ $$
   - `fc1_dgrad` 计算完成后，经 `RS（Reduce-Scatter）` 通信拆分梯度，向下层传递
   - `fc1_wgrad` 计算完成后，直接用于本地 `fc1_weight` 的参数更新
 - dgrad 与 wgrad
-  - dgrad（data gradient / input gradient）
+  - dgrad（data gradient /input gradient）
     - 全称：`∂Loss / ∂Input`（损失对输入 / 激活的梯度）
     - 含义：反向传播时，从上层传回的梯度，用于计算本层权重梯度，也会继续向前一层传播
     - 根据反向传播，上层梯度对输入的梯度的系数应该就是本层的权重，因此可以直接进行计算
@@ -2016,7 +2013,7 @@ $$
   - wgrad（weight gradient）
     - 全称：`∂Loss / ∂Weight`（损失对权重 / 参数的梯度）
     - 含义：本层权重的梯度，用于后续参数更新（SGD/Adam 等）
-    - 根据反向传播，上层梯度对权重的梯度的系数应该是本层的输入，因此需要等待 all-gather 收集来自各个 GPU 上的输入/激活
+    - 根据反向传播，上层梯度对权重的梯度的系数应该是本层的输入，因此需要等待 all-gather 收集来自各个 GPU 上的输入 / 激活
     - 在计算完毕后，直接用于更新本层的参数，无需进行传递
     -
 
@@ -2031,24 +2028,24 @@ $$
 - TP+SP 无法应对超长上下文
   - 如前文所述，在 TP+SP 中，当 $s$ 变得非常大时，激活在 TP region 仍然线性随 $s$ 增长
   - 即使使用 activation recomputation，也必须在 layer 边界保存一些激活
-  - 这些激活的内存下界是 $O(s)$​，无法再缩减
-- 上下文并行的本质是：把 SP 从“只在非 TP 模块用”，升级为“在整个模型中都用”
+  - 这些激活的内存下界是 $O (s)$​，无法再缩减
+- 上下文并行的本质是：把 SP 从 “只在非 TP 模块用”，升级为 “在整个模型中都用”
   - SP 只在 LN 和 Dropout 中按照序列进行切分
   - 而 CP 把输入序列沿 sequence 维切分到多个 GPU，每个 GPU 只负责一段上下文（context slice）
   - 这一点和 SP 类似，但作用范围扩大到了 Attention / MLP 本身
-  - 这样，在 TP region 里：每个 GPU 处理的激活大小从 $(b, s, h_{tp})$ 变成 $(b, s / cp, h_{tp})$，激活显存随 $s$ 的增长被 $cp$​ 倍稀释
+  - 这样，在 TP region 里：每个 GPU 处理的激活大小从 $(b, s, h_{tp})$ 变成 $(b, s /cp, h_{tp})$，激活显存随 $s$ 的增长被 $cp$​ 倍稀释
 - 对于 MLP、LayerNorm、Dropout、逐 token 的线性变换等模块，切分序列是免费的
   - 以上模块都有一个共同点：每个 token 是独立处理的
   - 因此当把 sequence 切分后，不需要权重通信（权重不切），不需要跨 GPU 交换激活，backward 后只需要像 DP 一样对梯度做一次 all-reduce，其通信成本非常低
 - 而对于 Attention 模块
   - 在注意力计算中，每个 token 都要访问所有 token 的 key/value（在 casual attention 中，至少需要关注之前的每个 token 的 key/value）
   - 当 sequence 被切分后，每个 GPU 只持有一部分 $Q$，但需要全局的 $K, V$
-  - 如果直接 all-gather 全部 $K, V$，通信量是 $O(s \cdot h)$，显存和带宽都会直接爆炸
+  - 如果直接 all-gather 全部 $K, V$，通信量是 $O (s \cdot h)$，显存和带宽都会直接爆炸
   - 因此 CP 的可行性完全取决于有没有一种方法能高效地交换 $K, V$​，而不是一次性 gather
 - 上下文并行与 FlashAttention
   - 二者都使用 online softmax，都避免保存完整 attention matrix
   - 区别在于：FlashAttention 是单 GPU 内的 kernel 级优化，上下文并行是跨 GPU 的并行策略
-  - CP 关注的是“序列如何分布到多卡”，不是单卡算得多快
+  - CP 关注的是 “序列如何分布到多卡”，不是单卡算得多快
 
 ### 朴素 Ring Attention
 
@@ -2063,30 +2060,30 @@ $$
 - 常规的 Softmax 计算公式如下：
 
   $$
-  softmax(x_i) = \frac{e^{x_i}}{\sum_{j=1}^{d} e^{x_j}}
+  softmax (x_i) = \frac {e^{x_i}}{\sum_{j=1}^{d} e^{x_j}}
   $$
 
 - 在实际计算中，若 $x_i$ 的数值过大，指数运算 $e^{x_i}$ 极易引发数据上溢（Overflow）问题
 - 为解决这一数值稳定性问题，可以采用 Safe Softmax 方法，其核心思路是先对输入做归一化处理，首先计算输入序列中的最大值：
 
   $$
-  m(x) = \max_i x_i
+  m (x) = \max_i x_i
   $$
 
 - 再将每个输入值减去该最大值后进行 Softmax 计算：
 
   $$
-  softmax(x_i) = \frac{e^{x_i - m(x)}}{\sum_{j=1}^{d} e^{x_j - m(x)}}
+  softmax (x_i) = \frac {e^{x_i - m (x)}}{\sum_{j=1}^{d} e^{x_j - m (x)}}
   $$
 
 - 对于单个 GPU，其基本思路是
 
   ![img](/img/llm\single-gpu-chunk.jpg)
-  - 固定住某个 $\mathbf{Q}_i$，其尺寸为 $(c, d)$
-  - 将该 $\mathbf{Q}_i$ 分别传入不同的 $\mathbf{K}_j$、$\mathbf{V}_j$ 数据块，计算对应的 $\mathbf{O}_{ij}$
-  - 通过某种方式，每传入一份 $(\mathbf{K}_j, \mathbf{V}_j)$，就更新一次 $\mathbf{O}_{ij}$
-  - 当最后一份 $(\mathbf{K}_j, \mathbf{V}_j)$ 传入并计算完毕后，即可得到最终的 $\mathbf{O}_i$
-  - 这一过程可理解为：始终维护一个尺寸为 $(c, d)$ 的 $\mathbf{O}_i$，每次计算完毕后更新该 $\mathbf{O}_i$
+  - 固定住某个 $\mathbf {Q}_i$，其尺寸为 $(c, d)$
+  - 将该 $\mathbf {Q}_i$ 分别传入不同的 $\mathbf {K}_j$、$\mathbf {V}_j$ 数据块，计算对应的 $\mathbf {O}_{ij}$
+  - 通过某种方式，每传入一份 $(\mathbf {K}_j, \mathbf {V}_j)$，就更新一次 $\mathbf {O}_{ij}$
+  - 当最后一份 $(\mathbf {K}_j, \mathbf {V}_j)$ 传入并计算完毕后，即可得到最终的 $\mathbf {O}_i$
+  - 这一过程可理解为：始终维护一个尺寸为 $(c, d)$ 的 $\mathbf {O}_i$，每次计算完毕后更新该 $\mathbf {O}_i$
   - 在代码实现中，遍历 Q 分块的过程可表示为外层循环（outer loop），遍历 KV 分块的过程可表示为内层循环（inner loop）
   - 如果不对 Attention score 做 softmax，那么 $O_0$ 的更新方式就可以简化为简单的累加形式，即本次计算出的 $O_0$ 与上一步骤后 $O_0$ 的结果直接相加
   - 但当对 Attention score 做 softmax（默认指 safe softmax）时，情况则大不相同。举例来说：
@@ -2119,12 +2116,12 @@ $$
   - 用当前持有的 $K, V$ 计算局部 attention：
 
     $$
-    \text{partial}_i = \text{Softmax}\left(\frac{Q_i K^\top}{\sqrt{d}}\right)V
+    \text {partial}_i = \text {Softmax}\left (\frac {Q_i K^\top}{\sqrt {d}}\right) V
     $$
 
   - 等待从上一个 GPU 接收到新的 $K, V$，进入下一轮
 
-- 这样，每张 GPU 每一轮都会“看到”新的 token 的 $K, V$
+- 这样，每张 GPU 每一轮都会 “看到” 新的 token 的 $K, V$
 - 4 轮之后，每个 $Q_i$ 都和所有 token 交互过，不需要任何时刻保存完整 $K, V$
 - 这就是 “Ring” 的来源：$K/V$​ 在 GPU 之间绕一圈
 - 通过这种方式，当每张卡在做 attention 的过程中，它的显存占用是：
@@ -2132,7 +2129,7 @@ $$
   - 1 个 k block + 1 个 v block，用于计算当前的 attention（4cd bytes）
   - 1 个 k block + 1 个 v block，来自环状通讯拓扑中的前一张卡（4cd bytes）
   - 1 个 o block，用于存储和更新最终 output（2cd bytes）
-- “ring attention 其实约等于分布式版本的 flash attention 2”了：
+- “ring attention 其实约等于分布式版本的 flash attention 2” 了：
   - 在 Flash Attention V2 中，外层循环（Q 分块）和内层循环（KV 分块）都在单张卡上完成
   - 在 Ring Attention 中，外层循环（Q 分块）首先被分配到多张卡上，然后内层循环（KV 分块）通过环状通讯拓扑轮流发送到各卡进行计算
   - 每个 Q 分块更新对应 O 分块的方法，与 Flash Attention V2 基本一致
@@ -2152,13 +2149,13 @@ $$
 - 基于【传输时间 \<= 计算时间】的基本要求，有：
 
   $$
-  \frac{4dc}{B} \le \frac{4dc^2}{F}
+  \frac {4dc}{B} \le \frac {4dc^2}{F}
   $$
 
 - 进一步有：
 
   $$
-  c \ge \frac{F}{B}
+  c \ge \frac {F}{B}
   $$
 
 - 也即可以根据硬件的 $F$ 和 $B$，来计算最优的切块大小 $c$​
@@ -2177,7 +2174,7 @@ $$
   - 总 GPU 数量：
 
     $$
-    \text{num\_gpu} = \text{tp} \times \text{cp} \times \text{dp} \times \text{pp} = 2 \times 2 \times 2 \times 2 = 16
+    \text {num\_gpu} = \text {tp} \times \text {cp} \times \text {dp} \times \text {pp} = 2 \times 2 \times 2 \times 2 = 16
     $$
 
   - 若单台机器配备 8 张 GPU，则需要 2 台机器完成部署
@@ -2227,7 +2224,7 @@ $$
 
   ![img](/img/llm\cp_attnmask.svg)
   - 因果注意力的 mask 是下三角矩阵，token $i$ 只能看 $[1, i]$
-  - 而 softmax 是按行算的，因此一行只要“所需的 K/V 都到了”，这一行就可以立刻算完，不需要等完整一圈，于是不同 GPU 的“等待条件”完全不同
+  - 而 softmax 是按行算的，因此一行只要 “所需的 K/V 都到了”，这一行就可以立刻算完，不需要等完整一圈，于是不同 GPU 的 “等待条件” 完全不同
   - 如图中所示：GPU 1 很快空闲，GPU 2 少量工作，GPU 3、4 成为瓶颈，整体吞吐被最慢的 GPU 决定
 
 - 前面提到过，分块 attention 的计算其实是和计算顺序无关的，核心是只要每次计算时都能拿到当前分块的 output，当前未做 softmax 前 attention score 矩阵的 max 和 sum 相关信息，就能正常更新最终的 output
@@ -2237,7 +2234,7 @@ $$
 
 - 假设上下文并行尺寸：`cp_size = 4`（GPU0、GPU1、GPU2、GPU3 组成 CP 组）
   - 首先，原始输入数据 `X` 被切分为 `2*cp_size = 8` 个序列块（记为 0~7）
-  - [0,7]，[1, 6]，[2, 5], [3, 4]分别组成4个seq_chunk，安放在gpu0~gpu3上
+  - [0,7]，[1, 6]，[2, 5], [3, 4] 分别组成 4 个 seq_chunk，安放在 gpu0~gpu3 上
   - 每张 GPU 需执行 `cp_size` 次迭代计算（共 4 次），最终得到自身承载的 seq_chunk 对应的完整注意力计算结果（如 GPU0 最终输出 [0,7] 序列块的 attention 结果）
   - 以 `rank` 表示 CP 组内 GPU 的序号（如 GPU0 的 `rank=0`、GPU1 的 `rank=1`），不同轮次 `i` 与 `rank` 的大小关系，决定了该 GPU 参与计算的 QKV 模块范围，具体规则如下：
 
@@ -2251,14 +2248,14 @@ $$
 
   ![img](/img/llm\cp_zigzagmask.svg)
   - Zig-Zag 的目标是在不破坏 Ring Attention 的通信结构，不引入全量 K/V 存储，不牺牲 online softmax 的前提下，让每张 GPU 的计算量接近一致
-  - causal attention 的计算量取决于 token 在序列中的“相对位置”，越靠前的 token，可见的 key 越少，而越靠后的 token，可见的 key 越多
-  - Zig-Zag 的做法是不按 token 的自然顺序分配到 GPU，而是“前后交错”地分配
+  - causal attention 的计算量取决于 token 在序列中的 “相对位置”，越靠前的 token，可见的 key 越少，而越靠后的 token，可见的 key 越多
+  - Zig-Zag 的做法是不按 token 的自然顺序分配到 GPU，而是 “前后交错” 地分配
   - 每张 GPU 同时拿到一部分早期 token + 一部分晚期 token，平均下来，每张 GPU 需要算的 attention 行数和每行的长度都接近
   - 这一步不改变 attention 的数学定义，只改变 token 到 GPU 的映射
 
 - 每个 GPU 都需要从其他 GPU 那里获取信息
   - 即使做了 Zig-Zag，每个 token 仍然可能需要 attend 到序列中任意更早的位置，而这些位置被分散在所有 GPU 上
-  - 所以不可避免地，每张 GPU 最终仍然需要来自所有其他 GPU 的 K/V 信息，区别只是“什么时候拿、拿多少、怎么拿”
+  - 所以不可避免地，每张 GPU 最终仍然需要来自所有其他 GPU 的 K/V 信息，区别只是 “什么时候拿、拿多少、怎么拿”
 - 在标准的 Ring Attention 中，核心优化思路是：
   - 让 GPU 在计算注意力（attn）的同时，将自身的 KV 发送给下一张卡，并从上一张卡接收新的 KV
   - 这种方式实现了计算与通讯的并行，用计算时间掩盖通讯开销
@@ -2297,7 +2294,7 @@ $$
 
 ### Ulysses CP
 
-- DeepSpeed Ulysses 借助 all-to-all 通信原语，借助all-to-all通信原语，在 Token 维度与 Attention Head 维度之间重排 hidden states
+- DeepSpeed Ulysses 借助 all-to-all 通信原语，借助 all-to-all 通信原语，在 Token 维度与 Attention Head 维度之间重排 hidden states
   - 交互前：各 GPU 仅持有部分 Token 的完整头维度信息
   - 交互后：各 GPU 持有所有 Token 的部分头维度信息，后续注意力计算类似张量并行
 - 注意力输出计算后，需再次执行 all-to-all 将状态切回 Token 维度，以维持仅存储部分 Token 的状态，避免全量隐藏状态带来的内存开销
@@ -2318,8 +2315,8 @@ $$
 ![usp.jpg](/img/llm\usp.png)
 
 - 类似地，Megatron CP 支持三种模式
-  - all_gather 是最直接的实现——每张卡在计算前把所有卡的 KV AllGather 到本地，凑出完整序列再跑标准 FA，实现最简单，但每张卡需要在显存里存放完整序列的 KV，显存开销随 cp_size 线性放大，长序列场景下不可接受
-  - p2p 是 Ring Attention 的标准形式——每步只通过 P2P 传递相邻卡的一个 KV 块，显存开销固定，是长序列训练的主力方案
+  - all_gather 是最直接的实现 —— 每张卡在计算前把所有卡的 KV AllGather 到本地，凑出完整序列再跑标准 FA，实现最简单，但每张卡需要在显存里存放完整序列的 KV，显存开销随 cp_size 线性放大，长序列场景下不可接受
+  - p2p 是 Ring Attention 的标准形式 —— 每步只通过 P2P 传递相邻卡的一个 KV 块，显存开销固定，是长序列训练的主力方案
   - a2a+p2p 是分层 CP 场景下的混合策略，节点内走 All-to-All，节点间走 P2P，两级通信分别匹配物理拓扑的带宽特征
 
 ## 流水线并行（Pipeline Parallelism）
@@ -2328,26 +2325,26 @@ $$
 
 - SP 和 CP 存在的问题
   - SP 和 CP 在处理长序列时很有帮助，但如果内存问题的根本原因并不是序列长度，而是模型本身的规模，这些方法的帮助就非常有限
-  - 对于大模型（70B+参数），仅仅是权重本身的大小，就已经可能超出单个节点上 4–8 张 GPU 所能承载的上限
+  - 对于大模型（70B + 参数），仅仅是权重本身的大小，就已经可能超出单个节点上 4–8 张 GPU 所能承载的上限
   - 为了解决这个问题，需要引入另一种并行维度：流水线并行（Pipeline Parallelism，PP）
 - 基本思想
-  - 流水线并行是一种概念上非常简单但威力强大的技术——将模型的层切分并分布到多张 GPU 上
+  - 流水线并行是一种概念上非常简单但威力强大的技术 —— 将模型的层切分并分布到多张 GPU 上
   - 例如，如果有 8 张 GPU，可以将第 1–4 层放在 GPU 1 上，第 5–8 层放在 GPU 2 上，依此类推，这样一来，每张 GPU 只需要存储和处理模型的一部分层，大幅降低了单卡的参数显存需求
-  - 虽然模型参数被很好地切分到了不同 GPU 上，但每张 GPU 上的激活值显存占用却保持不变——这意味着，流水线并行并不能节省激活值显存，这是因为在开始第一次反向传播之前，每张 GPU 都需要先执行 $PP$ 次前向传播。虽然每张 GPU 只负责 $1/PP$ 的层数，但在第一次反向传播开始之前，它需要处理 $PP$ 个 micro-batch，因此最终需要存储的激活值数量为
+  - 虽然模型参数被很好地切分到了不同 GPU 上，但每张 GPU 上的激活值显存占用却保持不变 —— 这意味着，流水线并行并不能节省激活值显存，这是因为在开始第一次反向传播之前，每张 GPU 都需要先执行 $PP$ 次前向传播。虽然每张 GPU 只负责 $1/PP$ 的层数，但在第一次反向传播开始之前，它需要处理 $PP$ 个 micro-batch，因此最终需要存储的激活值数量为
 
   $$
   PP×(activs/PP)≈activs
   $$
   - 也就是说，激活值显存需求与不使用流水线并行时大致相同
 
-- 这也引入了一种新的通信模式：不再像 ZeRO-3 的数据并行那样以通信的形式传递参数，而是以“流水线”的形式在 GPU 之间顺序传递激活张量
+- 这也引入了一种新的通信模式：不再像 ZeRO-3 的数据并行那样以通信的形式传递参数，而是以 “流水线” 的形式在 GPU 之间顺序传递激活张量
 
 ### 朴素实现
 
 ![image.png](/img/llm/pp_afab.svg)
 
 - 基本思想
-  - 把模型的层简单地分布到多个设备上——例如，第一个 GPU 负责前几层，第二个 GPU 负责模型的中间部分，依此类推
+  - 把模型的层简单地分布到多个设备上 —— 例如，第一个 GPU 负责前几层，第二个 GPU 负责模型的中间部分，依此类推
   - 此时，模型的前向传播就变成了一个 batch 的数据沿着模型深度被顺序地传递，依次使用每一个 GPU
   - 这种方式对互连带宽的需求非常低，因为只在模型被划分的中间点处以通信的形式传输中等大小的激活值。这和 TP 形成了鲜明对比，在 TP 中，通信会在每一层内部发生多次
 - 流水线的效率
@@ -2374,7 +2371,7 @@ $$
   - 气泡占比为
 
     $$
-    \frac{K-1}{K}
+    \frac {K-1}{K}
     $$
 
   - 显然，当 K 越大，即 GPU 的数量越多时，空置的比例接近 1，即 GPU 的资源都被浪费掉了
@@ -2385,10 +2382,10 @@ $$
   - 对于每一块 GPU 而言，若不考虑模型参数本身的存储开销，仅为了保存这些中间激活张量，其额外的空间复杂度为：
 
     $$
-    O\left(M \times \frac{L}{K} \times d\right)
+    O\left (M \times \frac {L}{K} \times d\right)
     $$
 
-  - 其中 $M$ 是 micro-batch 的数量，$K$ 是参与流水线并行的 GPU 总数，$\frac{L}{K}$ 则代表了每块 GPU 上分配到的模型层数
+  - 其中 $M$ 是 micro-batch 的数量，$K$ 是参与流水线并行的 GPU 总数，$\frac {L}{K}$ 则代表了每块 GPU 上分配到的模型层数
   - 从这个复杂度公式可以看出，随着模型规模的扩大，当 $N$（微批次数）、$L$（模型总层数）或 $d$（层维度）增大时，每块 GPU 上需要存储的中间激活张量总量会显著增加，从而导致 GPU 内存占用急剧上升，甚至成为训练更大模型的瓶颈
   - 因此，如何优化这部分内存开销，是流水线并行技术中需要重点解决的问题之一
 
@@ -2403,8 +2400,8 @@ $$
   - 为了让各 GPU 上的模型片段能 “流水线式” 持续工作（而非等待整块数据处理完），将原本的训练批次（称为 mini-batch，即最小批次）进一步拆分成更小的子批次，这些子批次被称为 micro-batch（微批次）
   - 将多个 micro-batch 依次送入由多块 GPU 组成的 “流水线” 中 —— 当第一个 micro-batch 完成 GPU 1 的计算并传入 GPU 2 时，GPU 1 可立即处理第二个 micro-batch，而非闲置等待，从而让所有 GPU 始终处于高效计算状态，充分利用硬件资源
 - 气泡计算
-  - 前向阶段：第 1 个微批次到达设备 $K$ 需要经过 $K-1$ 个设备的传递，耗时 $(K-1)t_f$，设备 $K$ 完成所有 $M$ 个微批次的前向传播还需要 $N \cdot t_f$，因此前向总耗时为 $(K-1+M)t_f$
-  - 反向阶段：同理，反向传播从设备 $K$ 传回设备 1，最后一个微批次完成反向传播的总耗时为 $(K-1+M)t_b$
+  - 前向阶段：第 1 个微批次到达设备 $K$ 需要经过 $K-1$ 个设备的传递，耗时 $(K-1) t_f$，设备 $K$ 完成所有 $M$ 个微批次的前向传播还需要 $N \cdot t_f$，因此前向总耗时为 $(K-1+M) t_f$
+  - 反向阶段：同理，反向传播从设备 $K$ 传回设备 1，最后一个微批次完成反向传播的总耗时为 $(K-1+M) t_b$
   - 总时间为
 
     $$
@@ -2420,7 +2417,7 @@ $$
   - 气泡占比为
 
     $$
-    \frac{K-1}{K+M-1}
+    \frac {K-1}{K+M-1}
     $$
 
   - 从公式看出，要降低气泡占比，必须增大 $N$，但 AFAB 的致命缺陷是显存占用极大，因为必须等所有 $N$ 个前向做完才做反向，设备必须在显存中缓存 $N$ 份激活值（Activations）
@@ -2433,41 +2430,41 @@ $$
 - Gpipe 的做法是时间换空间，论文中称为 re-materialization，也即 active checkpoint
   - 具体来说，就是几乎不存中间结果，等到 backward 的时候，再重新计算一次 forward
   - 每块 GPU 上，只保存来自上一块的最后一层输入 z，其余的中间结果计算完后即丢弃，在反向传播时，再根据保存的输入 z 重新前向传播计算得到
-  - 每块GPU峰值时刻存储大小 = 每块GPU上的输入数据大小 + 每块GPU在forward过程中的中间结果大小
+  - 每块 GPU 峰值时刻存储大小 = 每块 GPU 上的输入数据大小 + 每块 GPU 在 forward 过程中的中间结果大小
   - 每块 GPU 上固定需要保存起始输入，记起始输入为 $N$（即 mini-batch 的大小）
   - 每个 micro-batch 是流水线形式进来的，算完一个 micro-batch 才计算下一个
-  - 在计算一个 micro-batch 的过程中，会产生中间变量，它的大小为 $\frac{N}{M} * \frac{L}{K} * d$（其中 $M$ 为 micro-batch 个数）
-  - 因此，每块 GPU 峰值时刻的空间复杂度为 $O\left(N + \frac{N}{M} * \frac{L}{K} * d\right)$
-  - 将其与朴素模型并行中的 GPU 空间复杂度 $O\left(N * \frac{L}{K} * d\right)$ 比较，可以发现，由于采用了 micro-batch 的方法，当 $L$​ 变大时，流水线并行相比于朴素模型并行，对 GPU 内存的压力显著减小
+  - 在计算一个 micro-batch 的过程中，会产生中间变量，它的大小为 $\frac {N}{M} * \frac {L}{K} * d$（其中 $M$ 为 micro-batch 个数）
+  - 因此，每块 GPU 峰值时刻的空间复杂度为 $O\left (N + \frac {N}{M} * \frac {L}{K} * d\right)$
+  - 将其与朴素模型并行中的 GPU 空间复杂度 $O\left (N * \frac {L}{K} * d\right)$ 比较，可以发现，由于采用了 micro-batch 的方法，当 $L$​ 变大时，流水线并行相比于朴素模型并行，对 GPU 内存的压力显著减小
 - micro-batch 对 BN 的影响
   - BN 是对一个 batch 内所有样本在某个特征维度上计算均值和方差，再对该 batch 的数据做归一化
   - 在流水线并行的 micro-batch 划分中：
-    - 把原本大小为 $N$ 的 mini-batch 切分成了 $M$ 个 micro-batch，每个 micro-batch 只有 $\frac{N}{M}$ 个样本
+    - 把原本大小为 $N$ 的 mini-batch 切分成了 $M$ 个 micro-batch，每个 micro-batch 只有 $\frac {N}{M}$ 个样本
     - 前向计算时，GPU 只能拿到当前的 micro-batch 数据，无法直接获取整个 mini-batch 的数据
-    - 如果直接用 micro-batch 的 $\frac{N}{M}$​ 个样本计算 BN 的均值/方差，会因为 batch 尺寸过小导致归一化效果失真（比如统计量偏差、模型不稳定）
+    - 如果直接用 micro-batch 的 $\frac {N}{M}$​ 个样本计算 BN 的均值 / 方差，会因为 batch 尺寸过小导致归一化效果失真（比如统计量偏差、模型不稳定）
   - Gpipe 兼顾了流水线并行的效率和 BN 的正确性，采用 “训练时用微批量，追踪全局统计量” 的策略
-    - 训练阶段（前向计算）：对当前正在计算的 micro-batch（$\frac{N}{M}$ 个样本）计算临时均值/方差，并用这个临时值对当前 micro-batch 数据做归一化（保证流水线能正常推进）
-    - 统计量更新（后台）：同时将每个 micro-batch 的临时均值/方差汇总，计算整个 mini-batch（$N$​ 个样本）的移动平均均值/方差（Moving Average），并持续更新这个全局统计量
+    - 训练阶段（前向计算）：对当前正在计算的 micro-batch（$\frac {N}{M}$ 个样本）计算临时均值 / 方差，并用这个临时值对当前 micro-batch 数据做归一化（保证流水线能正常推进）
+    - 统计量更新（后台）：同时将每个 micro-batch 的临时均值 / 方差汇总，计算整个 mini-batch（$N$​ 个样本）的移动平均均值 / 方差（Moving Average），并持续更新这个全局统计量
 
       $$
-      \text{running\_mean} = \gamma \times \text{running\_mean} + (1-\gamma) \times \mu_{\text{micro}}
+      \text {running\_mean} = \gamma \times \text {running\_mean} + (1-\gamma) \times \mu_{\text {micro}}
       $$
 
     - $\gamma$ 为衰减系数，通常取 0.99
-    - 测试/推理阶段：不再计算 batch 均值/方差，直接使用训练阶段追踪到的全局移动平均均值/方差做归一化，保证测试时的统计量是基于完整 mini-batch 的，结果更稳定
+    - 测试 / 推理阶段：不再计算 batch 均值 / 方差，直接使用训练阶段追踪到的全局移动平均均值 / 方差做归一化，保证测试时的统计量是基于完整 mini-batch 的，结果更稳定
 
   - LN 和 BN 的核心区别在于归一化的维度，这也是 LN 不受 micro-batch 影响的关键：
     - BN：跨样本、同特征维度归一化（依赖 batch 内的多个样本）
     - LN：同样本、跨特征维度归一化（只依赖单个样本自身）
-  - LN 只需要单个样本的所有特征维度数据就能计算均值/方差，完全不依赖 batch 内的其他样本
+  - LN 只需要单个样本的所有特征维度数据就能计算均值 / 方差，完全不依赖 batch 内的其他样本
   - 即使是 micro-batch，只要能拿到单个样本的完整特征，就能正确计算 LN，因此不受 micro-batch 划分
 
 ### One forward, one backward（1F1B）/ Llama 3.1 流水线
 
 ![image.png](/img/llm/pp_1f1b.svg)
 
-- 为了打破 AFAB 的“显存墙”，1F1B 采取了交替调度的策略
-  - 一旦最后一个设备 $K$ 完成了第 1 个微批次的前向传播，它立刻进行第 1 个微批次的反向传播，并将梯度传回。后续所有设备都进入“做一个前向，紧接着做一个反向”（1F1B）的稳定状态（Steady State）
+- 为了打破 AFAB 的 “显存墙”，1F1B 采取了交替调度的策略
+  - 一旦最后一个设备 $K$ 完成了第 1 个微批次的前向传播，它立刻进行第 1 个微批次的反向传播，并将梯度传回。后续所有设备都进入 “做一个前向，紧接着做一个反向”（1F1B）的稳定状态（Steady State）
   - 1F1B 的核心思想是：在中间的稳定阶段中，计算过程是在一次前向传播和一次反向传播之间交替进行的，即尽可能早地开始反向传播
   - 1F1B 方法中 bubble 的大小和 FAFB 保持一致，因此从纯计算效率角度看，训练效率并没有得到显著提升
   - 但和 AFAB 不同的是，只需要为 $K$ 个 micro-batch 保存激活值，而不是为 $M$ 个 micro-batch 保存激活值，这显著缓解了 AFAB 中出现的激活显存爆炸问题
@@ -2477,7 +2474,7 @@ $$
   - 实际总耗时：尽管调度顺序变了，但关键路径的总长度并没有改变，第一个微批次走到底并传回设备 1 需要 $K \cdot t_{fb}$ 的时间，此后设备 1 还需要做剩下的 $M-1$ 个 1F1B
 
     $$
-    T_{1F1B} = K \cdot t_{fb} + (M - 1) \cdot t_{fb} = (K - 1 + M)t_{fb}
+    T_{1F1B} = K \cdot t_{fb} + (M - 1) \cdot t_{fb} = (K - 1 + M) t_{fb}
     $$
 
   - 气泡总时间为
@@ -2489,13 +2486,13 @@ $$
   - 气泡占比为
 
     $$
-    \frac{K-1}{K+M-1}
+    \frac {K-1}{K+M-1}
     $$
 
-  - 可以看出，1F1B 的气泡时间与 AFAB 完全一样，都是 $(K - 1)t_{fb}$，但 1F1B 实现了显存的降维打击
-  - 通过尽早执行反向传播，微批次的激活值被尽早释放，峰值显存占用从 $O(M)$ 骤降到了 $O(K)$
+  - 可以看出，1F1B 的气泡时间与 AFAB 完全一样，都是 $(K - 1) t_{fb}$，但 1F1B 实现了显存的降维打击
+  - 通过尽早执行反向传播，微批次的激活值被尽早释放，峰值显存占用从 $O (M)$ 骤降到了 $O (K)$
     - 优化逻辑：因为显存占用与 $M$ 解绑（前提是 $M \ge K$），现在可以尽可能地增大 $M$（比如把 $M$ 设为 $4K$ 甚至 $8K$），而不必担心 OOM（内存溢出）
-    - 根据气泡占比公式 $\frac{K-1}{K+M-1}$，由于 $M$ 可以开得很大，1F1B 间接地大幅度压缩了流水线气泡占比，极大地提升了系统整体的 GPU 计算效率
+    - 根据气泡占比公式 $\frac {K-1}{K+M-1}$，由于 $M$ 可以开得很大，1F1B 间接地大幅度压缩了流水线气泡占比，极大地提升了系统整体的 GPU 计算效率
 
 - 1F1B 中 bubble 对性能的影响
 
@@ -2506,16 +2503,16 @@ $$
   - 当 PP 度数不断增加而 micro-batch 数达到上限时，bubble 的大小最终仍会按照线性关系增长：
 
   $$
-  r_{bubble}= \frac{p-1}{m}
+  r_{bubble}= \frac {p-1}{m}
   $$
   - 一个有趣的现象是：在 micro-batch 数较小的情况下，从一个节点（$p = 8$）扩展到两个节点（$p = 16$）时，性能只下降了 14%
   - 相比之下，张量并行在类似的跨节点场景中出现性能下降大约 43%，可见流水线并行在跨节点网络带宽较低的场景中仍然保持较好的扩展性
 
-- 通信-计算掩盖
+- 通信 - 计算掩盖
   - 在流水线阶段切换时，设备 $i$ 必须把前向的激活值（Activations）或反向的梯度（Gradients）通过 P2P（Point-to-Point，通常经由 NVLink 或网络）发送给设备 $i+1$ 或 $i-1$
-  - 将单次微批次的前/反向总耗时拆解：
+  - 将单次微批次的前 / 反向总耗时拆解：
     - $t_{comp}$：纯计算耗时（包括前向和反向）
-    - $t_{comm}$：纯 P2P 通信耗时（发送/接收激活值和梯度）
+    - $t_{comm}$：纯 P2P 通信耗时（发送 / 接收激活值和梯度）
   - 没有通信掩盖时（串行执行）：设备必须等计算完成，再发送数据；等接收完数据，再开始下一步计算
 
     $$
@@ -2525,10 +2522,10 @@ $$
   - 有通信掩盖时（异步执行）：利用 GPU 的独立 DMA 引擎（如 CUDA 中不同的 Stream），在进行第 $i$ 个微批次的矩阵乘法计算时，同时（异步）接收第 $i+1$ 个微批次的输入，并发送第 $i-1$ 个微批次的输出
 
     $$
-    t_{fb\_掩盖} = \max(t_{comp}, t_{comm})
+    t_{fb\_掩盖} = \max (t_{comp}, t_{comm})
     $$
 
-  - 由于在大模型训练中，计算量（如 $O(B \cdot S \cdot H^2)$）通常远大于 P2P 传输量（如 $O(B \cdot S \cdot H)$），所以通常 $t_{comp} > t_{comm}$
+  - 由于在大模型训练中，计算量（如 $O (B \cdot S \cdot H^2)$）通常远大于 P2P 传输量（如 $O (B \cdot S \cdot H)$），所以通常 $t_{comp} > t_{comm}$
   - 完美掩盖后，$t_{comm}$ 被完全隐藏：
 
     $$
@@ -2536,44 +2533,44 @@ $$
     $$
 
   - 这意味着，流水线中的数据传输成本在数学期望上被抹零了
-  - 在 1F1B 调度的稳定状态（Steady State）下，每个 GPU 都在循环执行“1个前向 + 1个反向”
+  - 在 1F1B 调度的稳定状态（Steady State）下，每个 GPU 都在循环执行 “1 个前向 + 1 个反向”
   - 通过通信掩盖，1F1B 的核心循环变得极其紧凑
     - 当 GPU 计算微批次 $i$ 的前向（$F_i$）时，后台正在发送 $F_{i-1}$ 的激活值给下一个 GPU，同时接收 $B_{i}$ 需要的上一层反向梯度
-    - 在上文得出 1F1B 的气泡时间为 $(K-1)t_{fb}$，加入掩盖后，这个时间从 $(K-1)(t_{comp} + t_{comm})$ 降至 $(K-1)t_{comp}$，不仅总吞吐量提升，流水线两端填满和排空的绝对等待时间也缩短了
+    - 在上文得出 1F1B 的气泡时间为 $(K-1) t_{fb}$，加入掩盖后，这个时间从 $(K-1)(t_{comp} + t_{comm})$ 降至 $(K-1) t_{comp}$，不仅总吞吐量提升，流水线两端填满和排空的绝对等待时间也缩短了
 
 ### Interleaving stages（交错流水线）
 
 ![pp_1f1b_interleaved.svg](/img/llm/pp_1f1b_interleaved.svg)
 
 - 基本思想
-  - 虽然 1F1B 解决了显存问题并允许增大 $M$，但当模型切得极细（$K$ 很大）时，气泡的绝对时间 $(K - 1)t_{fb}$ 依然很可观
+  - 虽然 1F1B 解决了显存问题并允许增大 $M$，但当模型切得极细（$K$ 很大）时，气泡的绝对时间 $(K - 1) t_{fb}$ 依然很可观
   - Interleaved 1F1B 提出虚拟流水线阶段（Virtual Stages），原本每个 GPU 负责模型连贯的 1 块（比如 GPU 1 负责层 1-10），现在将模型切分为 $v \cdot K$ 块（$v$ 为交错因子，通常设为 2 等），每个 GPU 负责不相邻的 $v$ 块（比如 GPU 1 负责层 1-5 和 51-55）
   - 这种方案需要额外的通信，因为同一个 micro-batch 在一次前向或反向计算中会多次经过同一张 GPU，而在之前的方案中只需要经过一次
-  - 不过，每一次前向和反向计算的时间都会被缩短为原来的 $\frac{1}{v}$，其中 $v$ 是每张 GPU 上的 stage 数量（模型 chunk 数）
+  - 不过，每一次前向和反向计算的时间都会被缩短为原来的 $\frac {1}{v}$，其中 $v$ 是每张 GPU 上的 stage 数量（模型 chunk 数）
 - 气泡计算
-  - 耗时切分：因为每个虚拟块的层数变为原来的 $1/v$，所以处理每个微批次的前/反向时间也变成了 $\frac{t_f}{v}$ 和 $\frac{t_b}{v}$，单个虚拟块的完整耗时为 $\frac{t_{fb}}{v}$
-  - 气泡产生机制：流水线气泡只产生在流水线“填满前”和“排空时”
-  - 在 Interleaved 模式下，第一个微批次只需要经过 $K$ 个虚拟块（而不是 $K$ 个完整 GPU 阶段）就能到达最后一个 GPU，耗时从 $(K-1)t_f$ 缩短为 $(K-1)\frac{t_f}{v}$
+  - 耗时切分：因为每个虚拟块的层数变为原来的 $1/v$，所以处理每个微批次的前 / 反向时间也变成了 $\frac {t_f}{v}$ 和 $\frac {t_b}{v}$，单个虚拟块的完整耗时为 $\frac {t_{fb}}{v}$
+  - 气泡产生机制：流水线气泡只产生在流水线 “填满前” 和 “排空时”
+  - 在 Interleaved 模式下，第一个微批次只需要经过 $K$ 个虚拟块（而不是 $K$ 个完整 GPU 阶段）就能到达最后一个 GPU，耗时从 $(K-1) t_f$ 缩短为 $(K-1)\frac {t_f}{v}$
   - 实际总耗时：总耗时等于处理所有 $M$ 个微批次的理想时间，加上流水线两端的绝对气泡时间：
 
     $$
-    T_{Interleaved} = M \cdot t_{fb} + (K - 1) \frac{t_{fb}}{v}
+    T_{Interleaved} = M \cdot t_{fb} + (K - 1) \frac {t_{fb}}{v}
     $$
 
   - 气泡时间：
 
     $$
-    Bubble_{Interleaved} = \frac{K - 1}{v} t_{fb}
+    Bubble_{Interleaved} = \frac {K - 1}{v} t_{fb}
     $$
 
   - 气泡占比：
 
     $$
-    Fraction_{Interleaved} = \frac{\frac{K - 1}{v} t_{fb}}{(M + \frac{K - 1}{v}) t_{fb}} \approx \frac{K - 1}{vM + K - 1}
+    Fraction_{Interleaved} = \frac {\frac {K - 1}{v} t_{fb}}{(M + \frac {K - 1}{v}) t_{fb}} \approx \frac {K - 1}{vM + K - 1}
     $$
 
   - 可以看到，直接缩减气泡：Interleaved 1F1B 在物理层面直接将气泡体积缩小为原来的 $1/v$
-  - 在 $M$ 相同的情况下，原本气泡占用了 $(K-1)t_{fb}$ 的算力，现在只占用 $\frac{K-1}{v} t_{fb}$，例如 $v=2$ 时，气泡直接减半
+  - 在 $M$ 相同的情况下，原本气泡占用了 $(K-1) t_{fb}$ 的算力，现在只占用 $\frac {K-1}{v} t_{fb}$，例如 $v=2$ 时，气泡直接减半
   - 需要注意的是，这种优化是以增加 GPU 间的通信次数（通信量翻了 $v$ 倍）为代价的，因此 $v$ 不能无限大，通常 $v \in \{2, 4\}$ 是计算与通信 tradeoff 后的最优解
 
 - 由此，可以同时通过增加 micro-batch 数 $m$，以及增加交错阶段数 $v$，来进一步减小 bubble；同时从量化角度看，通信量也会随 $v$ 成比例增加，因此这本质上是一个 trade-off
@@ -2581,8 +2578,8 @@ $$
   - $v = 1$ 对应 AFAB 或 1F1B
   - v\
     eq 1 对应交错流水线
-- 通信-计算掩盖
-  - Interleaved 1F1B 把每个 GPU 负责的层数拆成了 $v$ 个虚拟块（交错因子），气泡公式变为 $\frac{K-1}{v} t_{fb}$
+- 通信 - 计算掩盖
+  - Interleaved 1F1B 把每个 GPU 负责的层数拆成了 $v$ 个虚拟块（交错因子），气泡公式变为 $\frac {K-1}{v} t_{fb}$
   - 切分得越细，网络边界就越多，原本 1 个微批次在 GPU 间只需传递 1 次，现在被切成 $v$ 块后，GPU 之间的 P2P 通信次数直接翻了 $v$ 倍
   - 而且，每次 P2P 传输的边界激活值大小（Batch $\times$ SeqLen $\times$ HiddenSize）并没有变小
   - 如果无法掩盖通信，Interleaved 模式的单个微批次真实耗时将变成：
@@ -2594,31 +2591,31 @@ $$
   - 此时，整个流水线的总耗时变为：
 
     $$
-    T = N \cdot (t_{comp} + v \cdot t_{comm}) + \frac{p - 1}{v} (t_{comp} + v \cdot t_{comm})
+    T = N \cdot (t_{comp} + v \cdot t_{comm}) + \frac {p - 1}{v} (t_{comp} + v \cdot t_{comm})
     $$
 
   - 只要 $N$ 足够大，新增的通信惩罚 $N \cdot v \cdot t_{comm}$ 将远远超过缩减的气泡收益，导致负优化
-  - 如果完美掩盖通信，由于我们把计算切分成了 $v$ 块，单次虚拟块的计算时间变为 $\frac{t_{comp}}{v}$
+  - 如果完美掩盖通信，由于我们把计算切分成了 $v$ 块，单次虚拟块的计算时间变为 $\frac {t_{comp}}{v}$
   - 只要切分后，单次计算时间仍然大于单次通信时间，即：
 
     $$
-    \frac{t_{comp}}{v} \ge t_{comm}
+    \frac {t_{comp}}{v} \ge t_{comm}
     $$
 
   - 那么每一次额外的 P2P 通信就都可以被对应虚拟块的计算完美隐藏在后台，此时单位时间：
 
     $$
-    t_{fb\_interleave} \approx \max \left(t_{comp}, v \cdot t_{comm} \right) = t_{comp}
+    t_{fb\_interleave} \approx \max \left (t_{comp}, v \cdot t_{comm} \right) = t_{comp}
     $$
 
   - 这时候，总耗时公式就变成了真正的理想状态：
 
     $$
-    T = N \cdot t_{comp} + \frac{p - 1}{v} t_{comp}
+    T = N \cdot t_{comp} + \frac {p - 1}{v} t_{comp}
     $$
 
-  - 通信掩盖将 Interleaved 1F1B 增加的 $O(v)$ 倍通信开销强行降维打击为 $0$，它是 Interleaved 1F1B 能够实现在真实集群中性能落地的绝对前提
-  - 这也是为什么在实践中（如 Megatron-LM），$v$ 的大小（如 $v=2$ 或 $4$）取决于 $\frac{t_{comp}}{v}$ 与 $t_{comm}$ 的临界点，不能无限增大
+  - 通信掩盖将 Interleaved 1F1B 增加的 $O (v)$ 倍通信开销强行降维打击为 $0$，它是 Interleaved 1F1B 能够实现在真实集群中性能落地的绝对前提
+  - 这也是为什么在实践中（如 Megatron-LM），$v$ 的大小（如 $v=2$ 或 $4$）取决于 $\frac {t_{comp}}{v}$ 与 $t_{comm}$ 的临界点，不能无限增大
 
 - 交错流水线的调度策略
 
@@ -2642,9 +2639,9 @@ $$
   ![image.png](/img/llm/pp_zerobubble_compgraph.png)
   - $B$ 的输出（即对输入的梯度）是下一层反向传播所必需的
   - $W$​ 的输出（权重梯度）并不影响后续层的反向传播，只需要在 optimizer.step 之前完成即可
-  - $B$ 在计算图中有“向前”的依赖，而 $W$​ 没有
+  - $B$ 在计算图中有 “向前” 的依赖，而 $W$​ 没有
   - 那么，只要同一 stage 的 $B$ 已经完成，对应的 $W$​ 就可以被延后，在任意空闲时间执行
-  - 即用 $W$ 去“填 bubble”，在传统的 1F1B 或交错流水线中，bubble 产生的原因是某些 GPU 在等前面的 stage 或后面的 stage 完成计算，时间被浪费掉了
+  - 即用 $W$ 去 “填 bubble”，在传统的 1F1B 或交错流水线中，bubble 产生的原因是某些 GPU 在等前面的 stage 或后面的 stage 完成计算，时间被浪费掉了
 
 - Zero Bubble 的关键思想是：
 
@@ -2653,13 +2650,13 @@ $$
   - 保证 $B$ 按依赖顺序尽快完成
   - 把 $W$ 插入到原本会空闲的时间片中执行，用来填补 bubble
 
-- Transformer层各阶段的FLOPs与激活内存需求
+- Transformer 层各阶段的 FLOPs 与激活内存需求
 
   | 阶段（Pass）  | FLOPs（浮点运算量） | 所需激活内存（Activations Memory Required） |
   | ------------- | ------------------- | ------------------------------------------- |
-  | F（前向传播） | $sbh(24h + 4s)$     | $0$                                         |
-  | B（反向传播） | $sbh(24h + 8s)$     | $sb(34h + 5as)$                             |
-  | W（权重更新） | $sbh(24h)$          | $32sbh$                                     |
+  | F（前向传播） | $sbh (24h + 4s)$     | $0$                                         |
+  | B（反向传播） | $sbh (24h + 8s)$     | $sb (34h + 5as)$                             |
+  | W（权重更新） | $sbh (24h)$          | $32sbh$                                     |
 
 - InterleavedZeroBubble（ZB1P）
   - 峰值内存与 1F1B 一致，气泡缩小至 1F1B 的 1/3，稳态调度为 1F − 1B − 1W
@@ -2674,7 +2671,7 @@ $$
   | -------------------- | ------------------------- | --------------------------------------- |
   | 1F1B                 | $(p-1)(T_F + T_B + T_W)$  | $pM_B$                                  |
   | ZB-H1                | $(p-1)(T_F + T_B - T_W)$  | $pM_B$                                  |
-  | ZB-H2                | $(p-1)(T_F + T_B - 2T_W)$ | $(2p-1)M_B$                             |
+  | ZB-H2                | $(p-1)(T_F + T_B - 2T_W)$ | $(2p-1) M_B$                             |
 
 - 绕过优化器同步
   - 零气泡流水线的核心瓶颈，来自传统训练中优化器更新前必须执行全局梯度同步（AllReduce），这个强同步操作会强制所有 GPU 等待最慢节点，直接打断无缝的 1F-1B-1W 调度，让辛苦消除的流水线气泡重新出现
@@ -2702,9 +2699,9 @@ $$
   - 正向流水线：数据从 设备 1 $\rightarrow$ 设备 $K$
   - 反向流水线：数据从 设备 $K$ $\rightarrow$ 设备 1
 - 当设备 1 在等待正向流水线的反向传回时，它正好在全速执行反向流水线的前向计算，两套流水线的气泡和密集计算区实现了完美的物理互补
-- 因为是从两端向中间逼近，流水线产生气泡的“深度”从 $K-1$ 直接被折半为 $\frac{K}{2} - 1$
+- 因为是从两端向中间逼近，流水线产生气泡的 “深度” 从 $K-1$ 直接被折半为 $\frac {K}{2} - 1$
 - MoE 模型的 All-to-All 通信 $t_{comm}$ 太大，单一的 $t_f$ 或 $t_b$ 掩盖不住
-  - 得益于“双向流水线”，同一个 GPU 上同时存在正向流水线的前向任务（F）和反向流水线的反向任务（B）
+  - 得益于 “双向流水线”，同一个 GPU 上同时存在正向流水线的前向任务（F）和反向流水线的反向任务（B）
   - DualPipe 在稳定阶段（Steady State）故意将这两个反向的任务强行绑定在一起同时执行，将其耗时记作 $t_{f\&b}$，此时 GPU 的连续计算窗口被拉长到了 $t_{f\&b}$
   - 在这更长、更密集的计算时间内，后台的 DMA 引擎有极其充足的时间去把极其庞大的 MoE All-to-All 通信（$t_{comm}$）传输完毕
   - 实现了 $t_{f\&b} > t_{comm}$，再次触发完美的通信掩盖
@@ -2730,10 +2727,10 @@ $$
   - DualPipe（DeepSeek V3/R1 SOTA）：
 
     $$
-    Bubble_{DualPipe} = \left(\frac{K}{2} - 1\right) (t_{f\&b} + t_b - 3t_{bw})
+    Bubble_{DualPipe} = \left (\frac {K}{2} - 1\right) (t_{f\&b} + t_b - 3t_{bw})
     $$
 
-- 这类“近零 bubble”方案在概念上很优美，但实现难度极高，原因主要有三点：
+- 这类 “近零 bubble” 方案在概念上很优美，但实现难度极高，原因主要有三点：
   - backward 被拆成非常细粒度的操作，调度空间巨大
   - 不同算子（attention、MLP、通信）的执行时间并不完全一致
   - 要真正最小化 bubble，本质上是一个调度优化问题
@@ -2750,12 +2747,12 @@ $$
 
 - MoE 的基本思想
   - 近年来，MoE 范式随着 GPT-4、Mixtral、DeepSeek-V3 / R1 等模型的出现而受到广泛关注
-  - 其核心思想是：在每一层中，不再只使用一个前馈网络，而是使用多个并行的前馈模块（即多个“专家”），并通过路由器（router）将不同的 token 分发到不同的专家中进行处理
-  - 这样，不同 token 可以被“差异化”地计算
+  - 其核心思想是：在每一层中，不再只使用一个前馈网络，而是使用多个并行的前馈模块（即多个 “专家”），并通过路由器（router）将不同的 token 分发到不同的专家中进行处理
+  - 这样，不同 token 可以被 “差异化” 地计算
 - 什么是 Expert Parallelism
-  - MoE 层的结构天然适合在“专家维度”上做并行，这就是所谓的 Expert Parallelism
+  - MoE 层的结构天然适合在 “专家维度” 上做并行，这就是所谓的 Expert Parallelism
   - 这是因为，每个专家对应一个独立的前馈网络，各个专家之间在计算上互不依赖
-  - 因此，实现 EP 时，只需要把不同专家的前馈网络放到不同的 GPU / worker 上，将 token 的隐藏状态路由到对应的专家
+  - 因此，实现 EP 时，只需要把不同专家的前馈网络放到不同的 GPU /worker 上，将 token 的隐藏状态路由到对应的专家
   - 与张量并行相比，EP 更加轻量，不需要拆分矩阵乘法，只涉及 token 隐状态的路由与通信
 
 ### EP+DP
@@ -2901,14 +2898,14 @@ $$
 - 关于完整的 ep_group
   - 前面提到，每个 `ep_groups` 中的单个 `ep_group` 要装下一套「完整的」专家
   - DeepSpeed 中的「完整」：即便 `ep_group` 内的每个专家参数是被纵向切分（按维度分片）存储的，只要这个 `ep_group` 覆盖了所有专家（而非部分专家），就认为是「完整的」
-  - Megatron 中的「完整」：「完整」的核心是参数完整—— 必须集齐所有卡（比如 g0~g7），让每张卡持有某专家的完整参数，且所有专家都被包含在内，才会被认定为一个 `ep_group`
+  - Megatron 中的「完整」：「完整」的核心是参数完整 —— 必须集齐所有卡（比如 g0~g7），让每张卡持有某专家的完整参数，且所有专家都被包含在内，才会被认定为一个 `ep_group`
 - 定义不同，直接导致 `ep_group` 内的通信方式天差地别：
   - DeepSpeed 基于自身的「完整」定义，在 `ep_group` 内执行 All2All 完成 token 与专家的匹配分发；
   - Megatron 则基于参数完整的定义，在 `ep_group` 内用 ReduceScatter + AllGather 替代 All2All（事实上 Megatron 的 MoE 实现全程没有用到 All2All）
   - DeepSpeed 的 `ep_group` 设计更优 —— 不仅从操作逻辑上更符合「专家并行」的直觉认知（All2All 直接完成 token 到对应专家的分发），还能从根源上避免重复数据发送；而 Megatron 的实现方式会产生大量冗余数据传输，通信效率更低
 - 步骤 1：Non-MoE 层计算
   - 数据首先经过 Non-MoE 层（如 Attention 层）
-  - 由于开启了 TP（张量并行），同一 TP 组内的所有卡输出数据完全一致—— 这也是图中把相同颜色三角形标注在对应 Non-MoE 参数块下的原因
+  - 由于开启了 TP（张量并行），同一 TP 组内的所有卡输出数据完全一致 —— 这也是图中把相同颜色三角形标注在对应 Non-MoE 参数块下的原因
 - 步骤 2：MoE 层计算（第一次 All2All + TP AllReduce）
   - 数据进入 MoE 层后，首先执行「token 分发」
   - 两个独立的 ep_group（`[g0, g2, g4, g6]` 和 `[g1, g3, g5, g7]`）内各自执行一次 All2All，将不同 token 分发到对应 expert 所在的卡上完成计算
@@ -2961,15 +2958,15 @@ $$
 - 实现通信与计算重叠的方法
   - 异步通信原语
     - 避免使用阻塞式通信调用，因为它们会在通信完成前停止后续执行
-    - 优先使用非阻塞通信接口，例如使用非阻塞的 All-to-All 变体或更底层的点对点原语，如 isend / irecv，并配合显式同步
+    - 优先使用非阻塞通信接口，例如使用非阻塞的 All-to-All 变体或更底层的点对点原语，如 isend /irecv，并配合显式同步
   - 典型的执行模式
-    - 启动非阻塞通信操作（如 handle = isend / irecv）
+    - 启动非阻塞通信操作（如 handle = isend /irecv）
     - 在通信进行的同时，执行不依赖通信结果的计算，例如：
       - 流水线并行中后续层的计算
       - 网络中并行分支或独立模块的计算
       - 反向传播时，MoE 层通信之前的梯度计算
       - 专家计算中可先处理本地已就绪的数据
-    - 在需要使用通信结果之前，通过 handle.wait() 显式等待通信完成
+    - 在需要使用通信结果之前，通过 handle.wait () 显式等待通信完成
   - 借助 CUDA 流实现更细粒度的并发
     - CUDA 流提供了在 GPU 上调度并发操作的机制
     - 不同流上的计算核与通信操作可能并行执行
@@ -3013,8 +3010,8 @@ $$
 - 相似点
   - 两者都将模型参数分布在多张 GPU 上
   - 都沿模型深度方向进行通信与计算
-  - 在每个设备上执行的是“完整层级”的计算，而不是子层计算（不同于 TP 或 EP 那样对单层进行切分）
-  - 这里说的“一层”只是为了简化描述，实际的切分单位可以是多层、单层，甚至层的一部分，取决于具体实现
+  - 在每个设备上执行的是 “完整层级” 的计算，而不是子层计算（不同于 TP 或 EP 那样对单层进行切分）
+  - 这里说的 “一层” 只是为了简化描述，实际的切分单位可以是多层、单层，甚至层的一部分，取决于具体实现
 - 可以从以下几个方面理解两者的不同：
 
   |                  | ZeRO-3                                                                | Pipeline Parallelism (PP)                      |
@@ -3064,7 +3061,7 @@ $$
 
 - CP 的目标是解决超长序列训练的问题，通过在序列维度上切分激活：
   - MLP、LayerNorm 等模块可以直接在分片序列上独立计算
-  - 注意力层需要通信，因为每个 token 都需要访问全序列的 key / value
+  - 注意力层需要通信，因为每个 token 都需要访问全序列的 key /value
   - 这一问题通过 Ring Attention 等通信模式解决，使通信与计算尽量重叠
 - CP 在以下场景尤其关键：
   - 序列长度达到 $128k+$ token
@@ -3082,7 +3079,7 @@ $$
 - 由于在输入处理方式上，EP 与 DP 都涉及 token 在 GPU 之间的分发，一些实现中会将 EP 视为 DP 的一种变体：
   - DP：所有 GPU 运行相同模型副本
   - EP：GPU 上是不同专家，通过路由而非复制来处理输入
-  - 两者的关键差异在于是否存在“专家专用结构”
+  - 两者的关键差异在于是否存在 “专家专用结构”
 
 ### 作用范围
 
@@ -3093,8 +3090,8 @@ $$
 
 | 并行方式        | 作用对象             | 通信类型                      | 实现特性              | 偏好 / 限制                  |
 | --------------- | -------------------- | ----------------------------- | --------------------- | ---------------------------- |
-| 张量 + 序列并行 | 整个模型的权重和激活 | 矩阵乘法操作（列/行线性变换） | 需要针对具体模型实现  | 偏好高速节点内通信（高带宽） |
-| 上下文并行      | 注意力层的激活       | 注意力键/值的跨序列通信       | 除注意力外为模型无关  | 偏好超长序列训练             |
+| 张量 + 序列并行 | 整个模型的权重和激活 | 矩阵乘法操作（列 / 行线性变换） | 需要针对具体模型实现  | 偏好高速节点内通信（高带宽） |
+| 上下文并行      | 注意力层的激活       | 注意力键 / 值的跨序列通信       | 除注意力外为模型无关  | 偏好超长序列训练             |
 | 专家并行        | MoE 层的权重和激活   | token 路由到专家的通信        | 除 MoE 层外为模型无关 | 需要 MoE 层                  |
 
 ### 总结
@@ -3137,15 +3134,15 @@ $$
   [B, S, H]
   ```
 
-- 通信-计算掩盖的核心思想
-  - Chunking / streaming（把tensor切块边算边传）
+- 通信 - 计算掩盖的核心思想
+  - Chunking /streaming（把 tensor 切块边算边传）
   - pipeline overlap（下一步计算覆盖上一步通信）
 - DP
   - DP 的通信发生在梯度同步阶段
-  - 每个 GPU 都有完整的模型参数 $O(L\cdot H^2)$
-  - 反向传播结束后 all-reduce 各个 DP rank 的梯度，通信量约为 $2\times Params \approx O(L\cdot H^2)$
+  - 每个 GPU 都有完整的模型参数 $O (L\cdot H^2)$
+  - 反向传播结束后 all-reduce 各个 DP rank 的梯度，通信量约为 $2\times Params \approx O (L\cdot H^2)$
   - 与 B、S 无关，只和模型大小有关，因此大模型训练必须减少 DP 规模
-  - 如何进行通信-计算掩盖？
+  - 如何进行通信 - 计算掩盖？
     - 在一层的梯度计算完成后，就立刻进行通信 all-reduce 这层的梯度
     - 为了避免每次传输的梯度数据过小，一般设置 Gradient Bucket，累积到一定阈值后进行传输
 
@@ -3164,8 +3161,8 @@ $$
   - 两个 stage 之间传输的激活值大小约为 $[B_{micro}, S, H]$
   - 每个 micro-batch 前向传播时发送激活值，反向传播时发送梯度，因此通信量约为 $2\times B_{micro}\times S\times H$
   - 如果一个 batch 有 M 个 micro-batch：则通信量为 $2M\times B_{micro}\times S\times H$
-  - 总共有 $\frac{L}{P}$ 个 stage，共发生 $\frac{L}{P}-1$​ 次传递
-  - 如何进行通信-计算掩盖
+  - 总共有 $\frac {L}{P}$ 个 stage，共发生 $\frac {L}{P}-1$​ 次传递
+  - 如何进行通信 - 计算掩盖
     - 通过 micro-batch pipeline，将通信隐藏在下一个 microbatch 的计算中
     - PP 的通信量较小，不是系统瓶颈
 - TP
@@ -3173,7 +3170,7 @@ $$
   - 通信来源二：MLP 输出的 $[B, S, H/T]$ 需要进行 all-reduce 通信，通信量为 $2\times B\times S\times H$​
   - 每层通信约为 $4\times B\times S\times H$，整个模型通信量为 $4L\times B\times S\times H$
   - 以上通信量随着 sequence 增长，通信量很大
-  - 如何进行通信-计算掩盖
+  - 如何进行通信 - 计算掩盖
     - MLP 层，计算量 $2 × B × S × H × 4H$，通信量 $B × S × H$​​，由于 MLP GEMM 很大，可以通过分块掩盖通信
     - TP 必须在 LN/Dropout 前必须同步所有 GPU
     - TP 无法 scale 到跨机，因为 TP 需要高速的 NVLink / NVSwitch，而跨机连接 IB 带宽远低于此，所以 TP 只能 node 内通信
@@ -3185,7 +3182,7 @@ $$
   - 每个 GPU 持有的 KV 为 $[B,S/C,H/T]$，每轮发送 $[B,S/C,H/T]$，共经过 $C-1$ 轮，通信量为 $B\times S\times H/T$，减少了 TP 倍通信量
   - MLP 层不变，仍旧为 $2\times B\times S\times H$
   - 每层总通讯量为 $2B\times S\times H + (B\times S\times H)/T$
-  - 如何进行通信-计算掩盖
+  - 如何进行通信 - 计算掩盖
     - 设置适当的分块大小，这样能够在传输分块时，使用计算注意力的时间覆盖传输的时间
 
       ```text
@@ -3309,14 +3306,14 @@ $$
   - FlashAttention 的核心思想是充分利用 GPU 中更快的内存，尽量避免使用最慢的那一层内存 —— 全局内存
 - 现代 GPU 的全局内存通常使用 HBM（High Bandwidth Memory）
   - HBM 带宽高，但仍然远慢于 GPU 内部的 SRAM、寄存器、共享内存、L1 cache
-  - HBM 这个名字容易误导，High Bandwidth ≠ Low Latency，和片上 SRAM 相比，HBM 仍然是“慢内存”
+  - HBM 这个名字容易误导，High Bandwidth ≠ Low Latency，和片上 SRAM 相比，HBM 仍然是 “慢内存”
 - Naive Attention 的内存灾难
 
   ![image.png](/img/llm/flashattn.png)
   - 标准 attention 的计算流程是：
-    - 给定 $Q \in \mathbb{R}^{L \times d}$、$K \in \mathbb{R}^{L \times d}$、$V \in \mathbb{R}^{L \times d}$
-  - 计算注意力分数 $S = Q K^T \in \mathbb{R}^{L \times L}$
-  - softmax 归一化 $P = \text{softmax}(S)$
+    - 给定 $Q \in \mathbb {R}^{L \times d}$、$K \in \mathbb {R}^{L \times d}$、$V \in \mathbb {R}^{L \times d}$
+  - 计算注意力分数 $S = Q K^T \in \mathbb {R}^{L \times L}$
+  - softmax 归一化 $P = \text {softmax}(S)$
   - 得到输出 $O = P V$
   - 在 naive 实现中，$S$ 必须完整算出来，$P$ 也必须完整算出来，它们都被存进 HBM
     - 算完 $QK^T$ → 写回 HBM
@@ -3325,9 +3322,9 @@ $$
   - 这在长上下文下是灾难性的，$S$ 和 $P$ 的大小是 $L^2$，它们是整个模型中最大的 activation 之一，带宽和显存同时爆炸
 
 - 在注意力计算的过程中，带宽瓶颈的本质是 attention 在算术上是大量矩阵乘法，计算密度并不低，但性能被严重限制在 HBM 带宽而非算力上
-- FlashAttention 的核心思想是直接在 GPU 的 SRAM（共享内存+寄存器）里分块计算、边算边归一化、边算边累加 $O$​
+- FlashAttention 的核心思想是直接在 GPU 的 SRAM（共享内存 + 寄存器）里分块计算、边算边归一化、边算边累加 $O$​
   - 传统做法：QK^T → 写 S → 读 S → softmax → 写 P → 读 P → PV
-  - FlashAttention 的做法：Q_tile × K_tile^T → 在线 softmax（只保留 max / sum） → 直接更新 O_tile
+  - FlashAttention 的做法：Q_tile × K_tile^T → 在线 softmax（只保留 max /sum） → 直接更新 O_tile
   - $S$ 从头到尾从未完整存在过，只保留 softmax 所需的当前最大值、归一化因子（sum of exp）
   - 这样，不仅利用共享内存解决了 HBM 的带宽瓶颈，还释放了注意力矩阵的显存占用
 
@@ -3336,7 +3333,7 @@ $$
 - softmax 有一个重要性质：
 
   $$
-  \text{softmax}(x_i) = \frac{e^{x_i - m}}{\sum_j e^{x_j - m}}
+  \text {softmax}(x_i) = \frac {e^{x_i - m}}{\sum_j e^{x_j - m}}
   $$
   - 只要维护当前块的最大值和累计的指数
   - 就可以一块一块处理 $S$，最终得到和一次性 softmax 完全一样的结果
@@ -3345,10 +3342,10 @@ $$
   - 分块：不一次性算完整个 $S$，而是把 $QK^T$ 分成小块，每一小块能放进共享内存
   - online softmax：利用 softmax 的重要性质，每个 block 维护当前最大值 $m$ 和累计归一化因子 $l$
   - 这样可以做到一边算 $QK^T$，一边算 softmax，一边直接乘 $V$，一边累加 $O$
-  - 最终效果是：$S$ 从未完整存在过、$P$ 从未完整存在过，中间结果始终留在寄存器/共享内存，只在最后一次性把 $O$ 写回 HBM
+  - 最终效果是：$S$ 从未完整存在过、$P$ 从未完整存在过，中间结果始终留在寄存器 / 共享内存，只在最后一次性把 $O$ 写回 HBM
 - FlashAttention 的变革
   - 在 FlashAttention 出现之前，大量工作集中在 linear attention、sub-quadratic attention 等各种近似 softmax
-  - 它们的动机是 $O(L^2)$ 的算法复杂度无法忍受，但 FlashAttention 证明了问题不在算法复杂度，而是在内存访问模式
+  - 它们的动机是 $O (L^2)$ 的算法复杂度无法忍受，但 FlashAttention 证明了问题不在算法复杂度，而是在内存访问模式
   - 于是精确的 attention + 正确的 kernel 设计，反而比近似方法更快、更省显存
 - 后续优化
   - FlashAttention-2：减少非 GEMM 操作，更精细地划分 warp、划分 thread block、更好地利用 GPU 的执行模型
@@ -3366,11 +3363,11 @@ $$
 - 混合精度训练（mixed precision training）
   - 顾名思义，是指在训练过程中混合使用多种数值精度
   - 在 PyTorch 中，张量的默认数值精度是单精度浮点数，也称为 FP32 或 float32，这意味着每个数占用 32 位（bit），即 4 个字节（byte）
-  - “混合”这个词非常重要，它并不是说全部都用低精度，而是有些张量用 FP32，有些用 FP16 / BF16 / FP8；有些计算在低精度做，但结果保存在高精度里，这是后面能保证稳定训练的关键
-- 浮点数的表示——用于表示一个浮点数的比特被分成三部分：
+  - “混合” 这个词非常重要，它并不是说全部都用低精度，而是有些张量用 FP32，有些用 FP16 / BF16 / FP8；有些计算在低精度做，但结果保存在高精度里，这是后面能保证稳定训练的关键
+- 浮点数的表示 —— 用于表示一个浮点数的比特被分成三部分：
 
   ![sign-mantissa-exponent.svg](/img/llm/sign-mantissa-exponent.svg)
-  - 浮点数并不是“定点表示”，而是用有限 bit 去近似表示一个连续实数空间
+  - 浮点数并不是 “定点表示”，而是用有限 bit 去近似表示一个连续实数空间
   - 符号位（Sign）：第一个 bit 决定这个数是正数还是负数，决定连续实数空间的反向
   - 指数位（Exponent）：控制数值的量级（范围），决定能表示多大或多小
   - 尾数位（Mantissa，也叫有效数）：决定数值的精度（有效数字），决定表示得有多细
@@ -3394,8 +3391,8 @@ $$
   | float8 (e5m2) | 8      | 1            | 5            | 2            |
 
 - 范围和精度的取舍
-  - 减少总 bit 数一定是有代价的，但可以选择代价付在哪里——要么减少尾数的 bit，要么减少指数的 bit
-  - 浮点数的核心矛盾就是 exponent 决定“能表示多大/多小”（数值范围），而mantissa 决定“能表示多细”（数值精度），bit 总数有限，只能在范围和精度之间做取舍
+  - 减少总 bit 数一定是有代价的，但可以选择代价付在哪里 —— 要么减少尾数的 bit，要么减少指数的 bit
+  - 浮点数的核心矛盾就是 exponent 决定 “能表示多大 / 多小”（数值范围），而 mantissa 决定 “能表示多细”（数值精度），bit 总数有限，只能在范围和精度之间做取舍
   - 正因为这种取舍关系，FP8 并不是只有一种格式，而是有两种 float8 格式，根据指数位和尾数位命名
 - 不同数值的表示范围
 
@@ -3403,7 +3400,7 @@ $$
   - float32 可以覆盖约 80 个数量级
   - float16 为了节省 bit，牺牲了大量数值范围
   - bfloat16 则保留了与 float32 相同的数值范围，
-  - float16 和 bfloat16 都是 16 bit，但 float16：指数少 → 容易 overflow / underflow，而 bfloat16：指数多 → 范围几乎和 float32 一样
+  - float16 和 bfloat16 都是 16 bit，但 float16：指数少 → 容易 overflow /underflow，而 bfloat16：指数多 → 范围几乎和 float32 一样
   - 对于 float8，e5m2 可以勉强维持 float16 的数值范围，而 e4m3 数值范围进一步缩小
 
 - 不同数值的分辨率（resolution）
@@ -3411,7 +3408,7 @@ $$
   ![image.png](/img/llm/mixedprecision_2.png)
   - 在区间 $[1, 2]$​ 内取 10,000 个点，将这些点分别四舍五入到各个格式中最接近的可表示数
   - 从图中可以看到，bfloat16 虽然维持了 float32 的数值范围，但代价是精度明显下降，可表示的数变得更稀疏
-  - 这正是 bfloat16 的设计哲学，宁愿数值表示得“粗一点”，也要避免数值溢出，因为对深度学习来说，梯度爆炸/消失比“多一点噪声”更致命
+  - 这正是 bfloat16 的设计哲学，宁愿数值表示得 “粗一点”，也要避免数值溢出，因为对深度学习来说，梯度爆炸 / 消失比 “多一点噪声” 更致命
   - 在 float8 的情况下，问题更加严重
     - e4m3 在区间 $[1,2]$ 内只能表示 7 个数
     - e5m2 甚至只能表示 3 个数
@@ -3423,7 +3420,7 @@ $$
 
 - 混合精度训练的核心思想
   - 在某些计算中使用低精度格式，同时保持与全精度训练几乎一致的效果和稳定性
-  - 关键不是“用不用低精度”，而是哪些地方可以用，哪些地方绝对不能用
+  - 关键不是 “用不用低精度”，而是哪些地方可以用，哪些地方绝对不能用
   - 事实证明，无法彻底抛弃 float32，通常仍然需要在某些计算中使用全精度，如梯度累积、权重更新、loss scaling 的关键路径，否则训练会发散
 
 ### FP16 / BF16
@@ -3472,7 +3469,7 @@ $$
     - 权重反向（Wgrad）
   - 类似于 BF16 混合精度训练，一些聚合操作以及 master 权重仍然保留在更高精度中，而具体算子本身使用 FP8
   - 这延续在 FP16/BF16 中已经见过的原则：compute 可以低精度、state 和 accumulation 必须高精度
-  - 为了从高精度（如 FP32、BF16）切换到数值范围更小的低精度（如 FP16、FP8），需要对激活值的范围进行归一化，例如计算其绝对最大值，这是因为FP8 表示范围极小，不缩放就必然溢出或下溢
+  - 为了从高精度（如 FP32、BF16）切换到数值范围更小的低精度（如 FP16、FP8），需要对激活值的范围进行归一化，例如计算其绝对最大值，这是因为 FP8 表示范围极小，不缩放就必然溢出或下溢
   - DeepSeek-V3 进一步提出了一种按 tile 进行归一化的量化方案：
     - 输入 / 激活：$1 \times 128$
     - 权重与 scale：$128 \times 128$​
@@ -3490,10 +3487,10 @@ $$
   | Nanotron 的 FP8              | FP8        | BF16     | FP32     | FP8  | FP8        | FP8 + FP8   | 2 + 4 + 1 + 1 + 1 + 1 = 10 字节（减少 50%） |
 
 - 总体而言，截至 2025 年初，FP8 仍然是一种实验性技术
-  - 这里的“实验性”不是指“不可用”，而是指：
-    - 没有形成单一、稳定、被广泛验证的“标准 FP8 训练范式”
+  - 这里的 “实验性” 不是指 “不可用”，而是指：
+    - 没有形成单一、稳定、被广泛验证的 “标准 FP8 训练范式”
     - 不同团队在 scale、quantization、accumulation、optimizer 精度上仍有明显分歧
-  - 和 BF16 的成熟度相比，BF16 几乎“无脑可用”，而 FP8 必须理解数值细节才能用好
+  - 和 BF16 的成熟度相比，BF16 几乎 “无脑可用”，而 FP8 必须理解数值细节才能用好
 
 ## 分布式训练总结
 
@@ -3503,10 +3500,10 @@ $$
 
 ## LLM 参数量计算
 
-- 在讨论显存或计算量时，通常统计的是“元素数”（elements），可以把它理解为张量中的数值个数
+- 在讨论显存或计算量时，通常统计的是 “元素数”（elements），可以把它理解为张量中的数值个数
 - 要得到真实的内存占用（字节数），需要再乘以每个数值的字节大小，例如 BF16 是 2 字节，FP32 是 4 字节
-- 输入 token 数：对于每个 micro-batch，处理的 token 数为 $\text{seq} \cdot \text{mbs}$，其中 $\text{mbs}$ 是 micro-batch size，$\text{seq}$ 是序列长度
-- 激活值（隐藏状态）：对于单个 Transformer 层，隐藏状态张量的大小为 $\text{seq} \cdot \text{mbs} \cdot h$ 个元素，其中 $h$ 是 hidden size
+- 输入 token 数：对于每个 micro-batch，处理的 token 数为 $\text {seq} \cdot \text {mbs}$，其中 $\text {mbs}$ 是 micro-batch size，$\text {seq}$ 是序列长度
+- 激活值（隐藏状态）：对于单个 Transformer 层，隐藏状态张量的大小为 $\text {seq} \cdot \text {mbs} \cdot h$ 个元素，其中 $h$ 是 hidden size
 - 模型权重与梯度：模型中的每个权重矩阵（例如线性层）大约包含 $h^2$ 个元素，对应的梯度张量大小与权重完全相同
 - 优化器状态：对于每一个大小为 $h^2$ 的权重矩阵，使用 Adam 这类优化器并配合混合精度训练时，通常需要维护：
   - 一阶动量（FP32）
@@ -3523,13 +3520,13 @@ $$
     - down 投影：$4h^2$（一组 $4h \times h$ 的矩阵）
   - 使用 GLU 的单层 Transformer，总参数量约为 $16h^2$
   - 不使用 GLU 的情况下，总参数量约为 $12h^2$
-- 全模型参数量：若模型包含 $\text{num\_layers}$ 层 Transformer（使用 GLU），则参数总量约为 $16h^2 \cdot \text{num\_layers}$
+- 全模型参数量：若模型包含 $\text {num\_layers}$ 层 Transformer（使用 GLU），则参数总量约为 $16h^2 \cdot \text {num\_layers}$
 - 额外参数
-  - 输入词嵌入：$\text{vocab\_size} \cdot h$
-  - LM head（若未与输入嵌入权重共享）：$\text{vocab\_size} \cdot h$
-  - 位置嵌入（若使用）：$\text{max\_seq\_len} \cdot h$
+  - 输入词嵌入：$\text {vocab\_size} \cdot h$
+  - LM head（若未与输入嵌入权重共享）：$\text {vocab\_size} \cdot h$
+  - 位置嵌入（若使用）：$\text {max\_seq\_len} \cdot h$
 - 前向与反向计算量（FLOPs），一个非常粗略的估计是：
-  - 前向传播 FLOPs：$2 \cdot \text{num\_tokens} \cdot \text{num\_params}$
-  - 反向传播 FLOPs（约为前向的 2 倍）：$4 \cdot \text{num\_tokens} \cdot \text{num\_params}$
-- 更精确的前向 + 反向 FLOPs 公式为 $6 \cdot \text{seq\_len} \cdot \text{num\_params} + 12 \cdot \text{num\_layers} \cdot h \cdot \text{seq\_len}^2$
-  - 其中第二项刻画了自注意力在整个序列维度上的二次复杂度。为了简化分析，通常假设 $\text{seq\_len}^2 \ll h$
+  - 前向传播 FLOPs：$2 \cdot \text {num\_tokens} \cdot \text {num\_params}$
+  - 反向传播 FLOPs（约为前向的 2 倍）：$4 \cdot \text {num\_tokens} \cdot \text {num\_params}$
+- 更精确的前向 + 反向 FLOPs 公式为 $6 \cdot \text {seq\_len} \cdot \text {num\_params} + 12 \cdot \text {num\_layers} \cdot h \cdot \text {seq\_len}^2$
+  - 其中第二项刻画了自注意力在整个序列维度上的二次复杂度。为了简化分析，通常假设 $\text {seq\_len}^2 \ll h$

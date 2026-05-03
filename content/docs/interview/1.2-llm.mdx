@@ -8,12 +8,12 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
 ### Attention
 
 - 点乘注意力中，QKV 矩阵都是什么作用？为什么 Q 和 K 不共用一个？
-- 点乘注意力为什么要 scale？scale 为什么是 $\sqrt{d_k}$？为什么不直接除以 $d_k$ 或者其他数值？为什么不做 scale？
-  - 为了防止点积结果方差随维度 $d_k$ 变大而爆炸，导致 softmax 进入饱和区、梯度消失，所以要除以 $\sqrt{d_k}$ 做归一化
+- 点乘注意力为什么要 scale？scale 为什么是 $\sqrt {d_k}$？为什么不直接除以 $d_k$ 或者其他数值？为什么不做 scale？
+  - 为了防止点积结果方差随维度 $d_k$ 变大而爆炸，导致 softmax 进入饱和区、梯度消失，所以要除以 $\sqrt {d_k}$ 做归一化
   - 根据原始点乘注意力
 
     $$
-    \text{Attention}(Q,K,V) = \text{softmax}\left(\frac{QK^\top}{\sqrt{d_k}}\right)V
+    \text {Attention}(Q,K,V) = \text {softmax}\left (\frac {QK^\top}{\sqrt {d_k}}\right) V
     $$
 
   - 如果不做 scale，就是：
@@ -22,17 +22,17 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
     QK^\top
     $$
 
-  - 假设 Q,K 里的每个元素都是均值 0、方差 1 的独立随机变量，对单个向量 $q\in\mathbb{R}^{d_k}$ 和 $k\in\mathbb{R}^{d_k}$ 的点积：
+  - 假设 Q,K 里的每个元素都是均值 0、方差 1 的独立随机变量，对单个向量 $q\in\mathbb {R}^{d_k}$ 和 $k\in\mathbb {R}^{d_k}$ 的点积：
 
     $$
     q\cdot k = \sum_{i=1}^{d_k} q_i k_i
     $$
 
-  - 单个 $q_i k_i$ 的方差：$\mathbb{V}[q_i k_i] = \mathbb{E}[q_i^2]\mathbb{E}[k_i^2] = 1\cdot1=1$
+  - 单个 $q_i k_i$ 的方差：$\mathbb {V}[q_i k_i] = \mathbb {E}[q_i^2]\mathbb {E}[k_i^2] = 1\cdot1=1$
   - 一共 $d_k$ 项独立相加，所以整体方差为：
 
     $$
-    \mathbb{V}[q\cdot k] = d_k
+    \mathbb {V}[q\cdot k] = d_k
     $$
 
   - 也就是说维度 $d_k$ 越大，点积的方差越大，数值越容易变得很大
@@ -40,18 +40,18 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - 因此需要对点积进行缩放，而我们希望缩放后，点积的方差回到 1，设缩放因子为 c：
 
     $$
-    \mathbb{V}\left[\frac{q\cdot k}{c}\right]
-    =\frac{1}{c^2}\mathbb{V}[q\cdot k]
-    =\frac{d_k}{c^2}
+    \mathbb {V}\left [\frac {q\cdot k}{c}\right]
+    =\frac {1}{c^2}\mathbb {V}[q\cdot k]
+    =\frac {d_k}{c^2}
     $$
 
   - 令方差为 1：
 
     $$
-    \frac{d_k}{c^2}=1 \Rightarrow c=\sqrt{d_k}
+    \frac {d_k}{c^2}=1 \Rightarrow c=\sqrt {d_k}
     $$
 
-  - 所以除以 $\sqrt{d_k}$，可以让点积的方差稳定在 1，与维度无关
+  - 所以除以 $\sqrt {d_k}$，可以让点积的方差稳定在 1，与维度无关
 
 - 注意力中有哪些类型的掩码？Padding Mask/Sequence Mask/Casual Mask 的作用？
   - 在 Transformer 注意力里，掩码本质就是把某些位置的注意力分数强行设为 $-\infty$，让 softmax 后权重变成 0，从而 “看不见” 这些位置
@@ -59,20 +59,20 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - Sequence Mask / Key Mask（序列掩码 / Key 掩码）：对 key 序列中无效位置做掩码，让 query 不关注这些 key
   - Causal Mask（因果掩码 / Look-ahead Mask）：Decoder 自注意力中，禁止当前位置看到未来位置的 token，保证自回归生成，本质上是一个下三角掩码，上三角全部设置为 $-\infty$，保证每个位置只关注自己及之前的 token
 - Attention 计算复杂度，为什么很多时候 attention 不是瓶颈，反而是 MLP？在什么条件下 attention 会变成瓶颈？
-  - 标准 attention 的复杂度是 $O(s^2 \cdot h)$，其中 s 是序列长度，h 是 hidden size
-  - 而 FFN 的复杂度是 $O(s \cdot h^2)$，因为通常中间层是 4h（甚至更大）
+  - 标准 attention 的复杂度是 $O (s^2 \cdot h)$，其中 s 是序列长度，h 是 hidden size
+  - 而 FFN 的复杂度是 $O (s \cdot h^2)$，因为通常中间层是 4h（甚至更大）
   - 关键在于对比 n 和 d 的大小：在 LLM 训练里，常见情况是 $h \gg s$（例如 h=4096，s=2k），此时 $h^2 \gg sh$，所以 FFN FLOPs 明显更多，所以在很多实际系统里，MLP 才是主要算力消耗者
   - 但当 s 很大时（比如长上下文 32k、128k），attention 的 $s^2$ 开始爆炸，这时 attention 会成为瓶颈，甚至主导计算和显存
 - Attention 是 memory-bound 还是 compute-bound？
   - 理论上 attention 有很多矩阵乘，是 compute-heavy，但在实际 GPU 上往往是 memory-bound
   - 原因在于：
     - $QK^T$、softmax、再乘 V，这些步骤之间需要频繁读写中间结果
-    - softmax 需要做 reduce（max / sum），带来同步和访存压力
+    - softmax 需要做 reduce（max /sum），带来同步和访存压力
     - 序列维度访问模式不连续
-  - 这也是为什么像 FlashAttention 这种方法，通过“tile + on-chip memory（SRAM）复用”来减少 HBM 访问，可以显著提速
+  - 这也是为什么像 FlashAttention 这种方法，通过 “tile + on-chip memory（SRAM）复用” 来减少 HBM 访问，可以显著提速
 - 什么是 MHA？为什么要用多个注意力头？MHA 有什么缺点？
   - MHA 即 Multi-Head Attention，多头注意力，是 Transformer 的核心组件
-  - 把 Q、K、V 分成 h 个“头”并行做 scaled dot-product attention，最后拼接所有头的输出并做一次线性变换
+  - 把 Q、K、V 分成 h 个 “头” 并行做 scaled dot-product attention，最后拼接所有头的输出并做一次线性变换
   - 为什么要用多个注意力头：
     - 单头注意力只能学到一种全局注意力模式，多头可以学到多组独立的注意力分布
     - 让模型能同时关注不同位置、不同类型的依赖关系（比如语法依赖、语义关联、长距离依赖）
@@ -92,76 +92,76 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
     - 平衡速度、显存与精度，是当前大模型主流方案
 - 什么是 MLA？MLA 的原理是什么？
   - MLA 解决了传统注意力中 KV Cache 过大的问题，核心做了两件事：
-    - 共享低维潜在向量：用一个低维向量 $\mathbf{c}_t^{KV}$ 同时生成 K 和 V，避免重复缓存
+    - 共享低维潜在向量：用一个低维向量 $\mathbf {c}_t^{KV}$ 同时生成 K 和 V，避免重复缓存
     - 位置信息分离：将位置编码（RoPE）从主 K 中分离，单独缓存无位置的压缩向量，大幅降低显存占用
-  - Query 侧：内容分支+位置分支分开构造
+  - Query 侧：内容分支 + 位置分支分开构造
 
     $$
-    \begin{align*}
-    \mathbf{c}_t^Q &= W^{DQ} \mathbf{h}_t\\
-    \mathbf{q}_t^C &= W^{UQ} \mathbf{c}_t^Q\\
-    \mathbf{q}_t^R &= \text{RoPE}(W^{QR} \mathbf{c}_t^Q)\\
-    \mathbf{q}_{t,i} &= [\mathbf{q}_{t,i}^C; \mathbf{q}_{t,i}^R]
-    \end{align*}
+    \begin {align*}
+    \mathbf {c}_t^Q &= W^{DQ} \mathbf {h}_t\\
+    \mathbf {q}_t^C &= W^{UQ} \mathbf {c}_t^Q\\
+    \mathbf {q}_t^R &= \text {RoPE}(W^{QR} \mathbf {c}_t^Q)\\
+    \mathbf {q}_{t,i} &= [\mathbf {q}_{t,i}^C; \mathbf {q}_{t,i}^R]
+    \end {align*}
     $$
-    - 内容分支：$\mathbf{q}_t^C$ 负责语义信息，从压缩向量 $\mathbf{c}_t^Q$ 生成
-    - 位置分支：$\mathbf{q}_t^R$ 负责位置信息，通过 RoPE 编码
+    - 内容分支：$\mathbf {q}_t^C$ 负责语义信息，从压缩向量 $\mathbf {c}_t^Q$ 生成
+    - 位置分支：$\mathbf {q}_t^R$ 负责位置信息，通过 RoPE 编码
     - 最终 Query 是两个分支的拼接，兼顾内容与位置表达
 
   - Key/Value 侧：低维压缩 + 位置解耦
 
     $$
-    \begin{align*}
-    \mathbf{c}_t^{KV} &= W^{DKV} \mathbf{h}_t\\
-    \mathbf{k}_t^C &= W^{UK} \mathbf{c}_t^{KV}\\
-    \mathbf{k}_t^R &= \text{RoPE}(W^{KR} \mathbf{h}_t)\\
-    \mathbf{k}_{t,i} &= [\mathbf{k}_{t,i}^C; \mathbf{k}_t^R]\\
-    \mathbf{v}_t^C &= W^{UV} \mathbf{c}_t^{KV}
-    \end{align*}
+    \begin {align*}
+    \mathbf {c}_t^{KV} &= W^{DKV} \mathbf {h}_t\\
+    \mathbf {k}_t^C &= W^{UK} \mathbf {c}_t^{KV}\\
+    \mathbf {k}_t^R &= \text {RoPE}(W^{KR} \mathbf {h}_t)\\
+    \mathbf {k}_{t,i} &= [\mathbf {k}_{t,i}^C; \mathbf {k}_t^R]\\
+    \mathbf {v}_t^C &= W^{UV} \mathbf {c}_t^{KV}
+    \end {align*}
     $$
-    - 关键压缩点：$\mathbf{c}_t^{KV}$ 是低维共享向量，推理时只缓存这一个向量，而不是缓存完整的 K 和 V
-    - 位置分支分离：$\mathbf{k}_t^R$ 直接从原始 $\mathbf{h}_t$ 生成并加 RoPE，不需要缓存，推理时可动态生成
+    - 关键压缩点：$\mathbf {c}_t^{KV}$ 是低维共享向量，推理时只缓存这一个向量，而不是缓存完整的 K 和 V
+    - 位置分支分离：$\mathbf {k}_t^R$ 直接从原始 $\mathbf {h}_t$ 生成并加 RoPE，不需要缓存，推理时可动态生成
     - 显存收益：传统 KV Cache 大小为 `2 × seq_len × hidden_dim`，MLA 仅需 `seq_len × d_c`（`d_c` 是低维压缩维度，远小于 hidden_dim），显存可降低 70% 以上
 
   - 注意力计算
 
     $$
-    \begin{align*}
-    \mathbf{o}_{t,i} &= \sum_{j=1}^t \text{Softmax}_j\left(\frac{\mathbf{q}_{t,i}^T \mathbf{k}_{j,i}}{\sqrt{d_h + d_h^R}}\right) \mathbf{v}_{j,i}^C\\
-    \mathbf{u}_t &= W^O [\mathbf{o}_{t,1}; \mathbf{o}_{t,2}; ...; \mathbf{o}_{t,n_h}]
-    \end{align*}
+    \begin {align*}
+    \mathbf {o}_{t,i} &= \sum_{j=1}^t \text {Softmax}_j\left (\frac {\mathbf {q}_{t,i}^T \mathbf {k}_{j,i}}{\sqrt {d_h + d_h^R}}\right) \mathbf {v}_{j,i}^C\\
+    \mathbf {u}_t &= W^O [\mathbf {o}_{t,1}; \mathbf {o}_{t,2}; ...; \mathbf {o}_{t,n_h}]
+    \end {align*}
     $$
     - 注意力分数同时考虑内容分支和位置分支，缩放因子是两个分支维度和的平方根
-    - Value 直接使用从 $\mathbf{c}_t^{KV}$ 生成的 $\mathbf{v}_t^C$，不需要额外缓存
+    - Value 直接使用从 $\mathbf {c}_t^{KV}$ 生成的 $\mathbf {v}_t^C$，不需要额外缓存
 
 - 为什么 RoPE 不能直接对 MLA 中低秩的 Q/K 做位置编码？
   - 无 RoPE 时：矩阵吸收 + 低秩压缩（MLA 的基础）
     - 在不加入 RoPE 的情况下，MLA 能实现极致的 KV Cache 压缩，核心就是矩阵吸收计算：
 
       $$
-      \begin{align*}
+      \begin {align*}
       q_{t,i}^T \times k_{j,i} &= (W^{UQ}_{(i)} c_t^Q)^T \times W^{UK}_{(i)} c_j^{KV} \\
       &= (c_t^Q)^T \times (W^{UQ}_{(i)})^T W^{UK}_{(i)} \times c_j^{KV}
-      \end{align*}
+      \end {align*}
       $$
 
     - $(W^{UQ}_{(i)})^T W^{UK}_{(i)}$ 是一个固定矩阵，可以提前计算好
-    - 推理时，只需要缓存低维的 $\mathbf{c}_j^{KV}$，而不是高维的完整 Key
-    - 直接用预计算的矩阵和 $\mathbf{c}_j^{KV}$ 做一次矩阵乘法，就能还原出 Key 的内积结果
-    - 缓存的是低维 $\mathbf{c}_t^{KV}$（维度 $4d_h$），而不是高维 Key（维度 $d_h\times n_h$）
+    - 推理时，只需要缓存低维的 $\mathbf {c}_j^{KV}$，而不是高维的完整 Key
+    - 直接用预计算的矩阵和 $\mathbf {c}_j^{KV}$ 做一次矩阵乘法，就能还原出 Key 的内积结果
+    - 缓存的是低维 $\mathbf {c}_t^{KV}$（维度 $4d_h$），而不是高维 Key（维度 $d_h\times n_h$）
     - KV Cache 显存占用直接降低了 12 倍，这就是 MLA 压缩的核心原理
 
   - 加入 RoPE 后：矩阵吸收失效
     - 当直接对 Key 应用 RoPE 时，矩阵吸收的前提被破坏了：
 
       $$
-      \begin{align*}
-      q_{t,i}^T \times k_{j,i} &= (\mathcal{R}_t W^{UQ}_{(i)} c_t^Q)^T \times \mathcal{R}_j W^{UK}_{(i)} c_j^{KV}\\
-      &= (c_t^Q)^T \times (W^{UQ}_{(i)})^T \mathcal{R}_t^T \mathcal{R}_j W^{UK}_{(i)} \times c_j^{KV}
-      \end{align*}
+      \begin {align*}
+      q_{t,i}^T \times k_{j,i} &= (\mathcal {R}_t W^{UQ}_{(i)} c_t^Q)^T \times \mathcal {R}_j W^{UK}_{(i)} c_j^{KV}\\
+      &= (c_t^Q)^T \times (W^{UQ}_{(i)})^T \mathcal {R}_t^T \mathcal {R}_j W^{UK}_{(i)} \times c_j^{KV}
+      \end {align*}
       $$
 
-    - 中间的 $(W^{UQ}_{(i)})^T \mathcal{R}_{t-j} W^{UK}_{(i)}$ 是随相对位置变化的，不是固定矩阵
+    - 中间的 $(W^{UQ}_{(i)})^T \mathcal {R}_{t-j} W^{UK}_{(i)}$ 是随相对位置变化的，不是固定矩阵
     - RoPE 矩阵插在了两个权重矩阵之间，而矩阵乘法不满足交换律，无法再提前计算吸收
     - 这意味着必须为每个 token 重新计算完整的 RoPE Key，压缩收益完全消失，推理效率大幅下降
 
@@ -204,7 +204,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - BPE（Byte Pair Encoding）
     - 实现流程：
       - 初始化词表：所有单个字符 + 基础符号
-      - 统计语料中相邻字符/子词对的出现频率
+      - 统计语料中相邻字符 / 子词对的出现频率
       - 选择频率最高的子词对合并成新子词，加入词表
       - 重复合并，直到词表达到预设大小
     - 贪心合并，无概率建模，不一定最优
@@ -213,14 +213,14 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
       - 初始词表 = 所有单个字符
       - 每次选择能最大程度提升语料似然概率的子词对合并
       - 用 ## 前缀标记非词首的子词（如 playing → play ##ing）
-    - 按概率/似然合并，语义拆分更合理
+    - 按概率 / 似然合并，语义拆分更合理
     - 单语言表现好，多语言较弱
   - Unigram LM（T5、Albert、部分日文分词）
     - 实现流程：
       - 从大词表（大量子词）开始
       - 用 Unigram 模型计算每个句子的生成概率
       - 计算去掉每个子词后对整体似然的损失
-      - 删除损失最小的一部分子词（如20%）
+      - 删除损失最小的一部分子词（如 20%）
       - 反复裁剪，直到目标词表大小
     - 基于概率的 Viterbi 分词，不是贪心，可输出最优拆分
     - 概率建模，分词结果更优、更稳定，多语言效果也较好
@@ -228,7 +228,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - SentencePiece（Google，常用于 LLaMA、Mistral）
     - 不是新算法，是一体化实现工具，内置了各种分词算法实现
     - 实现流程：
-      - 把文本当作Unicode字节流，不依赖空格分词
+      - 把文本当作 Unicode 字节流，不依赖空格分词
       - 自动处理多语言、大小写、标点
       - 用特殊符号▁表示空格，统一处理空格与子词
 - 词表的大小应该怎么选择？
@@ -242,7 +242,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - vocab_size：目标词表大小
   - min_frequency：合并的最低频率阈值，对于中文一般使用 0.995
 - 什么是 OOV？分词器如何处理未登录词？
-  - OOV = Out-of-Vocabulary，未登录词：词表里不存在的词/符号
+  - OOV = Out-of-Vocabulary，未登录词：词表里不存在的词 / 符号
   - 现代子词分词器几乎不会输出 \<unk>，处理方式：
     - 不断拆分成更小的子词，直到拆成单个字节
     - 最终兜底是 UTF-8 字节级别的 token
@@ -253,7 +253,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - 中文语义高度依赖单字组合，歧义多
   - 字符集巨大，生僻字多，Unicode 复杂
 - 分词不一致为什么会导致模型推理效果骤降？
-  - 训练与推理使用不同分词器/词表，token ID 完全不匹配
+  - 训练与推理使用不同分词器 / 词表，token ID 完全不匹配
   - 相同文本被切成完全不同的序列，语义分布与训练分布偏移
 - 长文本场景下，分词粒度如何影响上下文长度利用率？
   - 词表过大，稀有词、专业词、生僻字仍会被切碎，词表冗余高，embedding 负担大
@@ -261,25 +261,25 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - 常用词尽量成词，稀有词自动拆分，在相同长度下塞更多语义
 - 词表大小如何影响显存、参数量、训练速度？
   - 直接影响输入层和输出层的参数量，占用显存也会相应变化
-  - 前向/反向时 embedding 与 lm_head 计算量增加，词表过大明显拖慢训练与推理吞吐
+  - 前向 / 反向时 embedding 与 lm_head 计算量增加，词表过大明显拖慢训练与推理吞吐
 
 ### Transformer
 
 - Transformer 的基本结构
   - Transformer 的核心可以看成是「Attention + MLP」的堆叠
   - 每一层通常包含两大块：Multi-Head Self-Attention 和 Feed-Forward Network（FFN），每个子层外面包一层残差连接，再加归一化（现在主流是 Pre-LN）
-  - Self-Attention 负责在序列维度上做信息交互，本质是让每个 token 根据内容去“选择性读取”其他 token；FFN 则是在 token 内部做非线性变换，相当于对每个位置做一个共享的 MLP，提升表达能力
-  - 整体结构其实非常“干净”：没有卷积的局部性约束，也没有 RNN 的时间依赖，完全依赖 attention 做全局建模
+  - Self-Attention 负责在序列维度上做信息交互，本质是让每个 token 根据内容去 “选择性读取” 其他 token；FFN 则是在 token 内部做非线性变换，相当于对每个位置做一个共享的 MLP，提升表达能力
+  - 整体结构其实非常 “干净”：没有卷积的局部性约束，也没有 RNN 的时间依赖，完全依赖 attention 做全局建模
 - 为什么 Transformer 不用卷积 / RNN？
   - inductive bias：模型 “天生自带” 的先验假设 / 偏好，决定了模型更愿意学什么样的函数，更不信什么样的函数
   - 给模型一堆数据，理论上有无穷多种函数都能拟合这些数据，但模型会优先选某一类，这就是它的归纳偏置
     - 有偏置 → 模型缩小假设空间，更快学到真实规律
     - 归纳偏置 = 模型的 “先验世界观”
   - RNN
-    - RNN 的问题本质是“串行依赖”，它的归纳偏置是序列有序性和时序依赖，每一步都依赖前一步，导致无法高效并行
-    - 同时长序列上存在梯度消失/爆炸问题，虽然 LSTM/GRU 有缓解，但本质没变
+    - RNN 的问题本质是 “串行依赖”，它的归纳偏置是序列有序性和时序依赖，每一步都依赖前一步，导致无法高效并行
+    - 同时长序列上存在梯度消失 / 爆炸问题，虽然 LSTM/GRU 有缓解，但本质没变
   - CNN
-    - 卷积的问题是“感受野受限 + inductive bias 太强”，它的归纳偏置是局部性（相信附近的像素 / 特征关系更紧密）、权值共享（相信同一模式在不同位置都会出现）、平移不变性
+    - 卷积的问题是 “感受野受限 + inductive bias 太强”，它的归纳偏置是局部性（相信附近的像素 / 特征关系更紧密）、权值共享（相信同一模式在不同位置都会出现）、平移不变性
     - 虽然可以堆很多层扩大感受野，但远距离依赖建模仍然不如 attention 直接，而且卷积假设局部平移不变性，这对语言并不完全成立
   - Transformer 的优势在于几乎没有强结构偏置，使用注意力建模 token 之间的关联，使用位置编码进行
     - 第一，完全并行（序列维度可以一次性算）
@@ -289,7 +289,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - Batch Norm（BN）
     - 沿 batch 维度做归一化，对同一个特征通道、不同样本做标准化
     - 均值方差在 (B, L) 上计算，对每个维度 d 独立归一化
-    - 训练时用 batch 统计量，推理时用训练时固定的滑动均值/方差
+    - 训练时用 batch 统计量，推理时用训练时固定的滑动均值 / 方差
     - 严重依赖 batch 内样本分布一致，且依赖 batch size，batch 越小，统计噪声越大，效果急剧下降
     - 自带强正则化，依赖 batch 内样本间信息
   - Layer Norm（LN）
@@ -302,36 +302,36 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - BN 按批次归一，受 padding、小 batch、变长序列影响极大，NLP 不稳定
   - LN 按单样本自身特征归一，不受批次和长度影响，训练推理一致
   - Transformer 样本独立、全局注意力、小 batch 多，LN 更稳定、好训练
-- 为什么用 Pre-LN 不用 Post-LN？为什么 Pre-LN 更稳定？为什么 Post-LN 不稳定？为什么 Post-LN 会梯度爆炸/消失？
+- 为什么用 Pre-LN 不用 Post-LN？为什么 Pre-LN 更稳定？为什么 Post-LN 不稳定？为什么 Post-LN 会梯度爆炸 / 消失？
   - 结构对比
-    - Post-LN（原始 Transformer）：x → 子层（Attn/FFN）→ 残差相加 → LayerNorm —— LN(x + f(x))
-    - Pre-LN（主流大模型：LLaMA、GPT 等）：x → LayerNorm → 子层 → 残差相加 —— x + f(LN(x))
+    - Post-LN（原始 Transformer）：x → 子层（Attn/FFN）→ 残差相加 → LayerNorm —— LN (x + f (x))
+    - Pre-LN（主流大模型：LLaMA、GPT 等）：x → LayerNorm → 子层 → 残差相加 —— x + f (LN (x))
   - 残差路径与梯度传播
-    - Pre-LN 的残差分支是纯恒等映射（identity path）：梯度可以不经任何变换直接从顶层传回底层，路径干净、增益接近 1，让 f(x) 始终在稳定、标准化的特征空间内学习，输出幅值可控，从而使得深层网络也能保持梯度稳定，不容易消失或爆炸
-    - Post-LN 的残差相加后还要经过 LN，LN 会对张量做缩放与归一化，导致梯度在反向传播时被反复缩放、叠加放大/衰减，层数越深，梯度累积畸变越严重
-  - 梯度消失/爆炸（Post-LN）
-    - Post-LN 中，子层输出 f(x) 会直接累加到 x 上，再进入 LN，随着层数加深，f(x) 的累积幅值容易失控，LN 为了压制幅值会不断缩放，导致梯度被持续衰减 → 梯度消失
+    - Pre-LN 的残差分支是纯恒等映射（identity path）：梯度可以不经任何变换直接从顶层传回底层，路径干净、增益接近 1，让 f (x) 始终在稳定、标准化的特征空间内学习，输出幅值可控，从而使得深层网络也能保持梯度稳定，不容易消失或爆炸
+    - Post-LN 的残差相加后还要经过 LN，LN 会对张量做缩放与归一化，导致梯度在反向传播时被反复缩放、叠加放大 / 衰减，层数越深，梯度累积畸变越严重
+  - 梯度消失 / 爆炸（Post-LN）
+    - Post-LN 中，子层输出 f (x) 会直接累加到 x 上，再进入 LN，随着层数加深，f (x) 的累积幅值容易失控，LN 为了压制幅值会不断缩放，导致梯度被持续衰减 → 梯度消失
     - 反之，若初始化不当，残差和幅值快速放大，经过 softmax 等模块会出现极端值，梯度被指数级放大 → 梯度爆炸
     - 深层 Transformer 下，这种效应被逐层放大，训练极其不稳定，loss 容易震荡、NaN
 - 为什么用 RMSNorm 而不用 LayerNorm？为什么去掉 mean 只用 variance 就够？
   - 公式对比
-    - LayerNorm：先减均值，再除方差，含平移+缩放两步
+    - LayerNorm：先减均值，再除方差，含平移 + 缩放两步
 
       $$
-      \text{LayerNorm}(x) = \frac{x - \mu}{\sqrt{\sigma^2 + \epsilon}} * \gamma + \beta
+      \text {LayerNorm}(x) = \frac {x - \mu}{\sqrt {\sigma^2 + \epsilon}} * \gamma + \beta
       $$
 
     - RMSNorm：只做缩放，不移位，去掉均值
 
       $$
-      \text{RMSNorm}(x) = \frac{x}{\sqrt{\text{RMS}(x)^2 + \epsilon}} * \gamma\\
-      \text{RMS}(x) = \sqrt{\frac{1}{d}\sum_{i=1}^d x_i^2}
+      \text {RMSNorm}(x) = \frac {x}{\sqrt {\text {RMS}(x)^2 + \epsilon}} * \gamma\\
+      \text {RMS}(x) = \sqrt {\frac {1}{d}\sum_{i=1}^d x_i^2}
       $$
 
   - 为什么去掉 mean 依然有效？
-    - RMSNorm通过保持非零均值而不强制均值对零的对齐，有效缓解了梯度消失问题
-    - LayerNorm的零均值对齐可能导致梯度在反向传播过程中逐层衰减
-    - 与 LayerNorm 相比，RMSNorm 省去了均值计算、平移操作，减少访存和算子，训练/推理速度提升
+    - RMSNorm 通过保持非零均值而不强制均值对零的对齐，有效缓解了梯度消失问题
+    - LayerNorm 的零均值对齐可能导致梯度在反向传播过程中逐层衰减
+    - 与 LayerNorm 相比，RMSNorm 省去了均值计算、平移操作，减少访存和算子，训练 / 推理速度提升
   - 本质原因
     - 归一化的核心作用是稳定特征幅值、防止梯度异常，而控制幅值只需要方差缩放即可
     - LayerNorm 中的减均值在高维 Transformer 特征中是冗余操作，RMSNorm 保留核心、去掉冗余操作，更适合大规模深度模型训练
@@ -344,7 +344,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - 门控 FFN 结构可统一表示为：
 
     $$
-    \text{FFN}(x) = \left(x W_1 \odot \text{act}(x W_2)\right) W_3
+    \text {FFN}(x) = \left (x W_1 \odot \text {act}(x W_2)\right) W_3
     $$
 
   - 通过门控机制对不同特征通道做动态选择与加权，让模型自适应控制信息流通，比普通 ReLU/GELU FFN 表达更精细、效率更高
@@ -353,30 +353,30 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
 - 为什么要用残差连接？
   - 残差的核心作用是提供一条恒等映射的直达路径（identity path），让信息和梯度可以无损穿过深层网络
   - 梯度传播：反向时梯度能直接沿残差分支传回底层，避免逐层衰减或放大，有效缓解梯度消失与梯度爆炸
-  - 解决深层退化：没有残差时，网络越深训练误差反而越高，特征会被反复扭曲导致难以优化；残差让模型优先学习“微小增量修正”，深层训练更稳定
+  - 解决深层退化：没有残差时，网络越深训练误差反而越高，特征会被反复扭曲导致难以优化；残差让模型优先学习 “微小增量修正”，深层训练更稳定
   - 对 Transformer 尤其关键：层数动辄几十上百层，没有残差连接几乎无法收敛，训练极易震荡、崩 loss
 - 了解大模型的 Scaling Law（缩放定律）吗？Kaplan ？Chinchilla ？
-  - 什么是 Scaling Law：大语言模型性能（损失/准确率）与参数量 N、数据量 D、计算量 C 呈幂律（Power Law）关系，可预测、可外推
-  - 给定算力预算，Scaling Law能够指导如何最优分配资源（模型大小 vs 数据量）
+  - 什么是 Scaling Law：大语言模型性能（损失 / 准确率）与参数量 N、数据量 D、计算量 C 呈幂律（Power Law）关系，可预测、可外推
+  - 给定算力预算，Scaling Law 能够指导如何最优分配资源（模型大小 vs 数据量）
   - Kaplan Scaling Law（OpenAI）
     - 模型大小 > 数据量，算力应优先堆模型
-    - 幂律公式（损失L越低越好）
+    - 幂律公式（损失 L 越低越好）
       - $L\propto N^{-0.076}$ （参数量）
       - $L \propto D^{-0.095}$ （数据量）
       - $L \propto C^{-0.050}$ （计算量）
-    - 最优分配（给定算力C）
+    - 最优分配（给定算力 C）
       - $N \propto C^{0.73}$，$D \propto C^{0.27}$
-      - 算力×10 → 模型×5.5，数据×1.8
+      - 算力 ×10 → 模型 ×5.5，数据 ×1.8
     - 理念：大模型数据效率更高，应做大模型、早停（不训到收敛）
     - 影响：GPT-3（175B, 300B tokens）、早期大模型普遍参数量大、数据少
   - Chinchilla Scaling Law（DeepMind）
     - 模型与数据应等比例扩展（1:1），早期模型普遍欠训练
-    - 最优分配（给定算力C）
+    - 最优分配（给定算力 C）
       - $N \propto C^{0.5}$，$D \propto C^{0.5}$
-      - 算力×10 → 模型×3.2，数据×3.2
-    - 黄金比例：每1参数 ≈ 20训练tokens
+      - 算力 ×10 → 模型 ×3.2，数据 ×3.2
+    - 黄金比例：每 1 参数 ≈ 20 训练 tokens
     - 验证：70B Chinchilla（1.4T tokens）= 280B Gopher 同算力，全面更强
-    - 影响：LLaMA 系列、Llama 3、GPT-4 等均遵循小模型+多数据
+    - 影响：LLaMA 系列、Llama 3、GPT-4 等均遵循小模型 + 多数据
 - 了解 Bert 模型吗？它和 Transformer、GPT 模型有什么区别？
   - Bert 是 Transformer Encoder 结构的模型，采用了双向 Transformer Encoder 堆叠
   - 预训练任务是 MLM（Masked Language Model）掩码语言模型和 NSP（Next Sentence Prediction）下一句预测
@@ -407,7 +407,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - 模型最后输出 logits（未归一化分数）$logits=[z_1,z_2,z_3,\cdots,z_n]$​，加 Temperature 后变为
 
     $$
-    p_i = \frac{\exp(z_i / T)}{\sum_j \exp(z_j / T)}
+    p_i = \frac {\exp (z_i / T)}{\sum_j \exp (z_j / T)}
     $$
 
   - 即把所有 logits 除以 T，再做 Softmax
@@ -420,28 +420,28 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - 使用的正余弦位置编码，公式为
 
     $$
-    \begin{align*}
-    \text{PE}_{(pos, 2i)} &= \sin\left(\frac{pos}{10000^{2i/d_{\text{model}}}}\right) \\
-    \text{PE}_{(pos, 2i+1)} &= \cos\left(\frac{pos}{10000^{2i/d_{\text{model}}}}\right)
-    \end{align*}
+    \begin {align*}
+    \text {PE}_{(pos, 2i)} &= \sin\left (\frac {pos}{10000^{2i/d_{\text {model}}}}\right) \\
+    \text {PE}_{(pos, 2i+1)} &= \cos\left (\frac {pos}{10000^{2i/d_{\text {model}}}}\right)
+    \end {align*}
     $$
 
   - 位置编码直接加在嵌入向量上，经过注意力计算的推导如下：
 
     $$
-    \begin{align*}
+    \begin {align*}
     Q K^T &= (E W_Q + PE W_Q) (E W_K + PE W_K)^T \\
     &= (E W_Q)(E W_K)^T + (E W_Q)(PE W_K)^T + (PE W_Q)(E W_K)^T + (PE W_Q)(PE W_K)^T
-    \end{align*}
+    \end {align*}
     $$
 
   - 关注两个特定位置 $t$ 和 $t+k$ 之间的注意力分数，则有
 
     $$
-    \begin{align*}
+    \begin {align*}
     (PE_t W_Q)(PE_{t+k} W_K)^T &= PE_t W_Q W_K^T PE_{t+k}^T\\
     &=PE_t^T W_Q^T W_K PE_{t+k}
-    \end{align*}
+    \end {align*}
     $$
 
   - 由此可见，位置编码在进入 attention 层后，内积的距离意识的模式遭到了破坏
@@ -456,7 +456,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - 外推性不好的原因：编码长度在模型初始化时固定，训练时仅学习了预设长度内的位置向量，当输入序列超出该长度时，没有对应的位置向量可使用，无法直接生成新位置的有效编码，导致模型无法处理超长序列
 - 相对位置编码与绝对位置编码的核心区别与优劣？
   - 核心区别
-    - 绝对位置编码：给每个位置 idx 分配一个固定/可学习的向量，表示“这个 token 在序列的第几个位置”，模型学习的是绝对位置信息
+    - 绝对位置编码：给每个位置 idx 分配一个固定 / 可学习的向量，表示 “这个 token 在序列的第几个位置”，模型学习的是绝对位置信息
     - 相对位置编码：不关心具体在第几位，只关心两个 token 之间的距离，注意力权重由相对距离决定，与绝对位置无关
   - 绝对位置编码（原生正弦、BERT 可学习）
     - 优点：实现简单，直接相加即可；短上下文下位置信息清晰，拟合速度快；与模型结构兼容性好
@@ -468,7 +468,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - ALiBi（Attention with Linear Biases）不修改 token embedding，也不使用显式位置向量，而是直接在注意力分数中加入距离惩罚：
 
     $$
-    \text{score}_{ij} = \frac{Q_i \cdot K_j}{\sqrt{d}} - m_h (i - j)
+    \text {score}_{ij} = \frac {Q_i \cdot K_j}{\sqrt {d}} - m_h (i - j)
     $$
     - i 为当前 token 的位置
     - j 为被关注的 token 的位置
@@ -481,7 +481,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - ALiBi 为每个注意力头分配不同的线性斜率（H 是注意力头个数）：
 
     $$
-    m_h = \frac{1}{2^{h/H}}
+    m_h = \frac {1}{2^{h/H}}
     $$
     - 低序号头 (h 小)：衰减快，偏向捕捉局部依赖
     - 高序号头 (h 大)：衰减慢，偏向捕捉长距离依赖
@@ -491,32 +491,32 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - 在正余弦位置编码中提到
 
     $$
-    \begin{pmatrix}
-    \sin\theta(t + \Delta t) \\
-    \cos\theta(t + \Delta t)
-    \end{pmatrix}
+    \begin {pmatrix}
+    \sin\theta (t + \Delta t) \\
+    \cos\theta (t + \Delta t)
+    \end {pmatrix}
     =
-    \begin{pmatrix}
+    \begin {pmatrix}
     \cos\theta\Delta t & \sin\theta\Delta t \\
     -\sin\theta\Delta t & \cos\theta\Delta t
-    \end{pmatrix}
+    \end {pmatrix}
     *
-    \begin{pmatrix}
+    \begin {pmatrix}
     \sin\theta t \\
     \cos\theta t
-    \end{pmatrix}
-    = \mathcal{R}_{\Delta t} *
-    \begin{pmatrix}
+    \end {pmatrix}
+    = \mathcal {R}_{\Delta t} *
+    \begin {pmatrix}
     \sin\theta t \\
     \cos\theta t
-    \end{pmatrix}
+    \end {pmatrix}
     $$
 
-  - 由于 $\mathcal{R}_{\Delta t}$ 是一个表示顺时针旋转的正交矩阵（不改变向量的模长，只改变方向）
+  - 由于 $\mathcal {R}_{\Delta t}$ 是一个表示顺时针旋转的正交矩阵（不改变向量的模长，只改变方向）
   - 则 $PE_{t+\Delta t}$ 其实就是以 $PE_t$ 为基础，顺时针旋转 $\theta * \Delta t$ 角度而来，因此有
 
     $$
-    PE_t^T * PE_{t+\Delta t} = \vert PE_t\vert * \vert PE_{t+\Delta t}\vert * \cos(\theta \Delta t)
+    PE_t^T * PE_{t+\Delta t} = \vert PE_t\vert * \vert PE_{t+\Delta t}\vert * \cos (\theta \Delta t)
     $$
 
   - 固定某个 $t$ 不变，慢慢增大 $\Delta t$ 时，上式变小，因此相距较远的两个位置编码的内积越小，即内积可以用于反馈两个位置向量在绝对位置上的远近
@@ -534,10 +534,10 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - 展开成实数就是：
 
     $$
-    \begin{aligned}
+    \begin {aligned}
     x_{2k}^{\prime} &= x_{2k} \cos \theta_p - x_{2k+1} \sin \theta_p \\
     x_{2k+1}^{\prime} &= x_{2k} \sin \theta_p + x_{2k+1} \cos \theta_p
-    \end{aligned}
+    \end {aligned}
     $$
 
   - 关键在 attention 的内积：
@@ -556,29 +556,29 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
 
     $$
     \langle q_p^{\prime}, k_q^{\prime} \rangle
-    = \langle q_p, k_q \rangle \cdot e^{i(\theta_p - \theta_q)}
+    = \langle q_p, k_q \rangle \cdot e^{i (\theta_p - \theta_q)}
     $$
 
-  - attention 的结果只依赖相对位置差 $p - q$，而不是绝对位置——这就是 RoPE 能编码相对位置的本质
+  - attention 的结果只依赖相对位置差 $p - q$，而不是绝对位置 —— 这就是 RoPE 能编码相对位置的本质
 
 - RoPE 和正余弦位置编码有什么不同
   - 传统 sinusoidal PE：
 
     $$
-    x_p = x + PE(p)
+    x_p = x + PE (p)
     $$
 
-  - 问题是位置是“加进去”的（additive），attention 内积变成：
+  - 问题是位置是 “加进去” 的（additive），attention 内积变成：
 
     $$
     (q + p) \cdot (k + q)
     $$
 
   - 会混杂内容和位置，无法干净表达相对位置
-  - 而 RoPE 位置是“乘进去”（旋转），attention 内积天然变成下式，更干净、更结构化
+  - 而 RoPE 位置是 “乘进去”（旋转），attention 内积天然变成下式，更干净、更结构化
 
     $$
-    \text{content} \times \text{relative position}
+    \text {content} \times \text {relative position}
     $$
 
 - RoPE 的代码实现
@@ -629,7 +629,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
       print("RoPE 编码完成")
   ```
 
-  - 其中，cos/sin 是预先根据位置算好的：$\theta_p(k) = p / 10000^{2k/d}$
+  - 其中，cos/sin 是预先根据位置算好的：$\theta_p (k) = p / 10000^{2k/d}$
   - `rotate_half`：将向量拆分为偶数 / 奇数维度，构造旋转分量
   - `apply_rotary_pos_emb`：实现复数旋转的实数形式运算
   - 预计算 `cos/sin` 表，推理时直接查表，速度极快
@@ -646,7 +646,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
 
 - 为什么 RoPE 在长序列时外推又会崩溃？
 - 为什么还要 NTK scaling / Yarn？RoPE 的线性 scaling 和 NTK scaling 的不同？线性 scaling vs NTK scaling 本质区别？
-  - 上述改进的本质目标都是让 RoPE 在长序列下“频率变慢”，避免：
+  - 上述改进的本质目标都是让 RoPE 在长序列下 “频率变慢”，避免：
 
     $$
     \theta_p = p \cdot \omega_k \gg 2\pi
@@ -668,10 +668,10 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - NTK scaling 的核心思想是不同频率缩放不同：
 
     $$
-    base_{new} = base_{old} \times (\frac{S_{post}}{S_{pre}})^{\frac{dim}{dim-2}}
+    base_{new} = base_{old} \times (\frac {S_{post}}{S_{pre}})^{\frac {dim}{dim-2}}
     $$
 
-  - NTK 既拉伸低频维度（保证远距离区分），又保留高频维度（保证近距离精度），利用神经网络的NTK 无限宽特性，实现无训练外推
+  - NTK 既拉伸低频维度（保证远距离区分），又保留高频维度（保证近距离精度），利用神经网络的 NTK 无限宽特性，实现无训练外推
   - 线性 scaling 压缩位置坐标，而 NTK scaling 重新映射频率空间
 
 - RoPE 的改进版本 Yarn-RoPE 的原理？为什么更稳定？
@@ -682,24 +682,24 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - 核心公式
 
     $$
-    f(q,m) = q \cdot e^{im\theta} \cdot g(m)
+    f (q,m) = q \cdot e^{im\theta} \cdot g (m)
     $$
 
-  - 其中，g(m) 是位置相关的衰减因子，保证长距离下向量范数不爆炸、不消失
+  - 其中，g (m) 是位置相关的衰减因子，保证长距离下向量范数不爆炸、不消失
   - 低频保持，高频压缩：类似 NTK scaling，但更平滑
 
     $$
     \omega_k^{\prime} =
-    \begin{cases}
+    \begin {cases}
     \omega_k & k \leq k_0 \\
-    \text{interpolate}(\omega_k) & k > k_0
-    \end{cases}
+    \text {interpolate}(\omega_k) & k > k_0
+    \end {cases}
     $$
 
   - 位置插值（position interpolation）：把长序列映射回训练区间
 
     $$
-    p^{\prime} = f(p)
+    p^{\prime} = f (p)
     $$
 
   - Yarn 保留 NTK 的频率外推能力，并新增范数约束，让注意力分布和训练时一致
@@ -708,13 +708,13 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
 - 总结
   - RoPE 的本质是用复数旋转把位置编码进向量，使 attention 内积自然变成相对位置函数
   - 但它的频率是指数分布的，在长序列下高频维度会发生 alias，导致外推失败
-  - NTK scaling 和 YaRN 的核心目标都是“减慢高频旋转”，区别在于线性 scaling 直接缩位置，而 NTK/YaRN 通过调整频率分布来更好地保持原有 attention kernel，因此更稳定
+  - NTK scaling 和 YaRN 的核心目标都是 “减慢高频旋转”，区别在于线性 scaling 直接缩位置，而 NTK/YaRN 通过调整频率分布来更好地保持原有 attention kernel，因此更稳定
 
 ### MoE
 
 - 介绍什么是 MoE 模型？稀疏模型与稠密模型的对比和优缺点？
   - MoE 也即 Mixture of Experts，混合专家模型
-  - 核心思想是一个 Transformer 层里不只用一个 FFN，而是设置多个“专家网络”（Expert），每个 token 只被部分专家处理
+  - 核心思想是一个 Transformer 层里不只用一个 FFN，而是设置多个 “专家网络”（Expert），每个 token 只被部分专家处理
   - 用稀疏激活的方式，实现在不显著增加单步计算量的前提下，大幅扩大模型总参数量
   - 工作流程
     - 每个 token 经过一个门控网络（Router/Gating Network）
@@ -726,7 +726,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
     - scaling 效率极高：总参数量可轻松破万亿，但每步计算量接近稠密小模型
     - 效果提升显著：更多专家对应更强的特征提取与知识存储能力
     - 训练成本可控：同等参数量下，计算成本远低于全稠密大模型
-    - 适合多语言、多任务、长文本：不同专家可专门化学习不同领域/模式
+    - 适合多语言、多任务、长文本：不同专家可专门化学习不同领域 / 模式
 - MoE 怎么做负载均衡的？为什么会不均衡？
   - 门控网络（gating）天然倾向于给少数高分专家发 token
   - 模型为了 loss 下降快，会学会只激活 1~2 个 “超级专家”
@@ -735,7 +735,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - 均衡辅助损失（Aux Loss）：直接在门控输出上加损失，强制让每个专家分到的 token 数量接近，让所有专家的平均概率
 
     $$
-    \text{aux\_loss} = (\text{gate\_prob.mean(dim=0)} \cdot \text{expert\_count}).sum()
+    \text {aux\_loss} = (\text {gate\_prob.mean (dim=0)} \cdot \text {expert\_count}).sum ()
     $$
 
   - Top-K 随机平滑：选专家时加一点噪声，避免模型永远只选固定专家
@@ -745,7 +745,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - 计算公式
 
     $$
-    \text{aux\_loss} = \lambda \cdot \sum_i P_i \cdot C_i
+    \text {aux\_loss} = \lambda \cdot \sum_i P_i \cdot C_i
     $$
 
   - $P_i$：第 i 个专家被选中的概率
@@ -794,29 +794,29 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - 专家并行（EP）负责每个专家在不同 GPU 上的计算分布
   - 张量并行（TP）仍然用于每个专家内部的矩阵计算加速
   - 在实现上，最关键的性能瓶颈是 All-to-All 通信，因为每个 GPU 上的 token 需要发送到对应专家所在的 GPU
-  - 为了减轻 All-to-All 的阻塞，可以通过通信-计算重叠来优化：在发送数据的同时先对本地 token 进行前向计算或部分后向计算，使用异步通信（比如 NCCL 的 non-blocking send/recv）和流水线式的 tensor chunk 分块传输，将通信时间和计算时间尽量重叠，从而减少 GPU 空闲等待
+  - 为了减轻 All-to-All 的阻塞，可以通过通信 - 计算重叠来优化：在发送数据的同时先对本地 token 进行前向计算或部分后向计算，使用异步通信（比如 NCCL 的 non-blocking send/recv）和流水线式的 tensor chunk 分块传输，将通信时间和计算时间尽量重叠，从而减少 GPU 空闲等待
   - 总之，MoE 的并行设计不仅要考虑计算负载平衡，还要精细调度 All-to-All，确保通信不会成为瓶颈
 - MoE + pipeline 怎么调度？
   - MoE 模型往往非常深，因此经常和流水线并行（PP）结合
   - 调度的关键在于 token 在 pipeline stage 和专家之间的流动
   - 在标准 pipeline 并行中，每个微批次在不同 stage 上按顺序流动，而 MoE 会在某些 layer 内产生 All-to-All 分布，这会打乱原本流水线的顺序
-  - 解决方法是采用“微批次拆分 + 动态调度”：将每个微批次分成若干小 chunk，使得一部分 token 在 stage 1 前向计算时可以异步发送到专家所在 GPU，而 stage 2 的 GPU 可以同时处理上一批次的其他 token
+  - 解决方法是采用 “微批次拆分 + 动态调度”：将每个微批次分成若干小 chunk，使得一部分 token 在 stage 1 前向计算时可以异步发送到专家所在 GPU，而 stage 2 的 GPU 可以同时处理上一批次的其他 token
   - 这样，pipeline stage 之间不会因为 MoE 的 All-to-All 而完全阻塞，同时可以通过 1F1B 或 Interleaving 等调度策略进一步减少 pipeline bubble
   - 设计时还需要考虑专家数量和容量，保证每个 pipeline stage 的负载均衡，否则某个 stage 等待 All-to-All 过慢会拖慢整体流水线
 - expert parallel 和 TP/DP 怎么组合？
   - 在大规模 MoE 系统中，专家并行（EP）和张量并行（TP）、数据并行（DP）需要合理组合
   - 一般逻辑是，DP 先切分 batch，把不同微批次分给不同 GPU 节点；EP 切分专家，把同一 layer 的不同专家分布在不同 GPU 上；TP 则用于每个专家内部的矩阵计算加速
-  - 组合时的关键原则是“通信最小化”：DP 主要做梯度同步，EP 主要做 All-to-All token 分发，TP 只在每个专家内部做张量拆分计算
+  - 组合时的关键原则是 “通信最小化”：DP 主要做梯度同步，EP 主要做 All-to-All token 分发，TP 只在每个专家内部做张量拆分计算
   - 为了保证效率，需要在计算图中明确依赖关系，将 TP 计算和 EP 的 All-to-All 尽量重叠，同时在 DP 维度做梯度通信的重叠
   - 这样可以在保持高 MFU 的同时充分利用 GPU 显存，避免单一维度成为瓶颈
-  - 最终设计通常是“DP × EP × TP”的三维并行结构，每个维度负责不同层次的并行优化，确保 MoE 层既能稀疏高效计算，又能和整体模型训练流水线无缝衔接
+  - 最终设计通常是 “DP × EP × TP” 的三维并行结构，每个维度负责不同层次的并行优化，确保 MoE 层既能稀疏高效计算，又能和整体模型训练流水线无缝衔接
 
 ## Multi-Modal
 
 ### ViT
 
 - 简单介绍 Vision Transformer（ViT）的整体结构
-  - ViT 是Encoder-only 结构，和 BERT 架构高度相似，核心流程：
+  - ViT 是 Encoder-only 结构，和 BERT 架构高度相似，核心流程：
   - 图像分 Patch：把 2D 图像切成固定大小的小 Patch，作为视觉 Token
   - 线性投影 + 加入 Class Token：将每个 Patch 映射为隐向量，并额外添加一个可学习的 class token
   - 加入位置编码：给序列注入空间位置信息
@@ -846,7 +846,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
     - 灵活架构：易于扩展到多模态、大模型、检测分割等任务
     - 动态权重：注意力权重随内容自适应，而非固定卷积核
   - 劣势
-    - 计算量大：自注意力 $O(N^2)$，高分辨率代价极高
+    - 计算量大：自注意力 $O (N^2)$，高分辨率代价极高
     - 缺乏天然归纳偏置：无局部性、平移等变性，小数据易过拟合
     - 对位置编码敏感：分辨率变化需要插值处理
     - 训练更不稳定：依赖更强优化、更大 Batch、更长训练
@@ -863,7 +863,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - 自注意力复杂度
 
     $$
-    O(N^2D),\quad N=\frac{HW}{P^2}
+    O (N^2D),\quad N=\frac {HW}{P^2}
     $$
 
   - N 是序列长度，D 是隐层维度，与图像分辨率 H×W 成正比
@@ -881,14 +881,14 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
     - 更强训练策略：增强、优化器、正则化更精细
     - 更小模型更快，更适合落地
   - Swin Transformer
-    - 窗口注意力 + 移位窗口，把复杂度从 $O(N^2)$ 降到 $O(N)$
+    - 窗口注意力 + 移位窗口，把复杂度从 $O (N^2)$ 降到 $O (N)$
     - 层级特征金字塔：类似 CNN 下采样，多尺度特征，适合检测 / 分割
     - 天然具备局部性先验，小数据表现远好于 ViT
     - 成为视觉 Transformer 落地主流 backbone
 - Swin Transformer 的窗口注意力、移位窗口是怎么实现的？
   - 窗口注意力（Window Attention）
     - 将特征图划分为不重叠窗口，只在窗口内算注意力
-    - 复杂度从全局 $O(N^2)$ → 窗口内 $O((\text{window\_size})^2)$，大幅降低
+    - 复杂度从全局 $O (N^2)$ → 窗口内 $O ((\text {window\_size})^2)$，大幅降低
   - 移位窗口（Shifted Window）
     - 下一层将窗口平移半窗，让相邻窗口信息交叉
     - 用 mask 注意力避免无效区域计算
@@ -931,7 +931,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
 - CLIP 的损失函数是什么？为什么要用对称对比学习？
   - 对称双向交叉熵损失（对称 InfoNCE）
   - 按行：图像检索文本的交叉熵，按列：文本检索图像的交叉熵，两者平均作为总损失
-  - 通过对称对比学习，保证图文双向对齐——图像能找到文本，文本也能找到图像，避免某一模态特征主导，让两个编码器学习更均衡
+  - 通过对称对比学习，保证图文双向对齐 —— 图像能找到文本，文本也能找到图像，避免某一模态特征主导，让两个编码器学习更均衡
 - InfoNCE loss 和交叉熵损失的区别
   - InfoNCE：专门用于对比学习，本质就是在一个包含正样本 + 大量负样本的集合上做交叉熵，目标是让正样本概率最大，负样本被抑制
   - 交叉熵：更通用的分类损失，不一定带对比学习的负样本构造逻辑
@@ -943,7 +943,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
     logits = (I_e \cdot T_e^\top) \times e^\tau
     $$
 
-  - 缩放相似度分布，控制“锐度”
+  - 缩放相似度分布，控制 “锐度”
   - $\tau$ 越大，相似度被放大，分布更陡峭，正样本更突出
   - $\tau$ 越小，分布越平滑，梯度更稳定
   - 是可学习参数，自动优化正负样本区分度
@@ -956,7 +956,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - 本质是余弦相似度，但实现上用点积
   - 图像、文本特征都做了 L2 归一化，归一化后的向量点积 = 余弦相似度
 - CLIP 为什么能具备很强的泛化能力？
-  - 训练数据极其广泛：4 亿 \<图像,文本> 对，覆盖海量场景
+  - 训练数据极其广泛：4 亿 \<图像，文本> 对，覆盖海量场景
   - 学习的是通用语义对齐，不是固定类别分类边界
   - 无人工标注类别，避免过拟合到特定数据集标签体系
   - 文本侧是自然语言，自带丰富语义先验，能泛化到未知类别与分布偏移场景
@@ -975,7 +975,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
     - 存在数据偏见与刻板印象
 - CLIP 训练时的 batch size 对效果有什么影响？
   - batch 越大，负样本越多，对比学习信号越强
-  - 负样本更丰富，模型更难“偷懒”，学到更精细的语义对齐
+  - 负样本更丰富，模型更难 “偷懒”，学到更精细的语义对齐
   - CLIP 本身就是大 batch 友好型模型，大 batch 显著提升性能
 - CLIP 存在哪些 bias 或局限性？
   - 数据偏见：从互联网爬取数据，带有人群、性别、文化刻板印象
@@ -988,7 +988,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
 - CLIP 能不能直接用于生成任务？为什么？
   - 不能直接用于生成，CLIP 是判别式模型，只做图文特征对齐与相似度计算
   - 没有解码器、没有生成式架构，无法从文本生成图像，也无法从图像生成描述
-  - 视觉生成模型（Stable Diffusion、DALL·E）是用 CLIP 做文本编码器，但自身另有生成网络
+  - 视觉生成模型（Stable Diffusion、DALL・E）是用 CLIP 做文本编码器，但自身另有生成网络
 
 ### VLM
 
@@ -1013,7 +1013,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
 - 视觉生成模型的一般流程
   - 文本编码器：CLIP/T5 text encoder 把 prompt 变成条件特征
   - VAE（变分自编码器）：负责把图像压缩到低维隐空间
-  - UNet / DiT（核心生成网络）：接收噪声隐变量 $z_t$ + 时间步 $t$ + 文本条件，预测噪声 $\epsilon_\theta(z_t, t, \text{text})$
+  - UNet / DiT（核心生成网络）：接收噪声隐变量 $z_t$ + 时间步 $t$ + 文本条件，预测噪声 $\epsilon_\theta (z_t, t, \text {text})$
   - 扩散过程：前向给图像逐步加高斯噪声，反向从噪声逐步去噪生成图像
 - 视觉生成模型的理论基础演变
   - DDPM：离散马尔可夫链

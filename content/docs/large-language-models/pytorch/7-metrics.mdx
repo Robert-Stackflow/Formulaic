@@ -6,14 +6,14 @@ description: 介绍 PyTorch 中的训练日志保存、指标监控、wandb、Te
 ## 日志保存与指标监控
 
 - 训练过程中，通常会跟踪以下指标：
-  - `train_loss` / `val_loss`
+  - `train_loss` /`val_loss`
 
-  - `train_acc` / `val_acc`
+  - `train_acc` /`val_acc`
   - precision/recall、F1
 
   - 学习率（scheduler）
 
-- 并按step 或 epoch控制：
+- 并按 step 或 epoch 控制：
   - 日志记录频率（log_step）
 
   - 模型保存频率（checkpoint_step）
@@ -259,13 +259,13 @@ description: 介绍 PyTorch 中的训练日志保存、指标监控、wandb、Te
   - `wait`: 忽略前几步，避免冷启动
   - `warmup`: 预热阶段，不统计
   - `active`: 开始采样的步数
-  - `repeat`: 循环次数\
+  - `repeat`: 循环次数 \
 
 - 常用 API
 
   | 方法                                                   | 作用               | 示例                                 |
   | ------------------------------------------------------ | ------------------ | ------------------------------------ |
-  | `record_function("name")`                              | 手动打标签         | with record_function("forward")      |
+  | `record_function("name")`                              | 手动打标签         | with record_function ("forward")      |
   | `prof.key_averages().table(sort_by="cuda_time_total")` | 按时间排序输出表格 | 查看 top kernel                      |
   | `prof.export_chrome_trace("trace.json")`               | 导出 Chrome Trace  | 可用 chrome://tracing 查看 timeline  |
   | `prof.tensorboard_trace_handler("logdir")`             | 导出到 TensorBoard | 可直接在 TensorBoard 中查看 timeline |

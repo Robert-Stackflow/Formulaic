@@ -21,22 +21,22 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
 
   - 基础
     - [torch.profiler](https://link.zhihu.com/?target=https://docs.pytorch.org/docs/stable/profiler.html)：定位算子、shape、trace 的起点
-    - [Nsight Systems User Guide](https://link.zhihu.com/?target=https://docs.nvidia.com/nsight-systems/2025.1/UserGuide/index.html)：定位 CPU→GPU 提交、Memcpy、并发，判断“是不是 host 在拖后腿”
-    - [Triton Inference Server Quickstart](https://link.zhihu.com/?target=https://docs.nvidia.com/deeplearning/triton-inference-server/user-guide/docs/tutorials/README.html#quick-deploy)：最标准的在线推理“容器化基线”
+    - [Nsight Systems User Guide](https://link.zhihu.com/?target=https://docs.nvidia.com/nsight-systems/2025.1/UserGuide/index.html)：定位 CPU→GPU 提交、Memcpy、并发，判断 “是不是 host 在拖后腿”
+    - [Triton Inference Server Quickstart](https://link.zhihu.com/?target=https://docs.nvidia.com/deeplearning/triton-inference-server/user-guide/docs/tutorials/README.html#quick-deploy)：最标准的在线推理 “容器化基线”
   - 高级
-    - [GenAI-Perf](https://link.zhihu.com/?target=https://docs.nvidia.com/deeplearning/triton-inference-server/user-guide/docs/perf_analyzer/genai-perf/README.html)：直接给出 TTFT / TPOT / token throughput 等 LLM 关键指标，适合做压测回归
+    - [GenAI-Perf](https://link.zhihu.com/?target=https://docs.nvidia.com/deeplearning/triton-inference-server/user-guide/docs/perf_analyzer/genai-perf/README.html)：直接给出 TTFT / TPOT /token throughput 等 LLM 关键指标，适合做压测回归
     - [Nsight Compute Profiling Guide](https://link.zhihu.com/?target=https://docs.nvidia.com/nsight-compute/ProfilingGuide/index.html)：下钻到 kernel 级别，知道 SM、Memory、Tensor Core 谁在摆烂
     - [PyTorch “profiling torch.compile performance”](https://link.zhihu.com/?target=https://docs.pytorch.org/docs/stable/torch.compiler_profiling_torch_compile.html)：专门用来抓 graph break、编译收益与损耗
   - 进阶
-    - [MLPerf Inference（Datacenter）](https://link.zhihu.com/?target=https://mlcommons.org/benchmarks/inference-datacenter/)：最权威的“别人怎么测、你也怎么测”的基准入口
+    - [MLPerf Inference（Datacenter）](https://link.zhihu.com/?target=https://mlcommons.org/benchmarks/inference-datacenter/)：最权威的 “别人怎么测、你也怎么测” 的基准入口
     - [MLPerf Inference v5.0 LLM](https://link.zhihu.com/?target=https://mlcommons.org/2025/04/llm-inference-v5/) 任务解读：理解低延迟 LLM benchmark 的新口径与趋势
-    - [GenAI-Perf analyze/sweep](https://link.zhihu.com/?target=https://github.com/triton-inference-server/perf_analyzer/blob/main/genai-perf/docs/analyze.md)：把“单点测量”升级为“参数扫描+自动报告”
+    - [GenAI-Perf analyze/sweep](https://link.zhihu.com/?target=https://github.com/triton-inference-server/perf_analyzer/blob/main/genai-perf/docs/analyze.md)：把 “单点测量” 升级为 “参数扫描 + 自动报告”
   - 验收标准
     - 能同时报告：QPS、TTFT、TPOT、token/s、P50/P95（至少 5 个指标）
     - 能用 nsys 说明：瓶颈在 host、PCIe/NVLink、kernel、mem 哪一层
     - 能用 ncu 说清：关键 kernel 的 memory bound vs compute bound
-    - 能写出一份“一页纸”性能报告模板
-    - 能给出优化优先级排序（不是“我觉得”，是“证据链”）
+    - 能写出一份 “一页纸” 性能报告模板
+    - 能给出优化优先级排序（不是 “我觉得”，是 “证据链”）
 
 - Runtime 运行时
   - 流程
@@ -54,23 +54,23 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
     ```
 
   - 基础
-    - [vLLM / PagedAttention](https://link.zhihu.com/?target=https://arxiv.org/pdf/2309.06180)：把 KV cache 当“虚拟内存分页”来管，显著降低碎片与浪费
+    - [vLLM / PagedAttention](https://link.zhihu.com/?target=https://arxiv.org/pdf/2309.06180)：把 KV cache 当 “虚拟内存分页” 来管，显著降低碎片与浪费
     - [vLLM repo](https://link.zhihu.com/?target=https://github.com/vllm-project/vllm)：连续 batching、paged KV、speculative、chunked prefill 等实战特性全集
-    - [vLLM 官方博客](https://link.zhihu.com/?target=https://blog.vllm.ai/2023/06/20/vllm.html)（PagedAttention 入门）：用最少背景理解“为什么吞吐能起来”
+    - [vLLM 官方博客](https://link.zhihu.com/?target=https://blog.vllm.ai/2023/06/20/vllm.html)（PagedAttention 入门）：用最少背景理解 “为什么吞吐能起来”
   - 高级
     - [SGLang](https://link.zhihu.com/?target=https://arxiv.org/pdf/2312.07104)：前端语言 + 运行时，靠 RadixAttention（KV 复用） 和 cFSM（结构化输出加速） 提升吞吐
-    - [SGLang repo](https://link.zhihu.com/?target=https://github.com/sgl-project/sglang)：把“复杂 agent/多次生成/JSON 输出”从工程灾难变成可控系统
+    - [SGLang repo](https://link.zhihu.com/?target=https://github.com/sgl-project/sglang)：把 “复杂 agent / 多次生成 / JSON 输出” 从工程灾难变成可控系统
     - [SGLang 文档站](https://link.zhihu.com/?target=https://docs.sglang.io/)：把 runtime 能力、部署方式、特性讲清楚
   - 进阶
-    - [TensorRT-LLM](https://link.zhihu.com/?target=https://github.com/NVIDIA/TensorRT-LLM)：NVIDIA 官方“重装机甲”，含 paged KV、inflight batching、量化、speculative 等
+    - [TensorRT-LLM](https://link.zhihu.com/?target=https://github.com/NVIDIA/TensorRT-LLM)：NVIDIA 官方 “重装机甲”，含 paged KV、inflight batching、量化、speculative 等
     - [TensorRT-LLM 文档](https://link.zhihu.com/?target=https://nvidia.github.io/TensorRT-LLM/)：工程落地导向（部署、serve、API）
-    - [MLC LLM + microserving](https://link.zhihu.com/?target=https://llm.mlc.ai/docs/get_started/introduction)：把 prefill-decode 解耦等“跨引擎编排”做成可编程 API
+    - [MLC LLM + microserving](https://link.zhihu.com/?target=https://llm.mlc.ai/docs/get_started/introduction)：把 prefill-decode 解耦等 “跨引擎编排” 做成可编程 API
   - 验收标准
     - 能用同一模型在 vLLM 与 SGLang 跑出可对比的 TTFT/TPOT
     - 能解释：continuous batching 与传统 batching 的差异与收益点
     - 能说清楚：KV cache 的生命周期、碎片问题、以及框架如何缓解（PagedAttention/RadixAttention）
     - 能把推理链路拆成：tokenize→prefill→decode→sampling→postprocess（并标出每段耗时）
-    - 能给出“选型建议”：低延迟、长上下文、多并发、结构化输出，各用哪个栈更合理
+    - 能给出 “选型建议”：低延迟、长上下文、多并发、结构化输出，各用哪个栈更合理
 
 - Attention & KV Cache
   - 流程
@@ -87,21 +87,21 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
 
   - 基础
     - [PagedAttention（vLLM）](https://link.zhihu.com/?target=https://arxiv.org/pdf/2309.06180)：KV cache 管理的系统化范式
-    - [FlashAttention-3](https://link.zhihu.com/?target=https://arxiv.org/pdf/2407.08608)：在 Hopper 上把 attention 利用率拉高，主打“又快又准”
+    - [FlashAttention-3](https://link.zhihu.com/?target=https://arxiv.org/pdf/2407.08608)：在 Hopper 上把 attention 利用率拉高，主打 “又快又准”
   - 高级
-    - [FlashInfer](https://link.zhihu.com/?target=https://arxiv.org/pdf/2501.01005)：可定制 attention engine + 调度，面向 serving 的“可组合格式/异构 KV 存储”
-    - [FlashInfer-Bench](https://link.zhihu.com/?target=https://arxiv.org/pdf/2601.00227)：用真实 trace 把“AI 生成 kernel→基准→替换上线”做成闭环
+    - [FlashInfer](https://link.zhihu.com/?target=https://arxiv.org/pdf/2501.01005)：可定制 attention engine + 调度，面向 serving 的 “可组合格式 / 异构 KV 存储”
+    - [FlashInfer-Bench](https://link.zhihu.com/?target=https://arxiv.org/pdf/2601.00227)：用真实 trace 把 “AI 生成 kernel→基准→替换上线” 做成闭环
     - [FlashInfer 官方文章（bench 介绍）](https://link.zhihu.com/?target=https://flashinfer.ai/2025/10/21/flashinfer-bench.html)：理解为什么基准要贴近真实 serving trace
   - 进阶
     - [KIVI（2-bit KV cache 量化）](https://link.zhihu.com/?target=https://arxiv.org/pdf/2402.02750)：把 KV cache 的 key/value 分别按更合理粒度量化，释放显存换吞吐
-    - [Kitty（2-bit KV cache，动态精度提升）](https://link.zhihu.com/?target=https://arxiv.org/pdf/2511.18643)：进一步追求“2-bit 也要稳”
-    - [DeepGEMM（FP8 GEMM kernels）](https://link.zhihu.com/?target=https://github.com/deepseek-ai/DeepGEMM)：当你需要更底层的 GEMM 能力（尤其 Hopper/新架构）。同时，需要优化通讯能力（参考[DeepEP](https://link.zhihu.com/?target=https://github.com/deepseek-ai/DeepEP)）
+    - [Kitty（2-bit KV cache，动态精度提升）](https://link.zhihu.com/?target=https://arxiv.org/pdf/2511.18643)：进一步追求 “2-bit 也要稳”
+    - [DeepGEMM（FP8 GEMM kernels）](https://link.zhihu.com/?target=https://github.com/deepseek-ai/DeepGEMM)：当你需要更底层的 GEMM 能力（尤其 Hopper / 新架构）。同时，需要优化通讯能力（参考 [DeepEP](https://link.zhihu.com/?target=https://github.com/deepseek-ai/DeepEP)）
   - 验收标准
     - 能解释 attention 推理时的主要数据流：Q/K/V、KV cache、softmax、写回
     - 能在长上下文场景下，复现实测：FlashAttention/FlashInfer 带来的收益（至少一个指标提升）
-    - 能用“带宽/算力”两句话说明：为什么 decode 往往更 memory-bound
+    - 能用 “带宽 / 算力” 两句话说明：为什么 decode 往往更 memory-bound
     - 能给出 KV cache 的显存占用公式，并据此估算 batch 上限
-    - 能提出 2 个“KV cache 相关”的优化动作，并说明副作用（精度/延迟/工程复杂度）
+    - 能提出 2 个 “KV cache 相关” 的优化动作，并说明副作用（精度 / 延迟 / 工程复杂度）
 
 - Quantization
   - 流程
@@ -117,26 +117,26 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
     ```
 
   - 基础
-    - [SmoothQuant（W8A8）](https://link.zhihu.com/?target=https://arxiv.org/pdf/2211.10438)：把 activation outlier 难题“搬家”到 weights，工程可落地
+    - [SmoothQuant（W8A8）](https://link.zhihu.com/?target=https://arxiv.org/pdf/2211.10438)：把 activation outlier 难题 “搬家” 到 weights，工程可落地
     - [GPTQ](https://link.zhihu.com/?target=https://arxiv.org/pdf/2210.17323)：经典 PTQ weight-only（3/4bit）路线，精度与速度的常用起点
-    - [AWQ](https://link.zhihu.com/?target=https://arxiv.org/pdf/2306.00978)：用 activation 分布找“关键权重通道”，4-bit 更稳更硬件友好
+    - [AWQ](https://link.zhihu.com/?target=https://arxiv.org/pdf/2306.00978)：用 activation 分布找 “关键权重通道”，4-bit 更稳更硬件友好
   - 高级
     - [TensorRT-LLM 的量化能力概览](https://link.zhihu.com/?target=https://github.com/NVIDIA/TensorRT-LLM)：把 FP8/INT4/AWQ/SmoothQuant 等做成可用工具链
-    - [Marlin（FP16×INT4 matmul）](https://link.zhihu.com/?target=https://arxiv.org/pdf/2408.11743)：让 INT4 真正“吃满 4x 理论收益”的核武器之一
-    - [MARLIN 实现](https://link.zhihu.com/?target=https://github.com/IST-DASLab/marlin)：工程上理解为什么“batch=1 很难快，但 batch=16~32 能接近理想”
+    - [Marlin（FP16×INT4 matmul）](https://link.zhihu.com/?target=https://arxiv.org/pdf/2408.11743)：让 INT4 真正 “吃满 4x 理论收益” 的核武器之一
+    - [MARLIN 实现](https://link.zhihu.com/?target=https://github.com/IST-DASLab/marlin)：工程上理解为什么 “batch=1 很难快，但 batch=16~32 能接近理想”
   - 进阶
     - [KIVI](https://link.zhihu.com/?target=https://arxiv.org/pdf/2402.02750) /[Kitty](https://link.zhihu.com/?target=https://arxiv.org/pdf/2511.18643)（KV cache 量化）：当你的瓶颈是 KV cache 而不是 weights 时，别只盯 weight-only
-    - [vLLM 的多种量化接入（GPTQ/AWQ/FP8/INT8 等）](https://link.zhihu.com/?target=https://github.com/vllm-project/vllm)：关注“能不能稳定跑 + 能不能服务化”
+    - [vLLM 的多种量化接入（GPTQ/AWQ/FP8/INT8 等）](https://link.zhihu.com/?target=https://github.com/vllm-project/vllm)：关注 “能不能稳定跑 + 能不能服务化”
     - [Nsight Compute 指标体系](https://link.zhihu.com/?target=https://docs.nvidia.com/nsight-compute/ProfilingGuide/index.html)：量化后别只看 token/s，要看 memory/load/TC utilization 怎么变
   - 验收标准
     - 能区分并选择：W8A8 vs weight-only INT4（场景、代价、收益）
     - 能在同模型上跑通：FP16 baseline 与 INT4（至少一种）并输出精度对比
-    - 能解释：为什么有时“更低 bit 反而更慢”（kernel/packing/带宽/并行度）
-    - 能给出“量化失败排查清单”（数值爆炸、输出退化、吞吐无提升）
-    - 能写出一个可复用的“量化评测脚本”（吞吐+延迟+简单质量指标）
+    - 能解释：为什么有时 “更低 bit 反而更慢”（kernel/packing/ 带宽 / 并行度）
+    - 能给出 “量化失败排查清单”（数值爆炸、输出退化、吞吐无提升）
+    - 能写出一个可复用的 “量化评测脚本”（吞吐 + 延迟 + 简单质量指标）
 
 - Decode
-  - Speculative 的关键不是“猜”，而是“猜一串、验证一串”：Speculative Sampling 给了经典无偏加速框架；Medusa 用多头直接预测多 token；EAGLE-2 用动态 draft tree 更激进；Block Verification 在验证侧继续抠出 5–8% 的稳定增益
+  - Speculative 的关键不是 “猜”，而是 “猜一串、验证一串”：Speculative Sampling 给了经典无偏加速框架；Medusa 用多头直接预测多 token；EAGLE-2 用动态 draft tree 更激进；Block Verification 在验证侧继续抠出 5–8% 的稳定增益
   - 流程
 
     ```text
@@ -153,21 +153,21 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - 基础
     - [Speculative Sampling](https://link.zhihu.com/?target=https://arxiv.org/pdf/2302.01318)：经典 speculative decoding，2–2.5× 解码加速的起点
     - [Medusa](https://link.zhihu.com/?target=https://arxiv.org/pdf/2401.10774)：不用外部 draft model，通过多 decoding heads 预测多 token，再并行验证
-    - [Medusa repo](https://link.zhihu.com/?target=https://github.com/FasterDecoding/Medusa)：快速复现“多头解码”的工程入口
+    - [Medusa repo](https://link.zhihu.com/?target=https://github.com/FasterDecoding/Medusa)：快速复现 “多头解码” 的工程入口
   - 高级
     - [EAGLE-2](https://link.zhihu.com/?target=https://arxiv.org/pdf/2406.16858)：动态 draft tree，靠校准的置信度更激进地产生可接受 token
     - [Block Verification](https://link.zhihu.com/?target=https://arxiv.org/pdf/2403.10444)：把 token-level 验证升级为 block-level 联合验证，稳定榨出额外速度
-    - [vLLM](https://link.zhihu.com/?target=https://github.com/vllm-project/vllm) / [TensorRT-LLM](https://link.zhihu.com/?target=https://github.com/NVIDIA/TensorRT-LLM) 对 speculative 的支持：关注“能不能在 serving 上稳定收益”
+    - [vLLM](https://link.zhihu.com/?target=https://github.com/vllm-project/vllm) / [TensorRT-LLM](https://link.zhihu.com/?target=https://github.com/NVIDIA/TensorRT-LLM) 对 speculative 的支持：关注 “能不能在 serving 上稳定收益”
   - 进阶
-    - [“Decoding Speculative Decoding”](https://link.zhihu.com/?target=https://aclanthology.org/2025.naacl-long.328.pdf)系统化研究：当你要在产线上挑 draft 模型时，这类研究更值钱
-    - [SGLang](https://link.zhihu.com/?target=https://arxiv.org/pdf/2312.07104)的结构化输出加速（cFSM）：很多场景不是“生成文本”，而是“生成可解析结构”
+    - [“Decoding Speculative Decoding”](https://link.zhihu.com/?target=https://aclanthology.org/2025.naacl-long.328.pdf) 系统化研究：当你要在产线上挑 draft 模型时，这类研究更值钱
+    - [SGLang](https://link.zhihu.com/?target=https://arxiv.org/pdf/2312.07104) 的结构化输出加速（cFSM）：很多场景不是 “生成文本”，而是 “生成可解析结构”
     - [GenAI-Perf](https://link.zhihu.com/?target=https://docs.nvidia.com/deeplearning/triton-inference-server/user-guide/docs/perf_analyzer/genai-perf/README.html)：把 speculative 的收益拆成 TTFT/TPOT/acceptance 等可对比指标
   - 验收标准
     - 能解释 speculative 的正确性保证（分布不变）与实现要点
     - 能在同模型上跑出：baseline vs speculative 的 TPOT 改善，并说明 TTFT 变化
-    - 能给出“什么时候 speculative 不赚”的判断（任务、温度、draft 质量、batch）
-    - 能输出一个“acceptance length/ratio”的统计图或表
-    - 能提出 1 个“与量化/批处理/长上下文耦合”的风险点，并给规避策略
+    - 能给出 “什么时候 speculative 不赚” 的判断（任务、温度、draft 质量、batch）
+    - 能输出一个 “acceptance length/ratio” 的统计图或表
+    - 能提出 1 个 “与量化 / 批处理 / 长上下文耦合” 的风险点，并给规避策略
 
 - 系统架构
   - 流程
@@ -184,25 +184,25 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
 
   - 基础
     - [DistServe（OSDI’24）](https://link.zhihu.com/?target=https://www.usenix.org/system/files/osdi24-zhong-yinmin.pdf)：系统化论证并实现 prefill/decode 解耦，围绕 goodput 做调度
-    - [Splitwise（ISCA）](https://link.zhihu.com/?target=https://arxiv.org/pdf/2311.18677)：用 phase splitting 设计同/异构集群，优化吞吐/成本/功耗
-    - [“Disaggregated Inference: 18 Months Later”](https://link.zhihu.com/?target=https://hao-ai-lab.github.io/blogs/distserve-retro/)总结：了解最近为何“突然变默认配置”
+    - [Splitwise（ISCA）](https://link.zhihu.com/?target=https://arxiv.org/pdf/2311.18677)：用 phase splitting 设计同 / 异构集群，优化吞吐 / 成本 / 功耗
+    - [“Disaggregated Inference: 18 Months Later”](https://link.zhihu.com/?target=https://hao-ai-lab.github.io/blogs/distserve-retro/) 总结：了解最近为何 “突然变默认配置”
   - 高级
-    - [TaiChi（2025）](https://link.zhihu.com/?target=https://arxiv.org/pdf/2508.01989v1)：把 prefill-decode 的“聚合/解耦”统一起来，面向不同 SLO 组合做最优 goodput
-    - DistServe [公开视频](https://link.zhihu.com/?target=https://www.youtube.com/watch?v=Bh-jlh5vlF0)、[课件](https://link.zhihu.com/?target=https://llmsystem.github.io/llmsystem2025spring/assets/files/llmsys-24-disaggregating_prefill_decode_hao_zhang-c0e55139d20512a2348783423397cc7f.pdf)：适合把论文落到“怎么配资源、怎么调度”的细节
-    - [MLC microserving](https://link.zhihu.com/?target=https://llm.mlc.ai/docs/microserving/tutorial.html)：把解耦、跨引擎编排做成“几行 Python 可表达”
+    - [TaiChi（2025）](https://link.zhihu.com/?target=https://arxiv.org/pdf/2508.01989v1)：把 prefill-decode 的 “聚合 / 解耦” 统一起来，面向不同 SLO 组合做最优 goodput
+    - DistServe [公开视频](https://link.zhihu.com/?target=https://www.youtube.com/watch?v=Bh-jlh5vlF0)、[课件](https://link.zhihu.com/?target=https://llmsystem.github.io/llmsystem2025spring/assets/files/llmsys-24-disaggregating_prefill_decode_hao_zhang-c0e55139d20512a2348783423397cc7f.pdf)：适合把论文落到 “怎么配资源、怎么调度” 的细节
+    - [MLC microserving](https://link.zhihu.com/?target=https://llm.mlc.ai/docs/microserving/tutorial.html)：把解耦、跨引擎编排做成 “几行 Python 可表达”
   - 进阶
-    - 从 “goodput” 视角重读 [DistServe](https://link.zhihu.com/?target=https://www.usenix.org/system/files/osdi24-zhong-yinmin.pdf)/[TaiChi](https://link.zhihu.com/?target=https://www.arxiv.org/pdf/2508.01989)：把系统目标从 QPS 升级为“满足 SLO 的有效吞吐”
-    - [SGLang](https://link.zhihu.com/?target=https://llmsystem.github.io/llmsystem2025spring/assets/files/llmsys-25-sglang-72edc5043338f59db34d47e5b96ac870.pdf) / [vLLM](https://link.zhihu.com/?target=https://blog.vllm.ai/2025/09/05/anatomy-of-vllm.html) 的 kernel & runtime 生态：关注“解耦之后的 KV、batch、graph、kernel”如何协同
-    - 用真实 trace 做仿真/回放（参考 Splitwise/FlashInfer-Bench，[Inference Perf](https://link.zhihu.com/?target=https://github.com/kubernetes-sigs/inference-perf/tree/main)，[VIDUR](https://link.zhihu.com/?target=https://arxiv.org/pdf/2405.05465)，[MorphServe](https://link.zhihu.com/?target=https://arxiv.org/pdf/2506.02006v1)，[Mooncake](https://link.zhihu.com/?target=https://www.usenix.org/system/files/fast25-qin.pdf)）：你的系统最终要对抗真实分布
+    - 从 “goodput” 视角重读 [DistServe](https://link.zhihu.com/?target=https://www.usenix.org/system/files/osdi24-zhong-yinmin.pdf)/[TaiChi](https://link.zhihu.com/?target=https://www.arxiv.org/pdf/2508.01989)：把系统目标从 QPS 升级为 “满足 SLO 的有效吞吐”
+    - [SGLang](https://link.zhihu.com/?target=https://llmsystem.github.io/llmsystem2025spring/assets/files/llmsys-25-sglang-72edc5043338f59db34d47e5b96ac870.pdf) / [vLLM](https://link.zhihu.com/?target=https://blog.vllm.ai/2025/09/05/anatomy-of-vllm.html) 的 kernel & runtime 生态：关注 “解耦之后的 KV、batch、graph、kernel” 如何协同
+    - 用真实 trace 做仿真 / 回放（参考 Splitwise/FlashInfer-Bench，[Inference Perf](https://link.zhihu.com/?target=https://github.com/kubernetes-sigs/inference-perf/tree/main)，[VIDUR](https://link.zhihu.com/?target=https://arxiv.org/pdf/2405.05465)，[MorphServe](https://link.zhihu.com/?target=https://arxiv.org/pdf/2506.02006v1)，[Mooncake](https://link.zhihu.com/?target=https://www.usenix.org/system/files/fast25-qin.pdf)）：你的系统最终要对抗真实分布
   - 验收标准
     - 能清楚定义并计算：TTFT SLO、TPOT SLO、goodput（满足 SLO 的吞吐）
-    - 能解释 prefill/decode 互扰来自哪里（batch/资源耦合/调度）
+    - 能解释 prefill/decode 互扰来自哪里（batch / 资源耦合 / 调度）
     - 能给出一个简化的资源配置方案：prefill-heavy vs decode-heavy 的配比（并解释依据）
-    - 能复现一个“小规模解耦”实验（哪怕 2 机/2 卡），并报告 goodput 变化
+    - 能复现一个 “小规模解耦” 实验（哪怕 2 机 / 2 卡），并报告 goodput 变化
     - 能列出 3 个系统风险点（KV 迁移、网络、尾延迟、队列震荡）及缓解手段
 
 - Benchmark & 回归
-  - 把 GenAI-Perf（TTFT/TPOT/吞吐） 与 MLPerf Inference 这类权威口径纳入回归；MLCommons 也在持续迭代 Inference 结果与规则
+  - 把 GenAI-Perf（TTFT/TPOT/ 吞吐） 与 MLPerf Inference 这类权威口径纳入回归；MLCommons 也在持续迭代 Inference 结果与规则
   - 流程
 
     ```text
@@ -219,22 +219,22 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
 
   - 基础
     - [GenAI-Perf](https://link.zhihu.com/?target=https://docs.nvidia.com/deeplearning/triton-inference-server/user-guide/docs/perf_analyzer/genai-perf/README.html)：LLM serving 指标一站式输出（TTFT/TPOT/token throughput）
-    - [MLPerf Inference（Datacenter）入口](https://link.zhihu.com/?target=https://mlcommons.org/benchmarks/inference-datacenter/)：了解官方 workload/规则/提交节奏
-    - [Triton perf analyzer quick start](https://link.zhihu.com/?target=https://docs.nvidia.com/deeplearning/triton-inference-server/user-guide/docs/perf_analyzer/docs/quick_start.html)：把“压测”纳入日常工程工具链
+    - [MLPerf Inference（Datacenter）入口](https://link.zhihu.com/?target=https://mlcommons.org/benchmarks/inference-datacenter/)：了解官方 workload / 规则 / 提交节奏
+    - [Triton perf analyzer quick start](https://link.zhihu.com/?target=https://docs.nvidia.com/deeplearning/triton-inference-server/user-guide/docs/perf_analyzer/docs/quick_start.html)：把 “压测” 纳入日常工程工具链
   - 高级
     - [MLPerf Inference v5.0 解读](https://link.zhihu.com/?target=https://mlcommons.org/2025/04/llm-inference-v5/)：理解 LLM serving 的基准为何要围绕低延迟与真实约束
-    - [Nsight Systems/Compute](https://link.zhihu.com/?target=https://docs.nvidia.com/nsight-compute/ProfilingGuide/index.html)：把 regression 失败定位到“host vs device vs kernel”
-    - [SGLang release notes](https://link.zhihu.com/?target=https://github.com/sgl-project/sglang/releases)：跟进框架演进，避免你在“旧问题”上卷生卷死
+    - [Nsight Systems/Compute](https://link.zhihu.com/?target=https://docs.nvidia.com/nsight-compute/ProfilingGuide/index.html)：把 regression 失败定位到 “host vs device vs kernel”
+    - [SGLang release notes](https://link.zhihu.com/?target=https://github.com/sgl-project/sglang/releases)：跟进框架演进，避免你在 “旧问题” 上卷生卷死
   - 进阶
-    - [FlashInfer-Bench](https://link.zhihu.com/?target=https://arxiv.org/pdf/2601.00227)（参考[KernelBench](https://link.zhihu.com/?target=https://arxiv.org/pdf/2502.10517)，[MLPerf Inference Rules](https://link.zhihu.com/?target=https://github.com/mlcommons/inference_policies/blob/master/inference_rules.adoc)，[CUDA Runtime](https://link.zhihu.com/?target=https://developer.nvidia.com/blog/dynamic-loading-in-the-cuda-runtime/)）：把“真实 trace + leaderboards + 动态替换”作为长期能力建设
-    - [TensorRT-LLM](https://link.zhihu.com/?target=https://nvidia.github.io/TensorRT-LLM/)（参考[Orca](https://link.zhihu.com/?target=https://www.usenix.org/system/files/osdi22-yu.pdf)，[vAttention](https://link.zhihu.com/?target=https://arxiv.org/pdf/2405.04437)，[CUDA Graphs](https://link.zhihu.com/?target=https://docs.nvidia.com/cuda/cuda-programming-guide/04-special-topics/cuda-graphs.html)）：当你要追求极限性能/稳定部署时，参考其端到端能力组合
-    - [FlashAttention-3](https://link.zhihu.com/?target=https://arxiv.org/pdf/2407.08608)/[FlashInfer](https://link.zhihu.com/?target=https://arxiv.org/pdf/2501.01005)（参考[POD-Attention](https://link.zhihu.com/?target=https://www.microsoft.com/en-us/research/wp-content/uploads/2025/03/POD-Attention-ASPLOS25.pdf)，[KASCADE](https://link.zhihu.com/?target=https://arxiv.org/pdf/2512.16391)，[SpecInfer](https://link.zhihu.com/?target=https://dl.acm.org/doi/epdf/10.1145/3620666.3651335)）：把 kernel 进步与系统指标绑定，形成“可解释的性能提升”
+    - [FlashInfer-Bench](https://link.zhihu.com/?target=https://arxiv.org/pdf/2601.00227)（参考 [KernelBench](https://link.zhihu.com/?target=https://arxiv.org/pdf/2502.10517)，[MLPerf Inference Rules](https://link.zhihu.com/?target=https://github.com/mlcommons/inference_policies/blob/master/inference_rules.adoc)，[CUDA Runtime](https://link.zhihu.com/?target=https://developer.nvidia.com/blog/dynamic-loading-in-the-cuda-runtime/)）：把 “真实 trace + leaderboards + 动态替换” 作为长期能力建设
+    - [TensorRT-LLM](https://link.zhihu.com/?target=https://nvidia.github.io/TensorRT-LLM/)（参考 [Orca](https://link.zhihu.com/?target=https://www.usenix.org/system/files/osdi22-yu.pdf)，[vAttention](https://link.zhihu.com/?target=https://arxiv.org/pdf/2405.04437)，[CUDA Graphs](https://link.zhihu.com/?target=https://docs.nvidia.com/cuda/cuda-programming-guide/04-special-topics/cuda-graphs.html)）：当你要追求极限性能 / 稳定部署时，参考其端到端能力组合
+    - [FlashAttention-3](https://link.zhihu.com/?target=https://arxiv.org/pdf/2407.08608)/[FlashInfer](https://link.zhihu.com/?target=https://arxiv.org/pdf/2501.01005)（参考 [POD-Attention](https://link.zhihu.com/?target=https://www.microsoft.com/en-us/research/wp-content/uploads/2025/03/POD-Attention-ASPLOS25.pdf)，[KASCADE](https://link.zhihu.com/?target=https://arxiv.org/pdf/2512.16391)，[SpecInfer](https://link.zhihu.com/?target=https://dl.acm.org/doi/epdf/10.1145/3620666.3651335)）：把 kernel 进步与系统指标绑定，形成 “可解释的性能提升”
   - 验收标准
     - 有一套固定的 benchmark 配置（模型、batch、context、并发、硬件）
-    - 每次改动都能输出同一张“指标对比表”（至少 TTFT/TPOT/token/s）
-    - 能把 1 次性能回退定位到具体 commit/配置/驱动变化
-    - 能解释“为什么 MLPerf/GenAI-Perf 的指标口径与你线上一致/不一致”
-    - 能写出“上线门禁”：什么指标退化会阻止合并
+    - 每次改动都能输出同一张 “指标对比表”（至少 TTFT/TPOT/token/s）
+    - 能把 1 次性能回退定位到具体 commit / 配置 / 驱动变化
+    - 能解释 “为什么 MLPerf/GenAI-Perf 的指标口径与你线上一致 / 不一致”
+    - 能写出 “上线门禁”：什么指标退化会阻止合并
 
 - 优化路线
 
@@ -263,25 +263,25 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
 
 | 简称    | 全称                    | 含义                                                              | 优化思路                                                                                                                                        |
 | ------- | ----------------------- | ----------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| TTFT    | Time To First Token     | 从请求发起到第一个 token 输出的时延用户感知 “快不快”              | 1. 降低 prefill 延迟2. 减少排队调度延迟3. 启用动态批处理、优先短请求4. 模型量化、KV cache 预分配5. 使用 PagedAttention 减少碎片                 |
-| TPOT    | Time Per Output Token   | 生成阶段平均每个输出 token 的耗时决定 “打字流畅度”                | 1. 提升 decode 吞吐2. 增大 batch、提高 GPU 利用率3. 使用 Tensor Core、FP8/INT4 量化4. 减少 KV cache 拷贝与访存5. 连续批处理 Continuous Batching |
+| TTFT    | Time To First Token     | 从请求发起到第一个 token 输出的时延用户感知 “快不快”              | 1. 降低 prefill 延迟 2. 减少排队调度延迟 3. 启用动态批处理、优先短请求 4. 模型量化、KV cache 预分配 5. 使用 PagedAttention 减少碎片                 |
+| TPOT    | Time Per Output Token   | 生成阶段平均每个输出 token 的耗时决定 “打字流畅度”                | 1. 提升 decode 吞吐 2. 增大 batch、提高 GPU 利用率 3. 使用 Tensor Core、FP8/INT4 量化 4. 减少 KV cache 拷贝与访存 5. 连续批处理 Continuous Batching |
 | ITL     | Inter-Token Latency     | 连续两个输出 token 之间的间隔基本等价 TPOT                        | 同 TPOT                                                                                                                                         |
 | E2EL    | End-to-End Latency      | 从请求开始到最后一个 token 输出完成的总耗时                       | 1. 优化 TTFT + TPOT2. 限制 max tokens3. 减少超长序列拖慢整体                                                                                    |
-| RPS     | Request Per Second      | 每秒处理的请求数                                                  | 1. 提升引擎并发能力2. 动态批、优先级队列3. 多实例 / 多卡部署                                                                                    |
+| RPS     | Request Per Second      | 每秒处理的请求数                                                  | 1. 提升引擎并发能力 2. 动态批、优先级队列 3. 多实例 / 多卡部署                                                                                    |
 | QPS     | Query Per Second        | 每秒查询数（常与 RPS 混用）                                       | 同 RPS                                                                                                                                          |
-| TPS     | Token Per Second        | 每秒模型输出的总 token 数（引擎核心吞吐）                         | 1. 提高 GPU 算力利用率2. 增大有效 batch size3. 优化调度、减少空跑                                                                               |
-| Goodput | Good Put                | 符合时延 / 正确性要求的有效吞吐≠ 总吞吐（排除超时、错误、质量差） | 1. 降低 P99 尾延迟2. 避免 OOM、重试、超时3. 合理流控，不超负载                                                                                  |
+| TPS     | Token Per Second        | 每秒模型输出的总 token 数（引擎核心吞吐）                         | 1. 提高 GPU 算力利用率 2. 增大有效 batch size3. 优化调度、减少空跑                                                                               |
+| Goodput | Good Put                | 符合时延 / 正确性要求的有效吞吐≠ 总吞吐（排除超时、错误、质量差） | 1. 降低 P99 尾延迟 2. 避免 OOM、重试、超时 3. 合理流控，不超负载                                                                                  |
 | SLO     | Service Level Objective | 服务等级目标（性能 / 可用性承诺）                                 | 按目标优化：如 P95 TTFT < 200ms、可用性 99.9%                                                                                                   |
 | P50     | 50th Percentile         | 中位数延迟：50% 请求 ≤ 该值代表 “正常体验”                        | 优化平均路径即可                                                                                                                                |
 | P90     | 90th Percentile         | 90% 请求 ≤ 该值                                                   | 优化常见慢路径、减少小波动                                                                                                                      |
 | P95     | 95th Percentile         | 95% 请求 ≤ 该值线上核心体验指标                                   | 优化批处理策略、避免请求阻塞                                                                                                                    |
-| P99     | 99th Percentile         | 99% 请求 ≤ 该值代表尾延迟（Tail Latency）                         | 1. 解决超长序列、异常请求2. 防抖动、防内存碎片3. 队列隔离、超时控制4. 预分配、pipeline 流水化                                                   |
+| P99     | 99th Percentile         | 99% 请求 ≤ 该值代表尾延迟（Tail Latency）                         | 1. 解决超长序列、异常请求 2. 防抖动、防内存碎片 3. 队列隔离、超时控制 4. 预分配、pipeline 流水化                                                   |
 
 ### FlashAttention
 
 - 介绍一下 FlashAttention，它主要优化了什么？
   - FlashAttention 是 2022 年斯坦福提出的 IO 感知精确注意力算法，核心是通过分块计算、在线 Softmax、反向重计算，把标准 Attention 的显存复杂度从 O (N²) 降到 O (N)、速度提升 2–4 倍，数学完全等价、不丢精度
-  - FlashAttention 的出发点是：标准 attention 的瓶颈不是计算，而是“attention matrix（n×n）”的巨大 IO 开销，并且需要存储 $QK^T$、softmax 输出等中间结果，导致显存爆炸和带宽瓶颈
+  - FlashAttention 的出发点是：标准 attention 的瓶颈不是计算，而是 “attention matrix（n×n）” 的巨大 IO 开销，并且需要存储 $QK^T$、softmax 输出等中间结果，导致显存爆炸和带宽瓶颈
   - FlashAttention 的核心优化点是：
     - 按 tile（块）分块计算 $QK^T$，在 SRAM 中完成 partial max、partial sum 和累积输出，最终直接得到结果，而不需要显式计算并写回 n×n attention matrix
     - 在线 softmax（online softmax）：在计算过程中动态维护 max 和 sum，避免了对整个 attention matrix 的存储和多次读写
@@ -303,8 +303,8 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
 - 在线 Softmax 的推导
   - 在线 Softmax 的核心是维护 partial max 和 partial sum，避免了对整个 attention matrix 的存储和多次读写
   - 设当前 tile 的 attention scores 为 S，之前的 partial max 为 M，partial sum 为 $S_sum$
-  - 更新 partial max：$M_{new} = \max(M, \max(S))$
-  - 更新 partial sum：$S_{sum\_new} = S_{sum} \cdot \exp(M - M_{new}) + \sum(\exp(S - M_{new}))$
+  - 更新 partial max：$M_{new} = \max (M, \max (S))$
+  - 更新 partial sum：$S_{sum\_new} = S_{sum} \cdot \exp (M - M_{new}) + \sum (\exp (S - M_{new}))$
   - 这样在计算过程中就动态维护了 max 和 sum，最终得到的 softmax 输出是正确的，而不需要存储整个 attention matrix
 - FlashAttention-V2 又做了什么改进？访存量和通信量？需要写回 HBM 的有哪些内容？
   - 循环顺序调换：V1 外层 K/V、V2 外层 Q
@@ -322,31 +322,31 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - 在自回归推理（decode）阶段，每一步只生成 1 个 token，此时计算的特点是：
   - Q 只有一个（当前 token）
   - K/V 是历史所有 token（长度 t）
-  - attention 计算变成 $Q^T K \rightarrow \text{softmax} \rightarrow V$
-  - 这里 FLOPs 很少（O(t·d)），但问题在于：
+  - attention 计算变成 $Q^T K \rightarrow \text {softmax} \rightarrow V$
+  - 这里 FLOPs 很少（O (t・d)），但问题在于：
     - 每一步都要把整个 KV cache 从 HBM 读出来
     - 计算量小，但访存量大
   - GPU 的计算单元是没吃满的，瓶颈变成了 HBM 带宽 → 典型 memory-bound
 - KV cache 为什么越来越大？
   - KV cache 的大小是 layers × heads × seq_len × head_dim × 2（K + V）
   - 随着序列长度增长（长上下文）、模型层数增加、head 数增加，KV cache 线性甚至接近指数级膨胀（在多 batch 时）
-  - 而 decode 是逐 token 增长的，cache 只会“越来越大”，不会释放，这也是推理显存的核心压力来源
+  - 而 decode 是逐 token 增长的，cache 只会 “越来越大”，不会释放，这也是推理显存的核心压力来源
 - IO-aware 是什么意思？具体怎么减少 IO？为什么标准 attention 慢？
-  - IO-aware 的核心意思是算法设计以“减少 HBM ↔ SRAM 数据搬运”为目标，而不是只看 FLOPs
+  - IO-aware 的核心意思是算法设计以 “减少 HBM ↔ SRAM 数据搬运” 为目标，而不是只看 FLOPs
   - 标准 attention 的问题不在于计算，而在 IO：
     - 先算 $QK^T$ → 写回 HBM（n×n）
     - 再读回来做 softmax
     - 再写回
     - 再读出来乘 V
   - attention matrix（$n^2$）被反复读写，这是灾难性的 IO 开销
-  - 所以标准 attention 慢，本质是不是算不动，而是“搬数据太多”
+  - 所以标准 attention 慢，本质是不是算不动，而是 “搬数据太多”
 - FlashAttention 为什么不需要存 attention matrix？
   - FlashAttention 的关键思想是按 tile（块）分块计算 + 在线 softmax（online softmax）
   - 也就是说不一次性算完整 QK^T，而是分块算一部分（block of K/V），在 SRAM 中完成 partial max、partial sum 和累积输出
   - 最终直接得到结果，而不需要显式 materialize n×n attention matrix
 - tile size 怎么选？
   - tile 的大小取决于：
-    - SRAM（shared memory / register）容量
+    - SRAM（shared memory /register）容量
     - head_dim
     - 是否能让数据完全驻留在片上
   - 原则是：尽量让一个 tile 的 Q/K/V + 中间变量都放进 SRAM
@@ -354,11 +354,11 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
 - SRAM / HBM 访问次数是多少？
   - 标准 attention：
     - Q/K/V：读一次
-    - attention matrix：写 + 读 + 写 + 读（多次）→ IO 是 $O(n^2)$
+    - attention matrix：写 + 读 + 写 + 读（多次）→ IO 是 $O (n^2)$
   - FlashAttention：
     - Q：读一次
     - K/V：按 tile 逐块读
-    - 不写 attention matrix → IO 变成 $O(n\cdot d)$，这就是数量级优化
+    - 不写 attention matrix → IO 变成 $O (n\cdot d)$，这就是数量级优化
 - 为什么是 IO-aware？
   - 因为它优化的不是 FLOPs，而是 HBM 访问次数、数据复用（SRAM 内循环使用）
   - 本质上是把 attention 从 compute + huge IO 变成 compute + minimal IO
@@ -368,7 +368,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
     - kernel launch / 调度开销占比更高
   - 此时 FlashAttention 的优势（减少 IO）体现不出来，甚至可能略慢
     - 长序列 → IO 成为瓶颈 → FlashAttention 很有用
-    - 短序列 → compute / launch 成为瓶颈 → 提升有限
+    - 短序列 → compute /launch 成为瓶颈 → 提升有限
 - FlashAttention v2 相较 v1 的改进点
 - 你的框架里用了 FlashAttention 吗？显存占用和 MFU 的改进如何？
   - 我使用了类似 FlashAttention 或 xFormers fused kernel
@@ -425,8 +425,8 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - 硬件效率 “理论美、实际差”：不规则内存访问，KV Cache 仍旧需要计算
 - 介绍一下 Sliding Window Attention？
 - 介绍一下 Linear Attention？Linear Attention 的原理和代码实现？
-  - Linear Attention 的核心是把 $softmax(QK^T)V$ 改写为：$\phi(Q)(\phi(K)TV)$
-  - 其中 $\phi$ 是 feature map，使 attention 可以重排为：$(QK^T)V \rightarrow Q(KTV)$，从而把复杂度从 $O(n^2)$ 变成 $O(n)$​
+  - Linear Attention 的核心是把 $softmax (QK^T) V$ 改写为：$\phi (Q)(\phi (K) TV)$
+  - 其中 $\phi$ 是 feature map，使 attention 可以重排为：$(QK^T) V \rightarrow Q (KTV)$，从而把复杂度从 $O (n^2)$ 变成 $O (n)$​
   - 简单实现
 
     ```py
@@ -442,7 +442,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
     ```
 
   - softmax 为什么不能 kernelize？
-    - $softmax(QK^T)$ 的问题在于 $exp(q\cdot k)$ 不是一个有限维的核函数展开（没有低维 $\phi$ 使得 $exp(q\cdot k)=\phi(q)^T\phi(k)$ 精确成立）
+    - $softmax (QK^T)$ 的问题在于 $exp (q\cdot k)$ 不是一个有限维的核函数展开（没有低维 $\phi$ 使得 $exp (q\cdot k)=\phi (q)^T\phi (k)$ 精确成立）
     - 所以 Linear Attention 只能做近似
   - feature map 怎么选？
     - feature map 的选择（如 ReLU、ELU+1）需要满足非负（避免 cancellation）、数值稳定、近似 exp kernel
@@ -450,17 +450,17 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
     - 稳定性不足主要来自于：分母可能接近 0、累积误差（尤其长序列）
     - 常见解决方案包括加 eps、normalization、分块计算等
 
-- Linear Attention 为什么能做到 $O(n)$？代价是什么？
-  - 关键在于把 $QK^T V$ → $Q(K^T V)$，其中 $K^T V$ 是一个“全局 summary”，只需要 $O(n)$ 累加
+- Linear Attention 为什么能做到 $O (n)$？代价是什么？
+  - 关键在于把 $QK^T V$ → $Q (K^T V)$，其中 $K^T V$ 是一个 “全局 summary”，只需要 $O (n)$ 累加
   - 代价主要有两个
   - 第一，表达能力下降（softmax 的 sharp attention 没了，核函数抹平了 Softmax 的 “聚焦” 与 “对比”，导致注意力稀释、非线性表达受限，关键信息丢失）
   - 第二，数值稳定性变差，尤其长序列（隐式欧拉离散化引入累积误差，更新矩阵低秩导致刚性系统不稳，长序列与大学习率下易发散）
 - 为什么 Linear Attention 没取代 Softmax？为什么大模型最终还是用 softmax attention？
   - 本质原因是：效果不够好
   - softmax attention 的优势在于：
-    - 能做“稀疏选择”（某些 token 权重大，其他接近 0）
+    - 能做 “稀疏选择”（某些 token 权重大，其他接近 0）
     - 表达能力强
-  - 而 linear attention 更像是“加权平均”，区分能力弱
+  - 而 linear attention 更像是 “加权平均”，区分能力弱
   - 在大模型 scaling 下，这种差距会被放大，所以最终主流 LLM 还是回到 softmax（配合 FlashAttention 做工程优化）
 
 ### KV Cache 优化
@@ -487,7 +487,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
 - KV Cache 需要占用多少显存？公式计算？
 
   $$
-  \text{KV Cache 显存 (Bytes)} = 2 \times N_L \times B \times S \times N_{kv} \times d_h \times D_b
+  \text {KV Cache 显存 (Bytes)} = 2 \times N_L \times B \times S \times N_{kv} \times d_h \times D_b
   $$
   - 2：同时存储 Key 与 Value 两份矩阵
   - $N_L$ (num_layers)：Transformer 模型总层数
@@ -495,8 +495,8 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - S (seq_len)：上下文序列长度（Prompt + 已生成 Token 总数）
   - $N_{kv}$ (num_kv_heads)：KV 头数
     - 标准 MHA：$N_{kv} = N_q$
-    - GQA/MQA：$N_{kv} < N_q$（如 LLaMA 3 70B: $N_{kv}=64$）
-  - $d_h$ (head_dim)：单个头维度 ($d_h = \text{hidden\_size} \div N_q$)
+    - GQA/MQA：$N_{kv} <N_q$（如 LLaMA 3 70B: $N_{kv}=64$）
+  - $d_h$ (head_dim)：单个头维度 ($d_h = \text {hidden\_size} \div N_q$)
   - $D_b$ (dtype_bytes)：精度字节数
     - FP16/BF16: 2 Bytes
     - INT8/FP8: 1 Byte
@@ -510,7 +510,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - 质量问题（KV Cache 带来的精度下降）：选择式刷新 KV、动态压缩不重要的 KV
 - KV Cache 为什么不能跨请求共享？什么情况下可以共享？
   - KV Cache 存储的是对每一层、每个位置的 token，计算出的 Key & Value，这两个值完全由输入 token 决定，不同输入就不同 KV
-  - 当两个请求的前缀 token 序列完全相同时，这 n 个位置的 KV 就可以完全复用、共享——也即 Prefix Cache
+  - 当两个请求的前缀 token 序列完全相同时，这 n 个位置的 KV 就可以完全复用、共享 —— 也即 Prefix Cache
   - 在 PagedAttention 中，相同内容的块直接引用计数共享，不重复存储
 - 为什么 KV Cache 量化比权重量化更容易掉点？
   - 对权重量化是静态的，训练时就固定，可以通过量化感知训练（QAT）、微调 去适应低精度，即使量化误差大，模型也能学到 “容错表示”；而且权重全局共享，误差被大量 token 平均抵消
@@ -531,7 +531,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
     - 新请求进来：先在树里匹配最长前缀 → 直接复用 KV → 只计算新增后缀
     - 带 LRU 驱逐、引用计数、跨 GPU 共享
 - 什么是 Continuous Batching？
-  - 迭代级动态批调度—— 请求随时进、随时出，GPU 永远满载，彻底解决静态批 “等最慢请求” 的浪费（也叫 Inflight Batching / Iteration Batching）
+  - 迭代级动态批调度 —— 请求随时进、随时出，GPU 永远满载，彻底解决静态批 “等最慢请求” 的浪费（也叫 Inflight Batching / Iteration Batching）
   - 传统静态批：一批请求必须全部生成完才释放资源
   - Continuous Batching：
     - 每一步（iteration）只生成一个 token
@@ -545,11 +545,11 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - 因此可以把 Prompt 切成 chunk（如 512/1024 token）、逐块 Prefill、累积 KV Cache，调度器把 Prefill chunk 与 Decode 请求交错执行（ Stall-Free Batching）
   - 这样可以防止 OOM，降低首 Token 延迟（TTFT），提升吞吐
 - 什么是 Speculative Decoding（投机解码）？
-  - 小模型草拟 + 大模型并行验证—— 用廉价小模型快速猜多个 token，大模型一次验证通过就批量接受，大幅减少大模型前向次数
+  - 小模型草拟 + 大模型并行验证 —— 用廉价小模型快速猜多个 token，大模型一次验证通过就批量接受，大幅减少大模型前向次数
   - 验证能成立的关键是小模型（Draft）和大模型（Target）基于同一套 Token 词典、同一类概率计算规则（如 Softmax 输出 Token 的条件概率），且二者的推理都是自回归式的（下一个 Token 的生成依赖前序所有 Token）
   - 流程
-    - 小模型的作用：基于原始输入 $x_0,x_1,\cdots,x_n$，快速生成k个候选Token序列 $y_1,y_2,\cdots,y_k$（即“草拟”，贪心/采样生成，速度极快）
-    - 大模型的验证基础：不单独生成 Token，而是直接把「原始输入+小模型候选序列」拼接成完整序列 $x_0,x_1,\cdots,x_n,y_1,y_2,\cdots,y_k$，作为自身的输入做一次前向计算，一次性输出每个候选位置上的 Token 条件概率分布
+    - 小模型的作用：基于原始输入 $x_0,x_1,\cdots,x_n$，快速生成 k 个候选 Token 序列 $y_1,y_2,\cdots,y_k$（即 “草拟”，贪心 / 采样生成，速度极快）
+    - 大模型的验证基础：不单独生成 Token，而是直接把「原始输入 + 小模型候选序列」拼接成完整序列 $x_0,x_1,\cdots,x_n,y_1,y_2,\cdots,y_k$，作为自身的输入做一次前向计算，一次性输出每个候选位置上的 Token 条件概率分布
     - 接受规则：
       - 逐 token 比对：一致则接受、直到第一个分歧点
       - 接受部分直接输出；分歧点回退，大模型重生成
@@ -558,7 +558,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - 跨请求复用公共前缀的 KV Cache—— 把系统提示、长文档、共享模板的 KV 缓存下来，后续请求直接复用，避免重复计算
   - 缓存从开头连续 token 序列 的 KV，而新请求匹配最长公共前缀 → 直接加载缓存 KV，这样只需要计算后缀部分 → TTFT 大幅降低（常 2×+）
 - 什么是 FlashDecoding？它和 FlashAttention 有什么区别？
-  - 长序列推理专用加速—— 在 FlashAttention 基础上，对 KV 序列长度维度做并行拆分，让单 batch、长上下文也能打满 GPU 算力
+  - 长序列推理专用加速 —— 在 FlashAttention 基础上，对 KV 序列长度维度做并行拆分，让单 batch、长上下文也能打满 GPU 算力
   - 原理
     - 把长 KV 切成多个 chunk
     - 并行用 FlashAttention 计算 Q 与每个 KV chunk 的注意力
@@ -567,14 +567,14 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
     - 优势：长上下文（1k–128k）速度提升 4–8 倍，单 batch 也满卡
 - 长文本下 KV Cache 稀疏化方法有哪些？
   - 稀疏化：只保留 / 只计算对当前生成最关键的 KV，丢弃 / 压缩不重要部分
-  - 时间维度的稀疏化——按 “重要性”只保留部分 token 的 KV，丢弃其余
+  - 时间维度的稀疏化 —— 按 “重要性” 只保留部分 token 的 KV，丢弃其余
     - Sliding Window Attention：只保留最近 N 个 token，完全丢失长程依赖
     - StreamingLLM / Attention Sink：保留 初始 4–6 个 token（Sink）+ 最近窗口，丢弃中间，然而中间段落信息丢失，复杂推理仍掉点
-  - 通道 / 特征维度稀疏化——对 KV 向量的维度（通道）做稀疏 / 剪枝
+  - 通道 / 特征维度稀疏化 —— 对 KV 向量的维度（通道）做稀疏 / 剪枝
     - MQA/GQA（分组查询注意力）
     - MLA（Multi-Head Latent Attention）：KV 投影到极低维隐空间，需要在模型训练时就支持
   - 低秩与稀疏编码压缩：用更少参数近似表示 KV
-    - 量化+稀疏结合：先量化（FP8/FP4）减显存，再做 token/channel 稀疏
+    - 量化 + 稀疏结合：先量化（FP8/FP4）减显存，再做 token/channel 稀疏
 - 什么是 Attention Free Cache？
   - 跳过完整的 Softmax 注意力计算，用更轻量的规则直接判断哪些 KV 重要、哪些可删
   - 静态 AFC：滑动窗口、StreamingLLM、向量相似度 / 范数淘汰
@@ -635,30 +635,30 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - 第一步特征融合
 
     $$
-    \mathbf{h}_i^k = M_k[\text{RMSNorm}(\mathbf{h}_i^{k-1}); \text{RMSNorm}(Emb(t_{i+k}))],
+    \mathbf {h}_i^k = M_k [\text {RMSNorm}(\mathbf {h}_i^{k-1}); \text {RMSNorm}(Emb (t_{i+k}))],
     $$
     - 输入：
       - $h_{i}^{k-1}$：第 $k-1$ 层的隐层输出（$k=1$ 时为 Main Model 的隐层表征）
-      - $Emb(t_{i+k})$：第 $i+k$ 位置的 token embedding
-    - 处理：两路分别做 RMSNorm 归一化 → 拼接 → 投影矩阵 $M_k \in \mathbb{R}^{d \times 2d}$ 线性变换
-    - 输出：融合后的特征 $\mathbf{h}_i^k \in \mathbb{R}^d$
+      - $Emb (t_{i+k})$：第 $i+k$ 位置的 token embedding
+    - 处理：两路分别做 RMSNorm 归一化 → 拼接 → 投影矩阵 $M_k \in \mathbb {R}^{d \times 2d}$ 线性变换
+    - 输出：融合后的特征 $\mathbf {h}_i^k \in \mathbb {R}^d$
 
   - 第二步特征提取
 
     $$
-    \mathbf{h}_{1:T-k}^k = \text{TRM}_k(\mathbf{h}_{1:T-k}'^k),
+    \mathbf {h}_{1:T-k}^k = \text {TRM}_k (\mathbf {h}_{1:T-k}'^k),
     $$
-    - 输入：融合特征序列 $\mathbf{h}_{1:T-k}'^k$（切片范围 $[1, T-k]$，保证 $i+k \leq T$）
-    - 处理：第 $k$ 个独立 Transformer 层 $\text{TRM}_k$ 提取上下文特征
-    - 输出：第 $k$ 预测深度的隐层表征 $\mathbf{h}_{1:T-k}^k$
+    - 输入：融合特征序列 $\mathbf {h}_{1:T-k}'^k$（切片范围 $[1, T-k]$，保证 $i+k \leq T$）
+    - 处理：第 $k$ 个独立 Transformer 层 $\text {TRM}_k$ 提取上下文特征
+    - 输出：第 $k$ 预测深度的隐层表征 $\mathbf {h}_{1:T-k}^k$
     - $1:T-k$：第 $k$ 预测深度的输入 token 位置 $i$ 需满足 $i+k \leq T$，因此有效输入范围为 $i \in [1, T-k]$
 
   - 第三步词表概率输出
 
     $$
-    P_{i+k+1}^k = \text{OutHead}(\mathbf{h}_i^k).
+    P_{i+k+1}^k = \text {OutHead}(\mathbf {h}_i^k).
     $$
-    - 输入：隐层表征 $\mathbf{h}_i^k$
+    - 输入：隐层表征 $\mathbf {h}_i^k$
     - 处理：共享的映射矩阵 OutHead∈RV×d 变换 + Softmax
     - 输出：第 $i$ 个输入 token 对应预测的第 $i+k+1$ 位置 token 的概率分布 $P_{i+k+1}^k$
     - 下标 $i+k+1$：输入 $t_i$ 预测的是序列中第 $i+k+1$ 位的 token，对应 input 与 label 序列错位 $k+1$ 位（Main Model 错位 1 位，MTP Module 1 错位 2 位，以此类推）
@@ -666,7 +666,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - 损失计算
 
     $$
-    \mathcal{L}_{\text{MTP}}^k = \text{CrossEntropy}(P_{2+k:T+1}^k, t_{2+k:T+1}) = -\frac{1}{T} \sum_{i=2+k}^{T} \log P_i^k[t_i]
+    \mathcal {L}_{\text {MTP}}^k = \text {CrossEntropy}(P_{2+k:T+1}^k, t_{2+k:T+1}) = -\frac {1}{T} \sum_{i=2+k}^{T} \log P_i^k [t_i]
     $$
     - $2+k:T+1$：label 范围，起始下标 $2+k$（MTP Module k 第一个预测 token 为 $t_{2+k}$），结束下标 $T+1$（eos token 位置）
     - $i=2+k$ 到 $T$：遍历所有有效预测位置，计算交叉熵损失
@@ -715,7 +715,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
 - SIMD、SPMD、SIMT 模型对比
 - 什么是 memory coalescing？对访存带宽有什么影响？
   - 内存合并的目标是让同一个 warp 内的线程访问连续且对齐的全局内存地址
-  - 这样 GPU 硬件可以把这些访问请求“合并”为一次大的 DRAM 访问请求（一次突发传输），效率比每个线程单独访问高很多
+  - 这样 GPU 硬件可以把这些访问请求 “合并” 为一次大的 DRAM 访问请求（一次突发传输），效率比每个线程单独访问高很多
 - 什么是 bank conflict？为什么会影响性能？如何避免？
   - Shared Memory 分成 32 个 bank，而每个 bank 一个周期只能服务一个线程
   - 同一个 warp 里，多个线程访问同一个 bank 的不同地址，硬件只能串行化服务，不能并行，这就叫 bank conflict
@@ -750,7 +750,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
 - 如何减少频繁 launch 小 kernel 带来的性能损失？
 - 同一个 block 内的线程如何高效通信？
 - 为什么 global memory 访问必须对齐才能高效？
-- 如何在代码中判断/定位是否出现了 bank conflict？
+- 如何在代码中判断 / 定位是否出现了 bank conflict？
 - 动态并行（dynamic parallelism）会带来哪些额外 overhead？
 - 如何通过调整 block size、grid size 来提升 occupancy？
 - 为什么有些 kernel 明明算力没跑满，速度却上不去？
@@ -786,11 +786,11 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - 对称量化
 
     $$
-    \begin{align*}
-    x_{quant} &= \text{round}\left( \frac{x_{float}}{scale} \right)\\
-    scale &= \frac{\max(|x_{float}|)}{\max(|q_{min}|, q_{max})}\\
+    \begin {align*}
+    x_{quant} &= \text {round}\left (\frac {x_{float}}{scale} \right)\\
+    scale &= \frac {\max (|x_{float}|)}{\max (|q_{min}|, q_{max})}\\
     x_{float} &= x_{quant} \times scale
-    \end{align*}
+    \end {align*}
     $$
     - 零点为 0，浮点 0 直接映射到整数 0，计算简单，适合权重量化
     - 缺点是对分布不对称的数据（如激活 ReLU 输出全正）利用率低
@@ -798,12 +798,12 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - 非对称量化
 
     $$
-    \begin{align*}
-    x_{quant} &= \text{round}\left( \frac{x_{float}}{scale} + zero\_point \right)\\
-    scale &= \frac{x_{max} - x_{min}}{q_{max} - q_{min}}\\
-    zero\_point &= q_{max} - \frac{x_{max}}{scale}\\
+    \begin {align*}
+    x_{quant} &= \text {round}\left (\frac {x_{float}}{scale} + zero\_point \right)\\
+    scale &= \frac {x_{max} - x_{min}}{q_{max} - q_{min}}\\
+    zero\_point &= q_{max} - \frac {x_{max}}{scale}\\
     x_{float} &= scale \times (x_{quant} - zero\_point)
-    \end{align*}
+    \end {align*}
     $$
     - 零点可任意偏移，能更好地贴合实际数据分布
     - 精度更高，适合激活值，能覆盖非对称分布
@@ -845,7 +845,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
     - GPTQ
     - AWQ（Activation-aware Weight Quantization）
     - SqueezeLLM
-    - ZeroQuant / LLM.int8()
+    - ZeroQuant / LLM.int8 ()
     - GGUF/GGML
 - GPTQ 量化的核心思想是什么？主要优化目标是什么？
   - 以 “量化后模型输出尽量不变” 为目标，用二阶信息（海森矩阵）指导权重量化，逐列量化并把量化误差补偿到未量化列，让 INT4 量化几乎无损
@@ -857,12 +857,12 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
     - GPTQ 不是一次性量化整个矩阵，而是一列一列量化，即按照 `[out_features, in_features]` 的 in_features 方向一列一列来
     - 对当前权重列 $w$
       - 根据分组（per-group）或 per-channel 计算 scale
-      - 量化得到 $\hat{w}$
-      - 计算得到量化误差 $w=w−\hat{w}$
+      - 量化得到 $\hat {w}$
+      - 计算得到量化误差 $w=w−\hat {w}$
     - 不丢弃误差，而是把误差 “扔” 给后面还没量化的列，抵消掉
 
       $$
-      W_{\text{remaining}} = W_{\text{remaining}} - e \cdot g^\top
+      W_{\text {remaining}} = W_{\text {remaining}} - e \cdot g^\top
       $$
 
     - 其中 g 由海森矩阵 H 计算得到，用于加权分配误差
@@ -873,7 +873,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - 优化目标
 
     $$
-    \min_{\hat{W}} \| (W - \hat{W})X \|_2^2
+    \min_{\hat {W}} \| (W - \hat {W}) X \|_2^2
     $$
     - 最小化量化前后层输出的差异，而不是简单最小化权重本身的误差
     - 最终目标：INT4 下仍保持接近 FP16 的生成效果
@@ -892,7 +892,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - 根据激活值，找出重要的通道，即运行少量校准数据，统计每个输入通道的激活幅度
 
     $$
-    s_i = \text{mean}(|X_i|)
+    s_i = \text {mean}(|X_i|)
     $$
 
   - 激活越大，说明这个通道对模型输出越关键
@@ -900,7 +900,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
 
 - 动态量化和静态量化的区别？GPTQ 和 AWQ 是什么类型的？
   - 静态量化：离线提前算好 scale、zero_point，用一小批校准数据跑前向，统计分布，推理时不再变化、不再计算，和输入无关，如 GPTQ、AWQ
-  - 动态量化：推理时才计算 scale / zero_point，根据当前真实输入实时统计最大最小值，每次输入不一样，量化参数也不一样，能够适配各种输入分布
+  - 动态量化：推理时才计算 scale /zero_point，根据当前真实输入实时统计最大最小值，每次输入不一样，量化参数也不一样，能够适配各种输入分布
   - 静态量化对分布变化大的激活不够精准，而动态量化则在推理时多一步统计开销，硬件不友好，速度慢
 - 什么是 GGUF/GGML？
   - GGUF/GGML 是为 CPU 设计的量化格式，不是为了极致精度，而是为了小体积 + CPU 跑得快
@@ -911,29 +911,29 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - 传统方案
     - 只量化权重（W4A16）：如 GPTQ/AWQ → 内存减半，但激活还是 FP16，计算不加速
     - 强行 W8A8：精度掉太多，没法用
-    - LLM.int8()：把离群点用 FP16 算 → 硬件不友好、速度慢
+    - LLM.int8 ()：把离群点用 FP16 算 → 硬件不友好、速度慢
   - SmoothQuant 的目标是用数学等价变换，让激活和权重都能稳定 INT8 量化（W8A8），且兼容硬件 INT8 GEMM
   - SmoothQuant 引入逐通道缩放因子 s（向量）：
 
     $$
-    Y = \underbrace{X \cdot \text{diag}(s)^{-1}}_{\hat{X}} \cdot \underbrace{\text{diag}(s) \cdot W}_{\hat{W}} = \hat{X} \cdot \hat{W}
+    Y = \underbrace {X \cdot \text {diag}(s)^{-1}}_{\hat {X}} \cdot \underbrace {\text {diag}(s) \cdot W}_{\hat {W}} = \hat {X} \cdot \hat {W}
     $$
     - 激活侧：X 除以 s → 把大离群点 “压平”（平滑）
     - 权重侧：W 乘以 s → 难度转移到权重（权重本来就好量化）
     - 数学完全等价，输出 Y 不变
 
   - 如何计算平滑因子 s
-    - 用校准数据（几十~几百条）离线统计激活每通道最大绝对值：$|X|_{\text{max}}$ 和权重对应输入通道最大绝对值：$|W|_{\text{max}}$
+    - 用校准数据（几十～几百条）离线统计激活每通道最大绝对值：$|X|_{\text {max}}$ 和权重对应输入通道最大绝对值：$|W|_{\text {max}}$
     - 平滑因子计算公式
 
       $$
-      s_i = \left(|X_i|_{\text{max}}\right)^\alpha \bigg/ \left(|W_i|_{\text{max}}\right)^{1-\alpha}
+      s_i = \left (|X_i|_{\text {max}}\right)^\alpha \bigg/ \left (|W_i|_{\text {max}}\right)^{1-\alpha}
       $$
 
     - α：平衡系数（通常 0.5~0.8）
       - α=1：只缩激活 → 回到传统量化
       - α=0：只缩权重 → 权重变大，但激活完全平滑
-    - 目标：让 $\hat{X}$ 和 $\hat{W}$ 的动态范围尽量均衡、都适合 INT8
+    - 目标：让 $\hat {X}$ 和 $\hat {W}$ 的动态范围尽量均衡、都适合 INT8
 
 - SmoothQuant 为什么能同时稳定权重和激活量化？为什么它比直接剪异常值、动态量化更好？
   - 剪去异常值会丢失信息，而动态量化则推理速度慢，硬件不友好
@@ -947,23 +947,23 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
       - 缩放因子 S：
 
         $$
-        S = \frac{R_{max} - R_{min}}{Q_{max} - Q_{min}}
+        S = \frac {R_{max} - R_{min}}{Q_{max} - Q_{min}}
         $$
 
       - 零点偏移 Z：
 
         $$
-        Z = Q_{max} - \frac{R_{max}}{S}
+        Z = Q_{max} - \frac {R_{max}}{S}
         $$
 
       - 量化值 Q：
 
         $$
-        Q = \frac{R}{S} + Z
+        Q = \frac {R}{S} + Z
         $$
 
-      - Rmin,Rmax：原始浮点数据的最小/最大值
-      - Qmin,Qmax：目标量化格式的最小/最大值（如 INT8 为 -128 和 127）
+      - Rmin,Rmax：原始浮点数据的最小 / 最大值
+      - Qmin,Qmax：目标量化格式的最小 / 最大值（如 INT8 为 -128 和 127）
       - R：原始浮点数据
       - S：缩放因子，用于将浮点范围映射到整数范围
       - Z：零点偏移，用于对齐浮点零点与整数零点
@@ -971,11 +971,11 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
     - FakeQuant 量化和反量化的完整过程可表示为：
 
       $$
-      \begin{align*}
-      Q(x) &= \text{FakeQuant}(x) \\
-      &= \text{DeQuant}(\text{Quant}(x)) \\
-      &= s * \left( \text{Clamp}(\text{round}(x/s) - z) + z \right)
-      \end{align*}
+      \begin {align*}
+      Q (x) &= \text {FakeQuant}(x) \\
+      &= \text {DeQuant}(\text {Quant}(x)) \\
+      &= s * \left (\text {Clamp}(\text {round}(x/s) - z) + z \right)
+      \end {align*}
       $$
 
     - 量化：将浮点输入 x 除以缩放因子 s，四舍五入为整数，再减去零点 z，并通过 Clamp 限制在整数范围内
@@ -988,20 +988,20 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
     - 按照前向传播的公式，因为量化后的权重是离散的，反向传播的时候对 W 求导数为 0：
 
       $$
-      \frac{\partial Q(W)}{\partial W} = 0
+      \frac {\partial Q (W)}{\partial W} = 0
       $$
 
     - 因为梯度为 0，所以网络学习不到任何内容，权重 W 也不会更新：
 
       $$
-      g_W = \frac{\partial L}{\partial W} = \frac{\partial L}{\partial Q(W)} \cdot \frac{\partial Q(W)}{\partial W} = 0
+      g_W = \frac {\partial L}{\partial W} = \frac {\partial L}{\partial Q (W)} \cdot \frac {\partial Q (W)}{\partial W} = 0
       $$
 
-    - 可以使用直通估计器（Straight-Through Estimator，简STE）简单地将梯度通过量化层传递，近似来计算梯度，这使得模型能够在前向传播中进行量化模拟，但在反向传播中仍然更新高精度的浮点参数
+    - 可以使用直通估计器（Straight-Through Estimator，简 STE）简单地将梯度通过量化层传递，近似来计算梯度，这使得模型能够在前向传播中进行量化模拟，但在反向传播中仍然更新高精度的浮点参数
     - STE 近似假设量化操作的梯度为 1，从而允许梯度直接通过量化节点：
 
       $$
-      g_W = \frac{\partial L}{\partial W} = \frac{\partial L}{\partial Q(W)}
+      g_W = \frac {\partial L}{\partial W} = \frac {\partial L}{\partial Q (W)}
       $$
 
     - 如果被量化的值在 $[x_{min},x_{max}]$ 范围内，STE 近似的结果为 1，否则为 0
@@ -1013,7 +1013,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
 
 - 哪些量化方法只量化权重？哪些同时量化激活？
   - 只量化权重（Weight-only Quantization）：GPTQ、AWQ、GGUF/GGML、SqueezeLLM
-  - 同时量化权重 + 激活（W&A Quantization）：SmoothQuant、LLM.int8()、QAT、W8A8 全量化
+  - 同时量化权重 + 激活（W&A Quantization）：SmoothQuant、LLM.int8 ()、QAT、W8A8 全量化
 - 量化在什么情况下能提升推理速度？什么情况下反而变慢？
   - 提升推理速度
     - 权重 + 激活都量化（W8A8）：GEMM 完全在整数域进行，访存和计算双重加速
@@ -1031,11 +1031,11 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
 
   | 维度     | GPTQ                                             | AWQ                                     | SmoothQuant                          |
   | :------- | :----------------------------------------------- | :-------------------------------------- | :----------------------------------- |
-  | 核心思想 | Hessian 感知，逐层误差补偿，优先量化影响小的权重 | 激活感知，识别重要权重并保护，重排/缩放 | 平滑因子转移量化难度，W+A 联合量化   |
+  | 核心思想 | Hessian 感知，逐层误差补偿，优先量化影响小的权重 | 激活感知，识别重要权重并保护，重排 / 缩放 | 平滑因子转移量化难度，W+A 联合量化   |
   | 量化对象 | 权重（W）                                        | 权重（W）                               | 权重 + 激活（W+A）                   |
   | 位宽支持 | INT4/3/2（极致压缩）                             | INT4（主流）                            | INT8（W8A8）                         |
   | 校准需求 | 中（512-2048 样本）                              | 低（128-512 样本，更快）                | 低（轻量统计）                       |
   | 精度表现 | 4bit 下 PPL 损失最小（~\<1%）                     | 4bit 稳定，略逊 GPTQ（~1.5%）           | W8A8 几乎无掉点                      |
   | 推理速度 | 中（反量化开销）                                 | 中（反量化开销，AWQ 略快 GPTQ）         | 最快（INT8 硬件加速，TensorRT 最优） |
   | 部署栈   | AutoGPTQ、llama.cpp、GGUF                        | AutoAWQ、llama.cpp、GGUF                | TensorRT、FasterTransformer、ONNX    |
-  | 适用场景 | 极限压缩、长文本、追求极致精度                   | 小样本/跨域、快速量化、稳定部署         | 生产级 INT8、最大化硬件吞吐          |
+  | 适用场景 | 极限压缩、长文本、追求极致精度                   | 小样本 / 跨域、快速量化、稳定部署         | 生产级 INT8、最大化硬件吞吐          |

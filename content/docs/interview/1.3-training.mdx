@@ -37,7 +37,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   | LayerNorm 缩放参数    | [h]      | h      | 层归一化缩放系数 |
   | LayerNorm 偏移参数    | [h]      | h      | 层归一化偏移系数 |
 
-- 单 Transformer 层总参数量——将 MHA 和 FFN 层参数量相加：
+- 单 Transformer 层总参数量 —— 将 MHA 和 FFN 层参数量相加：
 
   $$
   h^2+h^2+h^2+h^2 + h+h + 4h^2+4h+4h^2+h+h+h \
@@ -58,7 +58,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
     - 权重维度：$[h, vocab\_size]$
     - 参数量：$vocab\_size \times h$
     - 注：解码层通常与 embedding 层权重共享，实际仅计算一次
-- 整个模型总参数量——结合 Transformer 层、embedding 层（权重共享）：
+- 整个模型总参数量 —— 结合 Transformer 层、embedding 层（权重共享）：
 
   $$
   L * (12h^2 + 10h) + vocab\_size \times h
@@ -91,24 +91,24 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   | $K=x\cdot W_K$                               | [b,a,s,ha]=[b,s,h]        | 2bsh             |
   | $V=x\cdot W_V$                               | [b,a,s,ha]=[b,s,h]        | 2bsh             |
   | $Q\cdot K^T$                                 | [b,a,s,s]                 | 2bas^2           |
-  | $\text{softmax}(Q\cdot K^T)$                 | [b,a,s,s]                 | 2bas^2           |
-  | $\text{Dropout}[\text{softmax}(Q\cdot K^T)]$ | [b,a,s,s]                 | bas^2            |
-  | $x_{self} = \text{Dropout}[...] \cdot V$     | [b, a, s, ha] = [b, s, h] | 2bsh             |
+  | $\text {softmax}(Q\cdot K^T)$                 | [b,a,s,s]                 | 2bas^2           |
+  | $\text {Dropout}[\text {softmax}(Q\cdot K^T)]$ | [b,a,s,s]                 | bas^2            |
+  | $x_{self} = \text {Dropout}[...] \cdot V$     | [b, a, s, ha] = [b, s, h] | 2bsh             |
   | $x_{self}⋅Wo$                                | [b,s,h]                   | 2bsh             |
-  | $\text{Dropout}(x_{self}⋅Wo)$                | [b,s,h]                   | bsh              |
-  | $x_{attn} = \text{LN}[...] + x$              | [b, s, h]                 | 2bsh             |
+  | $\text {Dropout}(x_{self}⋅Wo)$                | [b,s,h]                   | bsh              |
+  | $x_{attn} = \text {LN}[...] + x$              | [b, s, h]                 | 2bsh             |
 
 - FFN 层激活值及显存占用
 
   | 计算项                                        | 维度     | 显存大小（字节） |
   | --------------------------------------------- | -------- | ---------------- |
   | $x_{attn}⋅W_{ff1}$                            | [b,s,4h] | 8bsh             |
-  | $\text{GeLU}(x_{attn}⋅W_{ff1})$               | [b,s,4h] | 8bsh             |
-  | $x_{ffn}=\text{GeLU}(...)\cdot W_{ff2}$       | [b,s,h]  | 2bsh             |
-  | $\text{Dropout}(x_{ffn})$                     | [b,s,h]  | bsh              |
-  | $\text{LN}[\text{Dropout}(x_{ffn})+x_{attn}]$ | [b,s,h]  | 2bsh             |
+  | $\text {GeLU}(x_{attn}⋅W_{ff1})$               | [b,s,4h] | 8bsh             |
+  | $x_{ffn}=\text {GeLU}(...)\cdot W_{ff2}$       | [b,s,h]  | 2bsh             |
+  | $\text {Dropout}(x_{ffn})$                     | [b,s,h]  | bsh              |
+  | $\text {LN}[\text {Dropout}(x_{ffn})+x_{attn}]$ | [b,s,h]  | 2bsh             |
 
-- 单 Transformer 层总显存——将 MHA 和 FFN 层显存相加：
+- 单 Transformer 层总显存 —— 将 MHA 和 FFN 层显存相加：
 
   $$
   2bsh+2bsh+2bsh+2bas^2+2bas^2+bas^2+2bsh+\\
@@ -125,7 +125,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - embedding 层功能：将输入的 token ID 转为向量
   - 输出矩阵维度：$[batch\_size, seq\_length, hidden\_size] = [b, s, h]$
   - 显存占用：$2bsh$ 字节
-- 整个模型的中间激活值总显存——结合 Transformer 层和 Embedding 层，整个模型的中间激活值显存为：
+- 整个模型的中间激活值总显存 —— 结合 Transformer 层和 Embedding 层，整个模型的中间激活值显存为：
 
   $$
   l * (34bsh + 5bas^2) + 2bsh
@@ -167,7 +167,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
       - 输出投影线性层，共计 $2bsh^2$
       - Q@K、Attn@V，共计 $2×2×b×a×s×d×s=4bs^2h$
       - 因此共计 $8bsh^2+4bs^2h$
-    - FFN 层（线性层->GELU->线性层）：$2bs*h*4h+2bs*4h*h=16bsh^2$
+    - FFN 层（线性层 ->GELU-> 线性层）：$2bs*h*4h+2bs*4h*h=16bsh^2$
     - 单层 Transformer 的 FLOPS 为 $24bsh^2+4bs^2h$
   - 前向计算的 FLOPS 共计 $L⋅(24bsh^2+4bs^2h)$（当 s 远小于 h 时，有 $24bsLh^2$）
   - 反向传播的 FLOPS 一般为前向的两倍，也即总 FLOPS 为 $L⋅(72bsh^2+12bs^2h)$
@@ -180,7 +180,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
 - MFU 为
 
   $$
-  \text{MFU}=\frac{L\cdot(72bsh^2+12bs^2h)\cdot \text{Gradient Accum Steps}\cdot N_{DP}\cdot\text{Through output}}{4\cdot\text{Single GPU TFLOPS}}\approx 34\%
+  \text {MFU}=\frac {L\cdot (72bsh^2+12bs^2h)\cdot \text {Gradient Accum Steps}\cdot N_{DP}\cdot\text {Through output}}{4\cdot\text {Single GPU TFLOPS}}\approx 34\%
   $$
 
 ### DP
@@ -200,15 +200,15 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
 - 数据并行中如何逐步优化通信的？
   - 梯度同步与反向传播重叠、梯度分桶、no_sync
     - 梯度同步与反向传播重叠：为每个参数注册 backward hook 来实现，当某个参数的梯度刚刚计算完成，就立刻触发一次 all-reduce
-    - 梯度分桶：每个参数都触发 all-reduce 存在一个问题——每次 all-reduce 都有固定的启动开销，而且频繁的小张量通信，kernel launch 多、NCCL 调度频繁、网络带宽利用率低，导致通信被碎片化；因此可以预先定义若干个 bucket，将参数映射到指定的桶中，当桶中的所有参数的梯度都计算完成后，立即触发一次 all-reduce，这样就变成了 bucket 粒度的 overlap，这样可以减少 kernel launch 次数，提高带宽利用率
+    - 梯度分桶：每个参数都触发 all-reduce 存在一个问题 —— 每次 all-reduce 都有固定的启动开销，而且频繁的小张量通信，kernel launch 多、NCCL 调度频繁、网络带宽利用率低，导致通信被碎片化；因此可以预先定义若干个 bucket，将参数映射到指定的桶中，当桶中的所有参数的梯度都计算完成后，立即触发一次 all-reduce，这样就变成了 bucket 粒度的 overlap，这样可以减少 kernel launch 次数，提高带宽利用率
     - no_sync：实际上，只需要在梯度累积的最后一步才需要更新参数，因此，通过 no_sync，在前 K−1 次 backward 不做梯度同步，第 K 次 backward 正常 all-reduce
   - 你的代码里如何实现 no_sync 的？
     - 类似地，在类里实现一个 no_sync 的 ContextManger，当进入这个上下文时，last_gradient_accum_step 置为 false，此时 hook 函数中就不会减少 bucket 的 pending 计数
   - 梯度分桶为什么能加速？
     - 减少通信开销：通信次数大幅减少，固定启动开销被平摊，有效带宽利用率显著提升
-    - 最大化计算-通信重叠
+    - 最大化计算 - 通信重叠
     - 适配 Ring-AllReuce：Ring-AllReduce 对大消息效率更高（带宽饱和），对小消息效率极低（延迟主导），而分桶让每次通信都接近带宽瓶颈，而非延迟瓶颈
-  - bucket 太大/太小有什么影响？
+  - bucket 太大 / 太小有什么影响？
     - 默认值 25MB：PyTorch 官方经验值，在 ResNet、BERT 等主流模型上表现均衡
     - bucket 太小
       - 通信次数爆炸：大量小桶、频繁 AllReduce，启动开销占比飙升，带宽利用率暴跌
@@ -240,7 +240,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
     - 每块卡持有不同分片，沿着 Ring 依次发送分片，最终所有卡都得到完整张量
 - DDP 在大规模情况下的问题
   - Ring all-reduce 延迟问题
-    - Ring AllReduce 完成一次全局归约需要 2(N-1) 轮通信（Scatter-Reduce + All-Gather）
+    - Ring AllReduce 完成一次全局归约需要 2 (N-1) 轮通信（Scatter-Reduce + All-Gather）
     - 单轮通信时间：`t_hop = chunk_size / bandwidth + latency`
     - 总通信时间：`T = 2*(N-1) * t_hop`
     - N（GPU 数）越大，通信轮数线性增长，总延迟线性上升
@@ -272,16 +272,16 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
     - Reduce-Scatter：各节点分片累加，每个 GPU 最终持有唯一一份全局累加后的分片
     - All-Gather：把各自累加好的分片广播同步到所有节点，全员拿到完整全局张量
   - Ring AllReduce 的步骤
-    - 假设 N 张GPU构成单向逻辑环：G0→G1→⋯→GN−1→G0
+    - 假设 N 张 GPU 构成单向逻辑环：G0→G1→⋯→GN−1→G0
     - 输入梯度均等切分为 N 个 chunk
-    - 阶段1：Reduce-Scatter（共 N−1 轮），每一轮：
-      - 每个 GPU 向下一环发送自己的一个chunk
-      - 从上一环接收一个chunk，并本地累加
-      - 跑完 N−1 轮：每张GPU刚好拥有1个完全聚合完毕的 unique chunk
-    - 阶段2：All-Gather（再 N−1 轮）
+    - 阶段 1：Reduce-Scatter（共 N−1 轮），每一轮：
+      - 每个 GPU 向下一环发送自己的一个 chunk
+      - 从上一环接收一个 chunk，并本地累加
+      - 跑完 N−1 轮：每张 GPU 刚好拥有 1 个完全聚合完毕的 unique chunk
+    - 阶段 2：All-Gather（再 N−1 轮）
       - 继续流水线转发已累加完成的分片，再传 N−1 轮
-      - 最终，所有GPU集齐全部N个chunk，得到完整全局平均/求和梯度
-    - 总通信步数：2(N−1) 轮点对点收发
+      - 最终，所有 GPU 集齐全部 N 个 chunk，得到完整全局平均 / 求和梯度
+    - 总通信步数：2 (N−1) 轮点对点收发
 - Ring AllReduce 相比 Tree AllReduce 优势和劣势？什么数据量下自动切换？
   - Ring AllReduce 的每个节点收发负载完全对称，大规模带宽饱和效果好
   - 在大规模场景下，带宽开销主导，Ring 流水线吞吐更高
@@ -290,20 +290,20 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
 - Ring AllReduce 的 latency & bandwidth 理论计算公式？
   - 符号定义
     - $\alpha$：单条点对点通信启动时延 (latency，s)
-    - $\beta$：单位数据传输反比，$\beta=1/$单链路带宽 (s/Byte)
-    - $S$：总数据量(Byte)
-    - $N$：通信进程/GPU数量
+    - $\beta$：单位数据传输反比，$\beta=1/$ 单链路带宽 (s/Byte)
+    - $S$：总数据量 (Byte)
+    - $N$：通信进程 / GPU 数量
   - Ring AllReduce 理论总时间
     - 每轮搬运数据量：$S/N$
     - 总时延 = 启动时延总和 + 数据传输时延总和
 
       $$
       T_{\rm ring}
-      = 2(N-1)\alpha
-      + 2(N-1)\cdot \beta \cdot \frac{S}{N}
+      = 2 (N-1)\alpha
+      + 2 (N-1)\cdot \beta \cdot \frac {S}{N}
       $$
 
-    - 化简近似（N大）：
+    - 化简近似（N 大）：
 
       $$
       T_{\rm ring} \approx 2N\alpha + 2\beta S
@@ -319,8 +319,8 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
     = 2\lceil \log_2 N \rceil \,\alpha
     + 2\beta S
     $$
-    - 时延项：对数增长，小N/小包碾压 Ring
-    - 带宽项：和Ring一致，但树根瓶颈现实会更差
+    - 时延项：对数增长，小 N / 小包碾压 Ring
+    - 带宽项：和 Ring 一致，但树根瓶颈现实会更差
 
 - DDP 每张卡存完整参数副本，三类张量（参数 / 梯度 / 优化器）各自显存占比大概多少？
   - 符号定义
@@ -333,8 +333,8 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
 
 ### ZeRO
 
-- DeepSpeed ZeRO 的核心思想——减少冗余副本
-  - 每张 GPU 都留存完整副本——完整参数、完整梯度、完整 Adam 优化器状态，多卡之间大量内存冗余，卡数越多冗余越爆炸
+- DeepSpeed ZeRO 的核心思想 —— 减少冗余副本
+  - 每张 GPU 都留存完整副本 —— 完整参数、完整梯度、完整 Adam 优化器状态，多卡之间大量内存冗余，卡数越多冗余越爆炸
   - ZeRO 的核心思想是按张量类型分级分片存储，消除全局冗余
   - 把「优化器状态→梯度→模型参数」依次分散到所有 GPU，每张卡只存 1/N，仅计算、通信时按需汇聚，极大削减显存；同时分层控制通信开销，平衡显存 & 吞吐
 - 符号定义
@@ -364,10 +364,10 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - 全局平均梯度：
 
     $$
-    \bar g = \frac{1}{N}\sum_{rank=1}^N g_{rank}
+    \bar g = \frac {1}{N}\sum_{rank=1}^N g_{rank}
     $$
 
-  - grank：每张GPU本地产生的该参数梯度
+  - grank：每张 GPU 本地产生的该参数梯度
   - Adam 一阶动量 / 二阶动量（逐元素）：
 
     $$
@@ -378,7 +378,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - 参数步进更新：
 
     $$
-    w_{t+1} = w_t - \eta \cdot \frac{m_t}{\sqrt{v_t}+\epsilon}
+    w_{t+1} = w_t - \eta \cdot \frac {m_t}{\sqrt {v_t}+\epsilon}
     $$
 
   - 每一个参数 w 的更新，只依赖自己对应的那一个全局平均梯度 $\bar g$，不同参数之间解耦、互不干扰
@@ -412,7 +412,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
     - 把每张卡本地散乱的梯度，按参数区间分片路由 + 累加，最终每一块参数的全局求和梯度，精准落到该参数优化器所在的那张归属 GPU
     - 如果直接全局求和更新，就与 ZeRO-1 的逻辑一致，先进行 All-Reduce，但实际上每个 GPU 只需要维护各自的分片
   - ZeRO-2 是如何进行 reduce-scatter 和 all-gather 的通信掩盖的？
-    - Reduce-Scatter 可与反向传播末尾 / 参数更新前的计算重叠：反向传播最后几层计算、梯度整理、Adam 状态准备等，与 Reduce-Scatter 无数据依赖——通过梯度分桶，实现流水线重叠
+    - Reduce-Scatter 可与反向传播末尾 / 参数更新前的计算重叠：反向传播最后几层计算、梯度整理、Adam 状态准备等，与 Reduce-Scatter 无数据依赖 —— 通过梯度分桶，实现流水线重叠
     - All-Gather 可与下一轮前向传播的计算重叠：前向传播第一层 / 前几层计算，与 All-Gather 无数据依赖（权重未完全聚合前，可先算不依赖最新权重的部分）
     - 通信与计算在不同硬件流 / 队列执行：GPU 有独立的计算流（Compute Stream）和通信流（Communication Stream/NCCL Stream），可并行执行
 - ZeRO-3
@@ -473,24 +473,24 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - ZeRO-3 Hook 是是 PyTorch Module Forward/Backward Pre-Hook，由 DeepSpeed 自动注册
   - 完全透明接管模型的前向 / 反向生命周期，用户无需修改模型代码
   - Forward Pre-Hook（层前向入口）
-    - 触发时机：module.forward() 执行前
+    - 触发时机：module.forward () 执行前
     - All-Gather 当前层参数：从各 rank 拉取分片，拼装完整参数
     - Prefetch 下一层参数：异步启动下一层 All-Gather
     - 替换模块参数：将分片参数替换为 All-Gather 后的完整参数
   - Forward Post-Hook（层前向出口）
-    - 触发时机：module.forward() 执行后
+    - 触发时机：module.forward () 执行后
     - 恢复分片参数：将完整参数换回本地分片，释放非本地分片内存
     - 更新缓存状态：将当前层参数加入缓存，标记为可复用
   - Backward Pre-Hook（层反向入口）
-    - 触发时机：module.backward() 执行前
+    - 触发时机：module.backward () 执行前
     - All-Gather 当前层参数：重新拼装完整参数用于梯度计算
     - Prefetch 上一层参数：异步启动上一层（反向顺序）All-Gather
   - Backward Post-Hook（层反向出口）
-    - 触发时机：module.backward() 执行后
+    - 触发时机：module.backward () 执行后
     - Reduce-Scatter 梯度：将完整梯度规约为分片，每个 rank 保留自己部分
     - 释放参数：释放完整参数，仅保留梯度分片
   - 自动接管流程
-    - 模型初始化：deepspeed.initialize() 自动为所有 nn.Module 注册 Hook
+    - 模型初始化：deepspeed.initialize () 自动为所有 nn.Module 注册 Hook
     - 前向传播：每层自动 All-Gather → 计算 → 释放 → Prefetch
     - 反向传播：每层自动 All-Gather → 计算梯度 → Reduce-Scatter → 释放
     - 优化器更新：Hook 接管参数分片更新，仅更新本地分片
@@ -517,31 +517,31 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
     - 包括瞬时用到的 FP16/BF16 模型权重（临时 gathered）、即时生成的梯度 buffer、中间激活值、dropout 随机掩码、算子临时 Workspace
   - CPU 优化器更新完整流程
     - 第一步：GPU 侧准备 & 梯度 D2H 搬运
-      - 反向结束，GPU显存中：本地分片全局梯度 $\bar g_{\text{shard}}$
-      - 发起异步 D2H 拷贝：把该分片梯度从VRAM → CPU DRAM
-      - 拷贝期间 GPU 可预调度下一轮/清理临时缓存，不等待
+      - 反向结束，GPU 显存中：本地分片全局梯度 $\bar g_{\text {shard}}$
+      - 发起异步 D2H 拷贝：把该分片梯度从 VRAM → CPU DRAM
+      - 拷贝期间 GPU 可预调度下一轮 / 清理临时缓存，不等待
     - 第二步：CPU 侧精度提升，即 FP16/BF16 梯度 → FP32
       - CPU 等待梯度分片就位
-      - 执行类型强制转换：$g_{\text{fp32}} = \text{cast}(g_{\text{fp16}})$
+      - 执行类型强制转换：$g_{\text {fp32}} = \text {cast}(g_{\text {fp16}})$
       - 匹配 CPU 上的 FP32 优化器状态精度（避免混合精度误差）
     - 第三步：CPU 内存执行 AdamW 完整数学更新
-      - CPU 侧常驻 $w_{\text{master}}(\text{fp32}), m, v$，逐元素独立更新：
+      - CPU 侧常驻 $w_{\text {master}}(\text {fp32}), m, v$，逐元素独立更新：
       - 动量平滑：
 
         $$
-        m_t = \beta_1 m_{t-1} + (1-\beta_1)g_{\text{fp32}}
+        m_t = \beta_1 m_{t-1} + (1-\beta_1) g_{\text {fp32}}
         $$
 
       - 二阶平方平滑：
 
         $$
-        v_t = \beta_2 v_{t-1} + (1-\beta_2)g_{\text{fp32}}^2
+        v_t = \beta_2 v_{t-1} + (1-\beta_2) g_{\text {fp32}}^2
         $$
 
       - 偏差校正 + 参数步进 + 权重衰减
 
         $$
-        w_{\text{master},t+1} = w_{\text{master},t} - \eta \cdot \frac{\hat m}{\sqrt{\hat v}+\epsilon} - \lambda w
+        w_{\text {master},t+1} = w_{\text {master},t} - \eta \cdot \frac {\hat m}{\sqrt {\hat v}+\epsilon} - \lambda w
         $$
 
       - 全程在 CPU DRAM 运算，不占 GPU 算力、不占 GPU 显存
@@ -556,22 +556,22 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
       - GPU：独立 NCCL 通信流、D2H/H2D 拷贝流
       - CPU：独立 Pthread 优化器计算线程池
       - 三者并行，互不阻塞
-    - 梯度拷贝与后处理/清理重叠
+    - 梯度拷贝与后处理 / 清理重叠
       - 反向传播收尾、显存垃圾回收、DDP/ZeRO 同步间隙
       - 后台异步发起 D2H 梯度搬运，隐藏 PCIe 延迟
     - 双缓冲（Double Buffer）流水线
-      - 缓冲 A：本轮迭代 CPU更新使用
-      - 缓冲 B：后台预取下一轮梯度/参数
-      - 交替复用，消除分配&同步等待
+      - 缓冲 A：本轮迭代 CPU 更新使用
+      - 缓冲 B：后台预取下一轮梯度 / 参数
+      - 交替复用，消除分配 & 同步等待
     - 延后主机更新、跨迭代掩盖
-      - 小 batch/轻负载下：
+      - 小 batch / 轻负载下：
       - 把 CPU Adam 更新流水线延后到下一轮前向计算期间后台执行
-      - 用 GPU 正向计算时间完全吞掉 CPU 更新+内存拷贝耗时
+      - 用 GPU 正向计算时间完全吞掉 CPU 更新 + 内存拷贝耗时
     - 梯度累积周期调度
       - 多步梯度累积期间，不频繁触发 Offload 搬运，减少 PCIe 小包风暴
   - 哪些张量支持卸载、哪些严禁卸载？混合卸载策略怎么配置最优？
     - 支持安全卸载
-      - Adam 三大状态：master fp32 / m / v（核心推荐必卸）
+      - Adam 三大状态：master fp32 /m/v（核心推荐必卸）
       - 梯度累积分片（低频）
       - ZeRO 闲置参数分片
       - LossScaling、clip_grad 统计量
@@ -579,12 +579,12 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
       - 模型激活值（最热数据）
       - 正在 AllGather 的 FP16 权重
       - 即时反向梯度（未完成规约）
-      - CUDA Kernel 临时 shared memory / workspace
+      - CUDA Kernel 临时 shared memory /workspace
       - Embedding 高频查表权重
     - 生产集群最优混合 Offload 配置
-      - 优先开启：Optimizer CPU Offload（收益最大，显存砍60%~75%）
+      - 优先开启：Optimizer CPU Offload（收益最大，显存砍 60%~75%）
       - 关闭：Gradient Offload 全量卸载（容易带宽瓶颈拖慢）
-      - 配合ZeRO-2/3：分片+卸载叠加，显存线性下降
+      - 配合 ZeRO-2/3：分片 + 卸载叠加，显存线性下降
       - 开启 `pipeline_offload=True`、`async_module=True` 异步流水线
       - 限制 CPU 内存水位，防止 Swap 磁盘（致命减速）
       - 禁用不必要的 host 同步、禁用频繁 print/tensor 打印（减少 D2H）
@@ -675,13 +675,13 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - 张量并行是一种层内细粒度的模型并行技术，核心是将单一层内的大张量按维度切分，分配到多 GPU 并行计算，然后通过集合通信合并结果
   - 通过这种方式，它能够将权重、梯度、优化器状态甚至是激活值进行分片，而且不需要在计算前将它们全部聚合
   - 切分对象主要是层内的权重矩阵，如注意力层的 QKV 和投影矩阵，MLP 层的线性层；通过将参与矩阵相乘的两个矩阵分别按行或列切分，能够多 GPU 并行计算矩阵乘法，最后进行 all-reduce 通信聚合结果
-  - 显然，TP 在每层的前向/反向都需要进行 all-reduce 通信，通信量与激活/参数量正相关
+  - 显然，TP 在每层的前向 / 反向都需要进行 all-reduce 通信，通信量与激活 / 参数量正相关
 - TP 切分粒度是什么？是层内还是层间？
   - TP 是纯层内并行，切分粒度是 “单个算子 / 层内的张量”
 - 为什么 TP 一般绑定单节点 NVLink，不跨多机？
   - TP 的通信频率很高，前向计算时需要在 Attn 层和 MLP 层之后进行 all-reduce 通信，反向传播时，需要在 MLP 梯度计算和 Attn 梯度计算之和进行 all-reduce 通信
   - TP 的通信数据量很大，与激活张量的大小成正相关，一般是 [batch,seq,hidden] 大小的
-  - 对于这种情况，跨机网络带宽/延迟远远无法达到通信要求，会导致通信成为绝对瓶颈，吞吐率严重下降
+  - 对于这种情况，跨机网络带宽 / 延迟远远无法达到通信要求，会导致通信成为绝对瓶颈，吞吐率严重下降
   - 同步要求：必须等通信完成才能进入下一层计算，强同步、无计算重叠空间
   - 不同硬件的带宽差异
 
@@ -697,47 +697,47 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - 能够进行切分的数学意义？为什么需要进行 all-reduce 通信？
     - 设 $Y=X\cdot W$，则
     - 按照列切分：$W=[W_1,W_2], XW=[XW_1,XW_2]$，结果需要拼接
-    - 按照行切分：$W=\begin{bmatrix}W_1\\W_2\end{bmatrix}, XW = X_1W_1+X_2W_2$​，结果需要求和
+    - 按照行切分：$W=\begin {bmatrix} W_1\\W_2\end {bmatrix}, XW = X_1W_1+X_2W_2$​，结果需要求和
     - 本质是线性变换可按维度解耦拆分计算，非线性操作不可随意拆分
     - 由此可知，对于列并行，需要进行 all-gather 拼接；对于行并行，需要 all-reduce 求和
   - QKV 投影和 attn 输出投影怎么进行切分的？对于 GQA/MQA 情况下切分有什么影响？
-    - 对于标准的 MHA，设隐藏层维度为 h，头数为 N，则满足单头维度=$h//N$
+    - 对于标准的 MHA，设隐藏层维度为 h，头数为 N，则满足单头维度 =$h//N$
     - QKV 矩阵天然按照头维度进行切分，将若干个头均分到 TP 分组中，这样每张卡仅存储一部分 Q/K/V 对应的头投影，前向计算时分别计算，且无需立即进行 all-gather，因为注意力本身就是按头执行的
     - 对于输出投影，则按照行切分，各卡的注意力结果映射为局部特侦，然后经过 all-reduce 求和得到完整结果
-    - 在 GQA 情况下，K/V 分组小于头数，此时需要小心地保证某些卡共享 K/V 矩阵；或者对 K/V 矩阵不进行切分——导致大 TP 规模下负载倾斜比较明显
+    - 在 GQA 情况下，K/V 分组小于头数，此时需要小心地保证某些卡共享 K/V 矩阵；或者对 K/V 矩阵不进行切分 —— 导致大 TP 规模下负载倾斜比较明显
     - 在 MQA 情况下，K/V 全局共享不能按照头进行切分，只能全员复制存储
   - MLP 怎么进行切分的？Gated 的情况下如何进行切分？为什么不能用另一种切分方式（激活函数受限）
     - 对于标准 MLP 场景，升维投影按照列切分，而激活函数逐元素非线性，本地独立计算，降维投影按照行切分，最后 all-reduce sum 聚合输出
     - 对于 Gated MLP 场景，gated 矩阵也按照列进行切分，保证逐元素乘法对位匹配，最后经过降维投影后，按照 all-reduce sum 聚合输出
-    - A 列切 + B 行切的完整公式——只需在最后进行一次 all-reduce 通信
+    - A 列切 + B 行切的完整公式 —— 只需在最后进行一次 all-reduce 通信
 
       $$
-      \begin{align*}
-      Y &= \text{GELU}(X[A_1\ A_2]) \begin{bmatrix}B_1\\B_2\end{bmatrix} \\
-      &= \text{GELU}([XA_1\ \ XA_2]) \begin{bmatrix}B_1\\B_2\end{bmatrix} \\
-      &= \big[\text{GELU}(XA_1)\ \ \text{GELU}(XA_2)\big] \begin{bmatrix}B_1\\B_2\end{bmatrix} \\
-      &= \text{GELU}(XA_1)B_1 + \text{GELU}(XA_2)B_2
-      \end{align*}
+      \begin {align*}
+      Y &= \text {GELU}(X [A_1\ A_2]) \begin {bmatrix} B_1\\B_2\end {bmatrix} \\
+      &= \text {GELU}([XA_1\ \ XA_2]) \begin {bmatrix} B_1\\B_2\end {bmatrix} \\
+      &= \big [\text {GELU}(XA_1)\ \ \text {GELU}(XA_2)\big] \begin {bmatrix} B_1\\B_2\end {bmatrix} \\
+      &= \text {GELU}(XA_1) B_1 + \text {GELU}(XA_2) B_2
+      \end {align*}
       $$
 
-    - A 行切 + B 列切的完整公式——必须在 GELU 之前做 all-reduce
+    - A 行切 + B 列切的完整公式 —— 必须在 GELU 之前做 all-reduce
 
       $$
-      \begin{align*}
-      Y &= \text{GELU}\big( (X_1\ X_2)\begin{bmatrix}A_1\\A_2\end{bmatrix} \big) [B_1\ B_2] \\
-      &= \text{GELU}(X_1A_1 + X_2A_2)\ [B_1\ B_2] \\
-      &= \big[\ \text{GELU}(X_1A_1{+}X_2A_2)B_1 \ \ \ \text{GELU}(X_1A_1{+}X_2A_2)B_2\ \big]
-      \end{align*}
+      \begin {align*}
+      Y &= \text {GELU}\big ((X_1\ X_2)\begin {bmatrix} A_1\\A_2\end {bmatrix} \big) [B_1\ B_2] \\
+      &= \text {GELU}(X_1A_1 + X_2A_2)\ [B_1\ B_2] \\
+      &= \big [\ \text {GELU}(X_1A_1 {+} X_2A_2) B_1 \ \ \ \text {GELU}(X_1A_1 {+} X_2A_2) B_2\ \big]
+      \end {align*}
       $$
 
   - LayerNorm 为什么不做 TP 切分？LN 层的前向和反向需要 all-reduce 吗？
     - LayerNorm 计算公式
 
       $$
-      \text{LN}(x) = \frac{x-\mathbb E[x]}{\sqrt{\text{Var}(x)+\varepsilon}}\cdot \gamma+\beta
+      \text {LN}(x) = \frac {x-\mathbb E [x]}{\sqrt {\text {Var}(x)+\varepsilon}}\cdot \gamma+\beta
       $$
 
-    - 均值、方差是全局样本/全局隐藏维统计量，它是逐个 token 进行统计的
+    - 均值、方差是全局样本 / 全局隐藏维统计量，它是逐个 token 进行统计的
     - 如果按维度 TP 切分，单卡局部统计≠全局统计，归一化彻底失效
     - $\gamma$ 和 $\beta$ 是全局缩放偏移参数，拆分无数学意义
 
@@ -757,11 +757,11 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
     - 标准单样本离散交叉熵：
 
       $$
-      \mathcal{L}=-\log p(y)= -\log\left( \frac{e^{z_y}}{\sum_{v=1}^V e^{z_v}} \right)
+      \mathcal {L}=-\log p (y)= -\log\left (\frac {e^{z_y}}{\sum_{v=1}^V e^{z_v}} \right)
       $$
 
-    - z∈RV 表示全局logits，y 真实标签（单个索引号）
-    - TP按词表把 z 切成多片 $z_1,z_2,\ldots,z_{tp}$，而真值标签 y 只会落在其中某一个 GPU 的局部词表分片里，其余卡对应位置项为 0 贡献，交叉熵只依赖真值对应那一项的归一化概率，全局求和等价于「仅含真值的那张卡单项贡献 + 其余卡 0」
+    - z∈RV 表示全局 logits，y 真实标签（单个索引号）
+    - TP 按词表把 z 切成多片 $z_1,z_2,\ldots,z_{tp}$，而真值标签 y 只会落在其中某一个 GPU 的局部词表分片里，其余卡对应位置项为 0 贡献，交叉熵只依赖真值对应那一项的归一化概率，全局求和等价于「仅含真值的那张卡单项贡献 + 其余卡 0」
     - 所以各卡局部 loss 相加 = 全局完整 loss
 
 - Dropout 层
@@ -815,7 +815,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
     - 模型结构优先保证，总注意力头数能被 TP 并行度整除
     - GQA/MQA 场景：分组重映射 + Padding 补齐，对不整除的头分片做虚拟 padding 对齐 TP 分组，计算后截掉
   - TP 并行度受什么硬件约束？
-    - 受单卡显存限制：虽然能够洁身参数/优化器显存，但是仍需要存储完整的 LN 层、全局输入激活等
+    - 受单卡显存限制：虽然能够洁身参数 / 优化器显存，但是仍需要存储完整的 LN 层、全局输入激活等
     - 机内通信带宽（NVLink）硬性限制：TP 是高频低延迟集合通信（每层 4 次 all-reduce），必须同节点、NVLink 互联；跨节点 PCIe 带宽太低，TP 性能骤降
     - 通信延迟叠加阈值：TP 越大，Ring All-Reduce 通信延迟越高
 - TP 训练问题
@@ -839,7 +839,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - CP 是沿序列维度切分输入与所有中间激活的并行策略，专为超长上下文（128K/256K+）设计，核心是把长序列分片到多卡，降低单卡激活与 KV 显存占用
   - CP 是为了解决 TP 的什么问题？
     - 解决 TP 的长序列激活显存爆炸
-    - 解决 TP 下无法进行有效的通信-计算重叠，通过划分序列，计算量和通信量都按照 cp_size 降低，且 all-reduce 被拆分为 reduce-scatter 和 all-gather 后更方便进行计算通信重叠
+    - 解决 TP 下无法进行有效的通信 - 计算重叠，通过划分序列，计算量和通信量都按照 cp_size 降低，且 all-reduce 被拆分为 reduce-scatter 和 all-gather 后更方便进行计算通信重叠
 - 切分
   - LN 层怎么进行切分的？
     - 由于 LN 是逐个 token 沿隐藏维度计算的均值和方差，因此需要访问完整的 hidden_dim 才能计算正确
@@ -863,19 +863,19 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
     - 没有引入更多通信量。标准的 TP 前向和反向各需要一次 All-Reduce（通信量为 2×S×H），Megatron SP 将一次 All-Reduce 巧妙地数学拆解为一次 All-Gather 和一次 Reduce-Scatter，总通信量保持完全一致，但降低了显存峰值
     - 前向传播 (All-Gather)：在进入线性层之前，各卡持有的局部序列 `[s/p, h]` 通过 All-Gather 拼成全局序列 `[s, h]`
     - 反向传播 (Reduce-Scatter)：计算完线性层的梯度后，各卡持有的全局序列梯度 `[s, h]` 通过 Reduce-Scatter 归约并切分为局部梯度 `[s/p, h]`
-    - SP 允许将序列进一步划分为更小的 micro-chunks，当卡在计算 chunk i 的矩阵乘法时，可以通过硬件引擎（如 NCCL）异步进行 chunk i+1 的 All-Gather 通信，实现严格的通信-计算重叠
+    - SP 允许将序列进一步划分为更小的 micro-chunks，当卡在计算 chunk i 的矩阵乘法时，可以通过硬件引擎（如 NCCL）异步进行 chunk i+1 的 All-Gather 通信，实现严格的通信 - 计算重叠
     - all-gather p2p
     - reduce-scatter p2p
     - 反向传播
   - LN 层为什么引入了额外的 all-reduce 通信？
   - TP+SP 仍然存在的问题？
-    - Attention 复杂度瓶颈：尽管 SP 切分了 LN 和 Dropout 的序列，但在 Attention 模块中，Q 仍然需要和完整的 K、V 计算，单卡的 Attention 计算时间复杂度仍为 $O(S^2)$，并没有随着卡数 p 的增加而减少
+    - Attention 复杂度瓶颈：尽管 SP 切分了 LN 和 Dropout 的序列，但在 Attention 模块中，Q 仍然需要和完整的 K、V 计算，单卡的 Attention 计算时间复杂度仍为 $O (S^2)$，并没有随着卡数 p 的增加而减少
     - KV 显存依然爆炸：每个 GPU 在 Attention 内部都需要短暂持有或重组完整的全局 K 和 V（即 B×S×H），在超长上下文（如 100K+）下，即便有 TP，显存依然会 OOM
 - TP+CP
   - 无并行下的激活计算：全量激活占用，大小为 B×S×H，Attention 矩阵显存占用为 B×heads×S×S
   - 纯 TP 的激活计算：由于输入序列未切分，进入 Attention/MLP 前的激活占用仍为 B×S×H（冗余存放），仅权重和中间映射（如 QKV 投影后）切分为 H/tp
   - TP+SP 的激活计算：非 Attention/MLP 核心计算区（如 LN、Dropout）的激活降为 B×(S/tp)×H，但 Attention 计算时的 K、V 和注意力分数矩阵依然维持对全局序列 S 的依赖
-  - TP+SP+CP 的激活计算：序列被进一步极度切分，单卡的输入激活和 KV 缓存大小降至 B×(S/(tp×cp))×H，Attention 矩阵大小被严格限制在局部分块级别（如 (S/cp)×(S/cp)），彻底消除了 $O(S^2)$ 带来的单卡显存爆炸
+  - TP+SP+CP 的激活计算：序列被进一步极度切分，单卡的输入激活和 KV 缓存大小降至 B×(S/(tp×cp))×H，Attention 矩阵大小被严格限制在局部分块级别（如 (S/cp)×(S/cp)），彻底消除了 $O (S^2)$ 带来的单卡显存爆炸
 - 引入 CP 后
   - MLP 如何进行切分序列的？
     - MLP 是基于 token 独立计算的
@@ -883,7 +883,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - CP 能不能减少激活总显存？原理是什么？
     - 能，而且是呈倍数减少
     - 原理是：通过长序列分片，每张卡仅保存 `1/cp` 长度的前向激活值和 KV Cache
-    - 同时，Attention 的 S×S 矩阵也被拆解为一个个小的 Block 分步计算并在计算后立即丢弃（结合 FlashAttention），使得激活显存从 $O(S^2)$ 骤降到 $O((S/cp)^2)$ 级别
+    - 同时，Attention 的 S×S 矩阵也被拆解为一个个小的 Block 分步计算并在计算后立即丢弃（结合 FlashAttention），使得激活显存从 $O (S^2)$ 骤降到 $O ((S/cp)^2)$ 级别
   - Ring Attention 的原理？通信量计算？
     - 将全局序列分成 `cp` 块，每张 GPU 持有局部的 $Q_i$、$K_i$、$V_i$
     - 计算时，本地的 $Q_i$ 保持不动，各 GPU 将自身的 $K_i$, $V_i$ 发送给环上的下一个 GPU，同时接收上一个 GPU 传来的 $K_j$, $V_j$
@@ -901,14 +901,14 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - CP 的通信量理论怎么计算？和 TP 通信量对比谁更大？
     - 理论计算：Ring Attention 为 P2P 通信，单次 Send/Recv 数据量为 2×S/cp×H，总计 cp−1 次，总数据量 2SH；Ulysses 的 All-to-All 单次数据量也约为 SH
     - 与 TP 对比：TP 每次 All-Reduce 数据量为 2SH（包含一发一收）
-    - 理论上通信量大小相当，但由于 CP 是在长序列下开启，单次通信的绝对包体会非常巨大；此外 TP 通常在机内高带宽 NVLink 执行，而 CP 常跨节点跨交换机执行，受限于以太网/IB带宽高延迟，CP 的通信瓶颈感官上更显著
+    - 理论上通信量大小相当，但由于 CP 是在长序列下开启，单次通信的绝对包体会非常巨大；此外 TP 通常在机内高带宽 NVLink 执行，而 CP 常跨节点跨交换机执行，受限于以太网 / IB 带宽高延迟，CP 的通信瓶颈感官上更显著
   - 如何把 CP 的通信隐藏在计算里做重叠掩盖？
     - 采用 Block-wise (分块) 异步流水线，将本地的序列块进一步划分为多个 sub-blocks
     - 当 GPU 在执行第 k 步的 Q 与当前 $K_j$, $V_j$ 的 FlashAttention 核心计算时，后台并发调用 NCCL Send/Recv 将当前的 $K_j$, $V_j$ 传给下个节点，并接收 $K_{j+1}$, $V_{j+1}$
     - 只要计算耗时 ≥ 传输耗时，通信时间就被完全隐藏
   - CP 的负载不均衡问题怎么解决？Zig-Zag Ring Attention 的原理？
     - 不均衡原因：在 Causal LLM（自回归）训练中，Attention 矩阵是下三角的。排在前面的 GPU 处理的是序列早期的 token，需要看的历史 KV 很少（大量被 mask 掉），计算极快；排在后面的 GPU 处理序列末尾的 token，需要算全量 KV，计算极慢，导致严重的等待
-    - Zig-Zag 原理：将序列分块进行对折/首尾交错分配
+    - Zig-Zag 原理：将序列分块进行对折 / 首尾交错分配
       - 假设有 8 个块和 4 张 GPU
       - 不均衡的做法是 GPU0 拿 0,1，GPU3 拿 6,7
       - Zig-Zag 则是让 GPU0 处理首（轻）和尾（重）的组合（如 Block 0 和 Block 7），GPU1 处理 1 和 6... 使得每张卡分到的总计算面积（下三角中的有效像素数）在数学上严格相等，从而达到完美的负载均衡
@@ -921,8 +921,8 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
     - 主要通过上述的 Zig-Zag Ring Attention（或 Striped Attention 交错切分策略），在物理分发数据时就将序列的头部和尾部分配到同一张卡上
   - CP 会引入哪些数值误差、收敛风险？
     - 由于数学上采用了严格等价的 Online Softmax 拼接策略，CP 理论上是无损的
-    - 微小误差来源：浮点数的结合律问题——累加顺序的改变（比如按分块累加 vs 一次性全局累加）在 FP16/BF16 下会产生极微小的精度截断差异
-    - 收敛风险：通常风险极低——但如果 CP 实现中的 dropout 随机种子同步错误，或者位置编码错位，会导致严重的收敛崩坏
+    - 微小误差来源：浮点数的结合律问题 —— 累加顺序的改变（比如按分块累加 vs 一次性全局累加）在 FP16/BF16 下会产生极微小的精度截断差异
+    - 收敛风险：通常风险极低 —— 但如果 CP 实现中的 dropout 随机种子同步错误，或者位置编码错位，会导致严重的收敛崩坏
   - CP 分片后，位置编码 RoPE 怎么同步对齐？会不会旋转错位？
     - 不会旋转错位，前提是必须注入全局绝对位置 ID
     - 在 CP 中，输入序列被切分成了独立的物理 tensor `[s/cp]`；但在计算 RoPE 时，不能只用 `0 到 s/cp` 的本地索引，而必须根据 GPU 的 CP Rank（即局部序列在全局序列中的位置）来生成 绝对位置索引 (Position IDs)
@@ -989,7 +989,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
     - 气泡占比为
 
       $$
-      \frac{K-1}{K+M-1}
+      \frac {K-1}{K+M-1}
       $$
 
     - 从公式看出，要降低气泡占比，必须增大 N，但 AFAB 的致命缺陷是显存占用极大，因为必须等所有 N 个前向做完才做反向，设备必须在显存中缓存 N 份激活值
@@ -1019,7 +1019,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
     - 实际总耗时：尽管调度顺序变了，但关键路径的总长度并没有改变，第一个微批次走到底并传回设备 1 需要 $K \cdot t_{fb}$ 的时间，此后设备 1 还需要做剩下的 M−1 个 1F1B
 
       $$
-      T_{1F1B} = K \cdot t_{fb} + (M - 1) \cdot t_{fb} = (K - 1 + M)t_{fb}
+      T_{1F1B} = K \cdot t_{fb} + (M - 1) \cdot t_{fb} = (K - 1 + M) t_{fb}
       $$
 
     - 气泡总时间为
@@ -1031,10 +1031,10 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
     - 气泡占比为
 
       $$
-      \frac{K-1}{K+M-1}
+      \frac {K-1}{K+M-1}
       $$
 
-    - 可以看出，1F1B 的气泡时间与 AFAB 完全一样，都是 $(K−1)t_{fb}$，但 1F1B 实现了显存的降维打击
+    - 可以看出，1F1B 的气泡时间与 AFAB 完全一样，都是 $(K−1) t_{fb}$，但 1F1B 实现了显存的降维打击
     - 1F1B 只需要同时缓存一个 micro-batch 的激活值
 
   - 1F1B 如何实现梯度实时复用？不用等全部 micro 跑完？
@@ -1052,37 +1052,37 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
 - Interleaved
   - 什么是 VPP/Interleaved PP？虚拟分段怎么做？
     - 不增加物理 GPU（P），把模型切分为 V = P × v 个虚拟 stage（v 为每个 GPU 的虚拟分段数）
-    - 每个物理 GPU不负责连续层，而是持有v 个分散的虚拟 chunk，形成 “交错” 的层分布
+    - 每个物理 GPU 不负责连续层，而是持有 v 个分散的虚拟 chunk，形成 “交错” 的层分布
   - 为什么增大虚拟分段数能降低流水线气泡？底层原理？
-    - 耗时切分：因为每个虚拟块的层数变为原来的 1/v，所以处理每个微批次的前/反向时间也变成了 $t_{f}/v$和 $t_{b}/v$，单个虚拟块的完整耗时为 $t_{fb}/v$，流水线填满和排空的时间也相应缩短为原来的 1/v
-    - 气泡产生机制：流水线气泡只产生在流水线“填满前”和“排空时”
-    - 在 Interleaved 模式下，第一个微批次只需要经过 K 个虚拟块（而不是 K 个完整 GPU 阶段）就能到达最后一个 GPU，耗时从 $(K−1)t_f$ 缩短为 $(K−1)t_{fv}$，同样地，反向传播的首个微批次也能更快地回传到第一个 GPU，因此首尾的气泡时间从 $(K−1)t_{fb}$ 缩短为 $(K−1)t_{fb}/v$，大幅降低了气泡时间
+    - 耗时切分：因为每个虚拟块的层数变为原来的 1/v，所以处理每个微批次的前 / 反向时间也变成了 $t_{f}/v$ 和 $t_{b}/v$，单个虚拟块的完整耗时为 $t_{fb}/v$，流水线填满和排空的时间也相应缩短为原来的 1/v
+    - 气泡产生机制：流水线气泡只产生在流水线 “填满前” 和 “排空时”
+    - 在 Interleaved 模式下，第一个微批次只需要经过 K 个虚拟块（而不是 K 个完整 GPU 阶段）就能到达最后一个 GPU，耗时从 $(K−1) t_f$ 缩短为 $(K−1) t_{fv}$，同样地，反向传播的首个微批次也能更快地回传到第一个 GPU，因此首尾的气泡时间从 $(K−1) t_{fb}$ 缩短为 $(K−1) t_{fb}/v$，大幅降低了气泡时间
     - 实际总耗时：总耗时等于处理所有 M 个微批次的理想时间，加上流水线两端的绝对气泡时间：
 
       $$
-      T_{Interleaved} = M \cdot t_{fb} + (K - 1) \frac{t_{fb}}{v}
+      T_{Interleaved} = M \cdot t_{fb} + (K - 1) \frac {t_{fb}}{v}
       $$
 
     - 气泡时间：
 
       $$
-      Bubble_{Interleaved} = \frac{K - 1}{v} t_{fb}
+      Bubble_{Interleaved} = \frac {K - 1}{v} t_{fb}
       $$
 
     - 气泡占比：
 
       $$
-      Fraction_{Interleaved} = \frac{\frac{K - 1}{v} t_{fb}}{(M + \frac{K - 1}{v}) t_{fb}} \approx \frac{K - 1}{vM + K - 1}
+      Fraction_{Interleaved} = \frac {\frac {K - 1}{v} t_{fb}}{(M + \frac {K - 1}{v}) t_{fb}} \approx \frac {K - 1}{vM + K - 1}
       $$
 
-    - 可以看到，直接缩减气泡——Interleaved 1F1B 在物理层面直接将气泡体积缩小为原来的 1/v
-    - 在 M 相同的情况下，原本气泡占用了 $(K−1)t_{fb}$ 的算力，现在只占用 $\frac{K−1}{v}t_{fb}$，例如 v=2 时，气泡直接减半
+    - 可以看到，直接缩减气泡 ——Interleaved 1F1B 在物理层面直接将气泡体积缩小为原来的 1/v
+    - 在 M 相同的情况下，原本气泡占用了 $(K−1) t_{fb}$ 的算力，现在只占用 $\frac {K−1}{v} t_{fb}$，例如 v=2 时，气泡直接减半
     - 需要注意的是，这种优化是以增加 GPU 间的通信次数（通信量翻了 v 倍）为代价的，因此 v 不能无限大，通常 $v \in \{2, 4\}$ 是计算与通信 tradeoff 后的最优解
 
   - VPP 可以无限增大吗？带来的显存、通信、调度代价是什么？
     - 显存代价：需要积压更多未进行反向传播的微批次激活，由于流水线的差异而导致同时被依赖的激活总数变多
-    - 通信代价：传统 PP 中每个 micro-batch 仅需P-1 次跨 GPU 通信（物理 stage 间），而VPP 中每个 micro-batch 需 V-1 = P×v-1 次跨 GPU 通信（虚拟 stage 间）
-    - 调度代价：需管理 v×P 个虚拟 stage的 F/B 时序，调度逻辑复杂
+    - 通信代价：传统 PP 中每个 micro-batch 仅需 P-1 次跨 GPU 通信（物理 stage 间），而 VPP 中每个 micro-batch 需 V-1 = P×v-1 次跨 GPU 通信（虚拟 stage 间）
+    - 调度代价：需管理 v×P 个虚拟 stage 的 F/B 时序，调度逻辑复杂
     - 负载均衡更难：v 增大易导致不同虚拟 chunk 计算量不均，引入新气泡
   - 怎么实现通信计算重叠的？
     - 计算 - 通信时间轴完全错开：
@@ -1103,7 +1103,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
     - W 后置 → 对应 micro 的激活需更长时间驻留显存，为控制显存，必须增加重计算比例，用算力换显存
     - 典型：完全重计算（F 不存激活，B 时重算），激活显存降至最低，但算力开销最大
   - ZeroBubble 气泡理论计算公式？适用场景限制？
-    - 气泡从 $(K−1)\cdot t_{fb}$ 变为 $(K−1)\cdot(t_{fb}−2t_{bw})$
+    - 气泡从 $(K−1)\cdot t_{fb}$ 变为 $(K−1)\cdot (t_{fb}−2t_{bw})$
 - DualPipe
   - DualPipe 双流水线设计原理？两组 micro batch 交错执行？
     - 首先，在进行层分配时，分配规则是 V 形对称交错，每个 GPU 持有 2 层，且与对面 GPU 形成镜像：
@@ -1121,7 +1121,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
       - 完美填满传统单向流水线的首尾气泡，让 GPU 利用率从～58% 提升到～94%
   - DualPipe 如何互相掩盖前向 / 反向气泡？
   - DualPipe 气泡率理论推导？相比传统 PP 优势？
-    - 因为是从两端向中间逼近，流水线产生气泡的“深度”从 K−1 直接被折半为 K/2-1
+    - 因为是从两端向中间逼近，流水线产生气泡的 “深度” 从 K−1 直接被折半为 K/2-1
     - 气泡变为 $(K/2−1)(t_{fb}+t_b−3t_{bw})$
   - DualPipe 显存暴涨的核心原因是什么？
     - 从只需维护一份参数副本，变为需要维护两份参数副本
@@ -1167,9 +1167,9 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
 ### 综合
 
 - 在大规模分布式训练中，TP，CP，DP，PP 的组织如何进行组织？
-  - DP通过多卡并行数据提升吞吐，PP解决模型过深单卡放不下的问题，TP针对hidden过大、attention/MLP过宽进行切分，CP则用于缓解context过长导致的attention O(n²)压力
+  - DP 通过多卡并行数据提升吞吐，PP 解决模型过深单卡放不下的问题，TP 针对 hidden 过大、attention/MLP 过宽进行切分，CP 则用于缓解 context 过长导致的 attention O (n²) 压力
 - activation checkpoint 怎么控制粒度？计算量大致增加多少？
-  - Full Checkpoint：对整个 Transformer Layer做 checkpoint，只存输入 embedding + 最终输出，中间所有激活全部丢弃
+  - Full Checkpoint：对整个 Transformer Layer 做 checkpoint，只存输入 embedding + 最终输出，中间所有激活全部丢弃
   - Block Checkpoint / Sub-layer Checkpoint：把一层拆成几块分别 checkpoint，比如 `Attn → MLP` 拆成两段，每段内部丢弃激活，段间保留少量激活，平衡显存与重算开销
   - Operation-wise / Selective Checkpoint：只对显存大、计算便宜的 op 做 checkpoint，例如 GELU、LayerNorm、dropout；而矩阵乘法这种计算重、显存小的不重算，显存节省略少，但重算开销极低
   - Full activation checkpoint：计算量 ≈ 变为原来 1.3 ~ 1.5 倍
@@ -1199,7 +1199,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - 损失函数
 
     $$
-    \mathcal{L}=-\frac{1}{T}\sum_{t=1}^{T}\log p_\theta(x_t\mid x_1,\dots,x_{t-1})
+    \mathcal {L}=-\frac {1}{T}\sum_{t=1}^{T}\log p_\theta (x_t\mid x_1,\dots,x_{t-1})
     $$
 
   - 对每个位置预测下一个 token，只对真实 token 算 loss，padding 不计，整体是平均 token 损失
@@ -1235,18 +1235,18 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
 
   - 其他细节
     - 为什么不用 MSE？分类任务用 CE 更稳定，MSE 梯度小、收敛慢
-    - 预训练 loss 一般多少正常？初始化 loss ≈ ln(vocab_size) ≈ 10~11，收敛后 1.5~2.5 左右（取决于数据、规模）
+    - 预训练 loss 一般多少正常？初始化 loss ≈ ln (vocab_size) ≈ 10~11，收敛后 1.5~2.5 左右（取决于数据、规模）
     - perplexity（困惑度）和 loss 关系
 
       $$
-      \text{PPL}=\exp(\text{loss})
+      \text {PPL}=\exp (\text {loss})
       $$
 
 - 掩码语言模型（MLM）的损失函数是什么？
   - 损失函数
 
     $$
-    \mathcal{L}=-\sum_{i\in\mathcal{M}}\log p_\theta(x_i\mid x_{\backslash i})
+    \mathcal {L}=-\sum_{i\in\mathcal {M}}\log p_\theta (x_i\mid x_{\backslash i})
     $$
 
   - 只对被 mask 掉的 15% 位置算损失
@@ -1259,7 +1259,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - 损失函数
 
     $$
-    \mathcal{L} = -\frac{1}{N}\sum_{i\in\text{response}} \log p_\theta(y_i\mid y_{<i})
+    \mathcal {L} = -\frac {1}{N}\sum_{i\in\text {response}} \log p_\theta (y_i\mid y_{<i})
     $$
 
   - 代码实现
@@ -1285,10 +1285,10 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - 不直接限制参数变化，而是约束当前策略 πθ 与冻结参考策略 πSFT 的概率分布距离：
 
     $$
-    D_{\text{KL}}(\pi_\theta\parallel\pi_\text{ref})
+    D_{\text {KL}}(\pi_\theta\parallel\pi_\text {ref})
     $$
 
-  - SFT 约束的是行为/生成分布的距离，通过 KL 散度能够保证在偏好对齐或强化学习训练过程中，不会遗忘已经监督微调得到的语言能力
+  - SFT 约束的是行为 / 生成分布的距离，通过 KL 散度能够保证在偏好对齐或强化学习训练过程中，不会遗忘已经监督微调得到的语言能力
   - 防止 RL 会为了高奖励 乱改语言能力、忘记知识、胡说八道，出现 奖励黑客（reward hacking）
 
 - 模型 SFT 到什么程度可以进行 RL？判断指标是什么？
@@ -1308,12 +1308,12 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
     - 奖励筛选：用训练好的奖励模型（RM）给所有候选打分，保留高分样本、丢弃低分样本（常见策略：取单 Prompt 最高分（Top-1）、全局 Top-K、或按 Reward 阈值截断）
     - SFT 再训练：用筛选出的高质量（Prompt, Response）对，再次做标准监督微调（交叉熵损失）
   - 本质是把 “偏好筛选” 转化为新的 SFT 数据集，用模仿学习拟合高分分布
-  - 优点：工程实现简单、训练稳定、显存/计算成本低、速度快、无奖励黑客问题
+  - 优点：工程实现简单、训练稳定、显存 / 计算成本低、速度快、无奖励黑客问题
   - 缺点
     - 采样效率低、数据浪费大，低分样本完全丢弃，未利用负样本信息
     - 优化上限低于 PPO，被动拟合已有的高分样本，探索能力弱
     - 依赖 RM 质量与采样多样性，RM 不准确可能导致训练变差
-    - 偏好信号弱，没有梯度和惊喜的quan'zhong
+    - 偏好信号弱，没有梯度和惊喜的 quan'zhong
 - 微调后模型出现复读机怎么排查？灾难性遗忘怎么解决？
 - SFT 够用 vs 必须用 DPO/RL 怎么判断
 - 大模型幻觉怎么规避？
@@ -1326,18 +1326,18 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - SFT 的目标函数
 
     $$
-    \mathcal{L}_{\text{SFT}} = -\mathbb{E}_{(x,y)\sim D} \log p_\pi(y|x)
+    \mathcal {L}_{\text {SFT}} = -\mathbb {E}_{(x,y)\sim D} \log p_\pi (y|x)
     $$
 
   - PPO/GRPO 的目标函数
 
     $$
-    \mathcal{L}_{\text{RL}} = \mathbb{E}_{x\sim D,\,y\sim\pi_\text{old}} \; \underbrace{A_t(\pi_\text{old})}_{=A_t(x,y,\pi_\text{old})} \cdot \log p_\pi(y|x)\
-    A_t = A_t(\color{red}{\pi})
+    \mathcal {L}_{\text {RL}} = \mathbb {E}_{x\sim D,\,y\sim\pi_\text {old}} \; \underbrace {A_t (\pi_\text {old})}_{=A_t (x,y,\pi_\text {old})} \cdot \log p_\pi (y|x)\
+    A_t = A_t (\color {red}{\pi})
     $$
 
   - 其中，优势函数是策略的黑箱函数，会随着策略变化而变化，每更新一步，所有样本的优势都要重新计算
-  - 同时，优势函数是不可导的，只能通过采样+估计得到
+  - 同时，优势函数是不可导的，只能通过采样 + 估计得到
   - 因此，RL 优化本身是一个带 “动态、有噪、自相关目标” 的学习，不是在优化固定目标，而是在优化一个边跑边变、且只能采样观测的目标
   - 目标不固定、只能采样估计没有解析形式、数据分布不断变化等原因，导致 RL 训练是不稳定的
 
@@ -1349,28 +1349,28 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - Reward Model：偏好对齐专属，输入 chosen/rejected 序列输出标量奖励，冻结或轻量微调，提供外部奖励信号
   - Reference Model：一般冻结 SFT 模型，用于计算 KL 散度正则，约束 Actor 不要偏离人类基座太远，防止崩坏、灾难性遗忘
 - SFT
-  - SFT 本质不是为了“对齐”，而是为了把策略初始化到一个合理分布，否则 RL 会直接崩掉
-  - 给 policy 一个 strong prior，让它一开始就在“像人类说话”的区域里，而不是在整个 token 空间乱探索
-  - SFT 实际上是在做一个强 prior，让 policy 已经具备基本对话能力、指令跟随能力以及合理的语言结构，这样 RL 阶段只需要做“偏好微调”，而不是从零学行为
+  - SFT 本质不是为了 “对齐”，而是为了把策略初始化到一个合理分布，否则 RL 会直接崩掉
+  - 给 policy 一个 strong prior，让它一开始就在 “像人类说话” 的区域里，而不是在整个 token 空间乱探索
+  - SFT 实际上是在做一个强 prior，让 policy 已经具备基本对话能力、指令跟随能力以及合理的语言结构，这样 RL 阶段只需要做 “偏好微调”，而不是从零学行为
 - Reward Model
-  - 它的作用是把人类的偏好（通常是 pairwise preference，比如 A 比 B 好）拟合成一个标量函数 r(x, y)，这个函数本质上是在近似“人类会更喜欢哪个回答”
-  - RM 不是在判断对错，而是在学习“排序信号”，因此它更像一个 ranking model，而不是分类器
+  - 它的作用是把人类的偏好（通常是 pairwise preference，比如 A 比 B 好）拟合成一个标量函数 r (x, y)，这个函数本质上是在近似 “人类会更喜欢哪个回答”
+  - RM 不是在判断对错，而是在学习 “排序信号”，因此它更像一个 ranking model，而不是分类器
 - Critic Model（Value Model）
-  - 在 PPO 阶段引入的，它学习的是状态价值 V(s)，用来估计“当前这个前缀继续下去大概能拿多少 reward”
+  - 在 PPO 阶段引入的，它学习的是状态价值 V (s)，用来估计 “当前这个前缀继续下去大概能拿多少 reward”
   - 它的核心作用不是提高性能，而是降低梯度方差，让训练稳定，否则 RL 在长序列下几乎不可用
-  - 同时，Value Model 不只是“降方差工具”，它本质上就是在做 credit assignment 的近似
-  - 在 PPO 中，Value Model 通过估计每个 state 的期望回报，将全局 reward 转换为每个时间步的 advantage，从而实现一种“隐式的 credit assignment”
+  - 同时，Value Model 不只是 “降方差工具”，它本质上就是在做 credit assignment 的近似
+  - 在 PPO 中，Value Model 通过估计每个 state 的期望回报，将全局 reward 转换为每个时间步的 advantage，从而实现一种 “隐式的 credit assignment”
   - 但这种 credit assignment 是粗粒度的，无法精确定位到具体 token 或动作的贡献
 - Reference Model
-  - 通常就是 SFT 模型的冻结版本，它的作用不是参与训练，而是提供一个“行为锚点”，用于 KL 约束，防止 policy 在 RL 过程中偏离人类语言分布太远
+  - 通常就是 SFT 模型的冻结版本，它的作用不是参与训练，而是提供一个 “行为锚点”，用于 KL 约束，防止 policy 在 RL 过程中偏离人类语言分布太远
 - PPO
   - 模型生成回答（rollout），Reward Model 给分，同时计算与 Reference Model 的 KL penalty，得到一个综合 reward，然后通过 PPO 更新 policy
   - 这里其实是在做一个受约束的优化问题：既要提高 reward，又不能偏离 reference 太多
 - RLHF 最大瓶颈是算力还是数据？
-  - 在早期阶段，瓶颈更偏向数据，尤其是高质量的人类偏好数据，因为 reward model 的上限直接决定 RL 的上限，reward 学歪了，RL 再强也只是“优化错误目标”
+  - 在早期阶段，瓶颈更偏向数据，尤其是高质量的人类偏好数据，因为 reward model 的上限直接决定 RL 的上限，reward 学歪了，RL 再强也只是 “优化错误目标”
   - 但在实际大规模系统中，瓶颈往往转向算力，因为 RLHF 的训练范式极其低效：每一步都需要 rollout，而 rollout 本质是 inference，且无法像预训练那样高效并行和复用
-  - 更关键的一点是：RLHF 的 sample efficiency 很低，很多 token 是“用来探索而不是学习”的，所以单位算力产出的有效信息远低于 pretraining
-  - 因此在工业界，常见现象是“算力成为直接瓶颈，而数据成为上限瓶颈”
+  - 更关键的一点是：RLHF 的 sample efficiency 很低，很多 token 是 “用来探索而不是学习” 的，所以单位算力产出的有效信息远低于 pretraining
+  - 因此在工业界，常见现象是 “算力成为直接瓶颈，而数据成为上限瓶颈”
 - RLHF 三阶段（SFT→Reward Model→PPO）每阶段核心痛点是什么？
   - SFT：优质标注数据稀缺、噪声较大；容易过拟合、泛化性差；容易导致灾难性遗忘
   - Reward Model：偏好成对标注不一致、标注偏见；奖励坍缩，RM 区分度下降、输出分布集中
@@ -1383,7 +1383,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
 - 为什么大模型对齐不用 DQN，而用 PPO？
   - LLM 是连续高维动作空间（token 分布），DQN 这类价值方法不适用（DQN 是离散动作、低维动作空间的算法，只能输出有限个离散动作）
   - 而且对齐需要稳定、安全、可控的策略更新，PPO 比 DQN 更适合大模型微调
-- 为什么有了 llm as judge还需要单独训练 reward model？
+- 为什么有了 llm as judge 还需要单独训练 reward model？
   - 算力与延迟的限制
     - LLM-as-Judge：如果直接用 Gemini-Pro 这类 70B + 的大模型作为 Judge，RL 训练过程中数百万次的推理调用会带来极高的 GPU 成本和延迟，直接卡死训练流程
     - Reward Model：RM 通常是比 Policy Model 小得多的轻量模型（如 7B 甚至更小），只需一次前向传播就能输出标量奖励，速度快、吞吐量大，能满足 RL 内循环对低延迟、高吞吐反馈信号的需求
@@ -1408,8 +1408,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - 损失函数（成对排序损失）
 
     $$
-    \mathcal{L}_{\text{RM}}(\theta) = -\mathbb{E}_{(x,y_j,y_k) \sim \mathcal{D}} \left[
-    		\log\sigma\big(r_\theta(x,y_j) - r_\theta(x,y_k)\big)
+    \mathcal {L}_{\text {RM}}(\theta) = -\mathbb {E}_{(x,y_j,y_k) \sim \mathcal {D}} \left [\log\sigma\big (r_\theta (x,y_j) - r_\theta (x,y_k)\big)
     		\right]
     $$
     - $\sigma$ 为 Sigmoid 函数
@@ -1430,13 +1429,13 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - 目标是让模型满足：
 
     $$
-    r(x, y_w) > r(x, y_l)
+    r (x, y_w) > r (x, y_l)
     $$
 
   - 因此需要通过损失函数拉大同分差，训练 RM，一般使用成对交叉熵损失（Pairwise CE Loss）
 
     $$
-    \mathcal{L} = -\log\sigma\big(r(x,y_w) - r(x,y_l)\big)
+    \mathcal {L} = -\log\sigma\big (r (x,y_w) - r (x,y_l)\big)
     $$
     - $r_w$ = chosen 奖励
     - $r_l$ = rejected 奖励
@@ -1459,7 +1458,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - Margin Loss（间隔损失，Hinge 版）
 
     $$
-    \mathcal{L} = \max(0, 1 - (r_w - r_l))
+    \mathcal {L} = \max (0, 1 - (r_w - r_l))
     $$
     - 要求差值至少大于 1，否则惩罚，更鲁棒、梯度更温和，但不如 pairwise CE 常用
 
@@ -1483,8 +1482,8 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
 
 - LoRA 介绍，LoRA 的缺点是什么？后续有什么改进？LoRA 为什么有效？
   - 冻结预训练模型权重 W，仅训练低秩矩阵 A、B 模拟权重更新 $\Delta W = B\cdot A$，其中秩 $r \ll \min (d, k)$（d、k 为原权重维度）
-  - 前向传播 $h = Wx + (\alpha/r)\cdot B\cdot(A\cdot x)$（$\alpha$ 为缩放系数）
-  - 权重更新：$\Delta W = (\alpha/r)·B·A$（$\alpha$ 为缩放系数）
+  - 前向传播 $h = Wx + (\alpha/r)\cdot B\cdot (A\cdot x)$（$\alpha$ 为缩放系数）
+  - 权重更新：$\Delta W = (\alpha/r)・B・A$（$\alpha$ 为缩放系数）
   - 参数量：仅 $r*(d+k)$，通常为原模型的 0.01%~1%
   - 初始化
     - A：高斯随机初始化（均值 0）
@@ -1518,7 +1517,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
     - 若欠拟合（效果差）→ 增大 r
     - 若过拟合（训练好、测试差）→ 减小 r 或加 dropout
   - 缩放系数
-    - 缩放对象：低秩更新 B·A 的幅度，公式 ΔW = (α/r)·B·A
+    - 缩放对象：低秩更新 B・A 的幅度，公式 ΔW = (α/r)・B・A
     - 核心作用：平衡梯度大小，避免训练不稳定
     - 推荐：α = 2r（α/r=2），在多数任务上效果最优
     - 极端场景：任务难、更新弱 → 调大 α；任务简单、更新过强 → 调小 α

@@ -34,7 +34,7 @@ description: 介绍参数高效微调（PEFT）技术及其应用
 - 这是 PEFT 方法中规模最大、研究也最为广泛的一类。
 - 在这一大类中，又发展出了两个重要的子方向：Adapter 类方法和 Soft Prompt（软提示）方法
 - Adapters
-  - Adapters是一种典型的基于额外参数的 PEFT 方法，它在 Transformer 的子层之后插入小型的全连接网络
+  - Adapters 是一种典型的基于额外参数的 PEFT 方法，它在 Transformer 的子层之后插入小型的全连接网络
   - 这一思想被广泛采用（Pfeiffer et al., 2020b，见 https://github.com/adapter-hub/adapter-transformers），并且衍生出了多种变体，包括
     - 改变 Adapter 的插入位置
     - 对 Adapter 进行剪枝
@@ -42,7 +42,7 @@ description: 介绍参数高效微调（PEFT）技术及其应用
 
 - Soft Prompts
   - 语言模型提示旨在通过修改输入文本来控制语言模型的行为，输入通常由任务描述和少量上下文示例组成，然而，这类方法往往难以优化，并且受限于模型的最大输入长度
-  - 为了解决这些问题，引入了“软提示”（Soft prompts）的概念，其核心思想是：通过梯度下降直接微调模型输入嵌入的一部分，这样就把在离散空间中搜索提示的问题，转化为了一个连续优化问题
+  - 为了解决这些问题，引入了 “软提示”（Soft prompts）的概念，其核心思想是：通过梯度下降直接微调模型输入嵌入的一部分，这样就把在离散空间中搜索提示的问题，转化为了一个连续优化问题
   - 软提示既可以只作用在输入层（Prompt Tuning），也可以扩展到模型的所有层（Prefix Tuning）
   - 近期的一些研究还探索了对软提示进行预训练或部分复用，以进一步降低微调成本
 
@@ -56,7 +56,7 @@ description: 介绍参数高效微调（PEFT）技术及其应用
   - 通过减少优化器状态和梯度的内存占用，并对冻结的模型参数进行量化，基于额外参数的方法使得微调更大规模的网络成为可能，或者允许使用更大的 microbatch size，从而提升 GPU 上的训练吞吐率。其中，batch size 的关系为
 
     $$
-    \text{Batch size} = \text{microbatch size} \times \text{gradient accumulation} \times \text{num. devices}
+    \text {Batch size} = \text {microbatch size} \times \text {gradient accumulation} \times \text {num. devices}
     $$
 
   - 此外，由于需要更新的参数数量更少，PEFT 方法中的优化器更新步骤相比全量微调要快得多，这一点在实际中非常明显
@@ -70,26 +70,25 @@ description: 介绍参数高效微调（PEFT）技术及其应用
 ![Adapters](/img/llm/adapters.png)
 
 - 基本思想
-  - 全参数微调的参数量 $O(|\theta|)$，显存、通信、checkpoint 成本极高
-  - 但是下游任务通常只需要改变模型的“行为偏置”，而不是重塑整个表示空间
+  - 全参数微调的参数量 $O (|\theta|)$，显存、通信、checkpoint 成本极高
+  - 但是下游任务通常只需要改变模型的 “行为偏置”，而不是重塑整个表示空间
   - Adapter 的核心思想是冻结原模型参数，只引入一小组可训练参数，用极低成本实现任务适配
 
 - 模型结构
-  - Adapter 是插入在 Transformer 层中的一个**小瓶颈网络**（bottleneck module）
+  - Adapter 是插入在 Transformer 层中的一个 ** 小瓶颈网络 **（bottleneck module）
 
     $$
-    \mathrm{Adapter}(x)
+    \mathrm {Adapter}(x)
     =
     x
     +
-    W_{\text{up}}
+    W_{\text {up}}
     \sigma
-    (
-    W_{\text{down}} x
+    (W_{\text {down}} x
     )
     $$
-    - $x \in \mathbb{R}^h$：Transformer 层的隐藏状态
-    - $W_{\text{down}} \in \mathbb{R}^{r \times h}$、$W_{\text{up}} \in \mathbb{R}^{h \times r}$
+    - $x \in \mathbb {R}^h$：Transformer 层的隐藏状态
+    - $W_{\text {down}} \in \mathbb {R}^{r \times h}$、$W_{\text {up}} \in \mathbb {R}^{h \times r}$
     - $r \ll h$：瓶颈维度
     - $\sigma$：非线性激活函数（ReLU / GELU）
 
@@ -103,7 +102,7 @@ description: 介绍参数高效微调（PEFT）技术及其应用
   - 每层 Adapter 参数量：
 
     $$
-    |W_{\text{down}}| + |W_{\text{up}}|
+    |W_{\text {down}}| + |W_{\text {up}}|
     = hr + rh = 2hr
     $$
 
@@ -116,13 +115,13 @@ description: 介绍参数高效微调（PEFT）技术及其应用
   - 全参数微调参数量：
 
     $$
-    O(h^2 L)
+    O (h^2 L)
     $$
 
   - 比例：
 
   $$
-  \frac{\text{Adapter}}{\text{Full FT}} \approx \frac{r}{h}
+  \frac {\text {Adapter}}{\text {Full FT}} \approx \frac {r}{h}
   $$
   - 当 $h = 4096$、$r = 16$ 时，参数比例 $\approx 0.4%$，参数规模显著更小
 
@@ -150,18 +149,18 @@ description: 介绍参数高效微调（PEFT）技术及其应用
   - attention 后的 hidden state 已经包含了任务相关的结构性信息，token 之间的依赖模式，在 attention 之后插入 adapter 收益较大
 
   - 在 MLP 后加一个 adapter，能学到的新自由度其实高度相关，信息增益很小，但参数和计算翻倍
-  - LayerNorm 之后的表示具有数值尺度稳定、各层分布一致、更接近“模型的自然表示空间”的性质，从而使得 adapter 接收的是一个“干净、稳定、语义明确”的表示，这样 adapter 的低秩更新更容易学习，不容易破坏主干网络，这也是为什么 Adapter、LoRA、Prefix / Prompt（在隐空间）几乎都偏好 LN 后或 residual 分支中插入
+  - LayerNorm 之后的表示具有数值尺度稳定、各层分布一致、更接近 “模型的自然表示空间” 的性质，从而使得 adapter 接收的是一个 “干净、稳定、语义明确” 的表示，这样 adapter 的低秩更新更容易学习，不容易破坏主干网络，这也是为什么 Adapter、LoRA、Prefix / Prompt（在隐空间）几乎都偏好 LN 后或 residual 分支中插入
 
 ### Prompt-Tuning
 
 - 参考论文：[The Power of Scale for Parameter-Efficient Prompt Tuning](https://arxiv.org/abs/2104.08691)
 - Soft / Hard Prompt Tuning
-  - Hard Prompt Tuning 指使用真实的离散 token，作为 prompt 拼接到输入中，prompt 本身是自然语言或符号，不可微、不可直接反向传播——也就是一般提到的提示工程
+  - Hard Prompt Tuning 指使用真实的离散 token，作为 prompt 拼接到输入中，prompt 本身是自然语言或符号，不可微、不可直接反向传播 —— 也就是一般提到的提示工程
   - Soft Prompt Tuning 也即一般的 Prompt / Prefix Tuning，这时 prompt 不再是离散 token，而是可训练的连续向量，直接作为 embedding 使用
 
-- 核心问题：全参数微调代价太高，而 Adapter 仍然需要改动网络内部结构或权重，是否能只通过“输入”来控制模型行为？
+- 核心问题：全参数微调代价太高，而 Adapter 仍然需要改动网络内部结构或权重，是否能只通过 “输入” 来控制模型行为？
 
-- Prompt / Prefix Tuning 的统一思想：冻结整个 Transformer，仅学习一小段连续向量，通过影响注意力分布来“操控”模型
+- Prompt / Prefix Tuning 的统一思想：冻结整个 Transformer，仅学习一小段连续向量，通过影响注意力分布来 “操控” 模型
 
 - 本质上：不改模型，不加模块，只改模型看到的上下文表示
 
@@ -169,13 +168,13 @@ description: 介绍参数高效微调（PEFT）技术及其应用
   - 设原始输入 token embedding：
 
     $$
-    X = [x_1, x_2, \dots, x_T], \quad x_i \in \mathbb{R}^h
+    X = [x_1, x_2, \dots, x_T], \quad x_i \in \mathbb {R}^h
     $$
 
   - 可训练 prompt：
 
     $$
-    P = [p_1, p_2, \dots, p_m], \quad p_i \in \mathbb{R}^h
+    P = [p_1, p_2, \dots, p_m], \quad p_i \in \mathbb {R}^h
     $$
 
   - 模型实际输入为：
@@ -195,7 +194,7 @@ description: 介绍参数高效微调（PEFT）技术及其应用
 
 - 训练时，梯度只更新 prompt embedding，非常稳定
 - 推理时，prompt 作为额外 token，序列长度增加 $m$，注意力计算成本略增
-- 本质上，Prompt Tuning 是在调整模型的“条件分布起点”，改变输出风格、任务偏好
+- 本质上，Prompt Tuning 是在调整模型的 “条件分布起点”，改变输出风格、任务偏好
 
 ### Prefix-tuning
 
@@ -203,7 +202,7 @@ description: 介绍参数高效微调（PEFT）技术及其应用
 
 ![Prefix-tuning](/img/llm/prefix-tuning.png)
 
-- Prompt Tuning 的核心限制在于 prompt 只在 embedding 层起作用，深层 Transformer 只能“间接感知”
+- Prompt Tuning 的核心限制在于 prompt 只在 embedding 层起作用，深层 Transformer 只能 “间接感知”
 
 - Prefix Tuning 的关键改进：在每一层注意力中都插入可学习前缀
 
@@ -211,24 +210,24 @@ description: 介绍参数高效微调（PEFT）技术及其应用
   - Transformer 第 $l$ 层注意力：
 
     $$
-    \mathrm{Attn}(Q_l, K_l, V_l)
+    \mathrm {Attn}(Q_l, K_l, V_l)
     $$
 
   - Prefix Tuning 学习的是：
 
     $$
-    P_l^K \in \mathbb{R}^{m \times h}, \quad
-    P_l^V \in \mathbb{R}^{m \times h}
+    P_l^K \in \mathbb {R}^{m \times h}, \quad
+    P_l^V \in \mathbb {R}^{m \times h}
     $$
 
   - 实际注意力计算变为：
 
     $$
-    \mathrm{Attn}
-    \Big(
+    \mathrm {Attn}
+    \Big (
     Q_l,
-    [K(P_l^K); K(X)],
-    [V(P_l^V); V(X)]
+    [K (P_l^K); K (X)],
+    [V (P_l^V); V (X)]
     \Big)
     $$
 
@@ -281,18 +280,17 @@ description: 介绍参数高效微调（PEFT）技术及其应用
   - Prefix 不再是参数本身，而是由输入条件生成的函数输出，即：
 
   $$
-  P_l^K, P_l^V = g_\phi(X)
+  P_l^K, P_l^V = g_\phi (X)
   $$
-  - 其中，$g_\phi$ 是一个小型可训练网络，$\phi$​ 是唯一需要更新的参数，而Transformer 主模型依然保持完全冻结
+  - 其中，$g_\phi$ 是一个小型可训练网络，$\phi$​ 是唯一需要更新的参数，而 Transformer 主模型依然保持完全冻结
 
   - 对于标准 Prefix Tuning，第 $l$ 层注意力：
 
     $$
-    \mathrm{Attn}
-    \big(
-    Q_l(X),
-    [K(P_l^K); K(X)],
-    [V(P_l^V); V(X)]
+    \mathrm {Attn}
+    \big (Q_l (X),
+    [K (P_l^K); K (X)],
+    [V (P_l^V); V (X)]
     \big)
     $$
 
@@ -301,18 +299,17 @@ description: 介绍参数高效微调（PEFT）技术及其应用
   - Adaptive Prefix Tuning 引入条件生成器 $g_\phi$：
 
     $$
-    (P_l^K, P_l^V) = g_\phi(h(X))
+    (P_l^K, P_l^V) = g_\phi (h (X))
     $$
 
-  - 其中 $h(X)$ 通常是输入 embedding 的池化或某一层的 CLS / mean 表示
+  - 其中 $h (X)$ 通常是输入 embedding 的池化或某一层的 CLS /mean 表示
 
   - 这样，注意力变为：
     $$
-    \mathrm{Attn}
-    \Big(
-    Q_l(X),
-    [K(g_\phi^K(h(X))); K(X)],
-    [V(g_\phi^V(h(X))); V(X)]
+    \mathrm {Attn}
+    \Big (Q_l (X),
+    [K (g_\phi^K (h (X))); K (X)],
+    [V (g_\phi^V (h (X))); V (X)]
     \Big)
     $$
 
@@ -328,8 +325,8 @@ description: 介绍参数高效微调（PEFT）技术及其应用
   - 参数量略高于静态 Prefix，但远低于 Adapter / LoRA
 
 - 根本区别
-  - 标准 Prefix Tuning 学习的是 $\mathbb{E}_X[\text{attention bias}]$
-  - Adaptive Prefix Tuning 学习的是 $\text{attention bias}(X)$​
+  - 标准 Prefix Tuning 学习的是 $\mathbb {E}_X [\text {attention bias}]$
+  - Adaptive Prefix Tuning 学习的是 $\text {attention bias}(X)$​
 
 - 伪代码
 
@@ -359,21 +356,21 @@ description: 介绍参数高效微调（PEFT）技术及其应用
 
 - 出发点
   - IPT 针对的是 Soft Prompt Tuning 的两个核心痛点：Prompt tuning 在新任务上收敛慢，每个任务都要训练一整段 prompt，参数量仍然不小（$m \times h$​）
-  - IPT 的核心假设是：虽然 soft prompt 定义在高维空间 $\mathbb{R}^{m \times h}$，但不同任务的 prompt 实际上位于一个低维的“内在任务子空间”中，即原始 prompt：$P \in \mathbb{R}^{m \times h}$，展平后：$p \in \mathbb{R}^{m h}$，存在低维表示 $z \in \mathbb{R}^d$，其中 $d \ll m h$
+  - IPT 的核心假设是：虽然 soft prompt 定义在高维空间 $\mathbb {R}^{m \times h}$，但不同任务的 prompt 实际上位于一个低维的 “内在任务子空间” 中，即原始 prompt：$P \in \mathbb {R}^{m \times h}$，展平后：$p \in \mathbb {R}^{m h}$，存在低维表示 $z \in \mathbb {R}^d$，其中 $d \ll m h$
   - 这与 Intrinsic Dimension Hypothesis、Lottery Ticket / Low-rank adaptation 在思想上是一致的
 
 - 算法流程
   - 阶段一：标准 Prompt Tuning（多任务）
     - 给定一组任务 ${T_1, \dots, T_K}$​，对每个任务，独立训练一个 soft prompt
   - 阶段二：学习 prompt 的低维表示（Autoencoder）
-    - 将每个 prompt 展平：$p_i \in \mathbb{R}^{m h}$，输入自编码器
-    - Encoder 学到“任务内在坐标”，Decoder 学到“从子空间到 prompt 的映射”
+    - 将每个 prompt 展平：$p_i \in \mathbb {R}^{m h}$，输入自编码器
+    - Encoder 学到 “任务内在坐标”，Decoder 学到 “从子空间到 prompt 的映射”
   - 阶段三：新任务的 IPT 训练
     - 对一个新任务，丢弃 Encoder，冻结 Decoder（或微调）
-    - 只训练一个低维向量 $z \in \mathbb{R}^d$​
+    - 只训练一个低维向量 $z \in \mathbb {R}^d$​
     - 每个新任务只需要训练 $d$ 个参数，而不是 $m \times h$
 
-- 参数规模对比——Prompt Tuning：$m \times h$，IPT：$d$，其中 $d \ll m h$
+- 参数规模对比 ——Prompt Tuning：$m \times h$，IPT：$d$，其中 $d \ll m h$
 
 - 伪代码
 
@@ -434,7 +431,7 @@ description: 介绍参数高效微调（PEFT）技术及其应用
 - 在这些方法中，最为人熟知的是 Low-Rank Adaptation（LoRA），其采用一种简单的低秩矩阵分解来参数化权重更新：
 
   $$
-  \delta W = W_{\text{down}} W_{\text{up}}
+  \delta W = W_{\text {down}} W_{\text {up}}
   $$
 
 - 这种方法实现起来非常直接，并且已经在参数规模高达 1750 亿的模型上进行了验证
@@ -452,7 +449,7 @@ description: 介绍参数高效微调（PEFT）技术及其应用
 - 参考论文：[Intrinsic Dimensionality Explains the Effectiveness of Language Model Fine-Tuning](https://arxiv.org/abs/2012.13255)
 
 - Intrinsic SAID 研究的是一个非常根本的问题
-  - 微调一个大模型时，真正“有用”的参数自由度到底有多少？
+  - 微调一个大模型时，真正 “有用” 的参数自由度到底有多少？
 
   - 换句话说，虽然模型参数维度是 $D$（动辄 $10^9$），但是否只需要在一个远小于 $D$ 的子空间中更新，就能达到同样效果？
   - 这就是 Intrinsic Dimensionality（内在维度） 问题
@@ -460,38 +457,38 @@ description: 介绍参数高效微调（PEFT）技术及其应用
 - Aghajanyan 等人的研究发现
   - 为了达到同样的微调性能，模型越大，所需的内在可调维度越低
 
-  - 即原始参数为 $\theta_0 \in \mathbb{R}^D$，而实际需要优化的自由度：$d \ll D$
+  - 即原始参数为 $\theta_0 \in \mathbb {R}^D$，而实际需要优化的自由度：$d \ll D$
 
   - 这为两个方向提供了理论基础：
     - 模型越大，越适合参数高效微调
 
-    - 不必显式地修改少量参数（如 Adapter），也可以低维控制“全模型更新”
+    - 不必显式地修改少量参数（如 Adapter），也可以低维控制 “全模型更新”
 
 - Intrinsic SAID 的核心技术是 Fastfood Transform，它定义了一个映射：
 
   $$
-  F : \mathbb{R}^d \rightarrow \mathbb{R}^D
+  F : \mathbb {R}^d \rightarrow \mathbb {R}^D
   $$
   - 并用它来表示参数更新：
 
     $$
-    \theta = \theta_0 + F(\theta_d)
+    \theta = \theta_0 + F (\theta_d)
     $$
 
-  - $\theta_d \in \mathbb{R}^d$ 是唯一需要训练的参数
-  - $F(\theta_d)$ 是一个投影到全参数空间的“低秩扰动”
+  - $\theta_d \in \mathbb {R}^d$ 是唯一需要训练的参数
+  - $F (\theta_d)$ 是一个投影到全参数空间的 “低秩扰动”
   - Fastfood 是一种随机但结构化、计算高效、不需要显式存储 $D \times d$ 矩阵的高维扩展方法
-  - 它的关键性质是计算复杂度：$O(D \log d)$，内存复杂度：$O(D)$，可以近似一个随机高斯投影
-  - 直觉上，$\theta_d$​ 是“控制旋钮”，而Fastfood 把它“扩散”成作用于所有参数的更新方向
+  - 它的关键性质是计算复杂度：$O (D \log d)$，内存复杂度：$O (D)$，可以近似一个随机高斯投影
+  - 直觉上，$\theta_d$​ 是 “控制旋钮”，而 Fastfood 把它 “扩散” 成作用于所有参数的更新方向
 
-- Intrinsic SAID 与“选择性微调”的根本区别
+- Intrinsic SAID 与 “选择性微调” 的根本区别
   - 其他 PEFT 方法（Adapter / LoRA / Prompt）：只更新模型的一小部分参数，其余参数完全冻结
   - Intrinsic SAID：更新所有模型参数，但更新方向被限制在一个低维子空间中
 
   - 也就是说，参数空间是 $D$ 维，但可达更新空间是 $d$ 维
 
 - Intrinsic SAID 在工程上几乎不可用
-  - Fastfood 本身需要 $O(D)$ 内存，虽然不训练 $D$ 个参数，但 Fastfood 需要存储结构化映射，并在每一步生成 $D$ 维更新
+  - Fastfood 本身需要 $O (D)$ 内存，虽然不训练 $D$ 个参数，但 Fastfood 需要存储结构化映射，并在每一步生成 $D$ 维更新
   - 每次更新都要对所有参数生效，无法像 LoRA / Adapter 那样局部注入
   - Intrinsic SAID 不适合 ZeRO / FSDP，不适合参数分片，不适合增量 checkpoint
 
@@ -502,13 +499,13 @@ description: 介绍参数高效微调（PEFT）技术及其应用
 ![LoRA](/img/llm/lora.png)
 
 - 基本思想
-  - 设一个大模型包含一个权重矩阵 $W \in \mathbb{R}^{\text{in} \times \text{out}}$
+  - 设一个大模型包含一个权重矩阵 $W \in \mathbb {R}^{\text {in} \times \text {out}}$
 
   - 例如总参数规模是 7B，在标准微调中，反向传播会学习一个与 $W$​ 同形状的更新量：
 
     $$
-    \Delta W \in \mathbb{R}^{\text{in} \times \text{out}}\\
-    W_{\text{updated}} = W + \Delta W
+    \Delta W \in \mathbb {R}^{\text {in} \times \text {out}}\\
+    W_{\text {updated}} = W + \Delta W
     $$
 
   - 问题在于，$\Delta W$ 和 $W$ 一样大，需要存梯度、optimizer states（Adam: 2×FP32），显存和带宽成本与模型规模线性增长，这在 7B、70B 甚至 175B 模型上是不可承受的
@@ -519,21 +516,21 @@ description: 介绍参数高效微调（PEFT）技术及其应用
 
     $$
     \Delta W = W_A W_B\\
-    W_A \in \mathbb{R}^{\text{in} \times r}, \quad
-    W_B \in \mathbb{R}^{r \times \text{out}}, \quad
-    r \ll \min(\text{in}, \text{out})
+    W_A \in \mathbb {R}^{\text {in} \times r}, \quad
+    W_B \in \mathbb {R}^{r \times \text {out}}, \quad
+    r \ll \min (\text {in}, \text {out})
     $$
 
   - 这就是 LoRA 的低秩分解
 
 - 参数量节省
-  - 原始微调需要优化的参数量：$|\Delta W| = \text{in} \times \text{out}$
-  - LoRA 需要优化的参数量：$|W_A| + |W_B| = r(\text{in} + \text{out})$
+  - 原始微调需要优化的参数量：$|\Delta W| = \text {in} \times \text {out}$
+  - LoRA 需要优化的参数量：$|W_A| + |W_B| = r (\text {in} + \text {out})$
   - 当 $r$ 很小时（如 4、8、16），参数量下降 10–100×，梯度、optimizer states 同比例下降，显存占用显著减少
 
 - LoRA 的关键工程优势在于：
   - 训练时从不构造 $\Delta W$，只在前向中引入一个额外的低秩路径
-  - 前向计算为 $h = xW + \alpha \cdot x W_A W_B$，其中缩放因子通常是 $\alpha = \frac{1}{r}$
+  - 前向计算为 $h = xW + \alpha \cdot x W_A W_B$，其中缩放因子通常是 $\alpha = \frac {1}{r}$
 
 - 训练阶段：冻结 $W$，只训练 $W_A, W_B$，梯度只回传到低秩矩阵
 
@@ -543,29 +540,29 @@ description: 介绍参数高效微调（PEFT）技术及其应用
   - Intrinsic SAID：更新在低维子空间中，低维变量 → Fastfood → 更新所有参数（不实用）
   - LoRA：用显式低秩矩阵来参数化这个子空间，低维变量 → 低秩矩阵 → 局部权重（工程可行）
 
-  - LoRA 是 Intrinsic SAID 的“工程化版本”
+  - LoRA 是 Intrinsic SAID 的 “工程化版本”
 
 - LoRA 应用到哪些部分
   - 最常见的位置是多头注意力中的 $W_Q$、$W_K$、$W_V$、$W_O$
   - 原因是注意力对任务适配高度敏感，权重矩阵形状规则、适合低秩分解
-  - 但后续研究表明对所有线性层应用 LoRA，效果最好，包括 MLP 的 up / down / gate 投影
+  - 但后续研究表明对所有线性层应用 LoRA，效果最好，包括 MLP 的 up /down/gate 投影
 
 - 输出计算方法为：
 
 $$
-h = Wx + \frac{\alpha}{r} BAx
+h = Wx + \frac {\alpha}{r} BAx
 $$
 
-- 其中，$W$ 表示预训练权重（旧知识），$\frac{\alpha}{r} BA$ 表示增量权重 $\Delta W$ 的近似（新知识）
+- 其中，$W$ 表示预训练权重（旧知识），$\frac {\alpha}{r} BA$ 表示增量权重 $\Delta W$ 的近似（新知识）
 - 理论上说，当 $r$ 较小时，提取的是 $\Delta W$ 中信息含量最丰富的维度，此时信息精炼，但不全面
 - 当 $r$ 较大时，我们的低秩近似越逼近 $\Delta W$，此时信息更加全面，但带来的噪声也越多（含有很多冗余无效的信息）
 
 - 基于这个猜想，当第一次做实验时，尽量把 $r$ 调得大些，例如 32、64，并假设在这个秩下，低秩权重已经非常近似 $\Delta W$ 了，因此这时设置 $\alpha = r$，意味着我们假定 LoRA 低秩微调的效果和全参数微调持平
 
-- 那么接下来，往小的 $r$ 进行尝试，这时把 $\alpha$ 固定住，意味着随着 $r$ 的减小，$\frac{\alpha}{r}$ 会越来越大，这样做的原因是：
+- 那么接下来，往小的 $r$ 进行尝试，这时把 $\alpha$ 固定住，意味着随着 $r$ 的减小，$\frac {\alpha}{r}$ 会越来越大，这样做的原因是：
   - 当 $r$ 越小时，低秩矩阵表示的信息精炼，但不全面
-  - 我们通过调大 $\frac{\alpha}{r}$，来放大 forward 过程中新知识对模型的影响
-  - 当 $r$ 越小时，低秩矩阵表示的信息精炼，噪声/冗余信息少，此时梯度下降的方向也更加确信，所以可以通过调大 $\frac{\alpha}{r}$，适当增加梯度下降的步伐，也就相当于调整 learning rate 了
+  - 我们通过调大 $\frac {\alpha}{r}$，来放大 forward 过程中新知识对模型的影响
+  - 当 $r$ 越小时，低秩矩阵表示的信息精炼，噪声 / 冗余信息少，此时梯度下降的方向也更加确信，所以可以通过调大 $\frac {\alpha}{r}$，适当增加梯度下降的步伐，也就相当于调整 learning rate 了
 
 - 伪代码
 
@@ -589,13 +586,13 @@ $$
     $$
     \delta W = W_A W_B
     $$
-    - 其中 $W_A \in \mathbb{R}^{\text{in} \times r}$、$W_B \in \mathbb{R}^{r \times \text{out}}$
+    - 其中 $W_A \in \mathbb {R}^{\text {in} \times r}$、$W_B \in \mathbb {R}^{r \times \text {out}}$
 
-  - 这在工程上非常高效，但有一个结构性限制：$\operatorname{rank}(\delta W) \le r$
+  - 这在工程上非常高效，但有一个结构性限制：$\operatorname {rank}(\delta W) \le r$
 
   - 也就是说，参数量和可表达的秩是线性绑定的，想要更高表达能力，就必须增大 $r$，参数量随之线性增加
 
-  - KronA 的核心想法是：能不能在相同参数预算下，得到更高“有效秩”的更新？
+  - KronA 的核心想法是：能不能在相同参数预算下，得到更高 “有效秩” 的更新？
 
 - KronA 的核心思想：用 Kronecker 积代替矩阵乘法
   - KronA 不再使用矩阵乘法，而是改为
@@ -604,20 +601,20 @@ $$
     \delta W = W_A \otimes W_B
     $$
 
-  - 其中 $W_A \in \mathbb{R}^{n \times m}$、$W_B \in \mathbb{R}^{k \times l}$、$\delta W \in \mathbb{R}^{(n k) \times (m l)}$
+  - 其中 $W_A \in \mathbb {R}^{n \times m}$、$W_B \in \mathbb {R}^{k \times l}$、$\delta W \in \mathbb {R}^{(n k) \times (m l)}$
 
   - 关键性质是 Kronecker 积的秩：
 
     $$
-    \operatorname{rank}(A \otimes B)=\operatorname{rank}(A) \cdot \operatorname{rank}(B)
+    \operatorname {rank}(A \otimes B)=\operatorname {rank}(A) \cdot \operatorname {rank}(B)
     $$
 
   - 这意味着如果 $A$ 和 $B$ 都是低秩的，它们的 Kronecker 积可以拥有显著更高的秩
 
 - 为什么 Kronecker 积更划算
-  - 假设 LoRA：参数量 $\sim r(\text{in} + \text{out})$，秩 $\le r$，KronA：参数量 $\sim nm + kl$，秩 $\le \operatorname{rank}(A)\operatorname{rank}(B)$
+  - 假设 LoRA：参数量 $\sim r (\text {in} + \text {out})$，秩 $\le r$，KronA：参数量 $\sim nm + kl$，秩 $\le \operatorname {rank}(A)\operatorname {rank}(B)$
   - 在合理拆分矩阵形状的情况下，KronA 用相同甚至更少参数，可以表达更复杂的线性变换结构，尤其适合具有二维或块结构的权重矩阵
-  - 直觉上，LoRA 是“一条低维通道”，而 KronA 是“两个低维结构的张量化组合”
+  - 直觉上，LoRA 是 “一条低维通道”，而 KronA 是 “两个低维结构的张量化组合”
 
 - 和 LoRA 一样，KronA 也不会显式构造 Kronecker 积，而是直接计算：
 
@@ -627,7 +624,7 @@ $$
   - 利用 Kronecker 积的恒等式：
 
     $$
-    \operatorname{vec}(AXB)=(B^\top \otimes A)\operatorname{vec}(X)
+    \operatorname {vec}(AXB)=(B^\top \otimes A)\operatorname {vec}(X)
     $$
 
   - KronA 的实现思路是先把向量 $x$ reshape 成矩阵，然后左乘 $A^\top$，再右乘 $B$​，最后 flatten 回向量
@@ -638,7 +635,7 @@ $$
   - 训练参数量：相同
   - 其优势主要来自更高表达秩、无中间层、纯线性算子
 
-- KronA-resB——带残差的并行 Adapter
+- KronA-resB—— 带残差的并行 Adapter
 
 - 伪代码
 
@@ -658,13 +655,13 @@ $$
 - Kronecker 积定义为：
 
   $$
-  A \otimes B =\begin{bmatrix}
-  a_{1,1}B & \cdots & a_{1,n}B \\
+  A \otimes B =\begin {bmatrix}
+  a_{1,1} B & \cdots & a_{1,n} B \\
   \vdots & \ddots & \vdots \\
-  a_{m,1}B & \cdots & a_{m,n}B
-  \end{bmatrix}
+  a_{m,1} B & \cdots & a_{m,n} B
+  \end {bmatrix}
   $$
-  - 其本质是用 $A$ 的每个元素去缩放整个 $B$，构造一个具有强结构性的“大矩阵”
+  - 其本质是用 $A$ 的每个元素去缩放整个 $B$，构造一个具有强结构性的 “大矩阵”
 
   - PyTorch 中可用 einsum 实现 batch 版本：
 
@@ -696,8 +693,8 @@ $$
     - $\Delta D$ 与 $\Delta M$ 正相关
     - 方向变化越大，模长也被迫一起变大
 
-  - 这说明 LoRA 在结构上把“方向”和“模长”耦合在了一起
-  - 这是由于在 LoRA 的权重更新中，$W_A W_B$ 同时决定了权重方向和权重整体模长，优化器无法“只调方向、不动模长”或“只调模长、不改方向”
+  - 这说明 LoRA 在结构上把 “方向” 和 “模长” 耦合在了一起
+  - 这是由于在 LoRA 的权重更新中，$W_A W_B$ 同时决定了权重方向和权重整体模长，优化器无法 “只调方向、不动模长” 或 “只调模长、不改方向”
 
 - DoRA 借鉴了 weight normalization 的思想，将权重拆成：
 
@@ -711,8 +708,8 @@ $$
   - 这在理论上恢复了 full fine-tuning 中观察到的现象
 
 - DoRA 在低秩设置下提升尤其明显
-  - 在 rank 很小（如 4, 8）时LoRA 的表达能力严重受限，每一次方向改变都会“浪费”参数去同时调整模长
-  - 而 DoRA 把有限的低秩参数全部用于“方向调整”，把“模长自由度”单独交给 $m$
+  - 在 rank 很小（如 4, 8）时 LoRA 的表达能力严重受限，每一次方向改变都会 “浪费” 参数去同时调整模长
+  - 而 DoRA 把有限的低秩参数全部用于 “方向调整”，把 “模长自由度” 单独交给 $m$
   - 结果是在极低 rank 下，DoRA 的有效表达能力显著高于 LoRA，指令微调、few-shot 场景中 sample efficiency 更高
 
 - 伪代码
@@ -736,14 +733,14 @@ $$
 
 ![GLoRA](/img/llm/GLoRA.png)
 
-- 标准 LoRA 只通过“加法”改变权重，不改变输入、激活或偏置的缩放结构，表达能力受限于低秩与仅加性更新，这在复杂任务（分布变化大、非线性强）上可能不够
+- 标准 LoRA 只通过 “加法” 改变权重，不改变输入、激活或偏置的缩放结构，表达能力受限于低秩与仅加性更新，这在复杂任务（分布变化大、非线性强）上可能不够
 
-- GLoRA 的假设是 LoRA 只改变“权重的加性部分”还不够，更强的适配需要权重缩放、激活缩放、偏置修正，但仍希望训练时参数可学习推理时不引入额外结构或计算，因此提出了 Generalized-LoRA（GLoRA）
+- GLoRA 的假设是 LoRA 只改变 “权重的加性部分” 还不够，更强的适配需要权重缩放、激活缩放、偏置修正，但仍希望训练时参数可学习推理时不引入额外结构或计算，因此提出了 Generalized-LoRA（GLoRA）
 
 - GLoRA 对线性层的更新为：
 
   $$
-  f(x)
+  f (x)
   =
 
   (W_0 + W_0 A + B) x
@@ -761,11 +758,11 @@ $$
   - 可训练参数：
     - $A$：权重缩放（右乘），相当于对原始权重进行任务相关的 re-scaling，能表达通道级、子空间级的适配
     - $B$：LoRA-style 权重增量，等价于 LoRA 的 $\Delta W x$，负责主要的方向性变化
-    - $C$：输出平移（activation shift），类似一个 data-independent 的残差，用于任务级 bias / prior 注入
+    - $C$：输出平移（activation shift），类似一个 data-independent 的残差，用于任务级 bias /prior 注入
     - $D$：偏置缩放
     - $E$​：偏置平移
 
-  - 其中 A、B、C 矩阵都可以进行低秩分解来减少参数量；A、C、D、E 可以退化为对角矩阵/向量/标量，从而严格控制参数预算
+  - 其中 A、B、C 矩阵都可以进行低秩分解来减少参数量；A、C、D、E 可以退化为对角矩阵 / 向量 / 标量，从而严格控制参数预算
 
 - 模型合并，所有可学习参数在训练后都可以合并进：
   - 新权重：
@@ -815,14 +812,14 @@ $$
   - 标准 LoRA 有一个关键超参数：秩 $r$，问题在于：
     - $r$ 在训练前固定，但是不同层、不同任务对 rank 的需求差异极大
     - 统一使用相同 $r$ 会导致：有些层 rank 过高，浪费参数，而有些层 rank 不够，限制性能
-  - AdaLoRA 的核心目标是在给定参数预算下，自动把 rank 分配到“更重要”的层和方向上，训练过程中动态降低不重要的 rank
+  - AdaLoRA 的核心目标是在给定参数预算下，自动把 rank 分配到 “更重要” 的层和方向上，训练过程中动态降低不重要的 rank
 
 - AdaLoRA 将 LoRA 的更新写成一种 SVD-like 形式：
 
   $$
   W = W_0 + W_A \Lambda W_B
   $$
-  - 其中 $W_A \in \mathbb{R}^{d_{\text{in}} \times r}$、$W_B \in \mathbb{R}^{r \times d_{\text{out}}}$、$\Lambda \in \mathbb{R}^{r \times r}$ 是对角矩阵
+  - 其中 $W_A \in \mathbb {R}^{d_{\text {in}} \times r}$、$W_B \in \mathbb {R}^{r \times d_{\text {out}}}$、$\Lambda \in \mathbb {R}^{r \times r}$ 是对角矩阵
 
   - 可以把它类比为：
 
@@ -830,7 +827,7 @@ $$
     \Delta W \approx \sum_{i=1}^r \lambda_i u_i v_i^\top
     $$
 
-  - 每一维 rank 都有一个独立的重要性系数 $\lambda_i$，而 rank 是否“有用”，由 $\lambda_i$ 决定
+  - 每一维 rank 都有一个独立的重要性系数 $\lambda_i$，而 rank 是否 “有用”，由 $\lambda_i$ 决定
 
 - AdaLoRA 的核心思想是剪掉不重要的奇异值
   - 并非所有 rank 维度对 loss 同样重要，如果某个 $\lambda_i$ 对 loss 影响很小，就可以把这一 rank 删除
@@ -844,19 +841,19 @@ $$
 
   - Rank 剪枝（pruning）过程
     - 给定当前 rank $r$ 和 目标剪枝数 $k$
-    - 计算 importance score $s \in \mathbb{R}^r$，找到最小的 $k$ 个维度
+    - 计算 importance score $s \in \mathbb {R}^r$，找到最小的 $k$ 个维度
 
     - 对这些维度执行剪枝：将对应的 $\lambda_i = 0$，停止这些维度的梯度更新，等价于删除对应 rank
 
     - 这样，有效 rank 从 $r$ 变为 $r-k$​
 
-  - 为了让 SVD-like 解释成立，AdaLoRA 还引入了 $W_A$ 和 $W_B$ 的正交正则项，目的是为了减少不同 rank 维度之间的信息冗余，让每个 $\lambda_i$​ 更“可解释”
+  - 为了让 SVD-like 解释成立，AdaLoRA 还引入了 $W_A$ 和 $W_B$ 的正交正则项，目的是为了减少不同 rank 维度之间的信息冗余，让每个 $\lambda_i$​ 更 “可解释”
 
-- 相关实验发现，Transformer 的浅层不需要高 rank 更新，而深层对 rank 更敏感，AdaLoRA 会自动把 rank “迁移”到深层
+- 相关实验发现，Transformer 的浅层不需要高 rank 更新，而深层对 rank 更敏感，AdaLoRA 会自动把 rank “迁移” 到深层
 
 - AdaLoRA 的代价
   - 需要维护额外状态变量：$I$、$\bar I$、$\bar U$、$S$
-  - 剪枝过程依赖梯度统计和EMA
+  - 剪枝过程依赖梯度统计和 EMA
   - 当模型很大或初始 rank 很高时，内存开销显著
   - 所以后来的工作尝试选择更轻量 rank 或无需额外状态的自适应 LoRA
 
@@ -894,7 +891,7 @@ $$
 - 参考论文：[GaLore: Memory-Efficient LLM Training by Gradient Low-Rank Projection](https://arxiv.org/abs/2403.03507)
 
 - GaLore 要解决的根本问题
-  - 大多数 PEFT 方法（LoRA、Adapter、Prefix 等）的共同特点是冻结大部分模型参数、只训练一小部分参数，用“参数受限”换取“显存节省”
+  - 大多数 PEFT 方法（LoRA、Adapter、Prefix 等）的共同特点是冻结大部分模型参数、只训练一小部分参数，用 “参数受限” 换取 “显存节省”
   - 但这样做有一个根本代价：表达能力下降，和全量微调之间存在不可避免的性能差距
   - GaLore 的核心问题意识是全量微调真正吃显存的不是参数本身，而是优化器状态（动量和方差），特别是 Adam 类优化器需要存储和参数等大的一阶动量和二阶动量，总显存 $\approx 3 \times |\theta|$
   - GaLore 不减少可训练参数数量，而是在低秩子空间中表示梯度、做动量更新、做正则化，然后再把更新后的梯度投影回原空间
@@ -911,7 +908,7 @@ $$
   | 表达能力     | 受限             | 接近全量微调 |
 
 - 数学流程
-  - 假设当前参数为 $w$，梯度为 $G = \nabla_w \mathcal{L}$
+  - 假设当前参数为 $w$，梯度为 $G = \nabla_w \mathcal {L}$
 
   - (1) 梯度的低秩分解
     - 对梯度矩阵做 SVD 分解：
@@ -932,7 +929,7 @@ $$
   - (3) 低维空间中的 Adam 更新
     - 在低维空间维护一阶动量 $m$ 和二阶动量 $v$，并做标准 Adam 更新：
       $$
-      \hat g = \frac{m}{\sqrt{v} + \epsilon}
+      \hat g = \frac {m}{\sqrt {v} + \epsilon}
       $$
 
   - (4) 投影回原始参数空间
@@ -946,7 +943,7 @@ $$
     w \leftarrow w - \eta \tilde G
     $$
 
-- 假设参数维度 $D$，投影维度 $d \ll D$，Adam 状态显存从 $O(D)$ 降低到 $O(d)$，但参数本身仍是 full-rank
+- 假设参数维度 $D$，投影维度 $d \ll D$，Adam 状态显存从 $O (D)$ 降低到 $O (d)$，但参数本身仍是 full-rank
 
 - GaLore 的理论分析表明大模型的梯度天然集中在低秩子空间，只在该子空间中维护历史统计，不会显著损害优化轨迹
 
@@ -996,7 +993,7 @@ $$
 - LoRA 仍然基于大模型本身
   - LoRA 的基本假设是冻结 backbone LLM，只训练低秩矩阵 $\Delta W = W_A W_B$
   - 这在训练参数数量上非常省，但存在一个被忽略的问题：冻结的 backbone 仍然以 FP16 / BF16 / FP32 存在于 GPU 中
-  - 也就是说，LoRA 解决了“反向传播”，但没解决“模型本体太大”
+  - 也就是说，LoRA 解决了 “反向传播”，但没解决 “模型本体太大”
 
 - QLoRA 的目标是
   - 在不损失 LoRA 效果的前提下，把 frozen backbone 的显存占用压到极限
@@ -1015,7 +1012,7 @@ $$
   - QLoRA 引入对量化常数再做一次量化，即权重被量化，量化参数也被量化
 
 - Optimizer State Paging（CPU–GPU 分页）
-  - 即使 LoRA 参数很小，Adam 仍然可能在梯度 spike、梯度累积、多任务 batch时造成显存峰值
+  - 即使 LoRA 参数很小，Adam 仍然可能在梯度 spike、梯度累积、多任务 batch 时造成显存峰值
   - QLoRA 的解决方案是将 optimizer states 放在 CPU，按需 paging 到 GPU，这使得单卡消费级 GPU 也能训 65B 模型
 
 - QloRA 在训练时：
@@ -1031,7 +1028,7 @@ $$
 - 一些方法将多个 PEFT 类别中的思想结合在一起，这种做法允许在不同的算法权衡之间进行组合，以针对特定目标进行优化，例如减少可训练参数的数量
   - MAM Adapter 同时结合了 Adapter 和 Prompt Tuning
   - UniPELT 在此基础上进一步引入了 LoRA
-  - Compacter 和 KronAr⁢e⁢sB 通过使用 Kronecker 积对 Adapter 进行重参数化，从而减少其参数量
+  - Compacter 和 KronAresB 通过使用 Kronecker 积对 Adapter 进行重参数化，从而减少其参数量
 
 - 下表比较了不同 PEFT 方法在存储（disk）、内存（RAM）以及计算效率方面的表现
   - 计算效率包括反向传播成本（BP）的降低以及推理阶段的额外开销（inference overhead）
@@ -1066,8 +1063,8 @@ $$
 | Compacter Karimi Mahabadi et al. ([2021](https://arxiv.org/html/2303.15647v2#bib.bib39))   | AR   | ✓    | ✓   | ✗   |                    | + FFN           |
 | PHM Adapter Karimi Mahabadi et al. ([2021](https://arxiv.org/html/2303.15647v2#bib.bib39)) | AR   | ✓    | ✓   | ✗   |                    | + FFN           |
 | KronA Edalati et al. ([2022](https://arxiv.org/html/2303.15647v2#bib.bib21))               | R    | ✓    | ✓   | ✗   |                    | No overhead     |
-| KronAr⁢e⁢sB Edalati et al. ([2022](https://arxiv.org/html/2303.15647v2#bib.bib21))         | AR   | ✓    | ✓   | ✗   |                    | + linear layer  |
-| (IA)3 Liu et al. ([2022](https://arxiv.org/html/2303.15647v2#bib.bib52))                   | A    | ✓    | ✓   | ✗   |                    | + gating        |
+| KronAresB Edalati et al. ([2022](https://arxiv.org/html/2303.15647v2#bib.bib21))         | AR   | ✓    | ✓   | ✗   |                    | + linear layer  |
+| (IA) 3 Liu et al. ([2022](https://arxiv.org/html/2303.15647v2#bib.bib52))                   | A    | ✓    | ✓   | ✗   |                    | + gating        |
 | Attention Fusion Cao et al. ([2022](https://arxiv.org/html/2303.15647v2#bib.bib10))        | A    | ✓    | ✓   | ✓   |                    | + decoder       |
 | LeTS Fu et al. ([2021](https://arxiv.org/html/2303.15647v2#bib.bib23))                     | A    | ✓    | ✓   | ✓   |                    | + FFN           |
 | Ladder Side-Tuning Sung et al. ([2022](https://arxiv.org/html/2303.15647v2#bib.bib82))     | A    | ✓    | ✓   | ✓   |                    | + decoder       |
@@ -1075,9 +1072,9 @@ $$
 | S4-model Chen et al. ([2023](https://arxiv.org/html/2303.15647v2#bib.bib12))               | ARS  | ✓    | ✓   | ✗   |                    | + FFN and input |
 
 - 表 2 展示了不同 PEFT 方法在不同模型规模（\<1B、\<20B、\>20B 参数）上的评估情况，以及文献中报告的典型可训练参数比例
-  - %Trainable parameters：可训练参数占模型总参数的百分比
+  - % Trainable parameters：可训练参数占模型总参数的百分比
 
-  - %Changed parameters：训练后发生变化的参数占比
+  - % Changed parameters：训练后发生变化的参数占比
 
 | 方法               | 可训练参数比例 | 发生变化的参数比例 | \<1B | \<20B | \>20B |
 | ------------------ | -------------- | ------------------ | --- | ---- | ---- |
@@ -1100,7 +1097,7 @@ $$
 | PHM Adapter        | 0.2            | 约 1.0             | ✓   | ✗    | ✗    |
 | KronA              | 0.07           | 约 30.0            | ✓   | ✗    | ✗    |
 | KronAresB          | 0.07           | 约 1.0             | ✓   | ✗    | ✗    |
-| (IA)3              | 0.02           | 0.02               | ✗   | ✓    | ✗    |
+| (IA) 3              | 0.02           | 0.02               | ✗   | ✓    | ✗    |
 | Ladder Side-Tuning | 7.5            | 7.5                | ✓   | ✓    | ✗    |
 | FAR                | 6.6–26.4       | 6.6–26.4           | ✓   | ✗    | ✗    |
 | S4-model           | 0.5            | >0.5               | ✓   | ✓    | ✗    |
@@ -1135,18 +1132,18 @@ $$
 
   - 在每一层 Transformer block 中原始 self-attention 保持不变，新增一条 adapter-attention 路径，两者输出相加
 
-  - 可以理解为，LLaMA 主干负责“语言能力”，而 Adapter Prompt 负责“新任务偏置”
+  - 可以理解为，LLaMA 主干负责 “语言能力”，而 Adapter Prompt 负责 “新任务偏置”
 
 - 前向传播过程
   - 设 $X$ 为原始 token hidden states，$P$ 为 adapter prompt（可学习）
 
-  - 原 attention：$\text{Attn}_{\text{orig}}(X)$
+  - 原 attention：$\text {Attn}_{\text {orig}}(X)$
 
-  - Adapter attention：$\text{Attn}_{\text{adapter}}(Q=X,\ K=P,\ V=P)$
+  - Adapter attention：$\text {Attn}_{\text {adapter}}(Q=X,\ K=P,\ V=P)$
 
   - 最终输出：
     $$
-    X' = X + \text{Attn}_{\text{orig}}(X) + \text{Attn}_{\text{adapter}}(X, P)
+    X' = X + \text {Attn}_{\text {orig}}(X) + \text {Attn}_{\text {adapter}}(X, P)
     $$
 
 - 伪代码

@@ -9,7 +9,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - 为规模化而生：基于 Ray 的分布式架构构建，支持千卡 GPU 级别的大规模集群训练；实现的创新的 Rollout 调度器与 AutoDeviceMapping 模块显著提升了 GPU 资源利用率
   - 训练推理分离：集成 Megatron-LM、DeepSpeed、FSDP2 等训练后端；SGLang、vLLM 等推理后端，显著加速模型训练与推理采样过程
   - 算法支持：内置 PPO、GRPO 等主流强化学习算法
-  - 训练范式支持：RLVR、Agentic RL、Knowledge Distillation、DPO、SFT 等流水线，管理集群生命周期（创建、初始化、销毁），训练循环编排（卸载/加载循环、数据收集、训练步骤），检查点管理和指标追踪，数据采样和批次构建
+  - 训练范式支持：RLVR、Agentic RL、Knowledge Distillation、DPO、SFT 等流水线，管理集群生命周期（创建、初始化、销毁），训练循环编排（卸载 / 加载循环、数据收集、训练步骤），检查点管理和指标追踪，数据采样和批次构建
 - Agentic RL Pipeline
   - 环境定义
     - 通过 EnvManager 管理环境并支持生成轨迹，支持 gym-like 接口扩展自定义环境
@@ -53,12 +53,12 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
     - while loop 无限循环：EnvManager 通过 while 循环持续执行 episode
     - 数据集遍历完成才返回 None 退出：当数据集遍历完成时，`reset()` 方法返回 None，触发循环退出
     - 每个 episode 必须有对应的轨迹 put：每个完成的 episode 必须通过 `output_queue.put` 提交轨迹数据
-    - 数据管理：为了避免每个 env 各自读取数据造成的访存/内存瓶颈，框架层面提供了 GlobalDataset 组件，实现数据集的统一管理和分发
+    - 数据管理：为了避免每个 env 各自读取数据造成的访存 / 内存瓶颈，框架层面提供了 GlobalDataset 组件，实现数据集的统一管理和分发
     - 轨迹过滤：通过自定义过滤函数，可以基于轨迹的各种属性（如分数、长度、停止原因等）实现灵活的过滤策略
 
   - Environment-Level 异步并行：各环境独立采样轨迹，提高采样效率
   - 异步训练：rollout-training 解耦，支持异步训练
-  - 学习粒度：支持 TrajectoryWise 形式 (StarPO) 和 StepWise(GiGPO) 训练形式
+  - 学习粒度：支持 TrajectoryWise 形式 (StarPO) 和 StepWise (GiGPO) 训练形式
   - 高效训练优化：支持 Sequence Packing（将多条短样本拼接成连续序列，减少 padding）与 Dynamic Batching（根据样本长度动态组 batch，按 batch 内最大长度统一 padding，最小化无效计算）
 
 - Distillation Pipeline
@@ -117,7 +117,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
 - RLVR Pipeline
   - 多样化任务支持：内置支持各种任务类型，包括数学推理、代码生成、LLM 作为评判器评估和指令遵循，每种类型都配备了专门的奖励评估机制和灵活的扩展接口，以适应新任务类型
   - 多任务联合训练：能够同时优化模型在数学、编程和通用推理等多个领域的能力，灵活控制每个领域的数据采样比例和奖励权重配置
-  - 算法友好的强化学习框架：提供丰富的强化学习策略选项（超过20种），包括但不限于奖励归一化、奖励裁剪、各种优势估计方法等。不限于单一算法实现，支持多种强化学习算法，如 PPO、GRPO、Reinforce++、TOPR 和 RAFT++
+  - 算法友好的强化学习框架：提供丰富的强化学习策略选项（超过 20 种），包括但不限于奖励归一化、奖励裁剪、各种优势估计方法等。不限于单一算法实现，支持多种强化学习算法，如 PPO、GRPO、Reinforce++、TOPR 和 RAFT++
 - SFT Pipeline
   - 统一的数据编码与对话模板：支持 system/user/assistant 对话格式拼接，并自动构造 `labels`（仅对回答部分计 loss）
   - 高效训练优化：支持 Sequence Packing（将多条短样本拼接成连续序列，减少 padding）
@@ -133,7 +133,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
     - 封装具体的算法计算逻辑，保证算法逻辑的纯粹性
     - 包括 Actor Worker、Critic Worker、Infer Worker、Reward Worker、Teacher Worker / Student Worker
     - 每个 Parallel Worker 持有⼀组 Ray PlacementGroup 资源
-  - Strategy Layer（训练/推理框架接入层）
+  - Strategy Layer（训练 / 推理框架接入层）
     - 底层训练 / 推理框架的适配层，实现多框架自由切换
     - 通过统一接口抽象，让用户仅修改少量配置，即可在不同底层框架间切换
     - 支持 Megatron、vLLM、SGLang、FSDP、DeepSpeed 等
@@ -191,14 +191,14 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
     - 生成、奖励计算、过滤 串行进行
     - 大量时间等待，导致 GPU 资源闲置
   - ROLL：样本级 async rollout，压榨 GPU 效率
-    - DynamicSamplingScheduler 管理Prompt生成，一旦生成完毕，立即调用对应 reward Worker 异步计算reward，从而实现 generate 和 compute_rewards 的重叠与连续
+    - DynamicSamplingScheduler 管理 Prompt 生成，一旦生成完毕，立即调用对应 reward Worker 异步计算 reward，从而实现 generate 和 compute_rewards 的重叠与连续
 - ROLL 框架如何通过 Dynamic Batching 和 Sequence Packing 处理长尾 rollout 的？
   - 在 RL 训练（尤其是 Agentic RL、多轮交互场景）中，rollout 阶段天然存在序列长度长尾分布，长序列样本会阻塞整个 batch，造成 GPU idle 气泡，利用率暴跌，训练效率大幅下降
   - Dynamic Batching：按实际 token 负载均衡，消除 padding 浪费
     - 传统静态批处理按样本数划分 DP 分片，强制 pad 到最大长度
     - ROLL 动态批处理的核心是按实际 token 数量在 DP 分片中划分 rollout batch，保证各 GPU 负载均衡，最大化有效计算占比
     - 将 rollout batch 中的样本按序列长度分组，相似长度样本聚合，减少跨分片长度差异
-    - 支持 Virtual Pipelie Model Parallel，优先拆分 tokens 数量多且micro_batch_size > 1的 micro_batch，使得 micro_batch 数量为 pp_size 整除倍
+    - 支持 Virtual Pipelie Model Parallel，优先拆分 tokens 数量多且 micro_batch_size > 1 的 micro_batch，使得 micro_batch 数量为 pp_size 整除倍
   - Sequence Packing
     - 将同一个 micro batch 内长短不同的句子打包在一起，消除 pad token，同时严格满足 Context Parallel + Tensor Parallel 的分布式约束
     - 使用优化打包算法减少 micro batch 数量，提升训练效率
@@ -236,11 +236,11 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - 'selective'：只计算 transformer layer 中的核心注意力部分
   - 'none'：不进行激活重计算
 - 默认值：'selective'
-- 说明：通常'selective'是推荐的
+- 说明：通常'selective' 是推荐的
 
 2. recompute_method
 
-- 详情：重计算方法，需将 recompute_granularity 设置为'full'才生效
+- 详情：重计算方法，需将 recompute_granularity 设置为 'full' 才生效
 - 可选值：'uniform'、'block'
 - 默认值：None
 
@@ -336,7 +336,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
 
 5. padding_free
 
-- 将一个batch中的数据进行展平而避免数据padding，从而降低显存占用并加快训练速度
+- 将一个 batch 中的数据进行展平而避免数据 padding，从而降低显存占用并加快训练速度
 - 可选值：True、False
 - 默认值：True
 
@@ -347,7 +347,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
 - 详情：使用的注意力后端
 - 可选值：'flash'、'fused'、'unfused'、'local'、'auto'
 - 默认值：'flash'
-- 说明：安装'flash_attention_3'则优先使用 fa3
+- 说明：安装 'flash_attention_3' 则优先使用 fa3
 
 2. attention_softmax_in_fp32
 
@@ -357,8 +357,8 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
 
 3. calculate_per_token_loss
 
-- 根据全局批次中的非填充token数量来对交叉熵损失进行缩放
-- 默认：None，`task_type` 为'causal_lm'且为预训练/微调时，默认为True，否则默认为False
+- 根据全局批次中的非填充 token 数量来对交叉熵损失进行缩放
+- 默认：None，`task_type` 为 'causal_lm' 且为预训练 / 微调时，默认为 True，否则默认为 False
 
 ### 优化器相关参数
 
@@ -366,24 +366,24 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
 
 - 详情：优化器类型
 - 可选值：'adam'、'sgd'、'muon'、'dist_muon'
-- 默认值：'adam'（实际为'adamw'）
+- 默认值：'adam'（实际为 'adamw'）
 
 2. optimizer_cpu_offload
 
 - 详情：将优化器状态卸载到 CPU
 - 可选值：True、False
 - 默认值：False
-- 说明：可显著降低显存占用，但增加内存占用；若global_batch_size较大，则对训练速度的影响不大
+- 说明：可显著降低显存占用，但增加内存占用；若 global_batch_size 较大，则对训练速度的影响不大
 
 3. optimizer_offload_fraction
 
 - 详情：优化器状态卸载到 CPU 的比例
 - 可选值：0~1 之间的浮点数
 - 默认值：None（默认为 1，即完全卸载）
-- main_grads_dtype: 启用 use_precision_aware_optimizer 时主梯度的 dtype。可选为'fp32', 'bf16'。默认为'fp32'
-- main_params_dtype: 启用 use_precision_aware_optimizer 时主参数的 dtype。可选为'fp32', 'fp16'。默认为'fp32'
-- exp_avg_dtype: 启用 use_precision_aware_optimizer 时，adam 优化器中 exp_avg（即一阶矩）的 dtype。该 dtype 用于在训练过程中将优化器状态存储在内存中，但不会影响内核计算时的精度。可选为'fp32', 'fp16', 'bf16', 'fp8'。默认为'fp32'
-- exp_avg_sq_dtype: 启用 use_precision_aware_optimizer 时，adam 优化器中 exp_avg_sq（即二阶矩）的 dtype。该 dtype 用于在训练过程中将优化器状态存储在内存中，但不会影响内核计算的精度。可选为'fp32', 'fp16', 'bf16', 'fp8'。默认为'fp32'
+- main_grads_dtype: 启用 use_precision_aware_optimizer 时主梯度的 dtype。可选为 'fp32', 'bf16'。默认为 'fp32'
+- main_params_dtype: 启用 use_precision_aware_optimizer 时主参数的 dtype。可选为 'fp32', 'fp16'。默认为 'fp32'
+- exp_avg_dtype: 启用 use_precision_aware_optimizer 时，adam 优化器中 exp_avg（即一阶矩）的 dtype。该 dtype 用于在训练过程中将优化器状态存储在内存中，但不会影响内核计算时的精度。可选为 'fp32', 'fp16', 'bf16', 'fp8'。默认为 'fp32'
+- exp_avg_sq_dtype: 启用 use_precision_aware_optimizer 时，adam 优化器中 exp_avg_sq（即二阶矩）的 dtype。该 dtype 用于在训练过程中将优化器状态存储在内存中，但不会影响内核计算的精度。可选为 'fp32', 'fp16', 'bf16', 'fp8'。默认为 'fp32'
 
 ### 分布式并行参数
 
@@ -422,31 +422,31 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
 
 1. moe_router_load_balancing_type
 
-- 详情：确定路由器的负载均衡策略，其中"global_aux_loss"需要"megatron-core>=0.15"
+- 详情：确定路由器的负载均衡策略，其中 "global_aux_loss" 需要 "megatron-core>=0.15"
 - 可选值："aux_loss"、"seq_aux_loss"、"global_aux_loss"、"sinkhorn"、"none"
 - 默认值：None
 
 2. moe_router_dtype
 
-- 详情：用于路由计算和专家输出加权平均的数据类型，增强数值稳定性，尤其在专家数量较多时；与moe_permute_fusion一起使用时性能影响可忽略不计；'none'代表不改变数据类型
+- 详情：用于路由计算和专家输出加权平均的数据类型，增强数值稳定性，尤其在专家数量较多时；与 moe_permute_fusion 一起使用时性能影响可忽略不计；'none' 代表不改变数据类型
 - 可选值：'none'、'fp32'、'fp64'
 - 默认值：'fp32'
 
 3. moe_token_dispatcher_type
 
-- 详情：要使用的token分发器类型
+- 详情：要使用的 token 分发器类型
 - 可选值：'allgather'、'alltoall'、'flex'、'alltoall_seq'
 - 默认值：'alltoall'
 
 4. moe_enable_deepep
 
-- 详情：启用DeepEP以实现MoE模型中的高效token调度和合并，仅在通过设置--moe_token_dispatcher_type flex使用弹性token调度器时有效
+- 详情：启用 DeepEP 以实现 MoE 模型中的高效 token 调度和合并，仅在通过设置 --moe_token_dispatcher_type flex 使用弹性 token 调度器时有效
 - 可选值：无（布尔型开关）
 - 默认值：无
 
 5. moe_grouped_gemm
 
-- 详情：当每个rank包含多个专家时，通过在多个流中启动多个本地GEMM内核，利用TransformerEngine中的GroupedLinear提高利用率和性能
+- 详情：当每个 rank 包含多个专家时，通过在多个流中启动多个本地 GEMM 内核，利用 TransformerEngine 中的 GroupedLinear 提高利用率和性能
 - 可选值：True、False
 - 默认值：True
 
@@ -458,50 +458,50 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
 
 7. moe_aux_loss_coeff
 
-- 详情：默认为0不使用aux_loss；值越大训练效果越差但MoE负载越均衡，需根据实验选择合适值
+- 详情：默认为 0 不使用 aux_loss；值越大训练效果越差但 MoE 负载越均衡，需根据实验选择合适值
 - 可选值：数值型
 - 默认值：0
 
 8. moe_z_loss_coeff
 
-- 详情：z-loss的缩放系数
-- 可选值：数值型/None
+- 详情：z-loss 的缩放系数
+- 可选值：数值型 / None
 - 默认值：None
 
 9. moe_shared_expert_overlap
 
-- 详情：启用共享专家计算与调度器通信之间的重叠，不启用则共享专家在路由专家之后执行，仅在设置了moe_shared_expert_intermediate_size时有效
+- 详情：启用共享专家计算与调度器通信之间的重叠，不启用则共享专家在路由专家之后执行，仅在设置了 moe_shared_expert_intermediate_size 时有效
 - 可选值：True、False
 - 默认值：False
 
 10. moe_expert_capacity_factor
 
-- 详情：每个专家的容量因子，None表示不丢弃任何token；设置后超出专家容量的token会基于选中概率被丢弃，可均衡训练负载、提升训练速度（如设为1或2）
-- 可选值：数值型/None
+- 详情：每个专家的容量因子，None 表示不丢弃任何 token；设置后超出专家容量的 token 会基于选中概率被丢弃，可均衡训练负载、提升训练速度（如设为 1 或 2）
+- 可选值：数值型 / None
 - 默认值：None
 
 11. moe_pad_expert_input_to_capacity
 
-- 详情：对每个专家的输入进行填充，使其长度与专家容量对齐，仅在设置了--moe_expert_capacity_factor参数后生效
+- 详情：对每个专家的输入进行填充，使其长度与专家容量对齐，仅在设置了 --moe_expert_capacity_factor 参数后生效
 - 可选值：True、False
 - 默认值：False
 
 12. moe_token_drop_policy
 
-- 详情：token丢弃策略
+- 详情：token 丢弃策略
 - 可选值：'probs'、'position'
 - 默认值：'probs'
 
 ### Megatron-Bridge
 
 - Megatron（含 Megatron-LM、Megatron-Core）采用分布式 PyTorch 检查点格式
-  - 主要格式：torch.save() 保存的 state_dict，包含模型权重、优化器状态、训练状态等，格式为 `pt` 或 `bin`
+  - 主要格式：torch.save () 保存的 state_dict，包含模型权重、优化器状态、训练状态等，格式为 `pt` 或 `bin`
   - 分布式格式：针对 TP/PP/EP/CP 等并行策略，权重被切分成多个文件，每个文件对应一个并行分片（含模型权重、优化器状态、训练状态等）
 - 对 HuggingFace SafeTensors 格式的支持
   - SafeTensors 是 HuggingFace 推出的安全、快速的张量存储格式，使用 Rust 实现，避免了 pickle 的安全风险，同时提供更快的加载速度
   - Megatron-Bridge 提供了从 Megatron 分布式检查点到 HuggingFace SafeTensors 格式的转换工具，支持权重、优化器状态、训练状态等信息的完整转换
-  - save_hf_weights() 直接保存为 HF 兼容 Safetensors（分片、流式存储，支持大模型）
-  - save_hf_pretrained() 保存 config.json+tokenizer+model.safetensors，直接兼容 HuggingFace Transformers 加载
+  - save_hf_weights () 直接保存为 HF 兼容 Safetensors（分片、流式存储，支持大模型）
+  - save_hf_pretrained () 保存 config.json+tokenizer+model.safetensors，直接兼容 HuggingFace Transformers 加载
 - 支持 PEFT/LoRA 权重的转换
   - Megatron-Bridge 支持将 PEFT/LoRA 权重转换为 HuggingFace SafeTensors 格式，方便在 HuggingFace Transformers 中加载和使用
   - 通过指定 base_model_checkpoint 和 peft_weights_checkpoint，工具会自动加载基础模型权重和 PEFT/LoRA 权重，并将它们合并后保存为 HF 兼容的 SafeTensors 格式

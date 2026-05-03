@@ -24,9 +24,9 @@ description: 介绍 KV Cache 在 LLM 推理中的作用与优化
 
   ![KV Calculate](/img/llm/kv-calculate.png)
 
-- 每个输入的 token（例如，“Time”和“flies”）通过学习矩阵 $W_k$ 和 $W_v$​ 进行投影，以获得其相应的 KV 向量
+- 每个输入的 token（例如，“Time” 和 “flies”）通过学习矩阵 $W_k$ 和 $W_v$​ 进行投影，以获得其相应的 KV 向量
 
-- 大语言模型一次生成一个词（或者 token），假设大语言模型生成了“fast”这个词，那么下一轮的 Prompt 就变成了“Time flies fast”
+- 大语言模型一次生成一个词（或者 token），假设大语言模型生成了 “fast” 这个词，那么下一轮的 Prompt 就变成了 “Time flies fast”
 
   ![KV Calculate Duplicate](/img/llm/kv-calcuate-duplicate.png)
 
@@ -56,7 +56,7 @@ description: 介绍 KV Cache 在 LLM 推理中的作用与优化
 
 ### KV Cache 的代码实现
 
-#### （1）注册缓存缓冲区（MultiHeadAttention类构造函数）
+#### （1）注册缓存缓冲区（MultiHeadAttention 类构造函数）
 
 - 在多头注意力类中添加 `cache_k` 和 `cache_v` 两个缓冲区，用于存储拼接后的 KV 向量：
 
@@ -65,9 +65,9 @@ description: 介绍 KV Cache 在 LLM 推理中的作用与优化
   self.register_buffer("cache_v", None)
   ```
 
-#### （2）带use_cache参数的前向传播（MultiHeadAttention.forward）
+#### （2）带 use_cache 参数的前向传播（MultiHeadAttention.forward）
 
-- 扩展 forward 方法，根据 `use_cache` 标志决定是否使用缓存，核心逻辑为“初始化缓存→拼接新 KV →检索缓存”：
+- 扩展 forward 方法，根据 `use_cache` 标志决定是否使用缓存，核心逻辑为 “初始化缓存→拼接新 KV →检索缓存”：
 
   ```python
   def forward(self, x, use_cache=False):
@@ -129,7 +129,7 @@ description: 介绍 KV Cache 在 LLM 推理中的作用与优化
 
 #### （5）带缓存的文本生成函数（generate_text_simple_cached）
 
-- 仅向模型输入新token（而非完整序列），结合缓存生成文本：
+- 仅向模型输入新 token（而非完整序列），结合缓存生成文本：
 
   ```python
   def generate_text_simple_cached(model, idx, max_new_tokens, use_cache=True):
@@ -157,7 +157,7 @@ description: 介绍 KV Cache 在 LLM 推理中的作用与优化
 ### KV Cache 的优化
 
 - 优点
-  - 计算效率显著提升：复杂度从 $O(n^2)$ 降至 $O (n)$，序列越长收益越明显
+  - 计算效率显著提升：复杂度从 $O (n^2)$ 降至 $O (n)$，序列越长收益越明显
   - 推理速度快：减少重复计算，尤其适合长文本生成场景（如对话、文档生成）
 
 - 缺点
@@ -169,7 +169,7 @@ description: 介绍 KV Cache 在 LLM 推理中的作用与优化
 - GPU 环境：小模型（0.6B/1B）下，KV Cache 优势不明显，因为设备的传输 / 通信成本抵消了缓存收益，在大模型场景下缓存优势会凸显
 
 - 优化
-  - 预分配内存（解决 `torch.cat` 的内存碎片问题）：避免频繁拼接张量（`torch.cat` 会反复分配/释放内存），提前按最大序列长度分配缓存空间，确保内存使用的一致性并减少开销
+  - 预分配内存（解决 `torch.cat` 的内存碎片问题）：避免频繁拼接张量（`torch.cat` 会反复分配 / 释放内存），提前按最大序列长度分配缓存空间，确保内存使用的一致性并减少开销
 
     ```python
     max_seq_len = 1024  # 模型支持的最大序列长度
@@ -182,7 +182,7 @@ description: 介绍 KV Cache 在 LLM 推理中的作用与优化
     cache_v[:, :, t:t+1, :] = values_new
     ```
 
-  - 滑动窗口缓存（解决内存线性增长问题）：仅保留最近的 `window_size` 个token的缓存，截断早期 token，平衡内存与上下文相关性
+  - 滑动窗口缓存（解决内存线性增长问题）：仅保留最近的 `window_size` 个 token 的缓存，截断早期 token，平衡内存与上下文相关性
 
     ```python
     window_size = 512  # 滑动窗口大小
@@ -191,4 +191,4 @@ description: 介绍 KV Cache 在 LLM 推理中的作用与优化
     cache_v = cache_v[:, :, -window_size:, :]
     ```
 
-  - 模型外缓存（配合 `torch.compile` 加速）：将 KV Cache 模型外部，便于使用 `torch.compile` 编译模型，进一步提升计算效率（尤其适用于Qwen3、Llama 3等大模型）
+  - 模型外缓存（配合 `torch.compile` 加速）：将 KV Cache 模型外部，便于使用 `torch.compile` 编译模型，进一步提升计算效率（尤其适用于 Qwen3、Llama 3 等大模型）

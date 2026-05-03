@@ -13,9 +13,9 @@ description: 介绍 Agentic RL 的核心概念、与传统 RLHF/RLVR 的区别�
 ## 什么是 Agentic RL
 
 - 自 DeepSeek 以来，Agentic RL 的重心已经从单轮文本生成的 PPO/GRPO 算法迭代，转向长上下文、工具调用、部分可观测、异步执行环境下的系统性策略学习
-- 2025年，各家公开的技术路线，共同指向同一个范式转移
+- 2025 年，各家公开的技术路线，共同指向同一个范式转移
   - Kimi 系列：把长时程 Agent 训练的核心工程与算法摆上台面
-    - K1.5 率先确立长上下文 RL、partial rollout 复用、mirror-descent 风格的 policy optimization的基础框架，解决长轨迹训练效率问题
+    - K1.5 率先确立长上下文 RL、partial rollout 复用、mirror-descent 风格的 policy optimization 的基础框架，解决长轨迹训练效率问题
     - K2/K2.5 进一步补齐关键工程组件：agentic 数据合成、多模态 RL、token-level 裁剪、GRM rubric、Toggle、PARL/Agent Swarm 等，让 Agent 从 “单次推理” 走向 “持续交互与群体协作”
   - MiniMax：点破长时程 Agent 训练的真正瓶颈
     - 当 Agent rollout 从秒级拉长到分钟、小时级，训练矛盾不再是损失函数设计，而是吞吐 — 稳定性 — 灵活性三难困境
@@ -34,18 +34,18 @@ description: 介绍 Agentic RL 的核心概念、与传统 RLHF/RLVR 的区别�
 - 而 Agentic RL（智能体强化学习）彻底跳出了单轮文本映射的局限，二者的训练定位、优化对象、核心逻辑存在根本性分野
 - Agentic RL 的训练对象不再是给定 prompt 输出单一答案的静态文本映射，而是一个具备自主决策能力、能在复杂环境中持续交互的动态策略
 - 这个策略不再局限于完成简单的文本续写任务，而是要承接一系列复杂交互行为：实时处理环境状态更新、精准调用外部工具并配置参数、解析外部观测信息、梳理长上下文记忆、委派子任务、判断任务终止条件，同时兼顾成本、时延、安全等多重约束
-- 简言之，传统RLHF/RLVR是对文本续写概率做后验重排，解决的是“怎么把单轮回答写好”的问题；Agentic RL 则是面向长时间尺度、部分可观测性、结构化动作空间的策略学习，解决的是“怎么在复杂环境里把任务做成、做好、做高效”的问题
+- 简言之，传统 RLHF/RLVR 是对文本续写概率做后验重排，解决的是 “怎么把单轮回答写好” 的问题；Agentic RL 则是面向长时间尺度、部分可观测性、结构化动作空间的策略学习，解决的是 “怎么在复杂环境里把任务做成、做好、做高效” 的问题
 - 这直接带来了四个训练上的变化
   - 状态构成
     - RLHF/RLVR 中，模型的状态仅由用户初始 prompt 决定，状态空间单一且静态，全程无动态变化
     - 而 Agentic RL 的状态是动态复合状态，由历史交互轨迹、工具返回结果、环境实时回馈、长期记忆摘要、当前有效上下文等多维度信息共同构成，状态空间更复杂、更具时序性，需要模型持续感知并更新状态认知
-  - 动作空间：从Token级生成，转向结构化决策
-    - 传统 RL 的动作仅为“预测下一个Token”，动作空间是连续的文本序列，决策维度单一
-    - Agentic RL的动作空间彻底结构化、多元化，不再局限于Token生成：既包括选择调用哪类外部工具、填写工具参数，也包括是否压缩上下文、是否并行分派子任务、是否切换任务分支等高阶决策，动作的复杂度和决策难度呈指数级提升
+  - 动作空间：从 Token 级生成，转向结构化决策
+    - 传统 RL 的动作仅为 “预测下一个 Token”，动作空间是连续的文本序列，决策维度单一
+    - Agentic RL 的动作空间彻底结构化、多元化，不再局限于 Token 生成：既包括选择调用哪类外部工具、填写工具参数，也包括是否压缩上下文、是否并行分派子任务、是否切换任务分支等高阶决策，动作的复杂度和决策难度呈指数级提升
   - 奖励机制：从即时单目标，转向延迟稀疏复合奖励
     - 传统 RLHF/RLVR 的奖励多为即时反馈，聚焦输出文本的准确性、合规性等单一目标，奖励信号密集且易获取
-    - Agentic RL的奖励具备延迟性、稀疏性、复合性三重特征：不仅要看任务最终结果是否正确，还要评判执行过程的精准度、资源消耗效率（Token占用、耗时）、流程合规性等，往往任务执行到中后期甚至结束时才能获得有效奖励，信号获取难度大幅增加
-  - 执行与训练：从同步短序列，转向异步长时程Rollout
+    - Agentic RL 的奖励具备延迟性、稀疏性、复合性三重特征：不仅要看任务最终结果是否正确，还要评判执行过程的精准度、资源消耗效率（Token 占用、耗时）、流程合规性等，往往任务执行到中后期甚至结束时才能获得有效奖励，信号获取难度大幅增加
+  - 执行与训练：从同步短序列，转向异步长时程 Rollout
     - 传统 RL 针对短文本序列做同步训练，Rollout 时长固定且可控，训练代价低、分布稳定
     - Agentic RL 的 Rollout 时间高度不均匀，短则几秒、长则数小时，同步训练会带来极高的算力与时间代价
     - 若采用异步训练，又会不可避免地引入数据滞后性、策略分布偏移问题，进一步加剧训练稳定性管控难度
@@ -55,7 +55,7 @@ description: 介绍 Agentic RL 的核心概念、与传统 RLHF/RLVR 的区别�
 
 - 如果把 Agentic RL 理解成一个在真实环境里持续交互、持续采样、持续更新的策略学习系统，那么最重要的就不再是这一步用哪种 RL 算法，而是训练闭环能否长期守住三个更底层的条件
 - 这里的不变量，并非指某个量在数学上严格恒定，而是指它们虽会天然漂移，却必须在整个训练过程中被不断拉回到可学习、可优化的区间内
-- 更精准地讲：前两个是不应跌破的下限——策略探索空间不能塌缩、学习信号不能退化；第三个是不应越过的上限——Rollout 分布、更新分布与部署分布之间的偏移不能失控
+- 更精准地讲：前两个是不应跌破的下限 —— 策略探索空间不能塌缩、学习信号不能退化；第三个是不应越过的上限 ——Rollout 分布、更新分布与部署分布之间的偏移不能失控
 
 ### 第一不变量：策略可探索空间不能过早塌缩
 
@@ -65,7 +65,7 @@ description: 介绍 Agentic RL 的核心概念、与传统 RLHF/RLVR 的区别�
 - 这种压缩效应在智能体场景下远甚于单轮问答，因为工具接口、架构支架、上下文模板、终止逻辑本身就会隐性偏好固定工作流
 - 守住这一不变量的核心意义，在于决定后续强化学习是否具备真正的搜索价值
 - RL 的核心不是重复放大已知最优答案的概率，而是让模型在交互中持续挖掘未被发现的高回报行为
-- 一旦可探索空间提前塌缩，后续采样仅会对单一固定套路做表面扰动，奖励差异会持续缩小，新学习方向彻底枯竭，最终训练陷入“看似运行、实则无效”的局部扰动困境
+- 一旦可探索空间提前塌缩，后续采样仅会对单一固定套路做表面扰动，奖励差异会持续缩小，新学习方向彻底枯竭，最终训练陷入 “看似运行、实则无效” 的局部扰动困境
 
 ### 第二不变量：学习信号必须持续非退化
 
@@ -74,17 +74,17 @@ description: 介绍 Agentic RL 的核心概念、与传统 RLHF/RLVR 的区别�
 - 因此第二不变量的核心，是训练系统必须持续制造非退化学习信号：不同 rollout 轨迹可被有效区分、公平比较，且这种对比能直接作用于参数更新环节
 - 学习信号易退化的诱因，源于 Agentic RL 天然的奖励特性：真实任务普遍存在奖励延迟、结果稀疏、执行链路长的问题，且反馈多为成败标签、粗粒度规则、高层质量分等简易形式
 - 这极易导致采样样本出现两类退化场景：简单任务全对、困难任务全错
-  - 前者代表模型局部能力饱和，后者代表模型尚未进入可学习区间，二者最终都会引发同一恶果——组内轨迹无显著差异、优势函数趋近消失、参数更新方向彻底退化
+  - 前者代表模型局部能力饱和，后者代表模型尚未进入可学习区间，二者最终都会引发同一恶果 —— 组内轨迹无显著差异、优势函数趋近消失、参数更新方向彻底退化
   - 除此之外，长轨迹拉长信用分配链条、部分可观测环境模糊成败归因、工具噪声与验证器噪声污染轨迹对比关系，都会进一步加剧学习信号退化，导致系统看似海量采集交互数据，实则大量产出无学习价值的无效样本
 - 维持学习信号非退化，是判断训练是否突破能力边界的核心依据
-  - 多数 RL 训练失效，并非模型能力不足或数据量匮乏，而是系统无法明确区分“当前能力附近哪些行为更值得放大”
-  - 一旦失去这种判别力，优势函数坍缩、梯度归零，训练就会陷入“低效空转”状态
+  - 多数 RL 训练失效，并非模型能力不足或数据量匮乏，而是系统无法明确区分 “当前能力附近哪些行为更值得放大”
+  - 一旦失去这种判别力，优势函数坍缩、梯度归零，训练就会陷入 “低效空转” 状态
   - 学习信号的质量从来不取决于奖励项数量，而取决于轨迹比较的可学性：即便奖励规则简洁，只要能稳定拉开轨迹间的有效差异，就是高质量学习信号；反之，再复杂的奖励体系，若无法区分优劣轨迹，依旧会产生退化梯度
 - 简言之，第二不变量的核心是守住轨迹可比较性、参数可更新性，而非单纯追求奖励总量
 
 ### 第三不变量：训练采样、参数更新和真实部署之间的偏移必须可控
 
-- 前两个不变量解决“有无可行路径”“路径能否转梯度”的问题，第三不变量则解决“梯度是否作用于正确分布”的问题
+- 前两个不变量解决 “有无可行路径”“路径能否转梯度” 的问题，第三不变量则解决 “梯度是否作用于正确分布” 的问题
 - 在 Agentic RL 体系中，策略采样的 rollout 分布、学习者更新用的样本分布、实际部署的策略分布，天然难以完全一致
 - 该不变量的核心，是将三者偏移控制在可校正、可解释、不主导训练误差的范围内
 - 分布偏移的根源来自智能体训练的固有特性
@@ -92,16 +92,16 @@ description: 介绍 Agentic RL 的核心概念、与传统 RLHF/RLVR 的区别�
   - 同时，智能体状态由工具返回、环境反馈、上下文裁剪、记忆摘要、调度决策共同构成，任一环节在采样、训练、部署三阶段的表示不一致，都会导致动作语义偏差
   - 此外，训练与部署的解码设置、上下文打包、工具 schema、分词引擎、中间件、日志格式等脚手架差异，会进一步割裂决策场景，让模型优化的并非统一纯净的策略分布，而是多个近似分布的拼接体
 - 严控分布偏移的意义，在于保证训练增益能够落地到真实执行场景
-  - 一旦偏移失控，就会出现典型的“训练部署脱节”：模型在训练样本上表现优异，上线后却无法复现优化效果，甚至因离线策略偏差、接口不对齐、状态表示错位出现性能退化
-  - 对于长轨迹智能体，前期微小偏移会沿状态转移链路持续累积，最终让策略陷入“训练合理、部署失效”的困境
+  - 一旦偏移失控，就会出现典型的 “训练部署脱节”：模型在训练样本上表现优异，上线后却无法复现优化效果，甚至因离线策略偏差、接口不对齐、状态表示错位出现性能退化
+  - 对于长轨迹智能体，前期微小偏移会沿状态转移链路持续累积，最终让策略陷入 “训练合理、部署失效” 的困境
   - 值得注意的是，Agentic RL 的分布偏移大多并非外部环境导致，而是系统自身设计引发的，因此这一不变量并非单纯的算法修正问题，而是系统级的一致性管控问题
 
 ### 三大不变量的耦合关系：协同把控才是核心
 
 - 这三个不变量并非彼此独立的单一要素，而是训练系统相互耦合的三大边界，缺一不可、互相制衡
-  - 第一不变量决定策略空间的宽度——探索：有没有路
-  - 第二不变量决定空间差异的梯度转化效率——信号：路之间能不能区分
-  - 第三不变量决定梯度优化的分布正确性——分布：学到的路是不是能用
+  - 第一不变量决定策略空间的宽度 —— 探索：有没有路
+  - 第二不变量决定空间差异的梯度转化效率 —— 信号：路之间能不能区分
+  - 第三不变量决定梯度优化的分布正确性 —— 分布：学到的路是不是能用
 
 - 反例
   - 只有探索、没有有效信号，训练会沦为高噪声盲目试错
@@ -122,12 +122,12 @@ description: 介绍 Agentic RL 的核心概念、与传统 RLHF/RLVR 的区别�
 - Agentic RL 与普通单轮答案生成的核心差别，在于模型不再是从提示词猜测补全内容，而是在可交互、可执行、带状态转移的环境中学习决策策略
 - 决定训练效果的首要因素并非奖励模型，而是环境与接口的设计清晰度：模型每一步可观测的信息、可执行的动作、合法的工具调用、任务终止条件、成功判定标准，以及训练与部署环境的一致性，都是底层前提
 - 头部厂商的技术路线已形成高度共识
-  - Kimi K2 将大规模智能体数据合成+真实/合成环境 RL 纳入后训练主线
+  - Kimi K2 将大规模智能体数据合成 + 真实 / 合成环境 RL 纳入后训练主线
   - K2.5 进一步统一为类 Gym 接口并支持大规模异步任务管理
   - GLM-5 将智能体 RL 拓展至万级可验证的软件工程、终端、多跳搜索环境
   - Forge 则覆盖十万级真实场景架构与数千种工具调用格式
 - 这一切都印证：真正的智能体能力并非源自静态数据记忆，而是在结构化、可验证、可迁移的环境中训练习得
-- 环境建模的核心不是全真模拟现实，而是保证结构保真度——动作空间、关键信息流、失败模式、成功判据与真实部署一致
+- 环境建模的核心不是全真模拟现实，而是保证结构保真度 —— 动作空间、关键信息流、失败模式、成功判据与真实部署一致
 - 模型无需感知全局，只需捕捉影响决策的因果结构，例如客服智能体无需复刻企业全量噪声，但必须保留库存状态、退款规则、权限边界等核心要素，否则学到的只是形似而非实用的行为
 - 环境覆盖度是 Agentic RL 的首要缩放轴，脱离丰富、可执行、可验证的环境，后续 RL 技巧都会在失真场景中失效
 - 真实任务的核心难点并非数据缩放，而是规范缩放：高价值任务难以进入训练闭环，往往是因为任务未转化为机器可执行、可验证的规范
@@ -135,7 +135,7 @@ description: 介绍 Agentic RL 的核心概念、与传统 RLHF/RLVR 的区别�
   - 任务编译器将模糊请求转为初始状态、工具与约束
   - 验证器编译器将效果评判转为可执行检查与规则
   - 架构编译器将能力适配不同智能体框架，避免模型固化单一工作流
-- SWE-Universe 实现环境构建、自我验证、投机检测自动化，更是印证防投机评测已成为环境核心组成部分，环境本身已是智能体RL的核心工程对象
+- SWE-Universe 实现环境构建、自我验证、投机检测自动化，更是印证防投机评测已成为环境核心组成部分，环境本身已是智能体 RL 的核心工程对象
 
 ### 探索能力与多样性保持：不是把 Temperature 调高，而是维护模型的可探索行为的空间
 
@@ -143,14 +143,14 @@ description: 介绍 Agentic RL 的核心概念、与传统 RLHF/RLVR 的区别�
 - 核心本质是：模型在训练全周期，能否保有可区分、可成功、参数可达的多元行为路径
 - 若预训练、SFT 或早期 RL 阶段将路径压缩为单一高概率模式，后续仅增加采样随机性，也只是对固定解法做表面扰动，无法恢复真正的探索能力
 - 推理模型中已证实，SFT 推进会让 Pass@1 提升但 Pass@k 快速恶化，Token 级多样化解码远达不到理论上限，本质是权重层面的行为探索空间塌缩
-- 探索本质是支撑集管理问题，核心是维护多元任务分解、工具调用顺序、上下文组织、推理路径、记忆/规划/动作组合
+- 探索本质是支撑集管理问题，核心是维护多元任务分解、工具调用顺序、上下文组织、推理路径、记忆 / 规划 / 动作组合
   - 这些分支在参数中留存，RL 才能通过验证器与 Rollout 放大
   - 若进入 RL 前就被压缩，后续训练仅能在缩水空间内做局部优化
 - 头部厂商的方案均对齐这一思路
   - MiniMax-M1 把 additional 7.5T continual pretraining 直接称为 Foundation for RL Scaling
   - Kimi K2 通过 diverse agents、tool combinations 和 rubric-guided tasks，把未来 agent 可能探索的 action space 和 task space 提前做宽
-  - GLM-5 采用分阶段 RL+跨阶段蒸馏，防止能力与行为模式丢失
-- 预训练/基座阶段决定参数空间的可达支撑集，为 RL 提供技能碎片与组合潜力；冷启动与 SFT 阶段的核心，是避免提前压塌分布
+  - GLM-5 采用分阶段 RL + 跨阶段蒸馏，防止能力与行为模式丢失
+- 预训练 / 基座阶段决定参数空间的可达支撑集，为 RL 提供技能碎片与组合潜力；冷启动与 SFT 阶段的核心，是避免提前压塌分布
 - GEM 指出标准交叉熵 SFT 会压缩输出分布，抹除 alternative plausible outputs，而在线 RL 恰恰需要这些分歧来构建探索空间
 - 相关研究也表明，适配 RL 的最优检查点并非验证集表现最好的，因为在传统意义上的过拟合发生之前，模型就可能已经出现 distributional forgetting，过度偏离 base distribution，从而损害后续 RL 的潜力
 - 进入在线 RL 阶段，若仅以正确性为目标，仍会导致概率向高回报模式收敛，因此需要把多样性目标从训练副产品转为在 RL 中显式促进 token-level diversity；DAPO、多样性感知策略优化等方案，均通过显式约束防止熵塌缩，提升推理性能
@@ -160,8 +160,8 @@ description: 介绍 Agentic RL 的核心概念、与传统 RLHF/RLVR 的区别�
   - 第二，很多系统的 verifier 依然偏 outcome-only，这天然会低估那些短期看更绕、长期却更有价值的探索路径
   - 第三，仍然过度依赖 Pass@1 这类单点指标，而对 Pass@k、Potential@k、解法簇数量、跨 scaffold 迁移这些更接近探索前沿的指标重视不够
 - 这也是为什么模型常常出现一种假象：单条最好答案更准了，但整个行为可探索空间其实更窄了
-- 前面的 diversity collapse[16]、GEM 和 diversity-aware RL 这些工作，本质上都在不同角度暴露同一个问题
-- 但到这里，问题还没有结束——即使模型参数里仍然保有多种可行路径，这些路径也未必会在训练中真正被学到
+- 前面的 diversity collapse [16]、GEM 和 diversity-aware RL 这些工作，本质上都在不同角度暴露同一个问题
+- 但到这里，问题还没有结束 —— 即使模型参数里仍然保有多种可行路径，这些路径也未必会在训练中真正被学到
 - 对 group-based 更新来说，只要某个 prompt 反复产生全成功或全失败的 rollout 组，学习信号就会退化；这时坏掉的已经不再是可探索的空间，而是学习信号的组织方式
 
 ### 算力分配与学习信号整理：谁拿到 Rollout，谁才真正有机会被学到
@@ -172,25 +172,25 @@ description: 介绍 Agentic RL 的核心概念、与传统 RLHF/RLVR 的区别�
 
 - 没有前者，后者无路可采；没有后者，前者只是潜在能力，而不是实际更新
 
-- 对 reasoning / agentic RL 来说，模型内部也许还保留着多种策略，但如果 rollout 总是平均分给那些已经学会的简单题和暂时完全学不会的极难题，那么训练既看不到组内差异，也形成不了有效梯度
+- 对 reasoning /agentic RL 来说，模型内部也许还保留着多种策略，但如果 rollout 总是平均分给那些已经学会的简单题和暂时完全学不会的极难题，那么训练既看不到组内差异，也形成不了有效梯度
 
 - 在稀疏奖励和 group baseline 的设置下，很多 prompt-group 会退化成全 0 或全 1，于是 advantage energy 为 0，gate 关闭，这些组消耗了算力，却没有产生 usable learning signal
 
 - 把算力花在哪不仅是一个工程效率问题，更是一个梯度可达性问题
 
-- uniform rollout allocation 最大的问题不只是浪费预算，而是它会系统性制造 degenerate groups：简单题容易全对，难题容易全错，两边都不给 group-relative 更新留下信号。也正因此，真正该优化的目标，不只是平均 reward，而是更接近训练动力学本身的量：non-zero gradient ratio、gate-open probability、组内 reward spread以及单位训练时间内的有效样本率。因此算力分配可被称为 credit assignment 的上游机制：谁拿到更多 rollout，谁就更有机会被比较、被区分、被学到。这个视角在 RL-ADA 和后续一系列 adaptive allocation 工作里都很明显。主流的第一类做法，是把问题写成方差控制。既然不同 prompt 对梯度方差的贡献不同，那么 rollout 预算就不应平均分配，而应优先投给那些最能减少估计方差、也最可能恢复学习信号的 prompt。RL-ADA 把这个视角总结得很清楚：GVM-RAFT[17] 从 acceptance rate 和 gradient noise 的角度做动态分配；VIP[18] 则更系统，直接用轻量高斯过程去预测 prompt 的成功概率，再把这些预测转成 gradient variance 估计，并在固定预算约束下解一个 rollout allocation 的优化问题。VIP 明确把目标写成minimize the expected gradient variance of the policy update，而不是机械拉高 pass rate。这标志着 rollout allocation 开始从经验 heuristics，变成 policy optimization 的一部分。第二类做法，是把问题写成学习价值—成本权衡。Knapsack RL 是这里最有代表性的工作之一：它把每个任务的探索看成具有不同 value 和 cost 的 item，并由此推出一个自适应资源分配规则，把预算从已经学饱和的题转移到更可能产出信号的题。预算分配不是为了省钱，而是为了避免把大量训练算力烧在注定不会更新参数的地方。这就是为什么它不该被当成 trainer trick，而应该被视为 learning signal design。第三类做法，是把问题写成主动恢复信号，而不只是被动重分配预算。Reinforce-Ada[19] 认为很多所谓难 prompt 没法学，其实是 undersampling 造成的统计假象，而不是模型真的没有潜力。于是它不再用固定小组、统一采样的方式被动等待 mixed outcomes，而是根据 prompt 难度动态增加推理预算，主动去找出那些本来会被 uniform GRPO 漏掉的信号。
+- uniform rollout allocation 最大的问题不只是浪费预算，而是它会系统性制造 degenerate groups：简单题容易全对，难题容易全错，两边都不给 group-relative 更新留下信号。也正因此，真正该优化的目标，不只是平均 reward，而是更接近训练动力学本身的量：non-zero gradient ratio、gate-open probability、组内 reward spread 以及单位训练时间内的有效样本率。因此算力分配可被称为 credit assignment 的上游机制：谁拿到更多 rollout，谁就更有机会被比较、被区分、被学到。这个视角在 RL-ADA 和后续一系列 adaptive allocation 工作里都很明显。主流的第一类做法，是把问题写成方差控制。既然不同 prompt 对梯度方差的贡献不同，那么 rollout 预算就不应平均分配，而应优先投给那些最能减少估计方差、也最可能恢复学习信号的 prompt。RL-ADA 把这个视角总结得很清楚：GVM-RAFT [17] 从 acceptance rate 和 gradient noise 的角度做动态分配；VIP [18] 则更系统，直接用轻量高斯过程去预测 prompt 的成功概率，再把这些预测转成 gradient variance 估计，并在固定预算约束下解一个 rollout allocation 的优化问题。VIP 明确把目标写成 minimize the expected gradient variance of the policy update，而不是机械拉高 pass rate。这标志着 rollout allocation 开始从经验 heuristics，变成 policy optimization 的一部分。第二类做法，是把问题写成学习价值 — 成本权衡。Knapsack RL 是这里最有代表性的工作之一：它把每个任务的探索看成具有不同 value 和 cost 的 item，并由此推出一个自适应资源分配规则，把预算从已经学饱和的题转移到更可能产出信号的题。预算分配不是为了省钱，而是为了避免把大量训练算力烧在注定不会更新参数的地方。这就是为什么它不该被当成 trainer trick，而应该被视为 learning signal design。第三类做法，是把问题写成主动恢复信号，而不只是被动重分配预算。Reinforce-Ada [19] 认为很多所谓难 prompt 没法学，其实是 undersampling 造成的统计假象，而不是模型真的没有潜力。于是它不再用固定小组、统一采样的方式被动等待 mixed outcomes，而是根据 prompt 难度动态增加推理预算，主动去找出那些本来会被 uniform GRPO 漏掉的信号。
 
-  这个话题还有许多待解决的问题。首先，现有很多 allocator 仍然主要依赖 pass rate、variance proxy 或近期 rollout 统计，而这些量未必等价于长期训练价值。一个 prompt 今天方差大，不代表它明天最值得更多预算。其次，现有很多方法仍把单条 prompt 作为预算分配的基本单位，但在 agentic RL 中，训练难度往往更多取决于具体的交互结构和执行状态，例如当前使用的 scaffold、涉及的工具链、历史记忆状态以及任务所处阶段，而不只是 prompt 文本本身。同时，当前分配器大多优化的是局部训练效率，却还没有把预算分配、reward 结构、hinting、off-policy freshness、乃至长时程 credit assignment 联合起来。也就是说，现有方法更多是在回答额外的 rollout 和训练预算应该优先投给哪里，而还没有真正回答哪些任务状态和经验从长期看最值得学习。前者关注的是分配效率，后者关注的则是长期训练价值。现有工作通常依赖方差、近期进步空间或信号强弱等局部指标来做决策，但这些指标都只是训练价值的近似，并不等同于真正的长期收益。更具体地说，下一步应该解决的是：能不能把 semantic difficulty、uncertainty、verifier sharpness、历史 learning gain、scaffold transfer 价值，甚至 hinting 后的 gate-open probability，一起纳入 allocation policy。能不能让系统不仅知道这题现在难，还知道这题多给 32 个 rollout 到底会不会真的打开未来的梯度；能不能把 prompt-level allocation 进一步推广到 trajectory segment、tool-call branch、memory operation 这类更细的 agent 单位。到那时，算力分配才会真正从更高效的训练技巧变成agentic RL 的核心算法层。
+  这个话题还有许多待解决的问题。首先，现有很多 allocator 仍然主要依赖 pass rate、variance proxy 或近期 rollout 统计，而这些量未必等价于长期训练价值。一个 prompt 今天方差大，不代表它明天最值得更多预算。其次，现有很多方法仍把单条 prompt 作为预算分配的基本单位，但在 agentic RL 中，训练难度往往更多取决于具体的交互结构和执行状态，例如当前使用的 scaffold、涉及的工具链、历史记忆状态以及任务所处阶段，而不只是 prompt 文本本身。同时，当前分配器大多优化的是局部训练效率，却还没有把预算分配、reward 结构、hinting、off-policy freshness、乃至长时程 credit assignment 联合起来。也就是说，现有方法更多是在回答额外的 rollout 和训练预算应该优先投给哪里，而还没有真正回答哪些任务状态和经验从长期看最值得学习。前者关注的是分配效率，后者关注的则是长期训练价值。现有工作通常依赖方差、近期进步空间或信号强弱等局部指标来做决策，但这些指标都只是训练价值的近似，并不等同于真正的长期收益。更具体地说，下一步应该解决的是：能不能把 semantic difficulty、uncertainty、verifier sharpness、历史 learning gain、scaffold transfer 价值，甚至 hinting 后的 gate-open probability，一起纳入 allocation policy。能不能让系统不仅知道这题现在难，还知道这题多给 32 个 rollout 到底会不会真的打开未来的梯度；能不能把 prompt-level allocation 进一步推广到 trajectory segment、tool-call branch、memory operation 这类更细的 agent 单位。到那时，算力分配才会真正从更高效的训练技巧变成 agentic RL 的核心算法层。
 
 ### 目标函数与策略优化：不先问用哪种 RL，先问现在到底坏在哪
 
-- 这一部分重点不是PPO、GRPO、REINFORCE 的技术细节，而是 Agentic RL 里的优化器，到底在控制什么
+- 这一部分重点不是 PPO、GRPO、REINFORCE 的技术细节，而是 Agentic RL 里的优化器，到底在控制什么
 - 更本质地说，它在回答两个问题
   - 第一，高回报轨迹要以多大力度被推回当前策略
   - 第二，rollout 分布、learner 更新分布、deployment 执行动作之间允许多大偏移
 - ReMax 很有代表性，因为它提醒我们，在文本生成这种快仿真、近似确定性转移、轨迹级奖励的设定下，PPO 那一整套 value network machinery 未必是必要的，REINFORCE 路线也可以既简单又稳定
 - Kimi K1.5 则把长 CoT RL 明确写成 relative-entropy regularized 的 online mirror descent 问题
-- 到了 K2.5、MiniMax-M1 和 GLM-5，问题进一步从如何估 advantage转成如何控制长轨迹、异步 rollout、训练/推理 mismatch 下的 off-policy drift，于是出现了 token-level clipping、importance-weight clipping 和 direct double-sided importance sampling 这些看起来很细但实际上很关键的设计
+- 到了 K2.5、MiniMax-M1 和 GLM-5，问题进一步从如何估 advantage 转成如何控制长轨迹、异步 rollout、训练 / 推理 mismatch 下的 off-policy drift，于是出现了 token-level clipping、importance-weight clipping 和 direct double-sided importance sampling 这些看起来很细但实际上很关键的设计
 - 做 RL 优化时，重点不只是用了 PPO 还是 GRPO，而是有没有把模型生成行为的分布控制好，我们更关心的是策略应当朝什么方向变化、变化幅度多大，以及如何在提升能力的同时保持训练稳定
 - K1.5 之所以强调 mirror descent，因为它在长 CoT RL 里更自然地把相对熵正则化和策略更新绑定起来
 - K2.5 的 token-level clipping、本质上是在处理 train-inference framework 差异放大的 off-policy divergence
@@ -205,11 +205,11 @@ description: 介绍 Agentic RL 的核心概念、与传统 RLHF/RLVR 的区别�
 - Kimi K1.5 的 partial rollout 给出了一个代表性的工程和算法折的方式：把长轨迹切段，未完成部分进 replay buffer，下一轮继续，只有当前段要求 on-policy
 - K2.5 则把每个 agent task 都当成独立异步 coroutine，并通过专门的 Rollout Manager 支持高并发 agentic RL
 - MiniMax 把长时程 Agent RL 的系统难点概括为吞吐、稳定性和灵活性之间的权衡，如果严格按 FIFO（先生成的轨迹先进入训练）更新，分布更稳，但会被慢任务拖住；如果完全异步，谁先跑完就先训练，吞吐更高，却更容易引入陈旧样本和策略漂移
-- 为此，MiniMax提出 Windowed FIFO，不是要求全局严格排队，而是只在一个有限窗口内保持大致顺序，让窗口里的已完成任务可以灵活先训练，从而在稳定性和效率之间折中
+- 为此，MiniMax 提出 Windowed FIFO，不是要求全局严格排队，而是只在一个有限窗口内保持大致顺序，让窗口里的已完成任务可以灵活先训练，从而在稳定性和效率之间折中
 - GLM-5 则直接把采样和训练分开，一边持续并行生成轨迹，另一边独立消费数据，并用统一调度器承接不同任务类型和不同时长的工作负载，以提升长轨迹训练的整体吞吐；在此基础上，它再用 TITO（即训练端直接使用 rollout 时产生的 token，而不是事后把文本重新分词）来保证采样了什么就按什么训练，并结合双边重要性采样和陈旧样本过滤，控制异步训练中不可避免的 off-policy 偏移
 - 很多人把 queueing、resume、tail-latency、staleness 当工程问题，但调度实际上会改写训练分布，Agentic RL 里它们会直接决定 learner 实际看见什么样的轨迹
   - K1.5 的 partial rollout 意味着一条长轨迹会由旧段与新段拼接而成
-  - MiniMax的 Windowed FIFO 说明 scheduler 的可见窗口直接控制了多大程度允许新鲜样本先于更早提交的样本进入训练
+  - MiniMax 的 Windowed FIFO 说明 scheduler 的可见窗口直接控制了多大程度允许新鲜样本先于更早提交的样本进入训练
   - GLM-5 的异步 Agent RL 则明确承认，不现实去追踪所有历史行为策略，于是必须在可接受的偏差内做近似校正
 - agentic RL 的核心并不是如何保持纯 on-policy，而是如何在不可避免的异步与陈旧性下，让偏移保持在仍然有学习价值的范围内
 - 这就是为什么 rollout system 不是承载算法的底座，而是算法的一部分
@@ -218,11 +218,11 @@ description: 介绍 Agentic RL 的核心概念、与传统 RLHF/RLVR 的区别�
 
 - 很多关于 agentic RL 的 reward 往往说 verifier 就够了，这对真实 Agent 任务其实是不成立的
 - 因为 agent 的成功不只体现在 final correctness 上，还体现在动作是否真实合理、工具调用是否合适、是否浪费上下文、是否无意义地过度思考、是否拖慢总完成时间，以及输出是否符合更高层的质量和交互要求
-- K2.5 在这方面给了一个非常完整的例子：对可验证任务使用 rule-based outcome reward，对 token 成本使用 budget-control reward，对开放任务使用多个 rubric 的 GRM，并通过 Toggle 在尽量做对和尽量省 token之间做交替优化
+- K2.5 在这方面给了一个非常完整的例子：对可验证任务使用 rule-based outcome reward，对 token 成本使用 budget-control reward，对开放任务使用多个 rubric 的 GRM，并通过 Toggle 在尽量做对和尽量省 token 之间做交替优化
 - MiniMax-M1 则把 verifiable 与 unverifiable 任务分开处理，用 GenRM 处理不能靠规则验证的任务，同时特别讨论了长 CoT 下 GenRM 的 length bias，也就是奖励模型偏好更长但未必更好的回答，会直接诱发 reward hacking
 - GLM-5 把 rule-based reward、ORM、GRM 组合成 hybrid reward system，并明确写出三者的权衡：规则奖励精确但窄，ORM 低方差但容易被 exploit，GRM 更灵活但方差更高
 - Forge 进一步把中间过程质量和任务完成时间都纳入 agent RL，因为真实用户需要的不是最终做对但过程低效、等待很久的系统，而是既能做对、又能较快完成任务的 agent
-- 对于reward 正确的理解应该是工作方式的规范化，而不只是答案质量的评分器
+- 对于 reward 正确的理解应该是工作方式的规范化，而不只是答案质量的评分器
   - 为什么 K2.5 要用多个 GRM rubric，因为单一偏好信号太容易被模型过拟合
   - 为什么 M1 要专门处理 GenRM 的长度偏置，因为 reward model 一旦系统性偏向 verbose response，整个 RL 就会被带偏
   - Forge 引入完成时间相关奖励，是因为真实部署中的 agent 效用并不只由正确率决定，还取决于其完成任务的实际耗时
@@ -232,38 +232,38 @@ description: 介绍 Agentic RL 的核心概念、与传统 RLHF/RLVR 的区别�
 
 - 很多人一谈 long-context agent，就自然想到把 context window 做大一点，但长上下文不等于记忆，更不等于好的 agent
 - 真正的核心问题在于当交互历史越来越长、工具观察越来越多时，模型如何决定什么该保留，什么该丢弃，什么该压缩，什么时候应该拆任务，什么时候应该并行多个子 agent
-- MiniMax Forge 在这方面有一个非常强的表述Context Rot——它指出即使没有触到绝对 context window 上限，长轮次交互中累积的中间推理和冗余 observation 也会造成 attention dilution，让模型失焦
+- MiniMax Forge 在这方面有一个非常强的表述 Context Rot—— 它指出即使没有触到绝对 context window 上限，长轮次交互中累积的中间推理和冗余 observation 也会造成 attention dilution，让模型失焦
 - 于是 Forge 直接把 Context Management 纳入 RL 交互回路，把它视作一种显式 action，让 context transition 本身成为环境状态转移的一部分
 - GLM-5 在搜索 agent 上也观察到极长上下文会明显伤害性能，因此使用 keep-recent-k 与 discard-all 的层级式 context management
 - K2.5 则从另一条路推进：当单 agent 顺序执行的延迟变得不可接受时，引入 Agent Swarm 和 PARL，让 orchestrator 学会动态任务分解、子 agent 创建和并行调度，而且训练时只更新 orchestrator、冻结 sub-agent，以规避最难的 credit ambiguity 与训练不稳定
-- 当被优化的对象已经从token 级生成策略扩展成了操作系统级策略，模型不再只决定下一个 token，而是在决定算力怎么花、上下文怎么管、任务怎么拆、子 agent 怎么协作
+- 当被优化的对象已经从 token 级生成策略扩展成了操作系统级策略，模型不再只决定下一个 token，而是在决定算力怎么花、上下文怎么管、任务怎么拆、子 agent 怎么协作
 - K2.5 的一个关键 insight 是真正的并行 agent 不是简单把同一个模型复制几份并发运行，而是让 orchestrator 学会什么时候值得并行、如何分配子任务、以及如何在最终汇总时保持全局一致性
 - Forge 则强调记忆管理如果只在 inference 端手工加规则，训练时没见过这种状态转移，最终会形成严重的 inference-training mismatch
 - 未来 agentic RL 的 frontier，未必是让模型再想更久，而是把 memory editing、hierarchical decomposition 和 agent orchestration 一起纳入训练目标
 
-### Infra基础设施：它不仅是承载算法的底座，而是在塑造训练分布、系统效率与训练—部署一致性
+### Infra 基础设施：它不仅是承载算法的底座，而是在塑造训练分布、系统效率与训练 — 部署一致性
 
 - 如果说 RLHF 更多是在一个相对规整的 prompt → completion → reward → update 闭环上做优化，那么 Agentic RL 面对的则是长短极不均匀、工具调用密集、环境反馈异步、动作语义复杂的真实交互轨迹
 - 在这种设定下，基础设施不再只是承载算法的底座，而会直接决定 rollout 以什么顺序完成、哪些样本因过时被丢弃、哪些前缀能够复用、训练端和推理端看到的是否还是同一个动作空间
 - 也正因此，Kimi K1.5、MiniMax Forge 和 GLM-5 公开出来的一个共同信号是：Agentic RL 的关键问题已经不只是 loss design，而是如何用一套可扩展、可对齐、可控偏移的系统，把真实 agent 交互稳定地转化为可学习的数据流
-- 1）塑造训练分布的 rollout / learner 基础设施
+- 1）塑造训练分布的 rollout /learner 基础设施
   - Agentic RL 最核心的一层 infra，是 rollout 侧与 learner 侧如何组织和衔接
   - 由于不同任务的完成时间可能从秒级跨到小时级，训练几乎不可能保持理想化的同步 on-policy 形式，因此系统必须处理 actor–learner 解耦、队列调度、buffer freshness、checkpoint staleness、partial rollout reuse 以及 stale sample filtering 等问题
   - MiniMax Forge 把 strict FIFO、greedy async 和 Windowed FIFO 的权衡直接写成吞吐与分布稳定之间的核心矛盾
   - GLM-5 则进一步通过异步 generation-training 解耦、TITO 和 double-sided importance sampling 来控制偏移
   - Kimi K1.5 的 partial rollout reuse 也说明长轨迹能否被复用，本身就是训练 recipe 的一部分
-  - 这部分infrastructure 的作用，不只是让样本流得更快，而是在直接塑造模型真正看到的训练分布
+  - 这部分 infrastructure 的作用，不只是让样本流得更快，而是在直接塑造模型真正看到的训练分布
 - 2）提升吞吐与成本效率的规模化训练 / 推理的 infra
   - Agentic RL 的 infra 不止于异步 rollout，更广义的一层，是支撑长轨迹、多工具、多模态乃至多 agent 工作负载的扩展型训练与推理系统，包括训练 / 推理解耦、数据池缓存、KV 或 prefix 复用、动态 batching，以及各种并行化和异构资源调度策略
   - 它们解决的核心问题不是单点算法是否成立，而是这些方法能否在现实成本下真正跑到足够规模
   - 对 agent workload 来说，模型生成、环境执行、工具调用、verifier 计算和日志存储往往具有完全不同的资源瓶颈，因此基础设施必须是解耦和分层的，而不能继续沿用单一、同步、同构的训练范式
   - 这个意义上，infra 决定的不只是效率上限，也决定了哪些 agentic RL recipe 在现实中是可验证、可扩展的
-- 3）保证数值一致性和训练—推理一致性的 serving infra
+- 3）保证数值一致性和训练 — 推理一致性的 serving infra
   - 最后一层经常被低估，但其实非常关键：Agentic RL 优化的不是抽象文本，而是具有明确执行语义的动作序列
   - 因此，只要训练时、采样时和部署时对动作的表示或接口稍有错位，模型学到的策略就可能在上线时部分失效
   - GLM-5 的 TITO 之所以重要，不只是为了省去一次 re-tokenization，而是为了尽量保持 sampled action 和 optimized action 之间的精确对应
   - MiniMax Forge 的 gateway 与 middleware 设计，本质上也在做 action interface standardization，使 agent 高层行为与底层模型服务之间保持一致协议
-  - 于是，tokenizer / engine 对齐、tool schema 标准化、trajectory serialization、metadata logging 和 train-serving alignment，就都不再只是工程实现细节，而是在决定训练时被优化的动作，是否真的是部署时会执行的那个动作
+  - 于是，tokenizer /engine 对齐、tool schema 标准化、trajectory serialization、metadata logging 和 train-serving alignment，就都不再只是工程实现细节，而是在决定训练时被优化的动作，是否真的是部署时会执行的那个动作
 
 ## Agentic RL 的真正竞争，不在单点算法，而在环境、信号、分布与系统的协同闭环
 
@@ -271,7 +271,7 @@ description: 介绍 Agentic RL 的核心概念、与传统 RLHF/RLVR 的区别�
   - 第一，长上下文本身是一条 RL scaling axis
   - 第二，纯粹依赖复杂的 value function、MCTS 或 process RM 并不是唯一道路，简洁但分布一致的 policy optimization 也能跑出很强的长链能力
   - 第三，当 agent 工作流变复杂后，奖励模型、token-level clipping、token efficiency 控制和 learned parallel orchestration 会越来越重要
-  - K1.5到 K2.5 的演进，本质上是在从把长 reasoning RL 跑通走向把多步 agentic / multimodal RL 规模化
+  - K1.5 到 K2.5 的演进，本质上是在从把长 reasoning RL 跑通走向把多步 agentic /multimodal RL 规模化
 - MiniMax 路线则说明
   - 长时程 agent RL 一旦进到真实环境，首要问题很快会从模型能不能推理转向系统能不能稳定地持续学习
   - M1 的 CISPO 说明，很多优化技巧的价值其实在于修复长轨迹 RL 的 off-policy 和梯度裁剪副作用
@@ -283,7 +283,7 @@ description: 介绍 Agentic RL 的核心概念、与传统 RLHF/RLVR 的区别�
   - 与此同时，GLM-5 对异步 RL 基础设施、TITO、double-sided importance sampling 的强调，也再次说明：训练系统与策略优化之间已经没有清晰边界
 
 - 综合现在开源讨论的技术路线，会得到一个重要结论：Agentic RL 不只是更大模型 × 更多数据 × 更多 token，而是更丰富的环境覆盖、更高密度的有效学习信号、更一致的 rollout/update 分布，以及更高的单位时间有效训练效率
-- 在完善高效的infra支持下，谁在这四个维度同时做得更好，谁就更可能把 agent 训出来
+- 在完善高效的 infra 支持下，谁在这四个维度同时做得更好，谁就更可能把 agent 训出来
 
 ## 总结
 

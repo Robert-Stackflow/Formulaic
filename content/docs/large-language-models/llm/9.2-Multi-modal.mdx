@@ -6,8 +6,8 @@ description: 介绍多模态大规模语言模型的基本概念及其应用
 - 参考资料
   - [Understanding Multimodal LLMs - by Sebastian Raschka, PhD](https://magazine.sebastianraschka.com/p/understanding-multimodal-llms)
   - [Cracking the Code to Multimodal AI Pipelines](https://read.theaimerge.com/p/cracking-the-code-of-multimodal-ai)
-  - [再读VIT，还有多少细节是你不知道的](https://zhuanlan.zhihu.com/p/657666107)
-  - [关于多模态经典之作CLIP，还有哪些细节是你不知道的](https://zhuanlan.zhihu.com/p/660476765)
+  - [再读 VIT，还有多少细节是你不知道的](https://zhuanlan.zhihu.com/p/657666107)
+  - [关于多模态经典之作 CLIP，还有哪些细节是你不知道的](https://zhuanlan.zhihu.com/p/660476765)
 - 综述
   - [An Introduction to Vision-Language Modeling](https://arxiv.org/abs/2405.17247v1)
   - [A Survey of State of the Art Large Vision Language Models: Alignment, Benchmark, Evaluations and Challenges](https://arxiv.org/abs/2501.02189v6)
@@ -36,7 +36,7 @@ description: 介绍多模态大规模语言模型的基本概念及其应用
 
 - 假设原始图片尺寸大小为：224\*224\*3 (H \* W \* C)
 
-- 现在将这个图片切分为小 Patch，每个 Patch 的大小为 16，则每个 Patch 图片大小为 16\*16\*3，因此一共有 $\frac{224*224}{16*16} = 196$ 个 Patch
+- 现在将这个图片切分为小 Patch，每个 Patch 的大小为 16，则每个 Patch 图片大小为 16\*16\*3，因此一共有 $\frac {224*224}{16*16} = 196$ 个 Patch
 
 - 每个 patch 对应着一个 token，将每个 patch 展平，则得到输入矩阵 X，其大小为 `(196, 768)`，也就是每个 token 是 768 维
 
@@ -47,14 +47,14 @@ description: 介绍多模态大规模语言模型的基本概念及其应用
 - 这里用到了二维卷积的输出尺寸通用公式
 
   $$
-  Output\_Size = \left\lfloor \frac{Input\_Size - Kernel\_Size + 2 \times Padding}{Stride} \right\rfloor + 1
+  Output\_Size = \left\lfloor \frac {Input\_Size - Kernel\_Size + 2 \times Padding}{Stride} \right\rfloor + 1
   $$
 
 - 每个卷积核 = 16×16×3，刚好覆盖一个完整的小 Patch（16×16×3）；stride=16，卷积窗口不重叠，刚好从左到右、从上到下，逐个切 Patch；每个卷积核对一个 Patch 做一次点积，把 16×16×3 = 768 个数值，压缩成 1 个数值；768 个卷积核，每个 Patch 输出 768 维向量
 
 - 为什么 ViT 要先分 Patch 再转 Token？
   - 降低 Transformer 计算复杂度
-    - Transformer 自注意力的计算复杂度为 $O(N^2)$，$N$ 为序列长度，如果直接以像素为 token，序列长度会极大，计算量难以承受
+    - Transformer 自注意力的计算复杂度为 $O (N^2)$，$N$ 为序列长度，如果直接以像素为 token，序列长度会极大，计算量难以承受
     - 通过划分 Patch 可以显著减小 $N$，在精度与计算成本间取得平衡
     - Patch 尺寸 $P$ 越小，$N$ 越大，计算量越高，因此需要选择合适的 $P$ 控制计算开销
   - 利用图像天然的空间冗余性
@@ -73,7 +73,7 @@ description: 介绍多模态大规模语言模型的基本概念及其应用
   - 输入 $X$ 本身已经是 $(196, 768)$，为什么还要再经过一层 embedding 映射？
 
   - 关键不在于维度是否变化，而在于表征含义与可学习性：
-    - 原始 $X$ 是通过卷积/展平得到的固定预处理特征，与模型主体无关
+    - 原始 $X$ 是通过卷积 / 展平得到的固定预处理特征，与模型主体无关
     - token embedding 矩阵 $E$ 是可学习参数，会在训练中随梯度更新，能让向量更适配 Transformer 内部的语义空间
 
   - 更进一步，$E$ 的形状也可以设为 $(768, x)$，即第二维不一定要等于 768
@@ -97,56 +97,56 @@ description: 介绍多模态大规模语言模型的基本概念及其应用
 - 模型的完整数学表达
 
   $$
-  \begin{align*}
-  \mathbf{z}_0 &= \left[ \mathbf{x}_{\text{class}}; \mathbf{x}_p^1 \mathbf{E}; \mathbf{x}_p^2 \mathbf{E}; \dots; \mathbf{x}_p^N \mathbf{E} \right] + \mathbf{E}_{\text{pos}}, \quad \mathbf{E} \in \mathbb{R}^{(P^2 \cdot C) \times D}, \mathbf{E}_{\text{pos}} \in \mathbb{R}^{(N+1) \times D} \\
-  \mathbf{z}'_\ell &= \text{MSA}\left( \text{LN}(\mathbf{z}_{\ell-1}) \right) + \mathbf{z}_{\ell-1}, \quad \ell = 1 \dots L \\
-  \mathbf{z}_\ell &= \text{MLP}\left( \text{LN}(\mathbf{z}'_\ell) \right) + \mathbf{z}'_\ell, \quad \ell = 1 \dots L \\
-  \mathbf{y} &= \text{LN}(\mathbf{z}_L^0)
-  \end{align*}
+  \begin {align*}
+  \mathbf {z}_0 &= \left [\mathbf {x}_{\text {class}}; \mathbf {x}_p^1 \mathbf {E}; \mathbf {x}_p^2 \mathbf {E}; \dots; \mathbf {x}_p^N \mathbf {E} \right] + \mathbf {E}_{\text {pos}}, \quad \mathbf {E} \in \mathbb {R}^{(P^2 \cdot C) \times D}, \mathbf {E}_{\text {pos}} \in \mathbb {R}^{(N+1) \times D} \\
+  \mathbf {z}'_\ell &= \text {MSA}\left (\text {LN}(\mathbf {z}_{\ell-1}) \right) + \mathbf {z}_{\ell-1}, \quad \ell = 1 \dots L \\
+  \mathbf {z}_\ell &= \text {MLP}\left (\text {LN}(\mathbf {z}'_\ell) \right) + \mathbf {z}'_\ell, \quad \ell = 1 \dots L \\
+  \mathbf {y} &= \text {LN}(\mathbf {z}_L^0)
+  \end {align*}
   $$
 
 - 输入预处理与嵌入层
   - ViT 的输入构建阶段，完成「分 Patch → 线性投影 → 加分类头 → 加位置编码」的全流程
-  - 例如：输入 $224 \times 224 \times 3$ 图像，$P=16$，则 $N = \frac{224 \times 224}{16 \times 16} = 196$，$D=768$，最终 $\mathbf{z}_0$ 形状为 $(197, 768)$（196个Patch + 1个`cls` token）
+  - 例如：输入 $224 \times 224 \times 3$ 图像，$P=16$，则 $N = \frac {224 \times 224}{16 \times 16} = 196$，$D=768$，最终 $\mathbf {z}_0$ 形状为 $(197, 768)$（196 个 Patch + 1 个`cls` token）
 
   | 符号                        | 含义                  | 细节说明                                                                                                                                                               |
   | --------------------------- | --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-  | $\mathbf{x}_p^i$            | 第 $i$ 个图像Patch    | 原始图像尺寸 $H \times W \times C$，切分为 $N = \frac{H \cdot W}{P^2}$ 个 $P \times P \times C$ 的Patch，展平后为 $P^2 \cdot C$ 维向量（例：$P=16,C=3$ 时为 $768$ 维） |
-  | $\mathbf{E}$                | Token Embedding矩阵   | 可学习参数，形状 $(P^2 \cdot C) \times D$，作用是将Patch从像素空间线性投影到 $D$ 维模型隐空间（例：$D=768$，即BERT-base维度）                                          |
-  | $\mathbf{x}_{\text{class}}$ | 分类头（`cls` token） | 额外添加的可学习向量，形状 $1 \times D$，类比BERT的 `cls` token，最终用它的输出做分类                                                                                  |
-  | $\mathbf{E}_{\text{pos}}$   | 1-D可学习位置编码     | 形状 $(N+1) \times D$，为每个Patch token + `cls` token注入空间位置信息，ViT默认采用可学习式1-D绝对位置编码                                                             |
-  | $\mathbf{z}_0$              | ViT的最终输入         | 形状 $(N+1) \times D$，由「`cls` token + 所有Patch的投影向量」拼接后，加上位置编码得到                                                                                 |
+  | $\mathbf {x}_p^i$            | 第 $i$ 个图像 Patch    | 原始图像尺寸 $H \times W \times C$，切分为 $N = \frac {H \cdot W}{P^2}$ 个 $P \times P \times C$ 的 Patch，展平后为 $P^2 \cdot C$ 维向量（例：$P=16,C=3$ 时为 $768$ 维） |
+  | $\mathbf {E}$                | Token Embedding 矩阵   | 可学习参数，形状 $(P^2 \cdot C) \times D$，作用是将 Patch 从像素空间线性投影到 $D$ 维模型隐空间（例：$D=768$，即 BERT-base 维度）                                          |
+  | $\mathbf {x}_{\text {class}}$ | 分类头（`cls` token） | 额外添加的可学习向量，形状 $1 \times D$，类比 BERT 的 `cls` token，最终用它的输出做分类                                                                                  |
+  | $\mathbf {E}_{\text {pos}}$   | 1-D 可学习位置编码     | 形状 $(N+1) \times D$，为每个 Patch token + `cls` token 注入空间位置信息，ViT 默认采用可学习式 1-D 绝对位置编码                                                             |
+  | $\mathbf {z}_0$              | ViT 的最终输入         | 形状 $(N+1) \times D$，由「`cls` token + 所有 Patch 的投影向量」拼接后，加上位置编码得到                                                                                 |
 
 - 多头自注意力（MSA）层 + 残差连接
 
   | 符号                  | 含义                                      | 细节说明                                                                                                     |
   | --------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-  | $\text{LN}(\cdot)$    | Layer Normalization（层归一化）           | 对输入做归一化，稳定训练，ViT采用Pre-LN结构（先归一化再进注意力/MLP，区别于原始Transformer的Post-LN）        |
-  | $\text{MSA}(\cdot)$   | Multi-Head Self-Attention（多头自注意力） | 将 $D$ 维特征拆分为 $h$ 个独立头（例：$h=12$，每头 $64$ 维），并行计算注意力后拼接，捕捉不同子空间的依赖关系 |
-  | $\mathbf{z}_{\ell-1}$ | 上一层的输出                              | 第 $\ell-1$ 层Encoder的输出，作为当前层的输入                                                                |
-  | $+$                   | 残差连接（Residual Connection）           | 将MSA的输出与输入直接相加，缓解深层网络的梯度消失问题                                                        |
-  | $\mathbf{z}'_\ell$    | MSA子层的输出                             | 形状与输入一致 $(N+1) \times D$，进入下一个MLP子层                                                           |
-  | $L$                   | Encoder层数                               | ViT-B/16为12层，ViT-L/16为24层                                                                               |
+  | $\text {LN}(\cdot)$    | Layer Normalization（层归一化）           | 对输入做归一化，稳定训练，ViT 采用 Pre-LN 结构（先归一化再进注意力 / MLP，区别于原始 Transformer 的 Post-LN）        |
+  | $\text {MSA}(\cdot)$   | Multi-Head Self-Attention（多头自注意力） | 将 $D$ 维特征拆分为 $h$ 个独立头（例：$h=12$，每头 $64$ 维），并行计算注意力后拼接，捕捉不同子空间的依赖关系 |
+  | $\mathbf {z}_{\ell-1}$ | 上一层的输出                              | 第 $\ell-1$ 层 Encoder 的输出，作为当前层的输入                                                                |
+  | $+$                   | 残差连接（Residual Connection）           | 将 MSA 的输出与输入直接相加，缓解深层网络的梯度消失问题                                                        |
+  | $\mathbf {z}'_\ell$    | MSA 子层的输出                             | 形状与输入一致 $(N+1) \times D$，进入下一个 MLP 子层                                                           |
+  | $L$                   | Encoder 层数                               | ViT-B/16 为 12 层，ViT-L/16 为 24 层                                                                               |
 
 - 多层感知机（MLP）层 + 残差连接
 
   | 符号                | 含义                          | 细节说明                                                                                                                        |
   | ------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-  | $\text{MLP}(\cdot)$ | 多层感知机                    | 结构为「线性层 → GELU激活 → Dropout → 线性层」，中间层维度通常为 $4D$（例：$D=768$ 时中间层为 $3072$ 维），用于特征的非线性变换 |
-  | $\text{LN}(\cdot)$  | 层归一化                      | 同样采用Pre-LN结构，先归一化再进MLP                                                                                             |
-  | $\mathbf{z}'_\ell$  | 上一个MSA子层的输出           | 作为MLP子层的输入                                                                                                               |
-  | $+$                 | 残差连接                      | 将MLP的输出与输入相加，进一步稳定梯度                                                                                           |
-  | $\mathbf{z}_\ell$   | 第 $\ell$ 层Encoder的最终输出 | 形状 $(N+1) \times D$，作为下一层Encoder的输入（$\ell < L$ 时），或最终层输出（$\ell = L$ 时）                                  |
+  | $\text {MLP}(\cdot)$ | 多层感知机                    | 结构为「线性层 → GELU 激活 → Dropout → 线性层」，中间层维度通常为 $4D$（例：$D=768$ 时中间层为 $3072$ 维），用于特征的非线性变换 |
+  | $\text {LN}(\cdot)$  | 层归一化                      | 同样采用 Pre-LN 结构，先归一化再进 MLP                                                                                             |
+  | $\mathbf {z}'_\ell$  | 上一个 MSA 子层的输出           | 作为 MLP 子层的输入                                                                                                               |
+  | $+$                 | 残差连接                      | 将 MLP 的输出与输入相加，进一步稳定梯度                                                                                           |
+  | $\mathbf {z}_\ell$   | 第 $\ell$ 层 Encoder 的最终输出 | 形状 $(N+1) \times D$，作为下一层 Encoder 的输入（$\ell < L$ 时），或最终层输出（$\ell = L$ 时）                                  |
 
-- 分类输出层：ViT 的最终预测阶段，用`cls` token完成分类任务
+- 分类输出层：ViT 的最终预测阶段，用`cls` token 完成分类任务
 
   | 符号               | 含义                                          | 细节说明                                                                        |
   | ------------------ | --------------------------------------------- | ------------------------------------------------------------------------------- |
-  | $\mathbf{z}_L^0$   | 第 $L$ 层Encoder输出中，`cls` token对应的向量 | 取 $\mathbf{z}_L$ 的第0个元素（形状 $1 \times D$），聚合了全局图像特征          |
-  | $\text{LN}(\cdot)$ | 层归一化                                      | 对`cls` token做最终归一化                                                       |
-  | $\mathbf{y}$       | 模型最终输出                                  | 后续接一个线性分类层（公式中省略），将 $D$ 维特征映射为类别数维度，得到分类概率 |
+  | $\mathbf {z}_L^0$   | 第 $L$ 层 Encoder 输出中，`cls` token 对应的向量 | 取 $\mathbf {z}_L$ 的第 0 个元素（形状 $1 \times D$），聚合了全局图像特征          |
+  | $\text {LN}(\cdot)$ | 层归一化                                      | 对`cls` token 做最终归一化                                                       |
+  | $\mathbf {y}$       | 模型最终输出                                  | 后续接一个线性分类层（公式中省略），将 $D$ 维特征映射为类别数维度，得到分类概率 |
 
-- 分类头是「$\text{LN}(\mathbf{z}_L^0) \cdot \mathbf{W}_{\text{cls}} + \mathbf{b}_{\text{cls}}$」，$\mathbf{W}_{\text{cls}}$ 为分类权重矩阵
+- 分类头是「$\text {LN}(\mathbf {z}_L^0) \cdot \mathbf {W}_{\text {cls}} + \mathbf {b}_{\text {cls}}$」，$\mathbf {W}_{\text {cls}}$ 为分类权重矩阵
 
 ### 微调
 
@@ -161,8 +161,8 @@ description: 介绍多模态大规模语言模型的基本概念及其应用
   - 微调阶段：为提升效果，一般采用更高分辨率的图像，例如 `1024×1024×3`
 
 - 若保持 Patch 尺寸 $P=16$ 不变：
-  - 预训练阶段的 Patch 数量：$\frac{224 \times 224}{16^2} = 196$
-  - 微调阶段的 Patch 数量：$\frac{1024 \times 1024}{16^2} = 4096$​
+  - 预训练阶段的 Patch 数量：$\frac {224 \times 224}{16^2} = 196$
+  - 微调阶段的 Patch 数量：$\frac {1024 \times 1024}{16^2} = 4096$​
 
 - Transformer 主体架构理论上可处理任意长度的输入序列，但可学习（learnable）位置编码与输入序列长度强绑定（一个位置对应一条独立的位置编码），无法直接适配变长输入
 
@@ -174,17 +174,17 @@ description: 介绍多模态大规模语言模型的基本概念及其应用
   - 插值分为 3 个核心步骤：
     - Reshape 还原 2D 结构
 
-    - 将预训练阶段的 1D 位置编码（形状 $(s_{\text{pretrain}}, D)$，$D$ 为隐维度），还原为 2D 特征图：
+    - 将预训练阶段的 1D 位置编码（形状 $(s_{\text {pretrain}}, D)$，$D$ 为隐维度），还原为 2D 特征图：
 
       $$
       (196, 768) \rightarrow (14, 14, 768)
       $$
 
-    - 对应公式中的 $\sqrt{s_{\text{pretrain}}} \times \sqrt{s_{\text{pretrain}}}$ 空间结构
+    - 对应公式中的 $\sqrt {s_{\text {pretrain}}} \times \sqrt {s_{\text {pretrain}}}$ 空间结构
 
     - 2D 插值扩展尺寸
 
-    - 对 2D 特征图执行双三次插值（bicubic），将空间尺寸从 $\sqrt{s_{\text{pretrain}}}$ 扩展到 $\sqrt{s_{\text{finetune}}}$：
+    - 对 2D 特征图执行双三次插值（bicubic），将空间尺寸从 $\sqrt {s_{\text {pretrain}}}$ 扩展到 $\sqrt {s_{\text {finetune}}}$：
 
       $$
       (14, 14, 768) \rightarrow (64, 64, 768)
@@ -214,7 +214,7 @@ description: 介绍多模态大规模语言模型的基本概念及其应用
     | 参数 | 含义 | ViT 实践细节 |
     | -------------------- | --------------------------------------------- | ------------------------------------------------------------ |
     | `pos_embedding_img` | 输入的预训练位置编码（已 reshape 为 2D 格式） | 形状为 `(batch, hidden_dim, h_pretrain, w_pretrain)`，PyTorch 插值默认以最后两维为空间维度 |
-    | `size` | 目标空间尺寸 | 对应微调阶段的 $\sqrt{s_{\text{finetune}}}$，如 64×64 |
+    | `size` | 目标空间尺寸 | 对应微调阶段的 $\sqrt {s_{\text {finetune}}}$，如 64×64 |
     | `mode` | 插值方法 | ViT 论文默认采用 bicubic（双三次插值），相比线性插值能更好保留局部细节 |
     | `align_corners=True` | 角点对齐 | 固定原矩阵的四个角点位置不变，仅对中间区域做插值，保证空间位置的一致性（如图中白色圆圈为原始点，蓝色点为插值后点） |
 
@@ -229,7 +229,7 @@ description: 介绍多模态大规模语言模型的基本概念及其应用
 - 实际实验结果表明，ViT 在准确率上早期不如卷积网络，这主要是由于卷积神经网络的归纳偏置（inductive biases）
 - 归纳偏置可以简单理解为一种先验假设或领域先验知识，有了这些先验，才能判断哪种模型更适合某类任务。不同任务的归纳偏置内容不同，对图像任务而言，核心有两点：
   - 空间局部性（locality）：假设图像中相邻区域的特征高度相关，比如太阳和天空常常一起出现，邻近像素语义相似
-  - 平移等变性（translation equivariance）：满足 $f(g(x)) = g(f(x))$，其中 $f$ 为卷积，$g$​ 为平移；物体在图中移动后，卷积核仍能以相同方式提取特征；无论物体出现在哪里，只要局部模式一致，卷积输出就一致
+  - 平移等变性（translation equivariance）：满足 $f (g (x)) = g (f (x))$，其中 $f$ 为卷积，$g$​ 为平移；物体在图中移动后，卷积核仍能以相同方式提取特征；无论物体出现在哪里，只要局部模式一致，卷积输出就一致
 - 在这两种先验下，CNN 成为图像任务的主流方案，卷积核天然保持空间局部性与平移等变性，能在训练中最大程度学习并保留图像结构信息
 - 反观 ViT，它在这两种先验的保持上不如 CNN：
   - 同一物体被切分成不同 patch 后，在序列中距离变远，即使 Attention 能学习关联，空间局部性的保持也弱于直接用卷积框选局部区域
@@ -275,11 +275,11 @@ description: 介绍多模态大规模语言模型的基本概念及其应用
 - 两个编码器输出的特征维度完全一致，确保可以在同一个语义空间中计算相似度
 
 - 阶段一：对比预训练（Contrastive Pre-training）
-  - CLIP 最核心的训练阶段，目标是让匹配的图像-文本对特征相似度高，不匹配的对相似度低
-  - 训练数据：用海量（4亿对）弱对齐的 `<图像, 文本描述>` 数据对，无需人工标注分类标签
+  - CLIP 最核心的训练阶段，目标是让匹配的图像 - 文本对特征相似度高，不匹配的对相似度低
+  - 训练数据：用海量（4 亿对）弱对齐的 `<图像, 文本描述>` 数据对，无需人工标注分类标签
   - 计算流程
     - 输入一个 batch 包含 $N$ 对 `<图像, 文本>`，分别通过两个编码器，得到 $N$ 个图像特征 $\{I_1, I_2, ..., I_N\}$ 和 $N$ 个文本特征 $\{T_1, T_2, ..., T_N\}$
-    - 计算所有图像-文本对的余弦相似度，得到一个 $N \times N$ 的相似度矩阵：
+    - 计算所有图像 - 文本对的余弦相似度，得到一个 $N \times N$ 的相似度矩阵：
       - 对角线元素（$I_i \cdot T_i$）：正样本对（图像和对应文本匹配）
       - 非对角线元素（$I_i \cdot T_j, i \neq j$）：负样本对（图像和其他文本不匹配）
     - 损失函数：对称交叉熵损失，同时优化两个方向：
@@ -325,55 +325,55 @@ description: 介绍多模态大规模语言模型的基本概念及其应用
 - Text Encoder
   - CLIP 的 Text Encoder 直接借鉴了 OpenAI 在 2019 年提出的 GPT2 模型架构，采用 Transformer 解码器结构作为核心，专门处理自然语言文本的特征提取
   - 在文本预处理阶段，模型会对输入的每一条文本提示词（prompt）进行标准化处理：在文本序列的起始位置添加特殊符号`[SOS]`（Start of Sequence，序列开始），在末尾位置添加`[EOS]`（End of Sequence，序列结束），以此标识文本的完整范围，帮助编码器明确文本边界
-  - 文本序列经 GPT2 架构的多层 Transformer 编码后，CLIP 选取最后一层Transformer 输出中 `[EOS]` 位置对应的特征向量，作为该条文本的最终全局特征表示，记为 $ T_i $，每一条独立的 prompt 都会对应唯一的文本特征向量 $ T_i $
+  - 文本序列经 GPT2 架构的多层 Transformer 编码后，CLIP 选取最后一层 Transformer 输出中 `[EOS]` 位置对应的特征向量，作为该条文本的最终全局特征表示，记为 $ T_i $，每一条独立的 prompt 都会对应唯一的文本特征向量 $ T_i $
 
 - Image Encoder
   - CLIP 的 Image Encoder 并未直接沿用单一架构，而是在研究阶段做了大量对比实验
   - 先后测试了 5 种不同深度的 ResNet 架构和 3 种不同规格的 ViT 架构，最终选定性能最优的 ViT-L/14@336px 作为正式的图像编码器
   - 该编码器的核心参数定义为：ViT 的模型规模为 Large（大容量版本），图像分块大小 patch_size=14，即把输入图像划分为 14×14 的像素块进行 Transformer 编码
   - 同时，在 CLIP 完成全部预训练流程后，研究团队额外使用 336×336 高分辨率图像对该图像编码器进行了 1 个 epoch 的微调（fine-tune），通过提升输入图像的细节信息，进一步激发模型的跨模态理解能力，让图像特征表达更精准
-  - 与文本编码器的输出逻辑一致，每张输入图像经过 ViT 编码后，都会生成一个对应的全局特征向量，记为 $ I_i $，虽然原论文中未明确标注 $ I_i $​ 的具体提取层位置，但从Transformer视觉模型的通用设计逻辑推断，该特征向量大概率取自ViT的`[CLS]`分类标记位（与文本编码器取 `[EOS]` 向量的设计思路同源，均取模态序列的全局聚合特征）
+  - 与文本编码器的输出逻辑一致，每张输入图像经过 ViT 编码后，都会生成一个对应的全局特征向量，记为 $ I_i $，虽然原论文中未明确标注 $ I_i $​ 的具体提取层位置，但从 Transformer 视觉模型的通用设计逻辑推断，该特征向量大概率取自 ViT 的`[CLS]`分类标记位（与文本编码器取 `[EOS]` 向量的设计思路同源，均取模态序列的全局聚合特征）
 
 - 批次数据与基础特征输出
-  - 假设模型训练时一个批次（batch）中包含 N 组一一对应的 \<图像，文本> 配对数据，即第 1 张图像对应第 1 条文本、第 2 张图像对应第 2 条文本……第 N 张图像对应第N条文本
+  - 假设模型训练时一个批次（batch）中包含 N 组一一对应的 \<图像，文本> 配对数据，即第 1 张图像对应第 1 条文本、第 2 张图像对应第 2 条文本…… 第 N 张图像对应第 N 条文本
   - 这 N 组数据分别通过 Image Encoder 和 Text Encoder 后，会输出两组基础特征序列：
-    - 文本基础特征序列：$ [T_1, T_2, ..., T_N] $，维度为$ [N, d_t] $（$ d_t $为文本编码器输出特征维度）
-    - 图像基础特征序列：$ [I_1, I_2, ..., I_N] $，维度为$ [N, d_i] $（$ d_i $​为图像编码器输出特征维度）
+    - 文本基础特征序列：$ [T_1, T_2, ..., T_N] $，维度为 $ [N, d_t] $（$ d_t $ 为文本编码器输出特征维度）
+    - 图像基础特征序列：$ [I_1, I_2, ..., I_N] $，维度为 $ [N, d_i] $（$ d_i $​为图像编码器输出特征维度）
 
 - 多模态 Embedding 特征投影
   - 由于文本、图像的基础特征分属不同模态空间，无法直接计算相似度，因此 CLIP 引入了可学习的多模态投影层，将两种特征映射到统一的跨模态特征空间中：
-    - 为文本特征设置可学习投影矩阵$ W_t $（维度$ [d_t, d_e] $，$ d_e $为统一的跨模态特征维度）
-    - 为图像特征设置可学习投影矩阵$ W_i $（维度$ [d_i, d_e] $）
+    - 为文本特征设置可学习投影矩阵 $ W_t $（维度 $ [d_t, d_e] $，$ d_e $ 为统一的跨模态特征维度）
+    - 为图像特征设置可学习投影矩阵 $ W_i $（维度 $ [d_i, d_e] $）
 
   - 文本、图像基础特征分别与对应投影矩阵做矩阵乘法后，再进行 L2 归一化处理，得到最终的跨模态对齐特征：
-    - 文本跨模态特征：$ T_e = l2_normalize(T_f \cdot W_t) $，维度$ [N, d_e] $
-    - 图像跨模态特征：$ I_e = l2_normalize(I_f \cdot W_i) $，维度$ [N, d_e] $
+    - 文本跨模态特征：$ T_e = l2_normalize (T_f \cdot W_t) $，维度 $ [N, d_e] $
+    - 图像跨模态特征：$ I_e = l2_normalize (I_f \cdot W_i) $，维度 $ [N, d_e] $
   - 这一步的核心作用是消除不同模态特征的维度差异与数值量级差异，让文本、图像特征处于同一度量空间，保证相似度计算的合理性
 
 - 跨模态相似度计算
-  - 完成特征投影后，通过向量点积计算图像特征与文本特征之间的余弦相似度，构建N×N的相似度矩阵（logits矩阵）：
+  - 完成特征投影后，通过向量点积计算图像特征与文本特征之间的余弦相似度，构建 N×N 的相似度矩阵（logits 矩阵）：
 
     $$
     logits = (I_e \cdot T_e^T) \times e^t
     $$
 
-  - $ I_e \cdot T_e^T $为图像特征与文本特征的点积，直接反映两两之间的余弦相似度，生成维度为$ [N, N] $的基础相似度矩阵
+  - $ I_e \cdot T_e^T $ 为图像特征与文本特征的点积，直接反映两两之间的余弦相似度，生成维度为 $ [N, N] $ 的基础相似度矩阵
   - $ t $​ 为模型可学习的温度参数，通过指数缩放调整相似度数值分布，避免相似度值过于集中或分散，提升训练稳定性
 
 - 损失函数
-  - CLIP的损失函数采用双向对称交叉熵设计，同时从“图像检索文本”和“文本检索图像”两个方向优化模型，具体分为两步计算后取平均：
+  - CLIP 的损失函数采用双向对称交叉熵设计，同时从 “图像检索文本” 和 “文本检索图像” 两个方向优化模型，具体分为两步计算后取平均：
 
   - 按行计算图像→文本检索损失（loss_i）
-    - 以每一行为单位做softmax归一化，再计算交叉熵损失，真值为每行的对角线位置
+    - 以每一行为单位做 softmax 归一化，再计算交叉熵损失，真值为每行的对角线位置
     - 该损失的物理意义：对于每一张输入图像，强制模型在当前批次的所有文本中，匹配出与其唯一对应的正确文本，最大化图像检索对应文本的准确率
 
   - 按列计算文本→图像检索损失（loss_t）
-    - 以每一列为单位做softmax归一化，再计算交叉熵损失，真值为每列的对角线位置
+    - 以每一列为单位做 softmax 归一化，再计算交叉熵损失，真值为每列的对角线位置
     - 该损失的物理意义：对于每一段输入文本，强制模型在当前批次的所有图像中，匹配出与其唯一对应的正确图像，最大化文本检索对应图像的准确率
 
   - 将两个方向的损失相加后取平均值，得到最终训练损失：
     $$
-    loss = \frac{loss_i + loss_t}{2}
+    loss = \frac {loss_i + loss_t}{2}
     $$
 
 ### 缺陷
@@ -392,7 +392,7 @@ description: 介绍多模态大规模语言模型的基本概念及其应用
 
 ### BLIP
 
-- BLIP(Bootstrapping Language-Image Pretraining)是 salesforce 在 2022 年提出的多模态框架
+- BLIP (Bootstrapping Language-Image Pretraining) 是 salesforce 在 2022 年提出的多模态框架
 
 ## VLM
 

@@ -16,7 +16,7 @@ description: 介绍 PyTorch 中模型定义的核心概念 nn.Module，以及常
   - 管理参数与状态
   - 支持自动求导与设备迁移
 
-- nn.Module 与“动态图”的关系
+- nn.Module 与 “动态图” 的关系
   - PyTorch 是动态图框架，意味着计算图是在 forward 执行时动态构建的，Python 控制流是真实存在的
   - 动态图有一个天然问题：参数如何管理？怎么知道哪些 Tensor 是模型的一部分？
   - 而 nn.Module 就是在 Python 层管理那些东西属于模型，并不控制计算图本身
@@ -139,7 +139,7 @@ description: 介绍 PyTorch 中模型定义的核心概念 nn.Module，以及常
   # buffer 不在 parameters() 中，而是在 state_dict() 中，会随着 .to(device) 移动
   ```
 
-- 权重共享：不是“复制参数”，而是多个计算路径 引用同一个 Parameter 对象
+- 权重共享：不是 “复制参数”，而是多个计算路径 引用同一个 Parameter 对象
 
   ```python
   self.fc = nn.Linear(dim, dim)
@@ -167,7 +167,7 @@ description: 介绍 PyTorch 中模型定义的核心概念 nn.Module，以及常
 
 - 真正被 autograd 追踪的是 forward 中产生的 Tensor 和它们之间的运算关系
 
-- forward 每执行一次，就会“新建一次”计算图
+- forward 每执行一次，就会 “新建一次” 计算图
 
 - `requires_grad` 如何传播
   - 假设 model 的参数是 nn.Parameter（requires_grad=True），而 x 是普通 Tensor（requires_grad=False）
@@ -175,7 +175,7 @@ description: 介绍 PyTorch 中模型定义的核心概念 nn.Module，以及常
 
 - forward 的执行是动态的，因为它
   - 依赖内部状态（参数、buffer）
-  - 行为会随 train / eval 模式变化
+  - 行为会随 train /eval 模式变化
   - 同样输入，输出可能不同（Dropout）
   - 因此不能假设两次运行前向运算的结果相同
 
@@ -190,7 +190,7 @@ description: 介绍 PyTorch 中模型定义的核心概念 nn.Module，以及常
 
 ## Module 的容器化能力
 
-- `nn.Module` 不是“一层”，而是一个可以递归地装其他 Module 的容器，它同时承担四个角色：
+- `nn.Module` 不是 “一层”，而是一个可以递归地装其他 Module 的容器，它同时承担四个角色：
   - 参数容器（parameters）
   - 子模块容器（submodules）
   - 状态容器（buffers）
@@ -241,7 +241,7 @@ description: 介绍 PyTorch 中模型定义的核心概念 nn.Module，以及常
         return x
     ```
 
-  - `nn.ModuleDict`：模块字典，模块有“语义名字”，可以根据 key 动态选择
+  - `nn.ModuleDict`：模块字典，模块有 “语义名字”，可以根据 key 动态选择
 
     ```python
     self.blocks = nn.ModuleDict({
@@ -254,7 +254,7 @@ description: 介绍 PyTorch 中模型定义的核心概念 nn.Module，以及常
 - Module 的递归行为
   - `.parameters()`：遍历所有子 Module，收集所有 `nn.Parameter`
   - `.to(device)`：递归执行所有子 Module，所有 Parameter，所有 Buffer
-  - `.train()` / `.eval()`：递归通知 Dropout / BatchNorm，自定义 Module 中的 `self.training`
+  - `.train()` /`.eval()`：递归通知 Dropout / BatchNorm，自定义 Module 中的 `self.training`
 
 - 残差结构（Residual / Skip Connection）
 
@@ -305,7 +305,7 @@ description: 介绍 PyTorch 中模型定义的核心概念 nn.Module，以及常
 
 - 它不包含 forward 代码、Python 控制流、optimizer 逻辑、临时张量
 
-- state_dict 的命名规则来源于 Module 树结构与容器的 key / index，如 ModuleList 用 index、ModuleDict 用 key、Sequential 用 index
+- state_dict 的命名规则来源于 Module 树结构与容器的 key /index，如 ModuleList 用 index、ModuleDict 用 key、Sequential 用 index
 
   ```python
   # key 的格式
@@ -345,12 +345,12 @@ description: 介绍 PyTorch 中模型定义的核心概念 nn.Module，以及常
 
 - buffer 的加载行为
   - buffer 在 state_dict 里，不参与梯度，但影响推理行为
-    - BatchNorm 的 running_mean / running_var
+    - BatchNorm 的 running_mean /running_var
     - position embedding
     - mask
   - eval 模型不对 ≠ 权重问题，很可能是 buffer 没有正确加载
 
-- optimizer / scheduler 的 state_dict
+- optimizer /scheduler 的 state_dict
 
   ```python
   torch.save({
@@ -369,7 +369,7 @@ description: 介绍 PyTorch 中模型定义的核心概念 nn.Module，以及常
   - model.state_dict
   - optimizer.state_dict
   - scheduler.state_dict
-  - epoch / step
+  - epoch /step
   - rng state（可选）
   - 以上是可恢复训练的最低标准
 
@@ -383,19 +383,19 @@ description: 介绍 PyTorch 中模型定义的核心概念 nn.Module，以及常
 
 ## 训练与推理模式切换
 
-- `model.train()` / `model.eval()` 不是在切换“是否反向传播”，而是在切换“Module 的行为模式”
+- `model.train()` /`model.eval()` 不是在切换 “是否反向传播”，而是在切换 “Module 的行为模式”
 
 - `model.train()` 会递归设置所有子模块的 `module.training = True`
 
 - `model.eval()` 会递归设置所有子模块的 `module.training = False`
 
-- 实际上，切换训练和推理模式并不会自动关闭梯度的计算等，绝大多数 Module 无视 `training` 标志，只有少数“状态相关”的模块会改变行为
+- 实际上，切换训练和推理模式并不会自动关闭梯度的计算等，绝大多数 Module 无视 `training` 标志，只有少数 “状态相关” 的模块会改变行为
   - Dropout
     - 训练时随机置零，scale 保持期望不变
     - 推理时完全关闭，变成恒等映射
   - BatchNorm
-    - 训练时使用 batch mean / var，更新 running_mean / running_var（buffer）
-    - 推理时使用 running_mean / running_var，不再更新 buffer
+    - 训练时使用 batch mean /var，更新 running_mean /running_var（buffer）
+    - 推理时使用 running_mean /running_var，不再更新 buffer
     - 如果 eval 忘记切换或训练集 batch 很小，模型表现会悄悄变差
   - nn.AlphaDropout
   - 其他自定义 Module
@@ -554,11 +554,11 @@ description: 介绍 PyTorch 中模型定义的核心概念 nn.Module，以及常
 - Post-LN 的问题
 
   $$
-  \frac{\partial \mathcal{L}}{\partial x}
-  \rightarrow \text{LN}
-  \rightarrow (x + f(x))
+  \frac {\partial \mathcal {L}}{\partial x}
+  \rightarrow \text {LN}
+  \rightarrow (x + f (x))
   $$
-  - LayerNorm 在反向传播中会引入 scale / shift 的耦合，削弱 identity shortcut 的“直通梯度”
+  - LayerNorm 在反向传播中会引入 scale /shift 的耦合，削弱 identity shortcut 的 “直通梯度”
 
   - 导致层数一深，梯度衰减，非常依赖 warmup，超参极其敏感
   - Post-LN 在 12 层左右还能忍受，24 层以上极难训练，100+ 层基本不可能
@@ -606,7 +606,7 @@ description: 介绍 PyTorch 中模型定义的核心概念 nn.Module，以及常
 - 在非常深的模型中，可能会使用
 
   $$
-  x = x + \alpha \cdot f(\text{LN}(x)),\quad \alpha = \frac{1}{\sqrt{N}}
+  x = x + \alpha \cdot f (\text {LN}(x)),\quad \alpha = \frac {1}{\sqrt {N}}
   $$
   - 其中 $\alpha$ 也可以是可学习参数，来控制早期训练的激活幅度，稳定深层网络的训练过程
 
@@ -679,7 +679,7 @@ description: 介绍 PyTorch 中模型定义的核心概念 nn.Module，以及常
 | --------- | --------------------------------------------- | ---------------------------------------- |
 | Flatten   | `nn.Flatten()`                                | 将多维输入拉平，通常用于 CNN 到 MLP 之间 |
 | Unflatten | `nn.Unflatten(dim, unflattened_size)`         | 展开张量为多维                           |
-| Identity  | `nn.Identity()`                               | 占位符，用于动态启/停某层                |
+| Identity  | `nn.Identity()`                               | 占位符，用于动态启 / 停某层                |
 | Embedding | `nn.Embedding(num_embeddings, embedding_dim)` | 文本 / 离散变量嵌入层                    |
 
 ### 模块组合封装
@@ -738,10 +738,10 @@ description: 介绍 PyTorch 中模型定义的核心概念 nn.Module，以及常
 
 ### RNN 实现
 
-- 从最简单、最“丑”的 vanilla RNN 开始，非常适合理解为什么 RNN 会梯度消失
+- 从最简单、最 “丑” 的 vanilla RNN 开始，非常适合理解为什么 RNN 会梯度消失
 
   $$
-  h_t = \tanh(W_{xh} x_t + W_{hh} h_{t-1} + b)
+  h_t = \tanh (W_{xh} x_t + W_{hh} h_{t-1} + b)
   $$
 
 - 代码实现
@@ -779,17 +779,17 @@ description: 介绍 PyTorch 中模型定义的核心概念 nn.Module，以及常
 
 - 这里，时间维度上的递归依赖是 Python for-loop 展开的，这也是 RNN 难并行的根本原因
 
-- LSTM 的核心不是“复杂”，而是用门控机制给梯度修路
+- LSTM 的核心不是 “复杂”，而是用门控机制给梯度修路
 
   $$
-  \begin{align*}
-  i_t &= \sigma(W_i [x_t, h_{t-1}]) \\
-  f_t &= \sigma(W_f [x_t, h_{t-1}]) \\
-  o_t &= \sigma(W_o [x_t, h_{t-1}]) \\
-  \tilde{c}_t &= \tanh(W_c [x_t, h_{t-1}]) \\
-  c_t &= f_t \odot c_{t-1} + i_t \odot \tilde{c}_t \\
-  h_t &= o_t \odot \tanh(c_t)
-  \end{align*}
+  \begin {align*}
+  i_t &= \sigma (W_i [x_t, h_{t-1}]) \\
+  f_t &= \sigma (W_f [x_t, h_{t-1}]) \\
+  o_t &= \sigma (W_o [x_t, h_{t-1}]) \\
+  \tilde {c}_t &= \tanh (W_c [x_t, h_{t-1}]) \\
+  c_t &= f_t \odot c_{t-1} + i_t \odot \tilde {c}_t \\
+  h_t &= o_t \odot \tanh (c_t)
+  \end {align*}
   $$
 
 - 代码实现
@@ -842,15 +842,15 @@ description: 介绍 PyTorch 中模型定义的核心概念 nn.Module，以及常
 
 - 之后的 cuDNN LSTM、kernel fusion、gate packing，会在这个基础上做工程级优化
 
-- GRU 可以理解为“砍掉 cell state 的 LSTM”，结构更紧凑
+- GRU 可以理解为 “砍掉 cell state 的 LSTM”，结构更紧凑
 
   $$
-  \begin{align*}
-  z_t &= \sigma(W_z [x_t, h_{t-1}]) \\
-  r_t &= \sigma(W_r [x_t, h_{t-1}]) \\
-  \tilde{h}_t &= \tanh(W_h [x_t, r_t \odot h_{t-1}]) \\
-  h_t &= (1 - z_t) \odot h_{t-1} + z_t \odot \tilde{h}_t
-  \end{align*}
+  \begin {align*}
+  z_t &= \sigma (W_z [x_t, h_{t-1}]) \\
+  r_t &= \sigma (W_r [x_t, h_{t-1}]) \\
+  \tilde {h}_t &= \tanh (W_h [x_t, r_t \odot h_{t-1}]) \\
+  h_t &= (1 - z_t) \odot h_{t-1} + z_t \odot \tilde {h}_t
+  \end {align*}
   $$
 
 - 代码实现
@@ -897,21 +897,21 @@ description: 介绍 PyTorch 中模型定义的核心概念 nn.Module，以及常
 - 刚刚实现的 LSTM，在 Python 里是这样的逻辑：对每个时间步 $t$，把 $x_t$ 和 $h_{t-1}$ 拼起来，过一个线性层，得到 $4H$ 维，然后再分块为 $i,f,o,g$​，这件事在数学上可以直接写成一行
 
   $$
-  \begin{bmatrix}
+  \begin {bmatrix}
   i_t \\
   f_t \\
   o_t \\
   g_t
-  \end{bmatrix}
+  \end {bmatrix}
   =W
-  \begin{bmatrix}
+  \begin {bmatrix}
   x_t \\
   h_{t-1}
-  \end{bmatrix}
+  \end {bmatrix}
   +b
   $$
 
-- 这里的关键并不在于“LSTM 有四个门”，而在于这四个门在计算层面上完全共享同一次矩阵乘法
+- 这里的关键并不在于 “LSTM 有四个门”，而在于这四个门在计算层面上完全共享同一次矩阵乘法
 
 - 也就是说，在任意一个 time step，LSTM 的主要计算成本几乎全部集中在一次形状为 $(B, D + H) \times (D + H, 4H)$ 的 GEMM 上
 

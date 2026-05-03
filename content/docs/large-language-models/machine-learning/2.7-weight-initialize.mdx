@@ -23,13 +23,13 @@ description: 介绍权重初始化的定义、重要性，以及常见的线性�
   - 均匀分布：
 
     $$
-    W \sim U\left[-\sqrt{\frac{6}{fan_{in} + fan_{out}}},\ \sqrt{\frac{6}{fan_{in} + fan_{out}}}\right]
+    W \sim U\left [-\sqrt {\frac {6}{fan_{in} + fan_{out}}},\ \sqrt {\frac {6}{fan_{in} + fan_{out}}}\right]
     $$
 
   - 正态分布：
 
     $$
-    W \sim \mathcal{N}\left(0,\ \frac{2}{fan_{in} + fan_{out}}\right)
+    W \sim \mathcal {N}\left (0,\ \frac {2}{fan_{in} + fan_{out}}\right)
     $$
 
   - Glorot 初始化对对称激活函数（如 $tanh$）尤其有效，Transformer 的最初实现中也采用了 Glorot 均匀初始化
@@ -40,12 +40,12 @@ description: 介绍权重初始化的定义、重要性，以及常见的线性�
   - 常见的 He 初始化（使用正态分布）为：
 
     $$
-    W \sim \mathcal{N}\left(0,\ \frac{2}{fan_{in}}\right)
+    W \sim \mathcal {N}\left (0,\ \frac {2}{fan_{in}}\right)
     $$
 
   - 对应的均匀分布版本
     $$
-    W \sim U\left[-\sqrt{\frac{6}{fan_{in}}},\ \sqrt{\frac{6}{fan_{in}}}\right]
+    W \sim U\left [-\sqrt {\frac {6}{fan_{in}}},\ \sqrt {\frac {6}{fan_{in}}}\right]
     $$
 
 - 在实践中：
@@ -60,7 +60,7 @@ description: 介绍权重初始化的定义、重要性，以及常见的线性�
 - 嵌入层负责将离散的 token ID 映射为稠密向量，与标准线性层有细微区别，常见做法是：
 
   $$
-  E \sim \mathcal{N}(0,\ \sigma^2)
+  E \sim \mathcal {N}(0,\ \sigma^2)
   $$
 
 - 其中 $\sigma$ 是较小的标准差（例如约 0.02），以避免初始嵌入值过大，从而产生后续计算不稳定性，尤其是在添加位置编码时
@@ -74,7 +74,7 @@ description: 介绍权重初始化的定义、重要性，以及常见的线性�
 
   - $\beta = 0$
 
-- 这样的初始化确保 LayerNorm 在初始阶段仅起到“归一化作用”，不施加缩放或平移，让网络在训练过程中自行学习适当变换
+- 这样的初始化确保 LayerNorm 在初始阶段仅起到 “归一化作用”，不施加缩放或平移，让网络在训练过程中自行学习适当变换
 
 ## 工程实现
 

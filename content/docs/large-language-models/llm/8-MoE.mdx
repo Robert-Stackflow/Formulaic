@@ -31,7 +31,7 @@ description: 介绍混合专家（Mixture of Experts，MoE）架构及其在大�
   - 模型规模是提升模型性能的关键因素之一，在有限的计算资源预算下，用更少的训练步数训练一个更大的模型，往往比用更多的步数训练一个较小的模型效果更佳
   - MoE 的一个显著优势是它能够在远少于 Dense 模型所需的计算资源下进行有效的预训练，这意味着在相同的计算预算条件下，可以显著扩大模型或数据集的规模
   - 特别是在预训练阶段，与 Dense 模型相比，混合专家模型通常能够更快地达到相同的质量水平
-  - 关键技术：专家网络、门控网络、Top-K激活、负载均衡机制、稀疏激活机制
+  - 关键技术：专家网络、门控网络、Top-K 激活、负载均衡机制、稀疏激活机制
 
 - MoE 模型主要由两个关键部分组成
 
@@ -40,7 +40,7 @@ description: 介绍混合专家（Mixture of Experts，MoE）架构及其在大�
 
     ![Expert Layer Abstract View](/img/llm/expert-layer-abstract-view.png)
     - MoE 层代替了传统 Transformer 模型中的前馈网络 (FFN) 层
-    - MoE 层包含若干“专家”（例如 8 个），每个专家本身是一个独立的神经网络
+    - MoE 层包含若干 “专家”（例如 8 个），每个专家本身是一个独立的神经网络
     - 在实际应用中，这些专家通常是前馈神经网络，也可以是更复杂的网络结构，甚至可以是 MoE 层本身，从而形成层级式的 MoE 结构
     - GPU / TPU 的计算和内存访问优化主要针对 Dense 计算，稀疏激活可能导致硬件利用率降低
 
@@ -66,25 +66,25 @@ description: 介绍混合专家（Mixture of Experts，MoE）架构及其在大�
 
 ![MoE just syntactic](/img/llm/moe-just-syntactic.png)
 
-- encoder 中的 MoE 专家并非专注于“心理学”或“生物学”等特定领域，而是呈现出明显的 token / 概念级分工，例如：标点符号、数字、格式化 token、专有名词、实体、形态学或浅层句法线索，更擅长在特定语境下处理特定 tokens
-  - encoder 的目标是构建输入表示，而不是做决策，每个 token 的表示是“并行”的，不需要为最终输出承担直接责任
-  - encoder 中的路由看到的是当前 token 的 embedding，梯度主要来自 token 级重建 / attention 对齐
+- encoder 中的 MoE 专家并非专注于 “心理学” 或 “生物学” 等特定领域，而是呈现出明显的 token / 概念级分工，例如：标点符号、数字、格式化 token、专有名词、实体、形态学或浅层句法线索，更擅长在特定语境下处理特定 tokens
+  - encoder 的目标是构建输入表示，而不是做决策，每个 token 的表示是 “并行” 的，不需要为最终输出承担直接责任
+  - encoder 中的路由看到的是当前 token 的 embedding，梯度主要来自 token 级重建 /attention 对齐
   - 浅层统计模式在 encoder 中梯度最稳定，标点、大小写、子词边界在所有任务中高度一致，这些模式对 loss 的贡献密集、噪声小
   - 因此，encoder 中非常容易形成这种结构：
     - 专家 A：高频结构 token
     - 专家 B：实体类 token
     - 专家 C：函数词、连接词
-- decoder 中的专家往往表现为语义混合、专精边界模糊、很难指认“这个专家只做某一类 token”，原因恰恰来自 decoder 的角色不同：
+- decoder 中的专家往往表现为语义混合、专精边界模糊、很难指认 “这个专家只做某一类 token”，原因恰恰来自 decoder 的角色不同：
   - decoder 的损失是序列级、决策级，每一步预测都会影响未来 token，梯度高度耦合、非局部
-  - decoder token 不再是“被解释的对象”，而是“要被生成的决策”，不同类型 token 的预测共享相同的上下文依赖
-  - 从优化角度看，一个 decoder 专家如果只擅长“某一类 token”，那么在其他时间步就会变成低效参数，门控网络会自然避免这种高度专一但覆盖率低的专家
-  - 结果是 decoder 专家更像“通用语言建模子网络”，差异体现在风格或高阶特征，而不是 token 类型
-- 为什么多语言训练中不会出现“一专家一语言”
+  - decoder token 不再是 “被解释的对象”，而是 “要被生成的决策”，不同类型 token 的预测共享相同的上下文依赖
+  - 从优化角度看，一个 decoder 专家如果只擅长 “某一类 token”，那么在其他时间步就会变成低效参数，门控网络会自然避免这种高度专一但覆盖率低的专家
+  - 结果是 decoder 专家更像 “通用语言建模子网络”，差异体现在风格或高阶特征，而不是 token 类型
+- 为什么多语言训练中不会出现 “一专家一语言”
   - MoE 路由器优化的目标是：降低 task loss，同时满足负载均衡约束，而不是最大化语言间可分性或最小化跨语言干扰
   - MoE 的路由粒度是 token 级，而不是句子、段落或语言标签级
   - 在多语言文本中同一语言内部 token 类型高度多样，不同语言之间 token 类型反而大量重叠
-  - 于是自然形成的是“跨语言的功能专家”，而不是“单语言专家”
-  - 从模型能力角度看，这种现象反而是 MoE 的优势，专家学的是“可迁移的语言结构”，而不是“语言标签本身”，多语言泛化能力更强，低资源语言可以共享高资源语言的专家能力
+  - 于是自然形成的是 “跨语言的功能专家”，而不是 “单语言专家”
+  - 从模型能力角度看，这种现象反而是 MoE 的优势，专家学的是 “可迁移的语言结构”，而不是 “语言标签本身”，多语言泛化能力更强，低资源语言可以共享高资源语言的专家能力
 
 ### MoE 发展历史
 
@@ -92,7 +92,7 @@ description: 介绍混合专家（Mixture of Experts，MoE）架构及其在大�
 
   ![MoE layer in LSTM](/img/llm/01_moe_layer.png)
   - 这一思想与集成学习方法在动机上较为相似，其目标是为由多个独立子网络组成的系统引入一种统一的调度与决策机制
-  - 在该框架下，每个子网络被视为一个“专家”，负责处理训练数据的不同子集，并专注于输入空间中的特定区域
+  - 在该框架下，每个子网络被视为一个 “专家”，负责处理训练数据的不同子集，并专注于输入空间中的特定区域
   - 专家之间的选择与分配由门控网络完成，门控网络为每个输入样本分配对应的专家权重
   - 在训练过程中，专家网络与门控网络是联合优化的，从而同时提升专家的表达能力与路由决策的有效性
 
@@ -110,7 +110,7 @@ description: 介绍混合专家（Mixture of Experts，MoE）架构及其在大�
 
   - 上述两个研究方向的逐步融合，直接推动了混合专家模型在自然语言处理领域中的应用与发展
 
-- 在 2017 年，[Shazeer等人](https://arxiv.org/abs/1701.06538) 将混合专家模型引入到大规模序列建模中，并将其应用于一个参数规模达到 137B 的 LSTM 模型
+- 在 2017 年，[Shazeer 等人](https://arxiv.org/abs/1701.06538) 将混合专家模型引入到大规模序列建模中，并将其应用于一个参数规模达到 137B 的 LSTM 模型
   - LSTM 是当时 NLP 领域的主流架构之一，最早由 Schmidhuber 提出
   - 通过引入稀疏激活机制，该工作在保持极大模型规模的同时，实现了相对高效的推理速度
   - 尽管该模型主要应用于机器翻译任务，但仍面临通信开销较高、训练过程不稳定等实际问题
@@ -141,7 +141,7 @@ description: 介绍混合专家（Mixture of Experts，MoE）架构及其在大�
 
   ![Select Expert from sparse model](/img/llm/select-expert-from-sparse-model.png)
 
-- 实际上，这里的专家学到的是更细粒度的信息，而非整个领域的知识，因此称之为“专家”是有一定误导性的，如 ST-MoE 论文的统计：
+- 实际上，这里的专家学到的是更细粒度的信息，而非整个领域的知识，因此称之为 “专家” 是有一定误导性的，如 ST-MoE 论文的统计：
 
   ![ST-MoE expert specialization](/img/llm/st-moe-expert-specialization.png)
 
@@ -152,7 +152,7 @@ description: 介绍混合专家（Mixture of Experts，MoE）架构及其在大�
 - 从理论上来讲，稀疏性的核心思想来源于条件计算（Conditional Computation）：
   - 在传统的 Dense 模型中，所有参数都会参与对每一个输入样本的计算过程，而稀疏模型允许仅对部分输入执行计算
   - 具体而言，并非所有参数在处理每个输入时都会被激活，而是根据输入的特征，仅激活与之相关的一小部分参数
-  - 这种“按样本激活不同子网络”的条件计算机制，使得模型参数规模可以显著扩展，而不会线性增加计算开销
+  - 这种 “按样本激活不同子网络” 的条件计算机制，使得模型参数规模可以显著扩展，而不会线性增加计算开销
   - 在 MoE 层中，该策略使得数以千计甚至更多专家能够被有效整合到同一个模型中
 
 - 在上面的说明中，我们将专家描述为由一个 Dense 模型分割为不同的子模块，但在实际工程中，专家本身通常是完整的前馈神经网络
@@ -178,15 +178,15 @@ description: 介绍混合专家（Mixture of Experts，MoE）架构及其在大�
 - 为此，引入一个可学习的门控网络 $G$，用于决定输入应被分配给哪些专家 $E$，并基于此解决负载均衡问题：
 
   $$
-  y = \sum_{i=1}^{n} G(x)_i E_i(x)
+  y = \sum_{i=1}^{n} G (x)_i E_i (x)
   $$
   - 在这一形式化描述中，输出由各专家的结果加权求和得到
 
-  - 当某个专家对应的门控权重 $G(x)_i = 0$ 时，该专家的计算可以被跳过，从而节省计算资源
+  - 当某个专家对应的门控权重 $G (x)_i = 0$ 时，该专家的计算可以被跳过，从而节省计算资源
 
   - 实际应用中，门控网络通常采用一个简单的前馈神经网络加 Softmax，用于学习输入到专家的分配关系：
     $$
-    G_\sigma(x) = \text{Softmax}(x \cdot W_g)
+    G_\sigma (x) = \text {Softmax}(x \cdot W_g)
     $$
 
 - 门控网络的示意图如下：
@@ -219,9 +219,9 @@ description: 介绍混合专家（Mixture of Experts，MoE）架构及其在大�
   - 首先，在门控 logits 上加入噪声：
 
     $$
-    H(x)_i = (x \cdot W_g)_i + \epsilon \cdot \text{Softplus}((x \cdot W_{\text{noise}})_i)
+    H (x)_i = (x \cdot W_g)_i + \epsilon \cdot \text {Softplus}((x \cdot W_{\text {noise}})_i)
     $$
-    - 其中，$\epsilon \sim \mathcal{N}(0,1)$是每个令牌采样的标准高斯噪声，$W_{noise}$是另一个可训练的权重矩阵，用于根据输入对噪声进行缩放
+    - 其中，$\epsilon \sim \mathcal {N}(0,1)$ 是每个令牌采样的标准高斯噪声，$W_{noise}$ 是另一个可训练的权重矩阵，用于根据输入对噪声进行缩放
     - softplus 函数确保噪声缩放因子为正，随后使用这些含噪声的分数进行 top-k 选择
     - 而后续用于加权专家输出的概率通常仍从所选专家的原始、非噪声对数几率中得出，以保持输出计算的稳定性，即噪声仅仅用于选择专家
 
@@ -232,11 +232,11 @@ description: 介绍混合专家（Mixture of Experts，MoE）架构及其在大�
   - 随后，仅保留前 $k$ 个值，其余位置置为 $-\infty$：
 
     $$
-    \text{KeepTopK}(v, k)_i =
-    \begin{cases}
-    v_i & \text{if } v_i \text{ is in the top } k \text{ elements of } v, \\
-    -\infty & \text{otherwise.}
-    \end{cases}
+    \text {KeepTopK}(v, k)_i =
+    \begin {cases}
+    v_i & \text {if} v_i \text {is in the top} k \text {elements of} v, \\
+    -\infty & \text {otherwise.}
+    \end {cases}
     $$
 
   - 示意图如下：
@@ -246,7 +246,7 @@ description: 介绍混合专家（Mixture of Experts，MoE）架构及其在大�
   - 最后对结果应用 Softmax，得到最终门控权重：
 
     $$
-    G(x) = \text{Softmax}(\text{KeepTopK}(H(x), k))
+    G (x) = \text {Softmax}(\text {KeepTopK}(H (x), k))
     $$
 
   - 示意图如下：
@@ -271,14 +271,14 @@ description: 介绍混合专家（Mixture of Experts，MoE）架构及其在大�
 
   - 为缓解这一问题，KeepTopK 在执行 top-k 专家选择之前，对路由器输出的门控 logits 注入随机噪声，并在加入噪声后的 logits 上进行 top-k 操作。该机制在 logits 接近的专家之间引入随机扰动，打破确定性的路由决策，使原本处于边缘的专家获得被选中的机会，从而逐步缓解路由偏置
   - 从优化角度看，噪声并非用于提升单次路由决策的准确性，而是一种探索机制
-  - 在训练初期和中期，较高幅度的噪声能够提升路由选择的多样性，避免“冷启动”问题，使所有专家都能接收到足够的 token 并获得有效梯度
+  - 在训练初期和中期，较高幅度的噪声能够提升路由选择的多样性，避免 “冷启动” 问题，使所有专家都能接收到足够的 token 并获得有效梯度
   - 随着训练的推进，噪声强度通常会逐步衰减，路由决策从探索阶段过渡到利用阶段，此时，路由器可以基于已经形成的专家专业化结构，做出更加稳定和确定的选择
   - 从动态系统的角度看，噪声的引入有助于打破早期的确定性反馈循环，防止专家仅因初始化或微小的早期优势而持续占据主导地位，使专家分工能够在更公平的条件下逐步形成
 
 ### Auxiliary Loss
 
 - KeepTopK 中的噪声
-  - 噪声的作用本质是在 logits 接近的专家之间打破确定性排序，给“边缘专家”一个被偶然选中的机会
+  - 噪声的作用本质是在 logits 接近的专家之间打破确定性排序，给 “边缘专家” 一个被偶然选中的机会
   - 噪声提供的是一种局部层面、样本级别的探索机制，作用于单个 token 的路由决策
 
   - 噪声（如 Gaussian）在期望上是零均值的，如果某个专家在平均意义上 logit 明显更大，那么即使加噪声，它仍然会在大多数样本中胜出
@@ -300,7 +300,7 @@ description: 介绍混合专家（Mixture of Experts，MoE）架构及其在大�
 - 然后利用重要性分数来计算 coefficient variation（CV），衡量专家重要性差异
 
   $$
-  CV=\frac{标准差\,\sigma}{平均值\,\mu}
+  CV=\frac {标准差 \,\sigma}{平均值 \,\mu}
   $$
 
 - 如果重要性分数存在很大差异，那么 CV 将会很高
@@ -321,30 +321,30 @@ description: 介绍混合专家（Mixture of Experts，MoE）架构及其在大�
   - 设第 $i$ 个专家的负载为 $x_i$，均值为
 
     $$
-    \mu = \frac{1}{E} \sum_{j=1}^E x_j
+    \mu = \frac {1}{E} \sum_{j=1}^E x_j
     $$
 
   - 采用 $CV^2$ 作为辅助损失：
 
     $$
-    \mathcal{L}_{cv} = \frac{1}{\mu^2}\frac{1}{E}\sum_{j=1}^E (x_j-\mu)^2
+    \mathcal {L}_{cv} = \frac {1}{\mu^2}\frac {1}{E}\sum_{j=1}^E (x_j-\mu)^2
     $$
 
-  - 对 $x_i$ 求偏导，注意到 $\mu=\frac{1}{E}\sum_j x_j$，但
+  - 对 $x_i$ 求偏导，注意到 $\mu=\frac {1}{E}\sum_j x_j$，但
     $$
     \sum_{j=1}^E (x_j-\mu)=0
     $$
   - 因此均值项对一阶梯度的贡献相互抵消，得到
 
     $$
-    \frac{\partial \mathcal{L}_{cv}}{\partial x_i}
+    \frac {\partial \mathcal {L}_{cv}}{\partial x_i}
 
-    = \frac{2}{E\mu^2}(x_i-\mu)
+    = \frac {2}{E\mu^2}(x_i-\mu)
     $$
 
   - 去掉正的常数因子，方向上等价于
     $$
-    \frac{\partial \mathcal{L}_{cv}}{\partial x_i}
+    \frac {\partial \mathcal {L}_{cv}}{\partial x_i}
     \propto
     (x_i - \mu)
     $$
@@ -352,25 +352,25 @@ description: 介绍混合专家（Mixture of Experts，MoE）架构及其在大�
     $$
     x_i = \sum_t p_{t,i},
     \quad
-    p_{t,i} = \mathrm{softmax}(z_t)_i
+    p_{t,i} = \mathrm {softmax}(z_t)_i
     $$
   - 梯度继续传到 router logit $z_{t,i}$，其方向保持一致：
     - 若 $x_i > \mu$：
       $$
-      \frac{\partial \mathcal{L}_{cv}}{\partial x_i} > 0
+      \frac {\partial \mathcal {L}_{cv}}{\partial x_i} > 0
       \Rightarrow
       z_{t,i} \downarrow
       $$
     - 若 $x_i < \mu$：
       $$
-      \frac{\partial \mathcal{L}_{cv}}{\partial x_i} < 0
+      \frac {\partial \mathcal {L}_{cv}}{\partial x_i} < 0
       \Rightarrow
       z_{t,i} \uparrow
       $$
 
 ### Expert Capacity
 
-- Auxiliary Loss 解决的是“平均负载”，是一种长期、统计意义上的均衡机制
+- Auxiliary Loss 解决的是 “平均负载”，是一种长期、统计意义上的均衡机制
 
 - 而专家容量（Expert Capacity）作用在前向路由阶段中，规定了每个专家在一个 batch 中最多接收的 token 数
 
@@ -425,8 +425,8 @@ description: 介绍混合专家（Mixture of Experts，MoE）架构及其在大�
 - 假设输入维度为 [B,S,H]，那么总的 token 数量就是 B×S
 
 - 路由网络
-  - 一个线性层+ softmax，即 $G(X)=\text{Softmax}(X\cdot W_g)$
-  - $W_g$维度大小为 [H,E]，当输入数据 [B,S,H] 经过路由网络后，得到 prob 数据 [B,S,E]，含义是每个 token 对应 E 个专家的分数（概率）
+  - 一个线性层 + softmax，即 $G (X)=\text {Softmax}(X\cdot W_g)$
+  - $W_g$ 维度大小为 [H,E]，当输入数据 [B,S,H] 经过路由网络后，得到 prob 数据 [B,S,E]，含义是每个 token 对应 E 个专家的分数（概率）
   - 基于此，进行 Top-K 选择，输出 scores 和 indices，维度均为 [B,S,K]
 
 - 为了在超大规模训练中维持负载均衡与训练稳定性，GShard 在引入前文所述的辅助损失之外，还对 MoE 的路由与容量机制进行了两个关键改进：
@@ -544,12 +544,11 @@ description: 介绍混合专家（Mixture of Experts，MoE）架构及其在大�
   - Capacity factor：
 
     $$
-    \text{Expert Capacity} =
-    \left(
-    \frac{\text{tokens per batch}}{\text{number of experts}}
+    \text {Expert Capacity} =
+    \left (\frac {\text {tokens per batch}}{\text {number of experts}}
     \right)
     \times
-    \text{capacity factor}
+    \text {capacity factor}
     $$
     - 决定了专家可以处理的 token 数量，如果提高容量因子，每个专家将能够处理更多的 token
     - 当容量因子大于 1 时，可以在一定程度上缓解 token 在专家之间分配不均的问题
@@ -570,7 +569,7 @@ description: 介绍混合专家（Mixture of Experts，MoE）架构及其在大�
     ![Switch Transformer Auxiliary Loss](/img/llm/switch-transformer-al.png)
     - 无需计算 coefficient variation（CV），而是根据每个专家的路由概率占比来权衡分配的 token 占比
     - 由于目标是在 N 个专家之间实现 token 的统一路由，所以希望向量 P 和 f 的值为 1/N
-    - 会倾向于降低“高 $f_i$ + 高 $P_i$”的专家，鼓励概率质量向低负载专家扩散
+    - 会倾向于降低 “高 $f_i$ + 高 $P_i$” 的专家，鼓励概率质量向低负载专家扩散
     - 超参数 α 用于微调该损失在训练中的重要性，值过高会超过主要的损失函数，值过低则对负载均衡几乎没有作用
 
   - 辅助损失的公式表示
@@ -597,7 +596,7 @@ description: 介绍混合专家（Mixture of Experts，MoE）架构及其在大�
 - 架构：decoder-only（更接近 GPT 系列）
 - 目标：在语言建模质量上达到 GPT-3 水平，但训练能耗只用大约 1/3
 - 核心动机：MoE 在每个 token 上只激活少量 expert，有效 FLOPs 显著低于同参数量的 Dense 模型，因此能显著降低训练计算量
-- 评测方式：侧重 few-shot / one-shot，而不是下游任务微调（这点和 GPT-3 一致）
+- 评测方式：侧重 few-shot /one-shot，而不是下游任务微调（这点和 GPT-3 一致）
 - 路由：Top-2 routing，每个 token 同时发给两个 expert，负载更均衡、稳定性更好，但计算量和通信略高
 - 使用更大的 capacity factor：capacity factor 控制每个 expert 能接收的 token 上限，对于大 CF，更少 token 被丢弃，更好的质量，更高的计算和显存开销
 
@@ -626,24 +625,24 @@ description: 介绍混合专家（Mixture of Experts，MoE）架构及其在大�
 
   - 传统的负载均衡损失只能约束「概率分布形态」，但无法限制 logits 的数值尺度本身，而简单地对路由输出到 logits 进行截断可能会损害模型性能
 
-- ST-MoE 引入了 Router z-loss，来促使路由输出的值更小——路由网络的正则化技术
+- ST-MoE 引入了 Router z-loss，来促使路由输出的值更小 —— 路由网络的正则化技术
   - Router z-loss 的目标非常明确：不去干预 token 被送到哪个专家，而是约束「路由网络输出 logits 的数值规模」，这是一种纯数值稳定性正则项，而非结构性或语义性约束
 
-  - 实际上，softmax 对 logits 的相对差异敏感，但对整体平移不敏感，因此 Router z-loss 实际上在做的是抑制 logits 的无意义整体放大，强迫模型通过“相对差异”而非“绝对数值”来表达路由偏好
+  - 实际上，softmax 对 logits 的相对差异敏感，但对整体平移不敏感，因此 Router z-loss 实际上在做的是抑制 logits 的无意义整体放大，强迫模型通过 “相对差异” 而非 “绝对数值” 来表达路由偏好
 
   - 这使得 softmax 输入始终处于安全数值区间，指数计算不容易溢出或产生严重舍入误差，从而使混合精度下梯度更加平滑
 
-  - 设路由对某个 token 输出的 logits 为 $z \in \mathbb{R}^E$，其中 $E$ 是专家数量
+  - 设路由对某个 token 输出的 logits 为 $z \in \mathbb {R}^E$，其中 $E$ 是专家数量
 
   - Router z-loss 定义为：
 
     ![Router Z-loss](/img/llm/router-z-loss-router-calculate.png)
 
     $$
-    \mathcal{L}_{z} = \lambda_z \cdot \left( \log \sum_{i=1}^{E} e^{z_i} \right)^2
+    \mathcal {L}_{z} = \lambda_z \cdot \left (\log \sum_{i=1}^{E} e^{z_i} \right)^2
     $$
 
-  - z-loss 常被称为对 log-sum-exp 的平方惩罚，当 logits 整体平移或幅值增大时，该项会迅速变大，平方使得对“大值”惩罚更强
+  - z-loss 常被称为对 log-sum-exp 的平方惩罚，当 logits 整体平移或幅值增大时，该项会迅速变大，平方使得对 “大值” 惩罚更强
   - 该损失会被加到总训练损失中：
 
     ![ST-MoE total loss](/img/llm/st-moe-total-loss.png)
@@ -651,11 +650,11 @@ description: 介绍混合专家（Mixture of Experts，MoE）架构及其在大�
 - 对比几种常见方法：
   - dropout：稳定，但直接破坏表示能力，在 MoE 中容易导致专家学习不足
   - 减小模型容量 / 减少专家数：稳定，但直接降低上限性能
-  - 强行平滑路由概率：稳定，但限制模型做“尖锐选择”
+  - 强行平滑路由概率：稳定，但限制模型做 “尖锐选择”
   - 而 Router z-loss 不限制 Top-1 / Top-2 的选择，不干预专家间的相对竞争关系，只约束一个数值冗余自由度
 
 - 同时，尽管稀疏模型在大规模数据集上表现良好，但对这些模型进行微调可能存在困难
-  - 稀疏模型在小型/大型数据集这两种情况下都比 Dense 模型收敛得更快，然而在数据较少的下游任务中，稀疏模型的验证质量远不如 Dense 模型——换句话说，稀疏模型由于缺乏足够的数据而发生过拟合
+  - 稀疏模型在小型 / 大型数据集这两种情况下都比 Dense 模型收敛得更快，然而在数据较少的下游任务中，稀疏模型的验证质量远不如 Dense 模型 —— 换句话说，稀疏模型由于缺乏足够的数据而发生过拟合
   - 为了减轻过拟合，ST-MoE 首先尝试只对 MoE 模型的某些部分参数进行微调，但仅微调 MoE 层会导致性能急剧下降，而选择性地微调其他参数组的效果则与微调所有参数相当，这表明在微调阶段，非 MoE 层对任务适配起着关键作用
   - 在训练稀疏模型时，采用更强的内部正则化通常是有益的，例如，可以对 Dense 层使用较低的 dropout 率，而对稀疏（MoE）层使用更高的 dropout 率，以平衡模型容量与泛化能力
   - ST-MoE 的实验表明，即使关闭辅助损失并导致高达约 11% 的 token 被丢弃，模型质量也未出现明显下降，这表明 token 丢弃本身可能起到了一种正则化作用，有助于缓解过拟合
@@ -679,7 +678,7 @@ description: 介绍混合专家（Mixture of Experts，MoE）架构及其在大�
 - 在此基础上，再为每个 token 从剩余的动态专家池中选择 Top-1 专家 进行计算
 
 - DeepSpeed 提出这一设计的动机源于对传统 MoE 路由策略的思考：
-  - 在常见的 Top-2 Expert 策略中，第二个专家（2nd expert）本质上是对第一个专家（1st expert）的纠偏与补偿—— 因为第一个专家的选择未必完全准确，需要第二个专家补充缺失的信息
+  - 在常见的 Top-2 Expert 策略中，第二个专家（2nd expert）本质上是对第一个专家（1st expert）的纠偏与补偿 —— 因为第一个专家的选择未必完全准确，需要第二个专家补充缺失的信息
   - 既然始终需要一个 “固定负责纠偏” 的分支，那么更高效的做法是直接将这个纠偏分支固化为一个共享的残差 MLP（即 R 模块），只对另一个专家做动态路由选择
   - 这就是 PR-MoE 中 R 模块的设计意义
 
@@ -742,7 +741,7 @@ description: 介绍混合专家（Mixture of Experts，MoE）架构及其在大�
                                   )
   ```
 
-- 单个expert模型架构的入口为`ParallelMLP()`
+- 单个 expert 模型架构的入口为`ParallelMLP()`
 
   ```python
   class ParallelMLP(MegatronModule):
@@ -889,7 +888,7 @@ description: 介绍混合专家（Mixture of Experts，MoE）架构及其在大�
           return output, output_bias
   ```
 
-- 单个 Expert 的模型架构复用 ParallelMLP 的基础定义，核心差异在于是否对 Expert 进行TP（Tensor Parallelism，张量并行）切割，具体规则如下：
+- 单个 Expert 的模型架构复用 ParallelMLP 的基础定义，核心差异在于是否对 Expert 进行 TP（Tensor Parallelism，张量并行）切割，具体规则如下：
   - 无 TP 切割场景：无需重写 Expert 的`forward`（前向）和`backward`（反向）方法，直接沿用 ParallelMLP 的原生逻辑即可
   - 有 TP 切割场景：需重写`forward`和`backward`方法，切割逻辑与 Megatron 框架中 MLP 层的列切割（Column Parallel） 和行切割（Row Parallel） 完全一致
   - TP 切割后的通信规则：数据经过 TP 切割的单个 Expert 计算后，其输出结果必须在同一 TP 通信组（tp_group）内执行 AllReduce 操作，以完成张量并行的结果同步
@@ -1346,7 +1345,7 @@ description: 介绍混合专家（Mixture of Experts，MoE）架构及其在大�
 
 ### Megatron MoE
 
-- deepspeed 把 ep 相关的初始化设置放到模型切割之后，megatron 则在模型切割之前一次性把包括ep在内的初始化完成
+- deepspeed 把 ep 相关的初始化设置放到模型切割之后，megatron 则在模型切割之前一次性把包括 ep 在内的初始化完成
 
 - 下面是一个 EP+TP+DP+PP 的例子
 
@@ -1443,16 +1442,16 @@ description: 介绍混合专家（Mixture of Experts，MoE）架构及其在大�
 ## MoE 的稳定性训练
 
 - 熵正则化
-  - 与侧重于平衡各专家接收 token 总量的负载均衡损失不同，熵正则化直接作用于路由器对**单个 token 的专家分配概率分布**
+  - 与侧重于平衡各专家接收 token 总量的负载均衡损失不同，熵正则化直接作用于路由器对 ** 单个 token 的专家分配概率分布 **
 
   - 其目标是鼓励 softmax 输出在专家维度上更加平坦，即具有更高的熵，从而避免路由器过早做出过于确定的决策
 
   - 熵正则化项通常定义为：
 
     $$
-    \mathcal{L}_{\text{entropy}}
+    \mathcal {L}_{\text {entropy}}
     =
-    -\lambda_e \cdot \frac{1}{N \cdot T}
+    -\lambda_e \cdot \frac {1}{N \cdot T}
     \sum_{i=1}^{N \cdot T}
     \sum_{j=1}^E
     g_{i,j} \log (g_{i,j} + \epsilon)
@@ -1526,7 +1525,7 @@ description: 介绍混合专家（Mixture of Experts，MoE）架构及其在大�
 
 ## MoE 高效推理
 
-- token 级分组与置换（Token-level Grouping & Permutation），其核心思想是：根据每个 token 被分配到的专家，对批次内的 token 进行主动重排，从而把“稀疏、不规则”的专家访问，转化为“致密、规则”的批处理计算
+- token 级分组与置换（Token-level Grouping & Permutation），其核心思想是：根据每个 token 被分配到的专家，对批次内的 token 进行主动重排，从而把 “稀疏、不规则” 的专家访问，转化为 “致密、规则” 的批处理计算
 
 - 整体工作流程通常如下：
   - 门控计算
@@ -1546,12 +1545,12 @@ description: 介绍混合专家（Mixture of Experts，MoE）架构及其在大�
     - 高效实现通常依赖优化的集体通信库（如 NCCL）或专门针对 MoE 优化的框架（如 Tutel）
 
   - 批处理专家计算
-    - 每个专家（或承载该专家的设备）接收到一个只包含“自己负责 token ”的致密小批次
+    - 每个专家（或承载该专家的设备）接收到一个只包含 “自己负责 token” 的致密小批次
     - 专家网络（通常是 FFN）对该批次执行高效的向量化计算
     - 这一阶段充分利用 GPU 对致密矩阵运算的高吞吐能力
 
   - 令牌反置换（Scatter）
-    - 专家计算完成后，输出 token 的顺序仍然是“按专家分组”的
+    - 专家计算完成后，输出 token 的顺序仍然是 “按专家分组” 的
     - 需要执行与置换相反的操作，将 token 恢复到原始批次与序列顺序
     - 在分布式设置下，通常涉及第二次 All-to-All 通信，将处理后的 token 结果发回其原始设备
 
@@ -1560,7 +1559,7 @@ description: 介绍混合专家（Mixture of Experts，MoE）架构及其在大�
     - 根据门控 logits 对专家输出进行组合，即使推理时使用 Top-1 计算，组合阶段仍可能保留加权形式以匹配训练行为
     - 得到的 token 表示进入模型的下一层，如后续 FFN、LayerNorm、残差连接等
 
-- “分组与置换”将 MoE 的不规则路由问题转化为专家内部的规则批处理计算
+- “分组与置换” 将 MoE 的不规则路由问题转化为专家内部的规则批处理计算
 - All-to-All 通信是跨设备专家部署时的关键成本，该机制是 MoE 在推理阶段实现高吞吐与可扩展性的核心基础
 
 ## 开源 MoE 模型

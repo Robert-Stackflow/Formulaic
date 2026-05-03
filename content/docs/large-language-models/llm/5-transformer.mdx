@@ -22,7 +22,7 @@ description: 介绍 Transformer 结构，包括 Encoder-Decoder 架构、多头�
   - Encoder：将输入序列编码为连续表示（向量序列）
   - Decoder：基于 Encoder 输出和自身历史生成输出序列
   - 整个模型由 $N$ 层堆叠组成（通常 $N=6$ 或 $12$），每层包含多头注意力、前馈网络、残差连接和层归一化
-  - 输入输出均为向量序列，维度为 $d_{\text{model}}$（如 512 或 768）
+  - 输入输出均为向量序列，维度为 $d_{\text {model}}$（如 512 或 768）
 
 ![transformer](/img/llm/transformer.png)
 
@@ -32,73 +32,73 @@ description: 介绍 Transformer 结构，包括 Encoder-Decoder 架构、多头�
 | ------------------------------ | ------------------------------------------------------------------------------------------------------ |
 | $n$                            | 输入序列长度（token 数量）                                                                             |
 | $m$                            | 输出序列长度（token 数量）                                                                             |
-| $d_{\text{model}}$             | 模型维度（嵌入向量和隐藏层维度，通常 512 或 768）                                                      |
+| $d_{\text {model}}$             | 模型维度（嵌入向量和隐藏层维度，通常 512 或 768）                                                      |
 | $H$                            | 多头注意力头数（通常 8 或 12）                                                                         |
-| $d_k$                          | 注意力 Key/Query 维度（通常 $d_{\text{model}} / H$）                                                   |
-| $d_v$                          | 注意力 Value 维度（通常 $d_{\text{model}} / H$）                                                       |
-| $d_{\text{ff}}$                | 前馈网络中间维度（通常 2048 或 4096）                                                                  |
-| $V$ 或 $\vert\mathcal{V}\vert$ | 词表大小（vocabulary size，通常 30000 或更多）                                                         |
+| $d_k$                          | 注意力 Key/Query 维度（通常 $d_{\text {model}} / H$）                                                   |
+| $d_v$                          | 注意力 Value 维度（通常 $d_{\text {model}} / H$）                                                       |
+| $d_{\text {ff}}$                | 前馈网络中间维度（通常 2048 或 4096）                                                                  |
+| $V$ 或 $\vert\mathcal {V}\vert$ | 词表大小（vocabulary size，通常 30000 或更多）                                                         |
 | $N$                            | Encoder/Decoder 层数（通常 6 或 12）                                                                   |
-| $X$                            | 输入序列嵌入矩阵（$n \times d_{\text{model}}$）                                                        |
-| $Y$                            | 输出序列嵌入矩阵（$m \times d_{\text{model}}$）                                                        |
-| $H_{\text{enc}}$               | Encoder 输出（$n \times d_{\text{model}}$）                                                            |
-| $H_{\text{dec}}$               | Decoder 输出（$m \times d_{\text{model}}$）                                                            |
+| $X$                            | 输入序列嵌入矩阵（$n \times d_{\text {model}}$）                                                        |
+| $Y$                            | 输出序列嵌入矩阵（$m \times d_{\text {model}}$）                                                        |
+| $H_{\text {enc}}$               | Encoder 输出（$n \times d_{\text {model}}$）                                                            |
+| $H_{\text {dec}}$               | Decoder 输出（$m \times d_{\text {model}}$）                                                            |
 | $Z$                            | 输出 logits（$m \times V$）                                                                            |
 | $P$                            | 输出概率分布（$m \times V$）                                                                           |
-| $W_q, W_k, W_v$                | 注意力投影矩阵（$d_{\text{model}} \times d_k$ 或 $d_{\text{model}} \times d_v$）                       |
-| $W_1, W_2$                     | 前馈网络权重矩阵（$d_{\text{model}} \times d_{\text{ff}}$ 和 $d_{\text{ff}} \times d_{\text{model}}$） |
-| $W_{\text{out}}$               | 输出线性层权重（$d_{\text{model}} \times V$）                                                          |
+| $W_q, W_k, W_v$                | 注意力投影矩阵（$d_{\text {model}} \times d_k$ 或 $d_{\text {model}} \times d_v$）                       |
+| $W_1, W_2$                     | 前馈网络权重矩阵（$d_{\text {model}} \times d_{\text {ff}}$ 和 $d_{\text {ff}} \times d_{\text {model}}$） |
+| $W_{\text {out}}$               | 输出线性层权重（$d_{\text {model}} \times V$）                                                          |
 
 ## Encoder 结构
 
 - 在 Encoder 之前，存在嵌入层（Embedding Layer）：
-  - 输入 token 通过可学习嵌入矩阵映射为向量，维度 $d_{\text{model}}$
-  - 嵌入矩阵大小：$V \times d_{\text{model}}$，$V$ 为词表大小
+  - 输入 token 通过可学习嵌入矩阵映射为向量，维度 $d_{\text {model}}$
+  - 嵌入矩阵大小：$V \times d_{\text {model}}$，$V$ 为词表大小
   - 与位置编码相加后输入第一层
 - Encoder 由 $N$ 个相同层堆叠而成，每层包括：
   - 多头自注意力子层：对输入序列进行自注意力计算，捕捉 token 间的依赖关系
   - 前馈网络子层：对每个 token 独立进行非线性变换
   - 残差连接和层归一化：围绕每个子层添加
-- Encoder 输入：token 嵌入 + 位置编码的序列 $X \in \mathbb{R}^{n \times d_{\text{model}}}$（$n$​ 为序列长度）
+- Encoder 输入：token 嵌入 + 位置编码的序列 $X \in \mathbb {R}^{n \times d_{\text {model}}}$（$n$​ 为序列长度）
 
 - 每个 Encoder Block（层）：
-  - 输入：上一层输出或初始 $X$，维度 $n \times d_{\text{model}}$
+  - 输入：上一层输出或初始 $X$，维度 $n \times d_{\text {model}}$
   - 多头自注意力子层：
-    - 输入 $X_{\text{in}} \in \mathbb{R}^{n \times d_{\text{model}}}$
+    - 输入 $X_{\text {in}} \in \mathbb {R}^{n \times d_{\text {model}}}$
     - 生成 Q/K/V：对于每个头 $h$
-      - $Q_h = X_{\text{in}} W_q^{(h)} \in \mathbb{R}^{n \times d_k}$
-      - $K_h = X_{\text{in}} W_k^{(h)} \in \mathbb{R}^{n \times d_k}$
-      - $V_h = X_{\text{in}} W_v^{(h)} \in \mathbb{R}^{n \times d_v}$
-      - $d_k = d_v = \frac{d_{\text{model}}}{H}$
+      - $Q_h = X_{\text {in}} W_q^{(h)} \in \mathbb {R}^{n \times d_k}$
+      - $K_h = X_{\text {in}} W_k^{(h)} \in \mathbb {R}^{n \times d_k}$
+      - $V_h = X_{\text {in}} W_v^{(h)} \in \mathbb {R}^{n \times d_v}$
+      - $d_k = d_v = \frac {d_{\text {model}}}{H}$
     - 单个注意力头计算：
       $$
-      \mathrm{Attention}(Q_h, K_h, V_h) = \mathrm{softmax}\left(\frac{Q_h K_h^T}{\sqrt{d_k}}\right) V_h \in \mathbb{R}^{n \times d_v}
+      \mathrm {Attention}(Q_h, K_h, V_h) = \mathrm {softmax}\left (\frac {Q_h K_h^T}{\sqrt {d_k}}\right) V_h \in \mathbb {R}^{n \times d_v}
       $$
     - 多头拼接并投影：
       $$
-      O_{\text{attn}} = \mathrm{Concat}(\text{head}_1, \ldots, \text{head}_H) W_o \in \mathbb{R}^{n \times d_{\text{model}}}
+      O_{\text {attn}} = \mathrm {Concat}(\text {head}_1, \ldots, \text {head}_H) W_o \in \mathbb {R}^{n \times d_{\text {model}}}
       $$
-    - 其中 $W_o \in \mathbb{R}^{H d_v \times d_{\text{model}}}$，可见多头注意力输出的维度和输入一致，可以进行残差连接
+    - 其中 $W_o \in \mathbb {R}^{H d_v \times d_{\text {model}}}$，可见多头注意力输出的维度和输入一致，可以进行残差连接
     - 残差 + LayerNorm
       $$
-      X_{\text{out}} = \mathrm{LayerNorm}(X_{\text{in}} + O_{\text{attn}}) \in \mathbb{R}^{n \times d_{\text{model}}}
+      X_{\text {out}} = \mathrm {LayerNorm}(X_{\text {in}} + O_{\text {attn}}) \in \mathbb {R}^{n \times d_{\text {model}}}
       $$
     - 残差连接可以让网络只关注当前差异的部分，Layer Normalization 会将每一层神经元的输入变为均值方差一样，可以加快收敛
 
   - 前馈网络子层：
-    - 输入 $X_{\text{out}} \in \mathbb{R}^{n \times d_{\text{model}}}$
+    - 输入 $X_{\text {out}} \in \mathbb {R}^{n \times d_{\text {model}}}$
     - 输出
       $$
-      O_{\text{ff}} = \sigma\left(X_{\text{out}} W_1 + b_1\right) W_2 + b_2 \in \mathbb{R}^{n \times d_{\text{model}}}
+      O_{\text {ff}} = \sigma\left (X_{\text {out}} W_1 + b_1\right) W_2 + b_2 \in \mathbb {R}^{n \times d_{\text {model}}}
       $$
     - 残差 + LayerNorm
       $$
-      X_{\text{final}} = \mathrm{LayerNorm}(X_{\text{out}} + O_{\text{ff}}) \in \mathbb{R}^{n \times d_{\text{model}}}
+      X_{\text {final}} = \mathrm {LayerNorm}(X_{\text {out}} + O_{\text {ff}}) \in \mathbb {R}^{n \times d_{\text {model}}}
       $$
 
-  - 层输出：$X_{\text{final}}$ 传递到下一层，维度始终保持 $n \times d_{\text{model}}$
+  - 层输出：$X_{\text {final}}$ 传递到下一层，维度始终保持 $n \times d_{\text {model}}$
 
-- Encoder 输出：经过 $N$ 层后输出最终表示 $H_{\text{enc}} \in \mathbb{R}^{n \times d_{\text{model}}}$，用于 Decoder 或下游任务
+- Encoder 输出：经过 $N$ 层后输出最终表示 $H_{\text {enc}} \in \mathbb {R}^{n \times d_{\text {model}}}$，用于 Decoder 或下游任务
 
 - Encoder 的特点：
   - 双向注意力：每个 token 可以关注序列中所有其他 token（包括未来 token），适合理解完整上下文的任务，如分类或编码
@@ -107,156 +107,156 @@ description: 介绍 Transformer 结构，包括 Encoder-Decoder 架构、多头�
 ## Decoder 结构
 
 - Decoder 也由 $N$ 个相同层堆叠而成，每层包括：
-  - **掩码**多头自注意力子层：仅关注当前及之前位置的 token，防止信息泄露（causal mask）
-  - **多头交叉**注意力子层：Query 来自 Decoder，Key/Value 来自 Encoder 输出，实现条件生成
+  - ** 掩码 ** 多头自注意力子层：仅关注当前及之前位置的 token，防止信息泄露（causal mask）
+  - ** 多头交叉 ** 注意力子层：Query 来自 Decoder，Key/Value 来自 Encoder 输出，实现条件生成
   - 前馈网络子层：与 Encoder 相同
   - 残差连接和层归一化：围绕每个子层添加
-- Decoder 输入为目标序列的 token 嵌入 + 位置编码 $Y \in \mathbb{R}^{m \times d_{\text{model}}}$（$m$​ 为目标长度），在训练时使用 teacher forcing（真实目标序列），推理时自回归生成
+- Decoder 输入为目标序列的 token 嵌入 + 位置编码 $Y \in \mathbb {R}^{m \times d_{\text {model}}}$（$m$​ 为目标长度），在训练时使用 teacher forcing（真实目标序列），推理时自回归生成
 
 - 每个 Decoder Block（层）的详细流向：
-  - 输入：上一层输出或初始 $Y$，维度 $m \times d_{\text{model}}$；Encoder 输出 $H_{\text{enc}} \in \mathbb{R}^{n \times d_{\text{model}}}$
+  - 输入：上一层输出或初始 $Y$，维度 $m \times d_{\text {model}}$；Encoder 输出 $H_{\text {enc}} \in \mathbb {R}^{n \times d_{\text {model}}}$
 
   - 掩码多头自注意力子层：
-    - 输入 $Y_{\text{in}} \in \mathbb{R}^{m \times d_{\text{model}}}$
-    - 生成 Q/K/V：类似 Encoder，$Q_h = Y_{\text{in}} W_q^{(h)} \in \mathbb{R}^{m \times d_k}$ 等
+    - 输入 $Y_{\text {in}} \in \mathbb {R}^{m \times d_{\text {model}}}$
+    - 生成 Q/K/V：类似 Encoder，$Q_h = Y_{\text {in}} W_q^{(h)} \in \mathbb {R}^{m \times d_k}$ 等
     - 计算未掩码的注意力打分（逐头）
       $$
-      S_h = \frac{Q_h K_h^\top}{\sqrt{d_k}}
-      \in \mathbb{R}^{m \times m}
+      S_h = \frac {Q_h K_h^\top}{\sqrt {d_k}}
+      \in \mathbb {R}^{m \times m}
       $$
     - 构造 causal mask（上三角掩码）
       $$
-      M \in \mathbb{R}^{m \times m}, \qquad
+      M \in \mathbb {R}^{m \times m}, \qquad
       M_{ij} =
-      \begin{cases}
+      \begin {cases}
       0,      & j \le i \\
       -\infty,& j > i
-      \end{cases}
+      \end {cases}
       $$
     - 在 softmax 之前施加掩码
       $$
-      \tilde{S}_h = S_h + M
+      \tilde {S}_h = S_h + M
       $$
     - 归一化得到注意力权重
       $$
-      A_h = \mathrm{softmax}(\tilde{S}_h)
-      \in \mathbb{R}^{m \times m}
+      A_h = \mathrm {softmax}(\tilde {S}_h)
+      \in \mathbb {R}^{m \times m}
       $$
     - 加权求和得到单头输出
       $$
-      Z_h = A_h V_h \in \mathbb{R}^{m \times d_v}
+      Z_h = A_h V_h \in \mathbb {R}^{m \times d_v}
       $$
     - 多头拼接并线性映射
       $$
-      Z = \mathrm{Concat}(Z_1, \dots, Z_H)
-      \in \mathbb{R}^{m \times d_{\text{model}}}\\
-      O_{\text{self-attn}} = Z W^O, \qquad
-      W^O \in \mathbb{R}^{d_{\text{model}} \times d_{\text{model}}}
+      Z = \mathrm {Concat}(Z_1, \dots, Z_H)
+      \in \mathbb {R}^{m \times d_{\text {model}}}\\
+      O_{\text {self-attn}} = Z W^O, \qquad
+      W^O \in \mathbb {R}^{d_{\text {model}} \times d_{\text {model}}}
       $$
     - 残差 + LayerNorm
       $$
-      Y_{\text{out1}} = \mathrm{LayerNorm}(Y_{\text{in}} + O_{\text{self-attn}}) \in \mathbb{R}^{m \times d_{\text{model}}}
+      Y_{\text {out1}} = \mathrm {LayerNorm}(Y_{\text {in}} + O_{\text {self-attn}}) \in \mathbb {R}^{m \times d_{\text {model}}}
       $$
 
   - 多头交叉注意力子层：
-    - 输入 $Y_{\text{out1}} \in \mathbb{R}^{m \times d_{\text{model}}}$（作为 Query），$H_{\text{enc}}$（作为 Key/Value）
-    - 生成 Q：$Q_h = Y_{\text{out1}} W_q^{(h)} \in \mathbb{R}^{m \times d_k}$
-    - 生成K/V：$K_h = H_{\text{enc}} W_k^{(h)} \in \mathbb{R}^{n \times d_k}$，$V_h = H_{\text{enc}} W_v^{(h)} \in \mathbb{R}^{n \times d_v}$
+    - 输入 $Y_{\text {out1}} \in \mathbb {R}^{m \times d_{\text {model}}}$（作为 Query），$H_{\text {enc}}$（作为 Key/Value）
+    - 生成 Q：$Q_h = Y_{\text {out1}} W_q^{(h)} \in \mathbb {R}^{m \times d_k}$
+    - 生成 K/V：$K_h = H_{\text {enc}} W_k^{(h)} \in \mathbb {R}^{n \times d_k}$，$V_h = H_{\text {enc}} W_v^{(h)} \in \mathbb {R}^{n \times d_v}$
     - 注意力计算：
       $$
-      S_h = \frac{Q_h K_h^\top}{\sqrt{d_k}}\in \mathbb{R}^{m \times n}
+      S_h = \frac {Q_h K_h^\top}{\sqrt {d_k}}\in \mathbb {R}^{m \times n}
       $$
     - （可选）施加 encoder padding mask
       $$
-      M_{\text{enc}} \in \mathbb{R}^{m \times n}, \quad
-      (M_{\text{enc}})_{ij} =
-      \begin{cases}
-      0,      & \text{encoder 第 } j \text{ 个 token 非 padding} \\
-      -\infty,& \text{encoder 第 } j \text{ 个 token 为 padding}
-      \end{cases}\\
-      \tilde{S}_h = S_h + M_{\text{enc}}
+      M_{\text {enc}} \in \mathbb {R}^{m \times n}, \quad
+      (M_{\text {enc}})_{ij} =
+      \begin {cases}
+      0,      & \text {encoder 第} j \text {个 token 非 padding} \\
+      -\infty,& \text {encoder 第} j \text {个 token 为 padding}
+      \end {cases}\\
+      \tilde {S}_h = S_h + M_{\text {enc}}
       $$
     - softmax 得到注意力权重
       $$
-      A_h = \mathrm{softmax}(\tilde{S}_h)
-      \in \mathbb{R}^{m \times n}
+      A_h = \mathrm {softmax}(\tilde {S}_h)
+      \in \mathbb {R}^{m \times n}
       $$
     - 加权求和得到单头输出
       $$
-      Z_h = A_h V_h \in \mathbb{R}^{m \times d_v}
+      Z_h = A_h V_h \in \mathbb {R}^{m \times d_v}
       $$
     - 多头拼接与线性映射
       $$
-      Z = \mathrm{Concat}(Z_1, \dots, Z_H)
-      \in \mathbb{R}^{m \times d_{\text{model}}}\\
-      O_{\text{cross-attn}} = Z W^O \in \mathbb{R}^{m \times d_{\text{model}}}
+      Z = \mathrm {Concat}(Z_1, \dots, Z_H)
+      \in \mathbb {R}^{m \times d_{\text {model}}}\\
+      O_{\text {cross-attn}} = Z W^O \in \mathbb {R}^{m \times d_{\text {model}}}
       $$
     - 残差 + LayerNorm
       $$
-      Y_{\text{out2}} = \mathrm{LayerNorm}(Y_{\text{out1}} + O_{\text{cross-attn}}) \in \mathbb{R}^{m \times d_{\text{model}}}
+      Y_{\text {out2}} = \mathrm {LayerNorm}(Y_{\text {out1}} + O_{\text {cross-attn}}) \in \mathbb {R}^{m \times d_{\text {model}}}
       $$
 
   - 前馈网络子层：
-    - 输入 $Y_{\text{out2}} \in \mathbb{R}^{m \times d_{\text{model}}}$
-    - 输出 $O_{\text{ff}} = \mathrm{FFN}(Y_{\text{out2}}) \in \mathbb{R}^{m \times d_{\text{model}}}$
-    - 残差 + LayerNorm：$Y_{\text{final}} = \mathrm{LayerNorm}(Y_{\text{out2}} + O_{\text{ff}}) \in \mathbb{R}^{m \times d_{\text{model}}}$
-  - 层输出：$Y_{\text{final}}$ 传递到下一层，维度始终保持 $m \times d_{\text{model}}$
+    - 输入 $Y_{\text {out2}} \in \mathbb {R}^{m \times d_{\text {model}}}$
+    - 输出 $O_{\text {ff}} = \mathrm {FFN}(Y_{\text {out2}}) \in \mathbb {R}^{m \times d_{\text {model}}}$
+    - 残差 + LayerNorm：$Y_{\text {final}} = \mathrm {LayerNorm}(Y_{\text {out2}} + O_{\text {ff}}) \in \mathbb {R}^{m \times d_{\text {model}}}$
+  - 层输出：$Y_{\text {final}}$ 传递到下一层，维度始终保持 $m \times d_{\text {model}}$
 
 - Decoder 输出
-  - 经过 $N$ 层后输出 $H_{\text{dec}} \in \mathbb{R}^{m \times d_{\text{model}}}$
+  - 经过 $N$ 层后输出 $H_{\text {dec}} \in \mathbb {R}^{m \times d_{\text {model}}}$
 
   - 线性映射到词表空间（逐位置独立）
 
     $$
-    Z_{\text{logits}}
-    = H_{\text{dec}} W_{out} + b_{out}
-    \in \mathbb{R}^{m \times \vert\mathcal{V}\vert}
+    Z_{\text {logits}}
+    = H_{\text {dec}} W_{out} + b_{out}
+    \in \mathbb {R}^{m \times \vert\mathcal {V}\vert}
     $$
 
   - 其中
 
     $$
-    W_{out} \in \mathbb{R}^{d_{\text{model}} \times \vert\mathcal{V}\vert},
+    W_{out} \in \mathbb {R}^{d_{\text {model}} \times \vert\mathcal {V}\vert},
     \quad
-    b_{out} \in \mathbb{R}^{\vert\mathcal{V}\vert}
+    b_{out} \in \mathbb {R}^{\vert\mathcal {V}\vert}
     $$
 
   - 再应用 Softmax 生成概率分布
 
     $$
-    P = \mathrm{Softmax}(Z) \in \mathbb{R}^{m \times \vert\mathcal{V}\vert},\quad P_{ij} = \frac{\exp(Z_{ij})}{\sum_{k=1}^V \exp(Z_{ik})}\\
-      P(y_t \mid y_{< t}, x)
-      = \mathrm{softmax}(Z_{\text{logits}})_t
+    P = \mathrm {Softmax}(Z) \in \mathbb {R}^{m \times \vert\mathcal {V}\vert},\quad P_{ij} = \frac {\exp (Z_{ij})}{\sum_{k=1}^V \exp (Z_{ik})}\\
+      P (y_t \mid y_{< t}, x)
+      = \mathrm {softmax}(Z_{\text {logits}})_t
     $$
 
-  - 由于 decoder 的 masked self-attention 在每一层都施加了 causal mask，第 $i$ 个位置的隐状态 $H_{\text{dec}}[i]$ 在计算过程中只能依赖于输入序列中第 $0 \sim i$ 个 token 以及 encoder 输出 $x$，从而保证模型满足自回归生成的因果性
+  - 由于 decoder 的 masked self-attention 在每一层都施加了 causal mask，第 $i$ 个位置的隐状态 $H_{\text {dec}}[i]$ 在计算过程中只能依赖于输入序列中第 $0 \sim i$ 个 token 以及 encoder 输出 $x$，从而保证模型满足自回归生成的因果性
 
-  - 因此，在输出概率矩阵 $P \in \mathbb{R}^{m \times |\mathcal{V}|}$ 中，第 $i$ 行表示在已知上下文 $y_{< i}$ 和输入 $x$ 的条件下，第 $i$ 个位置生成词表中各词的条件概率分布
+  - 因此，在输出概率矩阵 $P \in \mathbb {R}^{m \times |\mathcal {V}|}$ 中，第 $i$ 行表示在已知上下文 $y_{<i}$ 和输入 $x$ 的条件下，第 $i$ 个位置生成词表中各词的条件概率分布
 
   - 训练阶段（Teacher Forcing）：对第 $t$ 个位置，使用真实标签 $y_t^{\ast}$，最大化条件对数似然：
 
     $$
-    \mathcal{L}
+    \mathcal {L}
     = - \sum_{t=1}^{m}
-      \log P(y_t^{\ast} \mid y_{< t}^{\ast}, x)
+      \log P (y_t^{\ast} \mid y_{<t}^{\ast}, x)
     $$
 
   - 推理阶段（自回归生成）：对每个时间步 $t$​：
     - 采样
 
       $$
-      y_t \sim P(y_t \mid y_{< t}, x)
+      y_t \sim P (y_t \mid y_{< t}, x)
       $$
 
     - 或贪心
       $$
-      y_t = \arg\max_{v \in \mathcal{V}}
-      P(y_t = v \mid y_{< t}, x)
+      y_t = \arg\max_{v \in \mathcal {V}}
+      P (y_t = v \mid y_{< t}, x)
       $$
 
   - （可选）权重共享，投影矩阵与输入嵌入矩阵共享参数：
     $$
-    W_{out} = W_{\text{embed}}^\top
+    W_{out} = W_{\text {embed}}^\top
     $$
 
 - Decoder 的特点：
@@ -277,7 +277,7 @@ description: 介绍 Transformer 结构，包括 Encoder-Decoder 架构、多头�
 
 - 为什么使用残差连接？
   - 残差连接允许梯度直接传播，避免梯度消失或爆炸问题，使深层网络更容易训练
-  - 公式：输出 = 子层输入 + 子层输出，即 $y = x + \mathrm{Sublayer}(x)$
+  - 公式：输出 = 子层输入 + 子层输出，即 $y = x + \mathrm {Sublayer}(x)$
   - 在 Transformer 中，如果没有残差，深层堆叠会导致信息丢失；残差确保低层特征能直接传递到高层
   - 实验证明，残差连接使 Transformer 能稳定训练到 12+ 层，而非残差版本难以收敛
 
@@ -287,7 +287,7 @@ description: 介绍 Transformer 结构，包括 Encoder-Decoder 架构、多头�
   - 公式（其中 $\mu$ 和 $\sigma$ 为均值和方差）：
 
     $$
-    \mathrm{LayerNorm}(x) = \gamma \cdot \frac{x - \mu}{\sqrt{\sigma^2 + \epsilon}} + \beta
+    \mathrm {LayerNorm}(x) = \gamma \cdot \frac {x - \mu}{\sqrt {\sigma^2 + \epsilon}} + \beta
     $$
 
   - 相比批归一化（BatchNorm），LayerNorm 不依赖 batch size，更适合序列数据和变长输入
@@ -296,9 +296,9 @@ description: 介绍 Transformer 结构，包括 Encoder-Decoder 架构、多头�
 
   - 好处：提高训练稳定性，减少过拟合，支持更大学习率
 
-  - LN使得各条数据间在进行标准化的时候相互独立，因此LN在训练和测试过程中是一致的
+  - LN 使得各条数据间在进行标准化的时候相互独立，因此 LN 在训练和测试过程中是一致的
 
-  - LN不需要保留训练过程中的额外参数，每当来一条数据时，对这条数据的指定范围内单独计算所需统计量即可
+  - LN 不需要保留训练过程中的额外参数，每当来一条数据时，对这条数据的指定范围内单独计算所需统计量即可
 
 - Pre-LN 和 Post-LN
   - Post-LN
@@ -308,7 +308,7 @@ description: 介绍 Transformer 结构，包括 Encoder-Decoder 架构、多头�
 
   - Pre-LN
     - 只作用在子层输入上，残差连接直接传递梯度（没有经过 LN 的缩放）—— 梯度可以从顶层无衰减地传到底层，各层梯度 Norm 基本一致，不会出现「上大下小」
-    - 在输出层的gradient norm较小，且其不随层数递增或递减而变动，保持稳定
+    - 在输出层的 gradient norm 较小，且其不随层数递增或递减而变动，保持稳定
     - 训练初期优势：输出层梯度 Norm 小且稳定，即使不用 warm-up，大学习率也不会导致参数剧烈震荡，梯度更新始终平稳
 
   - 无论使用何种 Optimzer，不采用 warm-up 的 Post-LN 的效果都不如采用 warm-up 的情况，也不如 Pre-LN
@@ -316,23 +316,23 @@ description: 介绍 Transformer 结构，包括 Encoder-Decoder 架构、多头�
 
 ## 前馈网络
 
-- 每个 Encoder/Decoder 层包含一个位置-wise 前馈网络（Position-wise Feed-Forward Network），对每个 token 独立进行变换
+- 每个 Encoder/Decoder 层包含一个位置 - wise 前馈网络（Position-wise Feed-Forward Network），对每个 token 独立进行变换
 
 - 结构：两层全连接网络，中间有 ReLU 激活
-  - 输入维度：$d_{\text{model}}$
-  - 中间维度：$d_{\text{ff}}$（通常 2048 或 4096）
-  - 输出维度：$d_{\text{model}}$
+  - 输入维度：$d_{\text {model}}$
+  - 中间维度：$d_{\text {ff}}$（通常 2048 或 4096）
+  - 输出维度：$d_{\text {model}}$
 
 - 公式：
 
   $$
-  \mathrm{FFN}(x) = \max(0, x W_1 + b_1) W_2 + b_2\\
-  \mathrm{FFN}(x) = \text{ReLU}(x W_1 + b_1) W_2 + b_2\\
+  \mathrm {FFN}(x) = \max (0, x W_1 + b_1) W_2 + b_2\\
+  \mathrm {FFN}(x) = \text {ReLU}(x W_1 + b_1) W_2 + b_2\\
   $$
 
 - 作用：
   - 提供非线性变换，增强模型表达能力
-  - 位置-wise 设计允许并行计算，提高效率
+  - 位置 - wise 设计允许并行计算，提高效率
   - 与注意力互补：注意力捕捉依赖，前馈进行特征变换
 
 - 然而，ReLU 存在死亡神经元，因此被 GLU/SwiGLU 替代
@@ -340,7 +340,7 @@ description: 介绍 Transformer 结构，包括 Encoder-Decoder 架构、多头�
 - GLU 引入「门控机制」，将输入分成两部分：一部分作为「线性输出」，另一部分通过 sigmoid 生成「门控值」，门控值控制线性输出的权重（类似 LSTM 的门控）
 
   $$
-  \text{GLU}(x)=xW\otimes \sigma(xV)
+  \text {GLU}(x)=xW\otimes \sigma (xV)
   $$
 
 - 其中，$\sigma$ 是 sigmoid 激活函数，输出为 0-1，作为门控来控制线性输出的值
@@ -348,7 +348,7 @@ description: 介绍 Transformer 结构，包括 Encoder-Decoder 架构、多头�
 - 工程上，常通过一个线性层投影到 $2\times d_{ff}$ 维度，然后沿最后一维拆分为两部分
 
   $$
-  \text{GLU}(x)=A\otimes\sigma(B)
+  \text {GLU}(x)=A\otimes\sigma (B)
   $$
 
 - 其中 $[A,B]=xW$，$A,B$ 的维度均为 [B, L, d_ff]
@@ -356,13 +356,13 @@ description: 介绍 Transformer 结构，包括 Encoder-Decoder 架构、多头�
 - SwiGLU 是 GLU 的改进版，用 Swish 激活函数替代 sigmoid 激活函数，其中 $\beta$ 一般为 1
 
   $$
-  \text{Swish}(x)=x\cdot\sigma(\beta x)
+  \text {Swish}(x)=x\cdot\sigma (\beta x)
   $$
 
 - SwiGLU 既保留门控机制，又提升非线性表达能力，是 LLaMA/PaLM 等大模型的标配
 
   $$
-  \text{SwiGLU}(x) = A \otimes \text{Swish}(B) = A \otimes (B \cdot \sigma(B))
+  \text {SwiGLU}(x) = A \otimes \text {Swish}(B) = A \otimes (B \cdot \sigma (B))
   $$
 
 - LLaMA 中为了提升效率，对 SwiGLU 做了小幅调整（隐藏层维度比例改为 4/3）
@@ -371,27 +371,27 @@ description: 介绍 Transformer 结构，包括 Encoder-Decoder 架构、多头�
 
 - Transformer 参数主要来自 Q/K/V 的线性投影和前馈网络，忽略偏置和 LayerNorm（通常小）
 - 多头注意力（每层）：
-  - Q/K/V 投影：$H \times (d_{\text{model}} \times d_k + d_{\text{model}} \times d_k + d_{\text{model}} \times d_v)$
-  - 输出投影：$H d_v \times d_{\text{model}}$
-  - 总：$H \times (2 d_{\text{model}} d_k + d_{\text{model}} d_v) + H d_v d_{\text{model}}$（$d_k = d_v = d_{\text{model}}/H$ 时简化）
-- 前馈网络（每层）：$d_{\text{model}} \times d_{\text{ff}} + d_{\text{ff}} \times d_{\text{model}}$
-- 嵌入层：$V \times d_{\text{model}}$（输入） + $V \times d_{\text{model}}$（输出，若共享则减半）
-- 总参数（Encoder + Decoder，$N$ 层）：约 $2N \times (\text{注意力} + \text{前馈}) + \text{嵌入}$
-- 示例（Base Transformer：$d_{\text{model}}=512, H=8, d_{\text{ff}}=2048, V=30000, N=6$）：
-  - 注意力/层：$8 \times (512 \times 64 \times 3) + 512 \times 512 \approx 2.3M$
-  - 前馈/层：$512 \times 2048 + 2048 \times 512 \approx 2.1M$
+  - Q/K/V 投影：$H \times (d_{\text {model}} \times d_k + d_{\text {model}} \times d_k + d_{\text {model}} \times d_v)$
+  - 输出投影：$H d_v \times d_{\text {model}}$
+  - 总：$H \times (2 d_{\text {model}} d_k + d_{\text {model}} d_v) + H d_v d_{\text {model}}$（$d_k = d_v = d_{\text {model}}/H$ 时简化）
+- 前馈网络（每层）：$d_{\text {model}} \times d_{\text {ff}} + d_{\text {ff}} \times d_{\text {model}}$
+- 嵌入层：$V \times d_{\text {model}}$（输入） + $V \times d_{\text {model}}$（输出，若共享则减半）
+- 总参数（Encoder + Decoder，$N$ 层）：约 $2N \times (\text {注意力} + \text {前馈}) + \text {嵌入}$
+- 示例（Base Transformer：$d_{\text {model}}=512, H=8, d_{\text {ff}}=2048, V=30000, N=6$）：
+  - 注意力 / 层：$8 \times (512 \times 64 \times 3) + 512 \times 512 \approx 2.3M$
+  - 前馈 / 层：$512 \times 2048 + 2048 \times 512 \approx 2.1M$
   - 每层总：$\approx 4.4M$，$N=6$ 层 Encoder/Decoder：$\approx 53M$，总 $\approx 110M$（含嵌入）
 
 ## 为什么适合并行
 
 - Transformer 摒弃 RNN 的顺序依赖，所有 token 的计算可以同时进行：
   - 注意力机制：Q/K/V 矩阵乘法（如 $QK^T$）可并行计算，无需循环
-  - 前馈网络：位置-wise，每个 token 独立处理，可批量运算
+  - 前馈网络：位置 - wise，每个 token 独立处理，可批量运算
   - 层间：每层独立，无跨层依赖
   - Encoder：完全并行，适合 GPU 矩阵运算
   - Decoder 训练：使用 teacher forcing，目标序列也并行；推理时仅生成部分顺序，但 KV cache 优化加速
-  - 相比 RNN 的 $O(n)$ 顺序复杂度，Transformer $O(1)$​ 并行度，使长序列训练高效
-- 并行性强，适合 GPU/TPU，但长序列时注意力复杂度 $O(n^2)$​，变体如 Sparse Transformer 优化长序列效率
+  - 相比 RNN 的 $O (n)$ 顺序复杂度，Transformer $O (1)$​ 并行度，使长序列训练高效
+- 并行性强，适合 GPU/TPU，但长序列时注意力复杂度 $O (n^2)$​，变体如 Sparse Transformer 优化长序列效率
 - 原始 Transformer 对长序列效率低，后续如 Longformer、Performer 等改进
 - 缺乏显式递归，某些任务需额外机制（如记忆模块）
 
@@ -412,7 +412,7 @@ description: 介绍 Transformer 结构，包括 Encoder-Decoder 架构、多头�
     - 应用于前馈网络输出之后（同样在残差连接和层归一化之前）
 
   - 可选地，应用于注意力权重
-    - 即对 $softmax(QK^T/\sqrt{d_k})$ 的输出进行 Dropout，然后再与 $V$ 相乘
+    - 即对 $softmax (QK^T/\sqrt {d_k})$ 的输出进行 Dropout，然后再与 $V$ 相乘
     - 这种做法有时被称为注意力 Dropout
 
 - 将单元输出置零的概率 $p_{drop}$ 是一个超参数
@@ -456,8 +456,8 @@ description: 介绍 Transformer 结构，包括 Encoder-Decoder 架构、多头�
 - Meta 的 MTP 实现
 
   ![mtp](/img/llm\mtp.png)
-  - 训练阶段：通过预测多步token，迫使模型学到更长的token依赖关系，从而更好理解上下文，避免陷入局部决策的学习模式；同时一次预测多个token，可大大提高样本的利用效率，相当于一次预估可生成多个 \<predict, label> 样本，来更新模型，有助于模型加速收敛
-  - 推理阶段：并行预估多个token，可提升推理速度
+  - 训练阶段：通过预测多步 token，迫使模型学到更长的 token 依赖关系，从而更好理解上下文，避免陷入局部决策的学习模式；同时一次预测多个 token，可大大提高样本的利用效率，相当于一次预估可生成多个 \<predict, label> 样本，来更新模型，有助于模型加速收敛
+  - 推理阶段：并行预估多个 token，可提升推理速度
 
   - 主干网络
     - 主干网络就是训练好的 decoder-only 的多层 Transformer 的网络
@@ -479,7 +479,7 @@ description: 介绍 Transformer 结构，包括 Encoder-Decoder 架构、多头�
     - 最终通过某种采样方法（如：greedy，beam search 等）生成 token
     - 这个词表投影层是共享的，使用的是原预训练网络（original model）的投影矩阵 + Softmax，多 Head 共享
 
-  - 这种并行的方式存在一个缺点，也就是需存储 n 个预测 head 的 logits，空间复杂度为 $O(nV+d)$，因此还做了一个优化是先执行完一个模块的前向和反向，再执行下一个模块
+  - 这种并行的方式存在一个缺点，也就是需存储 n 个预测 head 的 logits，空间复杂度为 $O (nV+d)$，因此还做了一个优化是先执行完一个模块的前向和反向，再执行下一个模块
 
     ![mtp-optimize](/img/llm\mtp-optimize.png)
 
@@ -511,38 +511,38 @@ description: 介绍 Transformer 结构，包括 Encoder-Decoder 架构、多头�
   - 第一步特征融合
 
     $$
-    \mathbf{h}_i'^k = M_k[\text{RMSNorm}(\mathbf{h}_i^{k-1}); \text{RMSNorm}(Emb(t_{i+k}))],
+    \mathbf {h}_i'^k = M_k [\text {RMSNorm}(\mathbf {h}_i^{k-1}); \text {RMSNorm}(Emb (t_{i+k}))],
     $$
     - 输入：
-      - $\mathbf{h}_i^{k-1}$：第 $k-1$ 层的隐层输出（$k=1$ 时为 Main Model 的隐层表征）
-      - $Emb(t_{i+k})$：第 $i+k$ 位置的 token embedding
-    - 处理：两路分别做 RMSNorm 归一化 → 拼接 → 投影矩阵 $M_k \in \mathbb{R}^{d \times 2d}$ 线性变换
-    - 输出：融合后的特征 $\mathbf{h}_i'^k \in \mathbb{R}^d$​
+      - $\mathbf {h}_i^{k-1}$：第 $k-1$ 层的隐层输出（$k=1$ 时为 Main Model 的隐层表征）
+      - $Emb (t_{i+k})$：第 $i+k$ 位置的 token embedding
+    - 处理：两路分别做 RMSNorm 归一化 → 拼接 → 投影矩阵 $M_k \in \mathbb {R}^{d \times 2d}$ 线性变换
+    - 输出：融合后的特征 $\mathbf {h}_i'^k \in \mathbb {R}^d$​
 
   - 第二步特征提取
 
     $$
-    \mathbf{h}_{1:T-k}^k = \text{TRM}_k(\mathbf{h}_{1:T-k}'^k),
+    \mathbf {h}_{1:T-k}^k = \text {TRM}_k (\mathbf {h}_{1:T-k}'^k),
     $$
-    - 输入：融合特征序列 $\mathbf{h}_{1:T-k}'^k$（切片范围 $[1, T-k]$，保证 $i+k \le T$）
-    - 处理：第 $k$ 个独立 Transformer 层 $\text{TRM}_k$ 提取上下文特征
-    - 输出：第 $k$ 预测深度的隐层表征 $\mathbf{h}_{1:T-k}^k$​
+    - 输入：融合特征序列 $\mathbf {h}_{1:T-k}'^k$（切片范围 $[1, T-k]$，保证 $i+k \le T$）
+    - 处理：第 $k$ 个独立 Transformer 层 $\text {TRM}_k$ 提取上下文特征
+    - 输出：第 $k$ 预测深度的隐层表征 $\mathbf {h}_{1:T-k}^k$​
     - $1:T-k$：第 $k$ 预测深度的输入 token 位置 $i$ 需满足 $i+k \le T$，因此有效输入范围为 $i \in [1, T-k]$
 
   - 第三步词表概率输出
 
     $$
-    P_{i+k+1}^k = \text{OutHead}(\mathbf{h}_i^k).
+    P_{i+k+1}^k = \text {OutHead}(\mathbf {h}_i^k).
     $$
-    - 输入：隐层表征 $\mathbf{h}_i^k$
-    - 处理：共享的映射矩阵 $\text{OutHead} \in \mathbb{R}^{V \times d}$ 变换 + Softmax
+    - 输入：隐层表征 $\mathbf {h}_i^k$
+    - 处理：共享的映射矩阵 $\text {OutHead} \in \mathbb {R}^{V \times d}$ 变换 + Softmax
     - 输出：第 $i$ 个输入 token 对应预测的第 $i+k+1$ 位置 token 的概率分布 $P_{i+k+1}^k$​
     - 下标 $i+k+1$：输入 $t_i$ 预测的是序列中第 $i+k+1$ 位的 token，对应 input 与 label 序列错位 $k+1$​ 位（Main Model 错位 1 位，MTP Module 1 错位 2 位，以此类推）
 
   - 损失计算
 
     $$
-    \mathcal{L}_{\text{MTP}}^k = \text{CrossEntropy}(P_{2+k:T+1}^k, t_{2+k:T+1}) = -\frac{1}{T} \sum_{i=2+k}^{T} \log P_i^k[t_i]
+    \mathcal {L}_{\text {MTP}}^k = \text {CrossEntropy}(P_{2+k:T+1}^k, t_{2+k:T+1}) = -\frac {1}{T} \sum_{i=2+k}^{T} \log P_i^k [t_i]
     $$
     - 下标解释：
       - $2+k:T+1$：label 范围，起始下标 $2+k$（MTP Module $k$ 第一个预测 token 为 $t_{2+k}$），结束下标 $T+1$（eos token 位置）
