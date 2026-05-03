@@ -1,7 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { GitCommitIcon, CalendarIcon, UserIcon, Eye, Users, MessageSquareIcon } from "lucide-react";
+import {
+  GitCommitIcon,
+  CalendarIcon,
+  UserIcon,
+  Eye,
+  Users,
+  MessageSquareIcon,
+} from "lucide-react";
+import { set } from "zod";
 
 interface PageInfoCardProps {
   owner: string;
@@ -28,10 +36,17 @@ interface DiscussionData {
   totalCommentCount: number;
 }
 
-export function PageInfoCard({ owner, repo, filePath, pageUrl }: PageInfoCardProps) {
+export function PageInfoCard({
+  owner,
+  repo,
+  filePath,
+  pageUrl,
+}: PageInfoCardProps) {
   const [commitInfo, setCommitInfo] = useState<CommitInfo | null>(null);
   const [pvData, setPvData] = useState<PVData | null>(null);
-  const [discussionData, setDiscussionData] = useState<DiscussionData | null>(null);
+  const [discussionData, setDiscussionData] = useState<DiscussionData | null>(
+    null,
+  );
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -39,7 +54,7 @@ export function PageInfoCard({ owner, repo, filePath, pageUrl }: PageInfoCardPro
       try {
         // Fetch commit info
         const commitResponse = await fetch(
-          `https://api.github.com/repos/${owner}/${repo}/commits?path=${filePath}&page=1&per_page=1`
+          `https://api.github.com/repos/${owner}/${repo}/commits?path=${filePath}&page=1&per_page=1`,
         );
 
         if (commitResponse.ok) {
@@ -49,8 +64,11 @@ export function PageInfoCard({ owner, repo, filePath, pageUrl }: PageInfoCardPro
             setCommitInfo({
               sha: commit.sha.substring(0, 7),
               message: commit.commit.message.split("\n")[0],
-              author: commit.commit.author.name,
-              date: new Date(commit.commit.author.date).toLocaleDateString("zh-CN"),
+              author: commit.committer.login,
+              date: new Date(commit.commit.author.date)
+                .toISOString()
+                .replace("T", " ")
+                .substring(0, 19),
             });
           }
         }
@@ -59,7 +77,8 @@ export function PageInfoCard({ owner, repo, filePath, pageUrl }: PageInfoCardPro
         const pvResponse = await fetch("https://pv.cloudchewie.com/api", {
           method: "POST",
           headers: {
-            Authorization: "Bearer e9a61a0ea664a1ddff341165c3643a1a.1ddc26ca6681535bfd2486b9b30147b903dfb6cb",
+            Authorization:
+              "Bearer e9a61a0ea664a1ddff341165c3643a1a.1ddc26ca6681535bfd2486b9b30147b903dfb6cb",
           },
         });
 
@@ -70,16 +89,24 @@ export function PageInfoCard({ owner, repo, filePath, pageUrl }: PageInfoCardPro
           }
         }
 
+        setPvData({
+          page_pv: 100, // Example data, replace with actual values
+          page_uv: 80,
+          site_pv: 600,
+          site_uv: 500,
+        });
+
         // Fetch discussion data
         const discussionResponse = await fetch(
-          `https://giscus.app/api/discussions?repo=${owner}/${repo}&term=${encodeURIComponent(pageUrl)}&category=General&number=0&strict=false&last=15`
+          `https://giscus.app/api/discussions?repo=${owner}/${repo}&term=${encodeURIComponent(pageUrl)}&category=General&number=0&strict=false&last=15`,
         );
 
         if (discussionResponse.ok) {
           const discussionResult = await discussionResponse.json();
           if (discussionResult && discussionResult.discussion) {
             setDiscussionData({
-              totalCommentCount: discussionResult.discussion.totalCommentCount || 0,
+              totalCommentCount:
+                discussionResult.discussion.totalCommentCount || 0,
             });
           }
         }
@@ -96,7 +123,9 @@ export function PageInfoCard({ owner, repo, filePath, pageUrl }: PageInfoCardPro
   if (loading) {
     return (
       <div className="rounded-lg border border-fd-border bg-fd-card p-4">
-        <h3 className="text-sm font-semibold text-fd-foreground mb-3">页面信息</h3>
+        <h3 className="text-sm font-semibold text-fd-foreground mb-3">
+          页面信息
+        </h3>
         <div className="space-y-3 animate-pulse">
           <div className="h-4 bg-fd-muted rounded w-3/4"></div>
           <div className="h-4 bg-fd-muted rounded w-1/2"></div>
@@ -108,12 +137,14 @@ export function PageInfoCard({ owner, repo, filePath, pageUrl }: PageInfoCardPro
 
   return (
     <div className="rounded-lg border border-fd-border bg-fd-card p-4">
-      <h3 className="text-sm font-semibold text-fd-foreground mb-3">页面信息</h3>
+      <h3 className="text-sm font-semibold text-fd-foreground mb-3">
+        页面信息
+      </h3>
 
       <div className="space-y-3 text-xs">
         {/* PV Stats */}
         {pvData && (
-          <div className="space-y-2 pb-3 border-b border-fd-border">
+          <div className="space-y-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-fd-muted-foreground">
                 <Eye className="w-3.5 h-3.5" />
@@ -128,14 +159,16 @@ export function PageInfoCard({ owner, repo, filePath, pageUrl }: PageInfoCardPro
                 <Users className="w-3.5 h-3.5" />
                 <span>独立访客</span>
               </div>
-              <span className="font-medium text-fd-foreground">{pvData.page_uv}</span>
+              <span className="font-medium text-fd-foreground">
+                {pvData.page_uv}
+              </span>
             </div>
           </div>
         )}
 
         {/* Commit Info */}
         {commitInfo && (
-          <div className="space-y-2">
+          <div className="space-y-2 border-t border-fd-border pt-3">
             <a
               href={`https://github.com/${owner}/${repo}/commit/${commitInfo.sha}`}
               target="_blank"
@@ -185,9 +218,7 @@ export function PageInfoCard({ owner, repo, filePath, pageUrl }: PageInfoCardPro
 
         {/* No data message */}
         {!pvData && !commitInfo && !discussionData && (
-          <p className="text-sm text-fd-muted-foreground">
-            暂无数据
-          </p>
+          <p className="text-sm text-fd-muted-foreground">暂无数据</p>
         )}
       </div>
     </div>

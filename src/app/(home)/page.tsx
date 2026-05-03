@@ -122,14 +122,14 @@ export default function HomePage() {
                 href="/large-language-models"
                 className="inline-flex items-center justify-center rounded-full bg-fd-primary px-6 sm:px-8 py-3 sm:py-4 text-sm sm:text-base font-semibold text-fd-primary-foreground shadow-lg shadow-fd-primary/25 transition hover:brightness-90 hover:shadow-xl hover:shadow-fd-primary/30 hover:scale-105"
               >
-                立即开始学习
+                开始学习
                 <ArrowRightIcon className="ml-2 w-4 h-4 sm:w-5 sm:h-5" />
               </Link>
               <Link
                 href="/blog"
                 className="inline-flex items-center justify-center rounded-full border-2 border-fd-border bg-fd-card px-6 sm:px-8 py-3 sm:py-4 text-sm sm:text-base font-semibold text-fd-foreground transition hover:border-fd-primary hover:text-fd-primary hover:scale-105"
               >
-                查看最新博客
+                最新博客
               </Link>
             </div>
 

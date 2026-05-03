@@ -1,5 +1,5 @@
 @import "tailwindcss";
-@import "fumadocs-ui/css/default.css";
+@import "fumadocs-ui/css/neutral.css";
 @import "fumadocs-ui/css/preset.css";
 
 svg {
@@ -9,6 +9,11 @@ svg {
 
 figure {
   box-shadow: none !important;
+}
+
+.prose :where(p):not(:where([class~="not-prose"], [class~="not-prose"] *)) {
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
 }
 
 /* 嵌套列表缩进和样式 */
@@ -45,12 +50,15 @@ article b {
 }
 
 article img {
-  max-width: 100%;
+  max-width: 64%;
   height: auto;
   margin-left: auto;
   margin-right: auto;
   display: block;
   border-radius: 0.5rem;
+  max-height: 450px;
+  width: auto;
+  object-fit: contain;
 }
 
 article figure:has(img) {

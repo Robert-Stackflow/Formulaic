@@ -58,7 +58,7 @@ export function DocPageRenderer({ source, slug }: DocPageRendererProps) {
             <PageInfoCard
               owner={githubConfig.owner}
               repo={githubConfig.repo}
-              filePath={`${githubConfig.contentDir}${page.url}.mdx`}
+              filePath={`${githubConfig.contentDir}${page.url}.md`}
               pageUrl={page.url}
             />
           </div>
@@ -86,17 +86,17 @@ export function DocPageRenderer({ source, slug }: DocPageRendererProps) {
             className="flex flex-row flex-wrap gap-2 items-center"
             id="doc-page-actions"
           >
-            <LLMCopyButton markdownUrl={`${page.url}.mdx`} />
+            <LLMCopyButton markdownUrl={`${page.url}.md`} />
             <ExportPDFButton />
             <ViewOptions
-              markdownUrl={`${page.url}.mdx`}
-              githubUrl={`https://github.com/${githubConfig.owner}/${githubConfig.repo}/blob/${githubConfig.branch}/${githubConfig.contentDir}${page.url}.mdx`}
+              markdownUrl={`${page.url}.md`}
+              githubUrl={`https://github.com/${githubConfig.owner}/${githubConfig.repo}/blob/${githubConfig.branch}/${githubConfig.contentDir}${page.url}.md`}
             />
           </div>
         </div>
       </div>
       <div className="flex flex-row gap-2 items-center border-b mb-3"></div>
-      
+
       {showAISummary && <AISummaryCard />}
 
       <div className="prose flex-1 text-fd-foreground/90" id="doc-content">
@@ -110,22 +110,24 @@ export function DocPageRenderer({ source, slug }: DocPageRendererProps) {
 
       {/* Document Feedback */}
       <DocFeedback
-        githubEditUrl={`https://github.com/${githubConfig.owner}/${githubConfig.repo}/edit/${githubConfig.branch}/${githubConfig.contentDir}${page.url}.mdx`}
+        githubEditUrl={`https://github.com/${githubConfig.owner}/${githubConfig.repo}/edit/${githubConfig.branch}/${githubConfig.contentDir}${page.url}.md`}
         githubIssueUrl={`https://github.com/${githubConfig.owner}/${githubConfig.repo}/issues/new?title=${encodeURIComponent(`[文档反馈] ${title}`)}&body=${encodeURIComponent(`页面链接: ${page.url}\n\n问题描述:\n`)}`}
       />
 
       {/* Giscus Comments */}
-      <GiscusComments
-        repo={giscusConfig.repo}
-        repoId={giscusConfig.repoId}
-        category={giscusConfig.category}
-        categoryId={giscusConfig.categoryId}
-        mapping={giscusConfig.mapping}
-        reactionsEnabled={giscusConfig.reactionsEnabled}
-        inputPosition={giscusConfig.inputPosition}
-        lang={giscusConfig.lang}
-        loading={giscusConfig.loading}
-      />
+      {!index && (
+        <GiscusComments
+          repo={giscusConfig.repo}
+          repoId={giscusConfig.repoId}
+          category={giscusConfig.category}
+          categoryId={giscusConfig.categoryId}
+          mapping={giscusConfig.mapping}
+          reactionsEnabled={giscusConfig.reactionsEnabled}
+          inputPosition={giscusConfig.inputPosition}
+          lang={giscusConfig.lang}
+          loading={giscusConfig.loading}
+        />
+      )}
     </DocsPage>
   );
 }
