@@ -1,14 +1,16 @@
 import {
   defineConfig,
   defineDocs,
-  frontmatterSchema,
-  metaSchema,
 } from "fumadocs-mdx/config";
+import {
+  pageSchema,
+  metaSchema,
+} from 'fumadocs-core/source/schema';
 import { z } from "zod";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 
-const docSchema = frontmatterSchema.extend({
+const docSchema = pageSchema.extend({
   category: z.string().optional(), // 自定义分类
   icon: z.string().optional(), // Lucide 图标名称
   tags: z.array(z.string()).optional(),
@@ -66,7 +68,7 @@ export const interviewPrep = defineDocs({
 export const blog = defineDocs({
   dir: "content/blog",
   docs: {
-    schema: frontmatterSchema.extend({
+    schema: pageSchema.extend({
       description: z.string(),
       published_at: z.string(),
       author: z.string().optional(),

@@ -127,7 +127,7 @@ article figure[data-rehype-pretty-code-figure]:has(figcaption) pre {
   border-top-right-radius: 0;
 }
 
-@theme {
+.light {
   --color-fd-background: hsl(0, 0%, 100%);
   --color-fd-foreground: hsl(220, 15%, 12%);
   --color-fd-muted: hsl(220, 14%, 96%);

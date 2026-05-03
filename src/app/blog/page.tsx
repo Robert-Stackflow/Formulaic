@@ -73,20 +73,20 @@ export default function BlogPage() {
                             })}
                           </span>
                         </div>
-
-                        {post.data.tags && post.data.tags.length > 0 && (
-                          <>
-                            <span>•</span>
-                            <div className="flex flex-wrap gap-2">
-                              {post.data.tags.map((tag) => (
-                                <BlogTag key={tag} tag={tag} />
-                              ))}
-                            </div>
-                          </>
-                        )}
                       </div>
                     </div>
                   </Link>
+
+                  {post.data.tags && post.data.tags.length > 0 && (
+                    <div className="flex items-center gap-2 mt-4 text-sm text-fd-muted-foreground">
+                      <span>标签:</span>
+                      <div className="flex flex-wrap gap-2">
+                        {post.data.tags.map((tag) => (
+                          <BlogTag key={tag} tag={tag} />
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </article>
               ))}
             </div>

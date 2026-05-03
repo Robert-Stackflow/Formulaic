@@ -13,14 +13,14 @@ import { DocsBody } from "fumadocs-ui/page";
 import {
   TOCProvider,
   TOCScrollArea,
-  TOCItems,
-} from "fumadocs-ui/components/layout/toc";
+} from "fumadocs-ui/components/toc";
 import { notFound } from "next/navigation";
 import { PageLayout } from "@/components/page-layout";
 import { getMDXComponents } from "@/mdx-components";
 import { baseOptions } from "@/app/layout.config";
 import { HomeLayout } from "fumadocs-ui/layouts/home";
 import { PageViews } from "@/components/page-views";
+import { TOCItems } from "@/components/toc-items";
 
 interface BlogPageProps {
   params: Promise<{ slug: string }>;
