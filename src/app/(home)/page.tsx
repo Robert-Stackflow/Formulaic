@@ -14,9 +14,11 @@ import { ScrollDownIndicator } from "@/components/scroll-down-indicator";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Formulaic - 技术学习与知识分享平台",
+  title: {
+    absolute: "Formulaic - 技术学习与知识分享平台",
+  },
   description:
-    "Formulaic 提供全面的技术文档，涵盖算法、后端开发、计算机系统、DevOps、大语言模型、编程语言和面试准备等领域。",
+    "Formulaic 提供全面的技术文档，涵盖算法、后端开发、计算机系统、DevOps、大语言模型、编程语言和面试等领域。",
   keywords: [
     "技术文档",
     "数据结构与算法",
@@ -25,7 +27,7 @@ export const metadata: Metadata = {
     "DevOps",
     "大语言模型",
     "编程语言",
-    "面试准备",
+    "面试",
     "学习笔记",
   ],
 };
@@ -35,7 +37,7 @@ const docSections = [
     title: "编程语言",
     description: "多种编程语言特性、最佳实践与生态系统",
     icon: <MessageSquareCodeIcon className="w-6 h-6" />,
-    href: "/programming-languages",
+    href: "/docs/programming-languages",
     iconColor: "text-fd-primary",
     bgColor: "bg-fd-accent",
   },
@@ -43,7 +45,7 @@ const docSections = [
     title: "数据结构与算法",
     description: "数据结构、算法设计与分析，提升编程思维",
     icon: <LayersIcon className="w-6 h-6" />,
-    href: "/algorithms",
+    href: "/docs/algorithms",
     iconColor: "text-fd-primary",
     bgColor: "bg-fd-accent",
   },
@@ -51,7 +53,7 @@ const docSections = [
     title: "计算机系统基础",
     description: "操作系统、计算机网络、组成原理等基础知识",
     icon: <NetworkIcon className="w-6 h-6" />,
-    href: "/computer-system-basics",
+    href: "/docs/computer-system-basics",
     iconColor: "text-fd-primary",
     bgColor: "bg-fd-accent",
   },
@@ -59,7 +61,7 @@ const docSections = [
     title: "大语言模型",
     description: "LLM应用开发、提示工程、AI工具使用",
     icon: <BrainIcon className="w-6 h-6" />,
-    href: "/large-language-models",
+    href: "/docs/large-language-models",
     iconColor: "text-fd-primary",
     bgColor: "bg-fd-accent",
   },
@@ -67,7 +69,7 @@ const docSections = [
     title: "后端开发",
     description: "服务端架构、API设计、数据库优化等核心技术",
     icon: <ServerIcon className="w-6 h-6" />,
-    href: "/backend-development",
+    href: "/docs/backend-development",
     iconColor: "text-fd-primary",
     bgColor: "bg-fd-accent",
   },
@@ -75,15 +77,15 @@ const docSections = [
     title: "DevOps",
     description: "CI/CD、容器化、云原生、自动化运维",
     icon: <CodeIcon className="w-6 h-6" />,
-    href: "/devops",
+    href: "/docs/devops",
     iconColor: "text-fd-primary",
     bgColor: "bg-fd-accent",
   },
   {
-    title: "面试准备",
+    title: "面试",
     description: "技术面试题目、解题思路、面试经验分享",
     icon: <GraduationCapIcon className="w-6 h-6" />,
-    href: "/interview-preparation",
+    href: "/docs/interview",
     iconColor: "text-fd-primary",
     bgColor: "bg-fd-accent",
   },
@@ -105,7 +107,7 @@ export default function HomePage() {
           <div>
             <div className="inline-flex items-center gap-2 rounded-full border border-fd-border bg-fd-card px-3 py-1.5 text-xs text-fd-muted-foreground shadow-sm">
               <span className="h-1.5 w-1.5 rounded-full bg-fd-primary animate-pulse" />
-              系统化学习路径
+              系统性学习平台
             </div>
             <h1 className="mt-4 sm:mt-6 text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold tracking-tight text-fd-foreground">
               Formulaic
@@ -119,7 +121,7 @@ export default function HomePage() {
             </p>
             <div className="mt-6 sm:mt-8 lg:mt-10 flex flex-col gap-3 sm:gap-4 sm:flex-row sm:items-center">
               <Link
-                href="/large-language-models"
+                href="/docs/large-language-models"
                 className="inline-flex items-center justify-center rounded-full bg-fd-primary px-6 sm:px-8 py-3 sm:py-4 text-sm sm:text-base font-semibold text-fd-primary-foreground shadow-lg shadow-fd-primary/25 transition hover:brightness-90 hover:shadow-xl hover:shadow-fd-primary/30 hover:scale-105"
               >
                 开始学习

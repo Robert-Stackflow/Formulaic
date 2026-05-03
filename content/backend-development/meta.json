@@ -1,9 +1,0 @@
-{
-  "title": "后端开发",
-  "description": "后端开发相关的文档和资源",
-  "icon": "Building",
-  "root": true,
-  "pages": [
-    "index"
-  ]
-}

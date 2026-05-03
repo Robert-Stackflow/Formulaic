@@ -49,7 +49,10 @@ export const baseOptions: BaseLayoutProps = {
         <NavbarMenu>
           <NavbarMenuTrigger>文档</NavbarMenuTrigger>
           <NavbarMenuContent className="grid grid-cols-2 gap-3 p-6 min-w-[500px]">
-            <NavbarMenuLink href="/programming-languages" className="group">
+            <NavbarMenuLink
+              href="/docs/programming-languages"
+              className="group"
+            >
               <div className="flex items-start gap-3 p-3 rounded-lg hover:bg-fd-accent/50 transition-colors">
                 <div className="flex-shrink-0 p-2 rounded-md bg-fd-accent">
                   <Code2 className="w-5 h-5 text-fd-primary" />
@@ -64,7 +67,7 @@ export const baseOptions: BaseLayoutProps = {
                 </div>
               </div>
             </NavbarMenuLink>
-            <NavbarMenuLink href="/algorithms" className="group">
+            <NavbarMenuLink href="/docs/algorithms" className="group">
               <div className="flex items-start gap-3 p-3 rounded-lg hover:bg-fd-accent/50 transition-colors">
                 <div className="flex-shrink-0 p-2 rounded-md bg-fd-accent">
                   <Layers className="w-5 h-5 text-fd-primary" />
@@ -79,7 +82,10 @@ export const baseOptions: BaseLayoutProps = {
                 </div>
               </div>
             </NavbarMenuLink>
-            <NavbarMenuLink href="/computer-system-basics" className="group">
+            <NavbarMenuLink
+              href="/docs/computer-system-basics"
+              className="group"
+            >
               <div className="flex items-start gap-3 p-3 rounded-lg hover:bg-fd-accent/50 transition-colors">
                 <div className="flex-shrink-0 p-2 rounded-md bg-fd-accent">
                   <Cpu className="w-5 h-5 text-fd-primary" />
@@ -94,7 +100,10 @@ export const baseOptions: BaseLayoutProps = {
                 </div>
               </div>
             </NavbarMenuLink>
-            <NavbarMenuLink href="/large-language-models" className="group">
+            <NavbarMenuLink
+              href="/docs/large-language-models"
+              className="group"
+            >
               <div className="flex items-start gap-3 p-3 rounded-lg hover:bg-fd-accent/50 transition-colors">
                 <div className="flex-shrink-0 p-2 rounded-md bg-fd-accent">
                   <Brain className="w-5 h-5 text-fd-primary" />
@@ -109,7 +118,7 @@ export const baseOptions: BaseLayoutProps = {
                 </div>
               </div>
             </NavbarMenuLink>
-            <NavbarMenuLink href="/backend-development" className="group">
+            <NavbarMenuLink href="/docs/backend-development" className="group">
               <div className="flex items-start gap-3 p-3 rounded-lg hover:bg-fd-accent/50 transition-colors">
                 <div className="flex-shrink-0 p-2 rounded-md bg-fd-accent">
                   <Server className="w-5 h-5 text-fd-primary" />
@@ -124,7 +133,7 @@ export const baseOptions: BaseLayoutProps = {
                 </div>
               </div>
             </NavbarMenuLink>
-            <NavbarMenuLink href="/devops" className="group">
+            <NavbarMenuLink href="/docs/devops" className="group">
               <div className="flex items-start gap-3 p-3 rounded-lg hover:bg-fd-accent/50 transition-colors">
                 <div className="flex-shrink-0 p-2 rounded-md bg-fd-accent">
                   <Rocket className="w-5 h-5 text-fd-primary" />
@@ -139,14 +148,14 @@ export const baseOptions: BaseLayoutProps = {
                 </div>
               </div>
             </NavbarMenuLink>
-            <NavbarMenuLink href="/interview-preparation" className="group">
+            <NavbarMenuLink href="/docs/interview" className="group">
               <div className="flex items-start gap-3 p-3 rounded-lg hover:bg-fd-accent/50 transition-colors">
                 <div className="flex-shrink-0 p-2 rounded-md bg-fd-accent">
                   <GraduationCap className="w-5 h-5 text-fd-primary" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="font-medium text-fd-foreground mb-1">
-                    面试准备
+                    面试
                   </div>
                   <div className="text-xs text-fd-muted-foreground line-clamp-2">
                     技术面试题目与解题思路

@@ -20,7 +20,7 @@ export const metadata: Metadata = {
     "算法",
     "后端开发",
     "计算机系统",
-    "面试准备",
+    "面试",
     "编程知识",
   ],
   authors: [{ name: "Formulaic" }],

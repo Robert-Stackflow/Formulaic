@@ -1,0 +1,15 @@
+---
+title: 后训练框架
+description: 介绍后训练阶段常用的框架和工具，包括 PEFT、TRL、VERL 等，帮助开发者了解这些框架的基本原理及其在强化学习微调中的代码实现方法
+---
+
+- 参考资料
+  - 库：[PEFT](https://huggingface.co/docs/peft/index)
+  - 库：[TRL - Transformer Reinforcement Learning](https://huggingface.co/docs/trl/index)
+
+- 参考资料
+  - 库：[verl-project/verl: verl: Volcano Engine Reinforcement Learning for LLMs](https://github.com/verl-project/verl)
+  - 帖子
+    - 文档：[Welcome to verl’s documentation! — verl documentation](https://verl.readthedocs.io/en/latest/index.html)
+  - 论文
+    - [HybridFlow: A Flexible and Efficient RLHF Framework](https://arxiv.org/abs/2409.19256v2)

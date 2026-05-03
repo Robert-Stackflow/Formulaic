@@ -1,11 +1,5 @@
-import {
-  defineConfig,
-  defineDocs,
-} from "fumadocs-mdx/config";
-import {
-  pageSchema,
-  metaSchema,
-} from 'fumadocs-core/source/schema';
+import { defineConfig, defineDocs } from "fumadocs-mdx/config";
+import { pageSchema, metaSchema } from "fumadocs-core/source/schema";
 import { z } from "zod";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
@@ -23,44 +17,8 @@ const docSchema = pageSchema.extend({
   authors: z.array(z.string()).optional(),
 });
 
-export const computerSystemBasics = defineDocs({
-  dir: "content/computer-system-basics",
-  docs: { schema: docSchema },
-  meta: { schema: metaSchema },
-});
-
-export const programmingLanguages = defineDocs({
-  dir: "content/programming-languages",
-  docs: { schema: docSchema },
-  meta: { schema: metaSchema },
-});
-
-export const algorithms = defineDocs({
-  dir: "content/algorithms",
-  docs: { schema: docSchema },
-  meta: { schema: metaSchema },
-});
-
-export const backendDevelopment = defineDocs({
-  dir: "content/backend-development",
-  docs: { schema: docSchema },
-  meta: { schema: metaSchema },
-});
-
-export const devops = defineDocs({
-  dir: "content/devops",
-  docs: { schema: docSchema },
-  meta: { schema: metaSchema },
-});
-
-export const llm = defineDocs({
-  dir: "content/large-language-models",
-  docs: { schema: docSchema },
-  meta: { schema: metaSchema },
-});
-
-export const interviewPrep = defineDocs({
-  dir: "content/interview-preparation",
+export const docs = defineDocs({
+  dir: "content/docs",
   docs: { schema: docSchema },
   meta: { schema: metaSchema },
 });
@@ -83,7 +41,6 @@ export const blog = defineDocs({
 export default defineConfig({
   mdxOptions: {
     remarkPlugins: [remarkMath],
-    // Place it at first, it should be executed before the syntax highlighter
     rehypePlugins: (v) => [rehypeKatex, ...v],
     remarkCodeTabOptions: {
       parseMdx: true,

@@ -1,0 +1,18 @@
+{
+  "title": "面试",
+  "description": "如何使用该文档系统地准备技术面试，涵盖八股文、手撕代码和 HR 面试",
+  "root": true,
+  "pages": [
+    "index",
+    "--- 八股 ---",
+    "1.1-basic",
+    "1.2-llm",
+    "1.3-training",
+    "1.4-rl",
+    "1.5-inference",
+    "1.6-frameworks",
+    "--- 其他 ---",
+    "2-code",
+    "3-hr"
+  ]
+}

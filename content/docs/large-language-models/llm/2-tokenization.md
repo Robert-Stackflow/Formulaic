@@ -1,0 +1,350 @@
+---
+title: Tokenization（分词）
+description: 介绍 Transformer 输入表示的分词方法（Tokenization）及子词编码算法（BPE、WordPiece、Unigram）
+---
+
+- 参考资料
+  - [Let's build the GPT Tokenizer](https://www.youtube.com/watch?v=zduSFxRajkE)
+  - [Number Tokenization Blog - a Hugging Face Space by huggingface](https://huggingface.co/spaces/huggingface/number-tokenization-blog)
+
+## 什么是 Tokenization
+
+- Transformer 模型接收的输入是向量序列，而原始的自然语言文本是离散的词/子词/字符
+- 因此，需要完成两个核心步骤，来将文本转换为模型可处理的输入表示：
+  - 分词 / 编码（Tokenization）
+  - 向量化表示（Token Embedding） + 位置信息（Positional Encoding）
+
+- Transformer 模型不直接处理单词的字符串，而是先将文本转换为token 序列：
+
+  | 方法                  | 原理                                                 | 优缺点                                                                      |
+  | --------------------- | ---------------------------------------------------- | --------------------------------------------------------------------------- |
+  | Word-level            | 每个单词一个 token                                   | 简单，但词表太大（长尾问题），难处理未登录词（OOV）                         |
+  | Character-level       | 每个字符一个 token                                   | 词表小，能处理任意词，但序列太长，训练慢，且表示能力有限                    |
+  | Subword-level（推荐） | Byte Pair Encoding (BPE) / WordPiece / SentencePiece | 平衡词表大小和 OOV，常用词保持原状，生僻词拆分为子词以共享 token 并压缩空间 |
+
+- 例如，对于句子：`transformers are amazing`
+  - Word-level: \[`transformers`, `are`, `amazing`]
+  - Character-level: \[`t`, `r`, `a`, `n`, `s`, `f`, `o`, ...]
+  - Subword-level (BPE): \[`transform`, `##ers`, `are`, `amaz`, `##ing`]
+
+## BPE
+
+- BPE（Byte Pair Encoding）是一种基于数据压缩的分词方法，其核心思想是不断合并出现频率最高的子词对，直到词表达到预定大小为止
+
+- 具体流程如下：
+  - 字符拆分：将每个单词拆分为字符序列，例如 `"hello"` → `["h","e","l","l","o"]`
+  - 统计频率：统计相邻字符或字符组合的出现频率，选择频率最高的序列进行合并
+  - 迭代合并：重复第二步，直到达到预定词表大小或无法再合并
+
+  - 每次合并后，词表可能有三种变化：
+    - `+1`：加入新子词，原两个子词均保留（非连续出现）
+
+    - `+0`：加入新子词，原子词中一个保留，一个被消解（连续出现）
+
+    - `-1`：加入新子词，原两个子词同时被消解（连续出现）
+
+- 示例，对于初始单词列表：
+
+  ```
+  low;
+  lower;
+  newest;
+  widest;
+  newest;
+  widest;
+  widest;
+  widest;
+  nice;
+  ```
+
+- 拆分为字符序列：
+
+  ```
+  [
+    "l o w </w>",
+    "l o w e r </w>",
+    "n e w e s t </w>",
+    "w i d e s t </w>",
+    "n e w e s t </w>",
+    "w i d e s t </w>",
+    "w i d e s t </w>",
+    "w i d e s t </w>",
+    "n i c e </w>",
+  ];
+  ```
+
+- 统计相邻字符序列频率，并合并最高频的 `"es"`：
+
+  ```
+  ['l o w </w>',
+   'l o w e r </w>',
+   'n e w es t </w>',
+   'w i d es t </w>',
+   ... ]
+  ```
+
+- 重复迭代，直到达到词表大小或无法再合并
+
+- 在使用已有的子词词表对新单词进行编码时，从最长 token 开始匹配：
+
+  ```
+  输入单词序列：
+  ["the</w>", "highest</w>", "mountain</w>"]
+
+  已排序子词词表：
+  ["errrr</w>", "tain</w>", "moun", "est</w>", "high", "the</w>", "a</w>"]
+
+  编码结果：
+  "the</w>" -> ["the</w>"]
+  "highest</w>" -> ["high", "est</w>"]
+  "mountain</w>" -> ["moun", "tain</w>"]
+  ```
+
+- Python 实现示例：
+
+  ```python
+  from collections import Counter
+  import regex as re
+
+  corpus = '''low
+  lower
+  newest
+  widest
+  newest
+  widest
+  widest
+  widest
+  nice'''
+  VOVAB_LENGTH = 10
+
+  def init(words):
+      return [' '.join(list(word)) + ' </w>' for word in words]
+
+  def get_status(corpus):
+      merge_chars = []
+      for item in corpus:
+          char_list = item.split(' ')
+          for i in range(len(char_list)-1):
+              merge_chars.append(''.join(char_list[i:i+2]))
+      chars_count = Counter(merge_chars)
+      return chars_count.most_common(1)[0][0]
+
+  def merge_chars(corpus, chars_most_common):
+      for idx, item in enumerate(corpus):
+          corpus[idx] = re.sub('\s*'.join(chars_most_common), chars_most_common, item)
+      return corpus
+
+  words = corpus.split('\n')
+  corpus = init(words)
+
+  while len(set(' '.join(corpus).split(' '))) > VOVAB_LENGTH:
+      print("当前词表状态:", corpus)
+      most_common = get_status(corpus)
+      print("合并的最高频子词:", most_common)
+      corpus = merge_chars(corpus, most_common)
+  ```
+
+## WordPiece
+
+- WordPiece 是一种子词（subword）级分词算法，其目标为：
+  - 在保持词表规模适中的前提下，提高语言模型对序列的概率
+
+  - 通过合并 “概率关联强” 的子词，使模型在训练时更容易预测序列
+
+- WordPiece 的核心思想是最大化序列的似然概率，假设序列 $S$ 被切分为 $[t_1, t_2, \dots, t_n]$，则序列概率为：
+
+  $$
+  \log P(S) = \sum_{i=1}^{n} \log P(t_i)
+  $$
+
+- 在构建词表时，WordPiece 每次选择合并两个子词 $A$ 和 $B$，使合并后的子词 $AB$ 最大化语言模型的序列概率，即最大化互信息：
+  $$
+  \text{score}(A, B) = \frac{P(AB)}{P(A)P(B)}
+  $$
+- 直观理解：如果 `e` 和 `d` 在语料中经常连续出现（如 `ed` 表示过去时后缀），合并它们可以增加整个语料的序列概率，从而更符合语言模型的统计规律。
+
+- 与 BPE 算法相比，不同之处在于：
+
+  | 特性     | BPE                                                   | WordPiece                                         |
+  | -------- | ----------------------------------------------------- | ------------------------------------------------- |
+  | 合并策略 | 合并频率最高的相邻子词                                | 合并最大化序列概率 / 互信息的相邻子词             |
+  | 目标     | 压缩词表，减少 token 数                               | 提高语言模型序列概率，更符合语料统计              |
+  | 示例     | 词表已有 `appl` + `e`，则 `apple` 优先拆成 `appl + e` | 根据概率，可能拆成 `app + le`，更符合训练语料分布 |
+
+- 可以理解为，BPE 更机械、纯粹按频率，而 WordPiece 更 “聪明”，考虑语言模型预测的概率，也更适合训练语言模型，因为它直接优化了模型的目标函数（序列似然）
+
+## Unigram
+
+- 基本思想
+  - 与 BPE 或 WordPiece 的“自底向上合并子词”不同，Unigram使用的是自顶向下的剪枝式（pruning）子词学习
+  - 它从一个规模较大的初始候选词表 $V_0$ 出发，再逐步移除贡献最小的子词，直到达到目标词表大小
+  - 初始词表通常由预分词器切分结果以及语料中的高频子串构成，每个子词都带有一个重要性评分，用于衡量它对覆盖语料的重要程度
+  - 每轮迭代删除评分最低的约 10%\~20% ，同时确保语料中的单词仍能由剩余子词组合而成
+
+- Unigram 的优化目标是最大化训练语料的似然概率
+  - 设训练语料为词序列 $(x_1, x_2, \dots, x_N)$，每个词 $x_i$ 的所有可能 tokenization 方案集合为 $S(x_i)$，每种方案概率 $p(x)$
+
+  - 其损失为：
+
+    $$
+    \text{Loss} = - \sum_{i=1}^{N} \log \left( \sum_{x \in S(x_i)} p(x) \right)
+    $$
+
+  - 含义如下：
+    - 对每个词 $x_i$，考虑其所有可行 tokenization 方式的概率总和
+
+    - Loss 越小，说明当前子词集合更能稳定、有效地覆盖语料
+
+    - 删除某个子词会减少部分词的 tokenization 选项，使得括号内求和变小，从而增大 Loss
+
+    - 因此每次优先删除对 Loss 增加最小的子词，即 “最小影响剪枝”
+
+- 例如，对于语料：`apple, app, ple, banana, ban, ana`）：
+  - 初始词表：`apple, app, ple, banana, ban, ana, a, p, l, e, b, n`（极大）
+
+  - 概率估计：`apple` 出现频繁，`p` 单字符几乎不单独使用 ⇒ `p` 重要性低
+
+  - 删除低影响子词：首先移除 `p`、`l` 等低频或替代性强的碎片
+
+  - 反复迭代：继续删除对子词覆盖影响最小的项
+
+  - 最终词表：保留高频、易组合、能覆盖大部分词的子词集合
+
+## SentencePiece
+
+- 基本思想
+  - SentencePiece不是具体的分词算法，而是一个通用 Tokenizer 框架，内部可使用多种算法，包括 BPE、Unigram、word-level、character-level 或混合策略
+  - 它的主要设计目标是提供一个无需预分词、无需依赖空格的统一 Tokenizer 管线
+
+- 传统 tokenizer（如 WordPiece）通常依赖空格与标点进行切词，存在以下限制：
+  - 不适用于没有显式分隔符的语言（中文、日文、泰文）
+
+  - 空格本身无法作为 token，被直接丢失
+
+  - 遇到未登录词（OOV）时表现不稳定
+
+  - 而 SentencePiece 将输入文本视为纯字节序列（raw text），空格也作为普通字符处理。为了保留词边界信息，引入特殊符号`▁`（U+2581），表示 “词前空格”。例如：
+
+    $$
+    Hello world
+    $$
+
+  - 在内部会被表示为：
+
+    $$
+    ▁Hello ▁world
+    $$
+
+  - 这种设计让 tokenizer 能直接在原始语料上训练，无需任何人工断词或预清洗步骤：
+    - 输入：未分词、未清洗的原始文本
+
+    - 输出：训练好的 tokenizer 模型（`model.model`）与词表（`model.vocab`）
+
+- SentencePiece 提供完整的 tokenizer 工具链，包括：
+  - SPM Trainer（训练器）
+
+  - 编码 / 解码接口
+
+  - 词表与概率管理
+
+  - Subword Regularization（子词采样与模糊分词）
+
+  - 数据增强式随机分词策略
+
+- 与仅提供算法的 BPE / WordPiece 不同，SentencePiece 是一个可直接部署和复用的工具框架，训练后通常生成两个文件：
+
+  | 文件          | 说明                                     |
+  | ------------- | ---------------------------------------- |
+  | `model.model` | 二进制模型，包含算法类型、参数与概率分布 |
+  | `model.vocab` | 词表，每行包含一个 token 及其 log-prob   |
+
+- 模型内部存储结构包括：
+  - 前缀树（trie）加速匹配
+
+  - 分词算法实现（BPE / Unigram）
+
+  - 子词概率（Unigram 模式）
+
+  - token 排序与 fallback 规则
+
+- 模型加载一次即可复用，适合推理与批量处理场景
+
+## Token Embedding
+
+- 对原始文本进行分词后，得到 token 序列：
+
+- 经过 Token Embedding，每个 token 被映射为一个向量，维度为 `d_model`（如 512 或 768）
+
+- 本质上就是 Word2Vec / GloVe 中的embedding lookup table
+
+  $$
+  E \in \mathbb{R}^{V \times d_{model}}
+  $$
+  - $V$ = 词表大小
+
+  - $d_{model}$ = 词向量维度
+
+## 代码实现
+
+- 在实际应用中，通常使用 Hugging Face 的 `transformers` 库中的 `AutoTokenizer` 来快速调用不同模型的 Tokenizer
+
+- 它默认封装了多种分词算法的底层实现，并提供了统一的 API 来处理 Padding、Truncation 以及特殊 Token
+
+  ```python
+  from transformers import AutoTokenizer
+
+  # 1. 加载预训练模型的 Tokenizer
+  # 例如：GPT-2 使用 BPE，BERT 使用 WordPiece，Llama 使用 SentencePiece (BPE)
+  tokenizer = AutoTokenizer.from_pretrained("bert-base-chinese")
+
+  text = "什么是 Tokenization 算法？"
+
+  # 2. 纯分词测试 (tokenize)
+  tokens = tokenizer.tokenize(text)
+  # 输出样本: ['什', '么', '是', 'token', '##ization', '算', '法', '？']
+
+  # 3. 文本转换为 Token ID (encode)
+  # 默认会添加特殊 Token，如 [CLS] (101) 和 [SEP] (102)
+  input_ids = tokenizer.encode(text)
+  # 输出样本: [101, 2205, 720, 3221, 10245, 12693, 5013, 3717, 8038, 102]
+
+  # 4. 一键处理模型输入 (常用方式)
+  # 返回包含 input_ids 和 attention_mask 的字典
+  inputs = tokenizer(text, padding=True, truncation=True, return_tensors="pt")
+
+  # 5. ID 转换回原始文本 (decode)
+  decoded_text = tokenizer.decode(input_ids)
+  # 输出: "[CLS] 什么是 Tokenization 算法？ [SEP]"
+  ```
+
+- 常见的特殊 Token：
+
+  | Token                 | 说明                                         | 示例（对应模型） | 示例值      |
+  | :-------------------- | :------------------------------------------- | :--------------- | :---------- |
+  | `[CLS]`               | 序列开始标记                                 | BERT             | `101`       |
+  | `[SEP]`               | 序列分隔符 / 结束标记                        | BERT             | `102`       |
+  | `[PAD]`               | 填充标记，当序列长度小于上下文最大长度时使用 | BERT             | `0`         |
+  | `[UNK]`               | 未登录词标记                                 | BERT             | `100`       |
+  | `[MASK]`              | 掩码标记，用于掩盖部分输入词以进行预测       | BERT             | `103`       |
+  | `<end_of_text>`       | 文本结束标记                                 | GPT 系列         | `50256`     |
+  | `<\| fim_prefix \| >` | 文本开始标记                                 | GPT 系列         | `50257`     |
+  | `<\| fim_middle \| >` | 文本中间标记                                 | GPT 系列         | `502568`    |
+  | `<\| fim_suffix \| >` | 文本结束标记                                 | GPT 系列         | `50258`     |
+  | `<\| fim_pad \| >`    | 填充标记                                     | GPT 系列         | `1`         |
+  | `##`                  | 子词前缀，表示该子词非词首                   | BERT             | `##ization` |
+
+- 如何处理空格：
+  - 不同 tokenizer 对空格的处理方式不同
+
+  - BERT 的 WordPiece tokenizer 会将空格视为分隔符，不作为 token
+
+  - SentencePiece 则使用特殊符号 `▁` 来表示词前空格
+
+  - 在使用 tokenizer 时，需注意输入文本的格式，确保空格被正确处理
+
+- 如何处理未登录词（OOV）：
+  - Subword-level tokenizer（如 BPE、WordPiece、Unigram）通过将未登录词拆分为已知子词来缓解 OOV 问题
+
+  - 例如，`tokenization` 可能被拆分为 `token` + `##ization`
+
+- 更多关于 `tokenizers` 库的详细方法对比（如 `encode_plus`, `batch_encode_plus`）与参数说明，可参考：[3. tokenizers 库相关参数.md](../l.%20其他相关框架与知识/3.%20tokenizers%20库相关参数.md)

@@ -99,7 +99,7 @@ export function DocPageRenderer({ source, slug }: DocPageRendererProps) {
 
       {showAISummary && <AISummaryCard />}
 
-      <div className="prose flex-1 text-fd-foreground/90" id="doc-content">
+      <div className="prose flex-1 text-fd-foreground/90 mb-4" id="doc-content">
         <MDXContent
           components={getMDXComponents({
             a: createRelativeLink(source, page),

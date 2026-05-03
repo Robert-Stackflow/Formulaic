@@ -1,0 +1,590 @@
+---
+title: Pretrining 训练流程
+description: 介绍预训练阶段的训练流程与技术细节
+---
+
+- 参考资料
+  - 帖子
+    - HuggingFace 训练手册：[The Smol Training Playbook - a Hugging Face Space by HuggingFaceTB](https://huggingface.co/spaces/HuggingFaceTB/smol-training-playbook)
+    - [Gemini Flash Pretraining](https://vladfeinberg.com/2025/04/24/gemini-flash-pretraining.html)
+    - The LLM Pretraining Playbook: Data, Models, Training, and Evaluation
+    - [RUCAIBox/awesome-llm-pretraining: Awesome LLM pre-training resources, including data, frameworks, and methods.](https://github.com/RUCAIBox/awesome-llm-pretraining/tree/main)
+  - 论文
+    - 持续预训练：[Simple and Scalable Strategies to Continually Pre-train Large Language Models](https://arxiv.org/abs/2403.08763)
+    - 蒸馏/修剪模型：[LLM Pruning and Distillation in Practice: The Minitron Approach](https://arxiv.org/abs/2408.11796)
+
+## 为什么要自己训练模型
+
+- Why：是否需要训练自定义模型？
+  - 避免盲目训练：开源生态（如 Qwen、Gemma、DeepSeek 等）已发布大量开源、生产级模型，覆盖多语言、代码生成等主流场景，多数情况下无需重复投入高成本训练
+
+    ![do we need to pretraining](/img/llm/do-we-need-to-pretraining.png)
+
+  - 需要自定义训练的三类典型场景：
+    - 研究场景：为验证明确的研究假设而训练模型。例如：“新优化器能否扩展到 100 亿+ 参数模型”“仅使用合成教科书数据能否训练出高质量小模型”
+    - 生产场景：现有模型无法满足实际需求，包括
+      - 领域特异性：如 DNA 建模、法律 / 金融等强专业领域
+      - 部署约束：如无人机、边缘设备或本地系统的硬件适配需求
+      - 安全与治理：受监管行业需要完全可控的训练数据来源与模型行为
+    - 战略开源场景：识别并填补开源生态中的关键空白。例如：缺乏高性能的设备端长上下文模型、低资源语言的多语言模型；同时具备可行优势（更优数据、更成熟训练方案或足够算力）
+
+  - Hugging Face 的实践案例：从 Bloom（开源 GPT-3 替代方案）、StarCoder（开源 Codex 替代方案）到 SmolLM 系列（填补小模型性能空白），其核心动机均是“填补开源生态缺口”而非重复已有成果
+
+- What：将目标转化为可执行的具体决策
+  - 明确需要训练什么样的模型：模型类型（Dense、MoE、Hybrid）、模型规模、关键架构设计、数据组合方式
+
+  - 规划阶段：
+    - 基于需求确定模型类型。例如：设备端快速推理 → 小型高效模型；多语言能力 → 更大分词器词表；超长上下文 → 混合或改进架构
+    - 基于部署环境约束确定模型规模
+    - 基于项目时间线评估可接受的架构风险
+    - 基于目标能力反推数据规模与数据类型需求
+    - 将“为什么要训练”的约束，系统性地转化为“训练什么”的技术规格
+
+- 验证阶段：通过消融实验对潜在改动进行系统评估。优先测试对性能或训练效率影响显著的因素，避免低价值实验浪费宝贵算力资源
+
+- How：速度与数据
+  - 迭代速度：成功的大语言模型团队往往依赖极高的迭代频率。大模型训练本身是一门“在训练中学习”的工程学科，训练次数越多，团队对系统、数据与失败模式的理解就越深
+  - 数据整理：对最终效果的影响往往超过架构选择。顶级 LLM 团队在高质量数据筛选、清洗与配比上的投入，通常远高于其他环节
+  - 团队规模：核心预训练任务通常仅需 2-3 名核心成员（前提是具备充足计算资源），只有在扩展至多模态、多语言或复杂下游任务时，团队规模才需要逐步扩大
+
+## 消融实验
+
+- LLM 训练决策（如架构、优化器、数据来源）无法仅依靠理论推导完成，必须通过实验进行验证
+
+- 例如，使用看似“最高质量的数据”未必能训练出更强的模型。比如汇聚海量文献的 arXiv，直觉上用其训练效果应更优，但实践并非如此，小模型用其训练甚至会降低性能，这是由于 arXiv 论文虽信息量大，但内容高度专业、文风单一，和与语言模型适配的多样化通用文本分布差异显著
+
+- 因此，需要通过大量实验来验证各种猜测与想法——机器学习并非一门纯粹依赖推导的数学学科，而更接近一门以经验为核心的实验科学
+
+- 消融实验应当满足的两个关键特点
+  - 速度：实验应尽可能快速完成，以支持高频迭代。能够运行的消融实验越多，就越能检验更多假设
+  - 可靠性：实验指标需要具备足够的区分能力。如果早期指标无法有效区分不同设置，那么这些消融实验本身就难以提供有价值的信息；若指标噪声过大，还可能导致“追逐噪声”
+
+- 首先，选择一个合适的基线（baseline）
+  - 符合约束条件：与目标部署环境和具体用例相匹配
+  - 经大规模验证：在相似或更大规模下，已经完成数万亿 token 级别的训练
+  - 文档完善：关键超参数配置清晰，并且已在开源模型中被反复验证有效
+  - 框架支持：理想情况下，应同时得到计划使用的训练框架与推理框架的良好支持
+
+  - 现有主流基线模型示例
+
+    | Architecture Type | Model Family     | Sizes                    |
+    | ----------------- | ---------------- | ------------------------ |
+    | Dense             | Llama 3.1        | 8B, 70B                  |
+    | Dense             | Llama 3.2        | 1B, 3B                   |
+    | Dense             | Qwen3            | 0.6B, 1.7B, 4B, 14B, 32B |
+    | Dense             | Gemma3           | 12B, 27B                 |
+    | Dense             | SmolLM2, SmolLM3 | 135M, 360M, 1.7B, 3B     |
+    | MoE               | Qwen3 MoE        | 30B-A3B, 235B-A122B      |
+    | MoE               | GPT-OSS          | 21B-A3B, 117B-A5B        |
+    | MoE               | Kimi Moonlight   | 16B-A3B                  |
+    | MoE               | Kimi-K2          | 1T-A32B                  |
+    | MoE               | DeepSeek V3      | 671B-A37B                |
+    | Hybrid            | Zamba2           | 1.2B, 2.7B, 7B           |
+    | Hybrid            | Falcon-H1        | 0.5B, 1.5B, 3B, 7B, 34B  |
+    | MoE + Hybrid      | Qwen3-Next       | 80B-A3B                  |
+    | MoE + Hybrid      | MiniMax-01       | 456B-A46B                |
+
+- 其次，在基线之上进行修改，但应以降低风险为首要原则
+
+- 然后，选择合适的训练框架
+  - 框架必须支持目标架构，或至少能够较为容易地进行扩展
+  - 框架需要足够稳定，能够支持长时间训练，而不在中途频繁出现难以复现的崩溃问题
+  - 框架应具备高吞吐能力，以支持快速迭代并充分利用计算预算
+
+  - 主流训练框架对比
+
+    | 框架        | 特性          | 经实践验证的模型  | 优化重点                 | 代码量（核心 / 总） | 扩展性与调试难度   |
+    | ----------- | ------------- | ----------------- | ------------------------ | ------------------- | ------------------ |
+    | Megatron-LM | 功能全面      | Kimi-K2、Nemotron | 3D 并行技术先驱          | 93k / 269k          | 对新手较难         |
+    | DeepSpeed   | 功能全面      | BLOOM、GLM        | ZeRO 优化、3D 并行       | 94k / 194k          | 对新手较难         |
+    | TorchTitan  | 持续扩展中    | PyTorch 团队测试  | Dense 优化，MoE 仍在完善 | 7k / 9k             | 中等（需并行知识） |
+    | Nanotron    | 精简，HF 友好 | StarCoder、SmolLM | 超大规模训练优化         | 15k / 66k           | 中等（需并行知识） |
+
+- 消融实验设计
+  - 消融实验的目标是在尽可能小的规模下，获得可以可信外推到最终生产训练的结论
+  - 常见的两种实验策略：
+    - 保持目标模型规模不变，但显著减少训练 token 数量。例如：SmolLM3 使用 3B 模型训练 1000 亿 token，而非最终的 11 万亿 token
+    - 当目标模型规模过大时，使用更小的代理模型进行实验。例如：Kimi K2（1T 参数、32B 激活参数）使用 3B MoE 模型完成部分消融研究
+  - 一个关键问题在于，这些小规模实验结果是否具备可迁移性
+    - 根据经验，如果某种改动在小规模训练中已经明确损害性能，那么它几乎可以被直接排除在大规模方案之外
+
+    - 但如果某项改动在小规模实验中表现良好，仍需在足够多的 token 上继续训练，以确认其效果能够稳定推广
+
+    - 训练越充分，消融模型与最终模型的行为越接近，结论也越可靠
+
+  - 在消融实验中，每次只应改变一个变量，并保持其余条件完全不变
+    - 如果同时改变多个因素，即便性能提升，也无法判断真正起作用的原因
+
+    - 应先单独验证各项改动，再将有效改动组合起来进行复评
+
+  - 估算不同配置下的参数规模示例
+
+    ```python
+    from transformers import LlamaConfig, LlamaForCausalLM
+
+    def count_parameters(
+        tie_embeddings=True,
+        num_key_value_heads=4,
+        num_attention_heads=32,
+        hidden_size=2048,
+        num_hidden_layers=16,
+        intermediate_size=8192,
+        vocab_size=128256,
+        sequence_length=4096,
+    ):
+        config = LlamaConfig(
+            hidden_size=hidden_size,
+            num_hidden_layers=num_hidden_layers,
+            num_attention_heads=num_attention_heads,
+            num_key_value_heads=num_key_value_heads,
+            intermediate_size=intermediate_size,
+            vocab_size=vocab_size,
+            max_position_embeddings=sequence_length,
+            tie_word_embeddings=tie_embeddings,
+        )
+        model = LlamaForCausalLM(config)
+        return f"{sum(p.numel() for p in model.parameters())/1e9:.2f}B"
+    ```
+
+- 消融实验评估
+  - 是否只看训练损失即可
+    - 损失值确实是最直观、也最重要的指标之一；理想情况下，损失应平稳下降，且不存在剧烈震荡
+    - 对于许多架构选择而言，损失与下游性能之间具有较强相关性，甚至可能已经足够，但损失并非总是可靠指标
+    - 例如，在数据消融中，使用维基百科训练通常比使用网页数据得到更低的损失值（因为下一个 token 更容易预测），但这并不意味着模型能力更强
+    - 同样，更换分词器后，由于 token 划分方式不同，损失值也无法直接比较
+    - 此外，一些改动可能只影响特定能力（如推理或数学），而这些差异会被平均损失掩盖
+    - 最后，即使预训练损失已经收敛，模型在下游任务上的表现仍可能持续提升
+  - 单调性：随着训练时间增加，基准评测分数应持续提升
+  - 低噪声：在相同设置、不同随机种子下，模型表现不应出现过大波动
+  - 超随机水平表现：许多能力仅在训练后期才显现，长期停留在随机水平的任务并不适合用于消融实验，例如选择题形式的 MMLU
+  - 排名一致性：如果一种方法在早期优于另一种方法，那么随着训练推进，这种相对排序应保持稳定
+
+- 消融实验的成本
+  - 在 SmolLM3 项目中，消融实验与调试消耗的 GPU 时间占总量的 50% 以上（主训练约 27.6 万 GPU 小时，消融与调试约 16.1 万 GPU 小时）
+  - 这说明在制定计算预算时，必须显式纳入消融实验成本，包括主训练、消融研究以及应对意外失败的缓冲空间。如果目标是追求 SOTA 性能、引入全新架构，或尚无成熟可靠方案，消融实验往往会成为主要成本来源，而非“附带的小实验”
+  - 当 DeepSeek-V3 发布时，外界普遍关注其报道中约 560 万美元的训练成本，并将其视为全部研发投入，但这一数字实际上只覆盖了最终训练阶段。真正规模更大、却往往不为人知的成本来自研究本身：大量消融实验、失败的训练运行以及持续调试。考虑到该模型的规模与技术新颖性，其实际研究成本无疑要高得多
+
+## 如何设计模型架构
+
+### 注意力机制选择
+
+- 常见方案包括 MHA、MQA、GQA、MLA
+
+- 不同方案对比
+
+  | 注意力机制            | KV 缓存参数（每 token）                       | 核心优势                   | 适用场景                    |
+  | --------------------- | --------------------------------------------- | -------------------------- | --------------------------- |
+  | 多头注意力（MHA）     | 2× 注意力头数 × 层数 × 头维度                 | 表达能力强，机制成熟       | 对 KV 缓存不敏感的场景      |
+  | 多查询注意力（MQA）   | 2×1× 层数 × 头维度                            | KV 缓存最小，推理吞吐最高  | 极高吞吐量推理场景          |
+  | 分组查询注意力（GQA） | 2× 分组数 × 层数 × 头维度（分组数通常 2/4/8） | 性能与 KV 缓存的良好折中   | 主流 LLM（如 SmolLM3 采用） |
+  | 多潜在注意力（MLA）   | 4.5× 层数 × 头维度                            | 高压缩率，长上下文性能更优 | 长上下文训练与推理          |
+
+- 机制对比示意
+
+  ![mha-mqa-gqa-mla](/img/llm/mha-mqa-gqa-mla.png)
+
+### 是否启用文档内掩码
+
+- 用于解决序列打包时不同文档 token 之间的互相关注问题，仅允许 token 关注同一文档内的前序 token
+- 对长上下文训练的稳定性与效率至关重要（SmolLM3 全程启用）
+
+### 是否启用嵌入共享
+
+- 共享输入嵌入与输出嵌入矩阵，可显著降低小模型中嵌入层的参数占比
+- 例如，在 1.2B 模型中，嵌入参数占比可从约 35% 降至 17%
+- SmolLM3 实验表明，其性能与未共享嵌入的模型相当，因此采用该设计
+
+### 位置编码与长上下文方案选择
+
+- 位置编码演进路径：
+  - 绝对位置嵌入（APE，难以扩展长序列） → 相对位置编码（如 ALiBi、RoPE） → 混合方案
+  - NoPE 通过交替使用 RoPE 与无位置编码层，在短上下文性能与长上下文泛化之间取得平衡（SmolLM3 采用）
+
+- 常见长上下文扩展技术：RoPE 频率调整（ABF、YaRN），注意力范围限制（滑动窗口、分块注意力、注意力汇）
+
+### 提高训练稳定性
+
+- Z-loss：通过在损失中添加正则项，抑制 logits 过大，对小模型性能影响很小，但会带来一定训练开销，需要权衡
+- 权重衰减策略：尽管权重衰减通常应用于所有参数，OLMo 发现，将嵌入层排除在权重衰减之外可显著提升训练稳定性，原因在于权重衰减会持续降低嵌入范数，从而通过层归一化放大早期层梯度；OLMo2 与 SmolLM3 均验证并采用了该做法
+- QK-norm：在注意力计算前对查询和键向量进行层归一化，可防止注意力对数过大，并在部分大型模型中提升稳定性；但分析表明，该方法会削弱关键信息 token 的相对注意力权重、提升无关上下文的权重，这是因为归一化移除了点积中的幅度信息；鉴于 SmolLM3 属于 3B 级小模型，训练不稳定性风险相对较低，因此未采用 QK-norm
+
+### 其他组件
+
+- 参数初始化方面
+  - 现代模型通常采用截断正态分布进行初始化（均值 = 0，标准差 = 0.02 或 0.006）
+  - 或使用类似 muP 的尺度一致初始化方案，例如 Cohere 的 Command A
+  - 初始化策略本身可能对训练稳定性和可扩展性产生影响，因此也是一个值得纳入消融实验的研究维度
+
+- 激活函数方面
+  - SwiGLU 已成为现代大语言模型的事实标准
+  - 少数例外包括使用 GeGLU 的 Gemma2，以及采用 relu² 的英伟达模型
+  - 相较于早期常用的 ReLU 或 GELU，SwiGLU 在性能与训练稳定性上表现更优，因此逐渐取代了这些较旧的选择
+
+### MoE 模型
+
+- 设计一个 MoE 层会引出几个核心问题：
+  - 专家的规模与稀疏性：应选择“许多小专家”还是“较少的大专家”？每个 token 激活多少个专家、总共需要多少个专家（即稀疏度或 top-k）？是否需要始终激活的通用（共享）专家？
+  - 利用率与专业化：如何在选择路由专家的同时，既保证专家被充分利用（避免闲置容量），又能鼓励其形成明确分工？本质上，这是一个负载均衡问题，对训练与推理效率都有决定性影响
+
+- Sparsity / activation ratio
+  - 稀疏度越高 → FLOPs 效率越好 → 在极高稀疏度下收益递减 → 最优点取决于计算预算
+
+  - activation ratio = 激活专家数 / 专家总数
+
+  - sparsity = 专家总数 / 激活专家数 = 1 / activation ratio
+
+  - 从计算角度看，成本仅由“激活参数”决定。如果固定激活专家的数量与规模，仅增加专家总数，则训练与推理的 FLOPs 预算基本保持不变，但模型容量会提升；只要训练时间足够长，模型通常会变得更强
+
+  - 在保持活跃专家数量与规模不变的前提下，增加专家总数（即降低激活率、提高稀疏度）通常能降低损失，但当稀疏度非常高时，收益会明显递减
+
+  - 两个典型结果：
+    - Kimi K2（K. Team 等，2025）：更高稀疏度带来更好性能，但提升幅度随稀疏度增加而逐渐变小
+    - 蚂蚁集团（Tian 等，2025）：结论与 K2 一致，且发现稀疏度更高的 MoE 从计算量增加中获益更大
+
+  - 不同模型稀疏度对比
+
+    | Model                       | Total experts               | Activated per token (incl. shared) | Sparsity |
+    | --------------------------- | --------------------------- | ---------------------------------- | -------- |
+    | Mixtral-8×7B                | 8                           | 2                                  | 4.0      |
+    | Grok-1                      | 8                           | 2                                  | 4.0      |
+    | Grok-2                      | 8                           | 2                                  | 4.0      |
+    | OLMoE-1B-7B-0924            | 64                          | 8                                  | 8.0      |
+    | gpt-oss 20b                 | 32                          | 4                                  | 8.0      |
+    | Step-3                      | 48 routed + 1 shared = 49   | 3 routed + 1 shared = 4            | 12.25    |
+    | GLM-4.5-Air                 | 128 routed + 1 shared = 129 | 8 routed + 1 shared = 9            | 14.3     |
+    | Qwen3-30B-A3B               | 128                         | 8                                  | 16.0     |
+    | Qwen3-235B-A22B             | 128                         | 8                                  | 16.0     |
+    | GLM-4.5                     | 160 routed + 1 shared = 161 | 8 routed + 1 shared = 9            | 17.8     |
+    | DeepSeek-V2                 | 160 routed + 2 shared = 162 | 6 routed + 2 shared = 8            | 20.25    |
+    | DeepSeek-V3                 | 256 routed + 1 shared = 257 | 8 routed + 1 shared = 9            | 28.6     |
+    | gpt-oss 120b                | 128                         | 4                                  | 32.0     |
+    | Kimi K2                     | 384 routed + 1 shared = 385 | 8 routed + 1 shared = 9            | 42.8     |
+    | Qwen3-Next-80B-A3B-Instruct | 512 routed + 1 shared = 513 | 10 routed + 1 shared = 11          | 46.6     |
+
+- Granularity（粒度）
+  - 定义公式，其中 $\alpha = 2$ 或 $4$
+
+    $$
+    G = \frac{\alpha \cdot d_{model}}{d_{expert}}
+    $$
+
+  - 更高的粒度意味着在参数总量固定的情况下，使用更多、但维度更小的专家
+
+  - 在 Dense 模型中，一个常见经验法则是 $d_{intermediate} = 4 \cdot d_{model}$
+  - 可将粒度粗略理解为：需要多少个专家才能“覆盖”一个密集 MLP 的宽度，即 $4 d_{model} = d_{intermediate} \approx G \cdot d_{expert}$
+  - 需要注意的是，这只是直觉性的启发，现代 MoE 通常分配的总容量远大于单个密集 MLP，因此并不存在严格的一对一对应关系
+
+  - 不同模型粒度对比
+
+    | Model              | $(d_{model})$ | $(d_{expert})$ | $(G = 2 d_{model} / d_{expert})$ | Year |
+    | ------------------ | ------------- | -------------- | -------------------------------- | ---- |
+    | Mixtral-8×7B       | 4,096         | 14,336         | 0.57                             | 2023 |
+    | gpt-oss-120b       | 2,880         | 2,880          | 2.0                              | 2025 |
+    | gpt-oss-20b        | 2,880         | 2,880          | 2.0                              | 2025 |
+    | Grok 2             | 8,192         | 16,384         | 1.0                              | 2024 |
+    | StepFun Step-3     | 7,168         | 5,120          | 2.8                              | 2025 |
+    | OLMoE-1B-7B        | 2,048         | 1,024          | 4.0                              | 2025 |
+    | Qwen3-30B-A3B      | 2,048         | 768            | 5.3                              | 2025 |
+    | Qwen3-235B-A22B    | 4,096         | 1,536          | 5.3                              | 2025 |
+    | GLM-4.5-Air        | 4,096         | 1,408          | 5.8                              | 2025 |
+    | DeepSeek V2        | 5,120         | 1,536          | 6.6                              | 2024 |
+    | GLM-4.5            | 5,120         | 1,536          | 6.6                              | 2025 |
+    | Kimi K2            | 7,168         | 2,048          | 7.0                              | 2025 |
+    | DeepSeek V3        | 7,168         | 2,048          | 7.0                              | 2024 |
+    | Qwen3-Next-80B-A3B | 2,048         | 512            | 8.0                              | 2025 |
+
+  - 粒度并非引导式学习（EL）的主导因素。提高粒度通常有助于性能，尤其当 $G > 2$ 时，但其影响并不决定损失走向。实践中存在一个最佳区间：超过该范围后，收益趋于平缓。因此，粒度是一个重要但不应被单独极端优化的调节旋钮
+
+- 共享专家（Shared Experts）
+  - 共享专家会被每个 token 始终激活，用于吸收数据中普遍、重复出现的模式，从而释放其他专家的容量以进行更强的专业化
+  - 实践中通常只需要 1 个（最多 2 个）共享专家
+  - 随着粒度提高（例如从 Qwen3 风格过渡到更接近 Qwen3-Next 的设计），共享专家往往更有价值
+  - 经验法则：只使用一个共享专家。这一选择与 DeepSeek V3、Kimi K2、Qwen3-Next 等模型一致，通常能在不引入额外复杂性的前提下获得良好效率
+
+- 负载均衡（Load Balancing）
+  - 负载均衡是 MoE 中最关键的组成部分之一，配置不当会破坏几乎所有其他设计收益
+  - 直观示例：假设 4 个 GPU、4 个专家均匀分布。如果路由失效，所有 token 都被送往同一个专家，则只有 1/4 的 GPU 被利用，训练与推理效率严重下降，同时模型的有效容量也被浪费
+
+  - 常见负载均衡损失形式：
+    - $\mathcal{L}_{\text{Bal}} = \alpha \sum_{i=1}^{N_r} f_i P_i$
+
+  - 一个关键实现细节在于路由统计的计算范围：$f_i$ 与 $P_i$ 是在本地 batch 还是全局（跨设备）范围内统计？  
+    Qwen 团队的分析（Qiu 等，2025）表明，当本地 batch 中 token 多样性不足时，本地统计会变得噪声大、偏置强，从而损害专家专业化程度和整体性能。若条件允许，应优先使用全局或跨设备聚合的统计信息。值得注意的是，论文发表时，包括 Megatron 在内的多个框架默认采用本地统计。
+
+  - 无损失负载均衡：DeepSeek V3 引入了一种简单的偏置机制，在路由 softmax 的亲和度分数中动态调整专家得分  
+    当某个专家过载时，其分数减去一个常数 $\gamma$；当专家利用不足时，加上 $\gamma$，从而在不引入显式损失项的情况下改善负载分布
+
+- 设计一个MoE层会引出几个核心问题：
+  - 专家的规模与稀疏性：你应该使用许多小型专家还是较少的大型专家？每个标记应该激活多少个专家，总共需要多少个专家（即稀疏性或“前k个”）？是否应该有一些通用专家，因此始终处于激活状态？
+  - 利用率与专业化：如何选择被路由的专家并确保他们得到充分利用（避免闲置容量），同时还能鼓励他们实现专业化？在实际操作中，这是一个负载均衡问题，对训练和推理效率有着重大影响。
+
+- Sparsity / activation ratio
+  - 稀疏度越高→FLOPs效率越好→在极高稀疏度下收益递减→最佳点取决于你的计算预算
+
+  - activation ratio = 激活的专家/专家总数
+
+  - sparsity = 专家总数/激活的专家数量 = 1/ activation ratio
+
+  - 从计算角度来看，成本仅由激活参数决定。如果固定激活专家的数量（和规模）并增加专家总数，推理/训练的浮点运算预算会大致保持不变，但模型容量会增加，因此只要训练时间足够长，模型通常会更好。
+
+  - 在保持活跃专家的数量和规模不变的情况下，增加专家的总数（即降低激活率/提高稀疏度）会改善损失，但当稀疏度变得非常高时，这种改善效果会递减。
+
+    Two examples: 两个例子：
+    - Kimi K2 plot ([K. Team et al., 2025](https://huggingfacetb-smol-training-playbook.hf.space/#bib-kimik2)): shows both effects: higher sparsity improves performance, but gains taper off as sparsity grows.Kimi K2图表（[K. Team等人，2025年](https://huggingfacetb-smol-training-playbook.hf.space/#bib-kimik2)）：显示了两种效应：更高的稀疏性会提高性能，但随着稀疏性的增加，收益会逐渐减弱。
+    - Ant Group plot ([Tian et al., 2025](https://huggingfacetb-smol-training-playbook.hf.space/#bib-antgroup)): Same conclusion as K2, with additional result that higher sparsity MoE benefit more from increasing compute.蚂蚁集团方案（[田等人，2025](https://huggingfacetb-smol-training-playbook.hf.space/#bib-antgroup)）：与K2结论相同，另有结果表明，稀疏度更高的混合专家模型（MoE）从计算量增加中获益更多。
+
+  - 不同模型对比
+
+    | Model                       | Total experts               | Activated per token (incl. shared) | Sparsity |
+    | --------------------------- | --------------------------- | ---------------------------------- | -------- |
+    | Mixtral-8×7B                | 8                           | 2                                  | 4.0      |
+    | Grok-1                      | 8                           | 2                                  | 4.0      |
+    | Grok-2                      | 8                           | 2                                  | 4.0      |
+    | OLMoE-1B-7B-0924            | 64                          | 8                                  | 8.0      |
+    | gpt-oss 20b                 | 32                          | 4                                  | 8        |
+    | Step-3                      | 48 routed + 1 shared = 49   | 3 routed + 1 shared = 4            | 12.25    |
+    | GLM-4.5-Air                 | 128 routed + 1 shared = 129 | 8 routed + 1 shared = 9            | 14.3     |
+    | Qwen3-30B-A3B               | 128                         | 8                                  | 16.0     |
+    | Qwen3-235B-A22B             | 128                         | 8                                  | 16.0     |
+    | GLM-4.5                     | 160 routed + 1 shared = 161 | 8 routed + 1 shared = 9            | 17.8     |
+    | DeepSeek-V2                 | 160 routed + 2 shared = 162 | 6 routed + 2 shared = 8            | 20.25    |
+    | DeepSeek-V3                 | 256 routed + 1 shared = 257 | 8 routed + 1 shared = 9            | 28.6     |
+    | gpt-oss 120b                | 128                         | 4                                  | 32       |
+    | Kimi K2                     | 384 routed + 1 shared = 385 | 8 routed + 1 shared = 9            | 42.8     |
+    | Qwen3-Next-80B-A3B-Instruct | 512 routed + 1 shared = 513 | 10 total active + 1 shared = 11    | 46.6     |
+
+- Granularity 粒度
+  - 公式，其中 $\alpha=2$ 或 $\alpha=4$
+
+    $$
+    G=\frac{\alpha*d_{model}}{d_{expert}}
+    $$
+
+  - 更高的粒度值对应着更多具有更小维度的专家（在参数数量固定的情况下）
+
+  - 在 Dense 模型中，一个经验法则是把 MLP 的维度设置为 $d_{intermediate}=4*d_{model}$
+
+  - 可以大致将粒度理解为需要多少个专家才能与密集 MLP 的宽度，即 $4d_{model}=d_{intermediate}=G\cdot d_{expert}$​
+
+  - 这种解释只是一种粗略的启发：现代MoE设计通常分配的总容量比单个密集MLP大得多，因此这种一对一的匹配在实践中并不成立
+
+  - 不同模型对比
+
+    | Model              | $(d_{model})$ | $(d_{expert})$ | $(G=2d_{model}/d_{expert})$ | Year |
+    | ------------------ | ------------- | -------------- | --------------------------- | ---- |
+    | Mixtral-8×7B       | 4,096         | 14,336         | 0.571                       | 2023 |
+    | gpt-oss-120b       | 2880          | 2880           | 2.0                         | 2025 |
+    | gpt-oss-20b        | 2880          | 2880           | 2.0                         | 2025 |
+    | Grok 2             | 8,192         | 16,384         | 1.0                         | 2024 |
+    | StepFun Step-3     | 7,168         | 5,120          | 2.8                         | 2025 |
+    | OLMoE-1B-7B        | 2,048         | 1,024          | 4.0                         | 2025 |
+    | Qwen3-30B-A3B      | 2,048         | 768            | 5.3                         | 2025 |
+    | Qwen3-235B-A22B    | 4,096         | 1,536          | 5.3                         | 2025 |
+    | GLM-4.5-Air        | 4,096         | 1,408          | 5.8                         | 2025 |
+    | DeepSeek V2        | 5,120         | 1,536          | 6.6                         | 2024 |
+    | GLM-4.5            | 5,120         | 1,536          | 6.6                         | 2025 |
+    | Kimi K2            | 7,168         | 2,048          | 7.0                         | 2025 |
+    | DeepSeek V3        | 7168          | 2048           | 7.0                         | 2024 |
+    | Qwen3-Next-80B-A3B | 2048          | 512            | 8.0                         | 2025 |
+
+  - 粒度似乎并非引导式学习（EL）的主要驱动因素——它确实有帮助，尤其是当粒度超过2时，但它并非决定损失的主导因素。不过存在一个最佳点：在某个范围内提高粒度会有帮助，超过这个范围后收益就会趋于平缓。因此，粒度是一个有用的调节旋钮，在近期的版本中明显有向更高值发展的趋势，但不应单独对其进行优化。
+
+- 共享专家
+  - 共享专家设置会将每个标记路由到一小部分始终开启的专家。这些共享专家会吸收数据中基本的、反复出现的模式，这样其余的专家就能更积极地进行专门化处理。实际上，通常不需要太多共享专家；模型设计者一般会选择一个，最多两个。随着粒度的增加（例如，从Qwen3风格的设置转向更接近Qwen3-Next的设置），共享专家往往会变得更有用。从下面的图表可以看出，整体影响不大，它不会显著改变EL。一个简单的经验法则在大多数情况下都很有效：只使用一个共享专家，这与DeepSeek V3、K2和Qwen3-Next等模型中的选择一致，并且往往能在不增加不必要复杂性的情况下最大限度地提高效率。
+
+- 负载均衡
+  - 负载均衡是混合专家模型（MoE）中的关键部分。如果配置不当，它会破坏其他所有设计选择。通过以下示例，我们可以理解为什么糟糕的负载均衡会带来诸多麻烦。假设有一个非常简单的分布式训练设置，我们有4个GPU，并将模型的4个专家均匀分布在这些GPU上。如果路由出现问题，所有令牌都被路由到专家1，这意味着只有1/4的GPU得到利用，这对训练和推理效率极为不利。此外，这还意味着模型的有效学习能力也会下降，因为并非所有专家都被激活。
+  - 常见的负载均衡设置
+    - $\mathcal{L}_{\text{Bal}} = \alpha \sum_{i=1}^{N_r} f_i P_i$
+    - 一个关键细节是计算路由统计信息的范围：$f_i$ 和 $P_i$ 是按本地批次（每个工作节点的小批次）计算还是按全局（跨工作节点/设备聚合）计算？Qwen团队的分析（[Qiu等人，2025](https://huggingfacetb-smol-training-playbook.hf.space/#bib-qiu2025demonsdetailimplementingload)）表明，当每个本地批次中的token多样性不足时，本地计算会损害专家的专业化程度（路由健康状况的良好指标）和整体模型性能。专家专业化是指一个或多个专家在特定领域比其他专家更频繁被激活的现象。换句话说，如果本地批次范围较窄，其路由统计数据会变得嘈杂/有偏差，无法实现良好的平衡。这意味着在可行的情况下，我们应该使用全局统计数据（或至少是跨设备聚合的数据）。值得注意的是，在该论文发表时，包括Megatron在内的许多框架默认都是在本地计算这些统计数据
+    - 无损失负载均衡：DeepSeek v3引入了一个简单的偏置项，添加用于路由 softmax 的亲和度分数中，如果某个路由器过载，亲和度分数被稍微降低一个常数因子 $\gamma$，从而降低被选中的可能性，而如果专家未被充分利用，则增加一个常数因子 $\gamma$
+
+### 用 MoE 还是不用 MoE
+
+![how_to_choose_model_type](/img/llm/how_to_choose_model_type.png)
+
+- **优先选密集型模型**：部署于边缘设备（内存受限）、团队首次训练 LLM、时间线紧张（3 个月内），SmolLM3 因 “设备端部署” 选择 3B 密集型模型。
+- **选 MoE**：非内存受限、追求性能 / 计算比、团队有成熟分布式训练经验。
+- **选混合模型**：需超长篇幅（如百万 tokens）、可接受架构探索成本。
+
+### Tokenizer
+
+- 设计原则
+  - **我们希望支持哪些语言？** 如果我们正在构建一个多语言模型，但我们的分词器只见过英语，那么当遇到非英语文本时，该模型的效率会很低，因为这些文本会被拆分成比必要数量多得多的标记。这直接影响性能、训练成本和推理速度。
+  - **哪些领域对我们来说很重要？** 除了语言之外，数学和代码等领域需要对数字进行仔细表示。
+  - **我们了解我们的目标数据混合吗？** 如果我们计划从头开始训练分词器，理想情况下，我们应该在一个能反映我们最终训练混合的样本上训练它。
+
+- 词汇量大小
+  - 词汇表本质上是一个词典，列出了我们的模型能识别的所有标记（最小的文本单位，如单词、子词或符号）
+  - 更大的词汇量能更高效地压缩文本，因为每个句子生成的 token 更少，但这存在计算上的权衡。词汇量大小直接影响嵌入矩阵的规模。如果词汇量为V，隐藏维度为h，那么输入嵌入有V×h个参数，输出层则另有V×h个参数。对于较小的模型，正如我们在“嵌入共享”部分所见，这会占据总参数的很大一部分，但随着模型规模扩大，其相对成本会降低。
+  - 最佳平衡点取决于我们的目标覆盖率和模型大小。对于仅支持英语的模型，大约50k个标记通常就足够了，但多语言模型往往需要100k以上的标记才能有效处理不同的书写系统和语言。像Llama3这样的现代最先进模型采用了128k以上范围的词汇表，以提高在不同语言中的标记效率。
+  - [达根等人（2024年）](https://huggingfacetb-smol-training-playbook.hf.space/#bib-dagan2024gettingtokenizerpretrainingdomain)分析了词汇量大小对压缩、推理和内存的影响。他们发现，更大词汇量带来的压缩增益呈指数级下降，这表明存在一个最佳大小。在推理方面，更大的模型能从更大的词汇量中获益，因为压缩在前向传播中节省的成本超过了嵌入标记在softmax中增加的成本。在内存方面，最佳大小取决于序列长度和批处理大小：更长的上下文和更大的批处理能从更大的词汇量中获益，这是因为标记数量减少使得KV缓存节省更多。
+
+- 分词算法
+  - BPE（字节对编码）（[Sennrich等人，2016年](https://huggingfacetb-smol-training-playbook.hf.space/#bib-sennrich2016neuralmachinetranslationrare)）仍然是最受欢迎的选择，也存在如WordPiece或SentencePiece等其他算法，但采用率较低。此外，人们对无分词器方法的研究兴趣日益浓厚，这类方法直接对字节或字符进行处理，有可能完全省去分词步骤。
+
+- 既然我们已经了解了定义分词器的关键参数，接下来就面临一个实际的决定：是使用现有的分词器，还是从头开始训练？答案取决于覆盖范围：具有我们目标词汇量大小的现有分词器能否很好地处理我们的语言和领域。
+
+- 衡量分词器质量
+  - Fertility
+    - 它衡量的是编码一个单词所需的平均 tokens 数量。较低的生成率意味着更好的压缩效果，这会转化为更快的训练和推理速度。可以这样理解：如果一个分词器在编码大多数单词时需要多一到两个标记，而另一个分词器用更少的标记就能完成，那么显然第二个分词器效率更高。
+
+    - The standard approach for measuring fertility is to calculate **words-to-tokens ratio** (word fertility), which measures how many tokens are needed per word on average. This metric is defined around the concept of words because it provides meaningful cross-linguistic comparisons when appropriate word tokenizers are available, for example in [Spacy](https://spacy.io/) and [Stanza](https://stanfordnlp.github.io/stanza) ([Penedo et al., 2025](https://huggingfacetb-smol-training-playbook.hf.space/#bib-fineweb2)).
+
+    - 不同模型的分词器对比（越小越好）
+
+      | Tokenizer (Vocab Size) | English | Chinese | French | Arabic |
+      | ---------------------- | ------- | ------- | ------ | ------ |
+      | Llama3 (128k)          | 1.48    | 1.60    | 1.73   | 2.35   |
+      | Mistral Small (131k)   | 1.59    | 1.78    | 1.69   | 2.15   |
+      | Qwen3 (151k)           | 1.54    | 1.45    | 1.75   | 2.26   |
+      | Gemma3 (262k)          | 1.41    | 1.47    | 1.56   | 2.25   |
+
+  - Proportion of continued words:
+    - 该指标告诉我们有多少百分比的单词被拆分成多个片段。百分比越低越好，因为这意味着被拆分的单词更少，从而实现更高效的分词。
+
+    - 代码实现
+
+      ```python
+      import numpy as np
+
+      def compute_tokenizer_metrics(tokenizer, word_tokenizer, text):
+          """
+          Computes fertility and proportion of continued words.
+
+          Returns:
+              tuple: (fertility, proportion_continued_words)
+                  - fertility: average tokens per word (lower is better)
+                  - proportion_continued_words: percentage of words split into 2+ tokens (lower is better)
+
+          """
+          words = word_tokenizer.word_tokenize(text)
+          tokens = tokenizer.batch_encode_plus(words, add_special_tokens=False)
+          tokens_per_word = np.array(list(map(len, tokens["input_ids"])))
+
+          fertility = np.mean(tokens_per_word).item()
+          proportion_continued_words = (tokens_per_word >= 2).sum() / len(tokens_per_word)
+
+          return fertility, proportion_continued_words
+      ```
+
+    - For specialized domains like code and math, though, besides fertility we need to dig deeper and look at how well the tokenizer handles domain-specific patterns. Most modern tokenizers do single-digit splitting (so “123” becomes [“1”, “2”, “3”]) ([Chowdhery et al., 2022](https://huggingfacetb-smol-training-playbook.hf.space/#bib-palm); [DeepSeek-AI et al., 2024](https://huggingfacetb-smol-training-playbook.hf.space/#bib-deepseekv2)). It might seem counterintuitive to break numbers apart, but it actually helps models learn arithmetic patterns more effectively. If “342792” is encoded as one indivisible token, the model must memorize what happens when you add, subtract, or multiply that specific token with every other number token. But when it’s split, the model learns how digit-level operations work. Some tokenizers like Llama3 ([Grattafiori et al., 2024](https://huggingfacetb-smol-training-playbook.hf.space/#bib-llama3)) encode numbers from 1 to 999 as unique tokens and the rest are composed of these tokens.
+
+    - 不同分词器对比（越小越好）
+
+      | Tokenizer (Vocab Size) | English | Chinese | French | Arabic |
+      | ---------------------- | ------- | ------- | ------ | ------ |
+      | Llama3 (128k)          | 32.2%   | 42.6%   | 48.2%  | 71.8%  |
+      | Mistral Small (131k)   | 36.8%   | 47.1%   | 46.5%  | 66.0%  |
+      | Qwen3 (151k)           | 32.8%   | 30.7%   | 47.8%  | 66.0%  |
+      | Gemma3 (262k)          | 26.0%   | 33.1%   | 39.9%  | 70.1%  |
+
+- 如何选择分词器
+  - **何时使用现有的分词器：**如果我们的目标用例与上述最佳分词器（Llama、Qwen、Gemma）的语言或领域覆盖范围相匹配，那么它们是经过实战检验的可靠选择。在SmolLM3的训练中，我们选择了Llama3的分词器：它在我们的目标语言（英语、法语、西班牙语、葡萄牙语、意大利语）上具有出色的分词质量，且词汇量适中，这对于我们的小型模型尺寸来说是合理的。对于嵌入在总参数中占比较小的大型模型而言，Gemma3在效率方面的提升会更具吸引力。
+  - **何时训练我们自己的分词器：**如果我们要为低资源语言进行训练，或者有非常不同的数据混合，我们可能需要训练自己的分词器以确保良好的覆盖范围。在这种情况下，重要的是我们要在一个接近我们认为最终训练混合会呈现的样子的数据集上训练分词器。这就产生了一个有点类似“先有鸡还是先有蛋”的问题，因为我们需要一个分词器来进行数据消融并找到合适的混合方式。但我们可以在启动最终运行之前重新训练分词器，并验证下游性能是否有所提升以及拆分率是否仍然良好。
+
+### 准则
+
+> Your use case drives your choices.简而言之：您的用例决定了您的选择。
+
+**Let your deployment target guide architectural decisions.** Consider how and where your model will actually run when evaluating new architectural innovations.**让部署目标指导架构决策。** 在评估新的架构创新时，要考虑模型实际运行的方式和位置。
+
+**Strike the right balance between innovation and pragmatism.** We can’t afford to ignore major architectural advances - using Multi-Head Attention today when GQA and better alternatives exist would be a poor technical choice. Stay informed about the latest research and adopt techniques that offer clear, validated benefits at scale. But resist the temptation to chase every new paper that promises marginal gains (unless you have the resources to do so or your goal is architecture research).**在创新与实用主义之间取得恰当平衡。** 我们不能忽视重大的架构进展——在GQA及更好的替代方案已存在的当下，仍使用多头注意力机制将是一个糟糕的技术选择。要了解最新研究，并采用那些能在大规模应用中带来明确、经证实的收益的技术。但要抵制追逐每一篇承诺带来微小收益的新论文的诱惑（除非你有足够资源，或者你的目标是进行架构研究）。
+
+**Systematic beats intuitive.** Validate every architecture change, no matter how promising it looks on paper. Then test modifications individually before combining them to understand their impact.**系统性优于直觉。** 验证每一项架构变更，无论其在理论上看起来多么有前景。然后在将修改组合起来之前，先单独测试它们，以了解其影响。
+
+**Scale effects are real - re-ablate at target size when possible.** Don’t assume your small-scale ablations will hold perfectly at your target model size. If you have the compute, try to reconfirm them.**规模效应是真实存在的——尽可能在目标规模下重新进行消融实验。**不要假设小规模的消融实验结果能完美适用于目标模型规模。如果有计算资源，尝试重新验证它们。
+
+**Validate tokenizer efficiency on your actual domains.** Fertility metrics across your target languages and domains matter more than following what the latest model used. A 50k English tokenizer won’t cut it for serious multilingual work, but you don’t need a 256k vocab if you’re not covering that many languages either.**在您的实际领域验证分词器效率。** 跨目标语言和领域的覆盖率指标比追随最新模型所使用的分词器更为重要。一个50k词表的英语分词器无法胜任严谨的多语言工作，但如果您不需要覆盖那么多语言，也无需使用256k词表的分词器。
+
+## 优化器和训练超参数
+
+The pieces are coming into place. We’ve run our ablations, settled on the architecture, and chosen a tokenizer. But before we can actually launch the training, there are still some crucial missing pieces: which optimizer should we use? What learning rate and batch size? How should we schedule the learning rate over training?各个部分正在逐步就绪。我们已经完成了消融实验，确定了架构，并选择了分词器。但在真正启动训练之前，仍有一些关键部分缺失：我们应该使用哪种优化器？学习率和批量大小设为多少？在训练过程中，学习率应该如何调度？
+
+The tempting approach here is to just borrow values from another strong model in the literature. After all, if it worked for big labs, it should work for us, right? And for many cases that will work just fine if we’re taking values from a similar architecture and model size.这里一个诱人的做法是直接从文献中另一个强大的模型借鉴参数。毕竟，如果这对大型实验室有效，对我们也应该有效，对吧？而且在很多情况下，如果我们借鉴的是来自相似架构和模型规模的参数，这种做法会非常有效。
+
+However, we risk leaving performance on the table by not tuning these values for our specific setup. Literature hyperparameters were optimized for specific data and constraints, and sometimes those constraints aren’t even about performance. Maybe that learning rate was picked early in development and never revisited. Even when model authors do thorough hyperparameter sweeps, those optimal values were found for their exact combination of architecture, data, and training regime, not ours. Literature values are always a good starting point, but it’s a good idea to explore if we can find better values in the neighbourhood.然而，如果不为我们的特定设置调整这些值，我们可能会无法充分发挥模型的性能。文献中的超参数是针对特定数据和约束条件优化的，有时这些约束条件甚至与性能无关。也许那个学习率是在开发早期选定的，之后就再也没有重新审视过。即使模型作者进行了全面的超参数搜索，那些最优值也是针对他们特定的架构、数据和训练方案组合找到的，而非我们的。文献中的值始终是一个很好的起点，但探索在其附近是否能找到更好的值也是个不错的主意。
+
+### 优化器
+
+现有模型中 Kimi K2 和 GLM 4.5 采用了 Muon，其余模型均采用的 AdamW
+
+- **AdamW**：主流选择，超参数稳定（β₁=0.9，β₂=0.95，梯度裁剪 = 1.0，权重衰减 = 0.1），兼容性好、训练稳定，SmolLM3 最终采用。
+- **Muon**：二阶优化器，基于矩阵视角更新参数，支持更大批处理，但对学习率敏感、易发散，需大量调优。
+- **其他优化器**：如 Shampoo、Sophia 等，需针对性调优，未超越 AdamW 的普适性。
+
+### 学习率
+
+学习率是我们必须设置的最重要的超参数之一。在每个训练步骤中，它控制着我们根据计算出的梯度调整模型权重的幅度。如果选择的学习率过低，训练会变得极其缓慢，而且我们可能会陷入糟糕的局部最小值。损失曲线会显得平缓，我们会耗尽计算资源却无法取得有意义的进展。另一方面，如果我们将学习率设置得过高，优化器会迈出过大的步伐，从而越过最优解，永远无法收敛，或者更糟的是，损失会发散并急剧增大。
+
+但最佳学习率甚至不是恒定的，因为学习动态在训练过程中会发生变化。在距离良好解决方案较远的早期阶段，高学习率是有效的，但在接近收敛时会导致不稳定性。这就是学习率调度的用武之地：从零开始进行预热以避免早期的混乱，然后进行衰减以稳定在一个良好的最小值。这些模式（例如预热+余弦衰减）已在神经网络训练中得到了多年的验证。
+
+多年来，人们已经知道改变学习率有助于收敛（[Smith & Topin, 2018](https://huggingfacetb-smol-training-playbook.hf.space/#bib-smith2018superconvergencefasttrainingneural)），而余弦衰减（[Loshchilov & Hutter, 2017](https://huggingfacetb-smol-training-playbook.hf.space/#bib-loshchilov2017sgdrstochasticgradientdescent)）是训练大语言模型（LLMs）时常用的调度方式：在预热后从峰值学习率开始，然后按照余弦曲线平稳下降。这种方式简单且效果良好。但它的主要缺点是缺乏灵活性；我们需要预先知道总的训练步数，因为余弦周期长度必须与总训练时长相匹配。这在一些常见场景中会成为问题：模型尚未达到性能平台期，或者你获得了更多计算资源并想延长训练时间，又或者你在进行缩放定律研究并需要在不同的token数量上训练同一个模型。余弦衰减会迫使你从头开始重新训练。
+
+现在许多团队采用的训练计划中，热身结束后无需立即开始衰减学习率。如下方图表所示，**热身-稳定-衰减（**WSD）（[Hu 等人，2024](https://huggingfacetb-smol-training-playbook.hf.space/#bib-hu2024minicpmunveilingpotentialsmall)）和**多步（**[深度求索人工智能等，2024](https://huggingfacetb-smol-training-playbook.hf.space/#bib-deepseekai2024deepseekllmscalingopensource)）变体就属于这种情况。在训练的大部分时间里，学习率保持恒定的较高水平，对于 WSD 来说，通常在训练的最后 10%-20% 的 token 阶段会急剧衰减；而对于多步计划，例如在 [深度求索大语言模型](https://arxiv.org/abs/2401.02954) 的多步计划中，会通过离散的下降（步骤）来降低学习率，比如在训练进行到 80% 后下降一次，然后在 90% 后再下降一次。
+
+这些调度方案相比余弦衰减具有实际优势。我们可以在训练中途延长训练而无需重启，无论是想比最初计划训练更长时间，还是提前衰减以更好地衡量训练进度，并且我们可以通过一次主要训练运行，在不同的令牌数量上进行缩放定律实验。此外，研究表明，WSD和多步衰减都与余弦衰减效果相当（DeepSeek-AI等，2024；Hägele等，2024[)](https://huggingfacetb-smol-training-playbook.hf.space/#bib-deepseekai2024deepseekllmscalingopensource)，同时在现实世界的训练场景中更具实用性。
+
+但你可能已经注意到，与余弦函数相比，这些调度引入了新的超参数：在WSD中，衰减阶段应该持续多长时间？在多步变体中，每一步应该持续多长时间？
+
+- For WSD: The required cooldown duration to match cosine performance decreases with longer training runs, and it is recommended to allocate 10-20% of total tokens to the decay phase ([Hägele et al., 2024](https://huggingfacetb-smol-training-playbook.hf.space/#bib-wsdhagele)). We will confirm this setup matches cosine in our ablations below.对于WSD：要达到余弦性能所需的冷却持续时间会随着训练运行时间的延长而缩短，建议将总标记的10-20%分配给衰减阶段（[Hägele等人，2024](https://huggingfacetb-smol-training-playbook.hf.space/#bib-wsdhagele)）。我们将在下面的消融实验中确认这种设置与余弦性能相符。
+- For Multi-Step: DeepSeek LLM’s ablations found that while their baseline 80/10/10 split (stable until 80%, first step from 80-90%, second step from 90-100%) matches cosine, tweaking these proportions can even outperform it, for instance when using 70/15/15 and 60/20/20 splits.在多步骤方面：DeepSeek大模型的消融实验发现，尽管其基准的80/10/10分割（在80%前保持稳定，第一步为80%-90%，第二步为90%-100%）与余弦函数相当，但调整这些比例甚至能表现得更好，例如采用70/15/15和60/20/20分割时。
+
+DeepSeek大语言模型采用了基准的多步调度（80/10/10）。[DeepSeek V2](https://arxiv.org/abs/2405.04434)将比例调整为60/30/10，为第一个衰减步骤分配了更多时间。[DeepSeek V3](https://arxiv.org/abs/2412.19437)采用了最具创新性的方法：不再是先保持恒定学习率，然后进行两个急剧的步骤，而是从恒定阶段过渡到余弦衰减（从训练的67%到97%），之后在最终的急剧步骤之前应用一个短暂的恒定阶段。
+
+这证实了WSD的10-20%衰减窗口足以匹配余弦函数的最终性能，同时保持在运行中扩展训练的灵活性。我们为SmolLM3选择了10%衰减的WSD。
+
+- 调度策略：
+  - 余弦衰减：经典方案，但需提前确定总步数，不灵活（无法中途延长训练）。
+  - WSD（Warmup-Stable-Decay）：热身（如 2000 步）后保持高 LR，最后 10-20% tokens 衰减，支持中途调整训练时长，SmolLM3 采用（10% 衰减窗口）。
+  - 多步衰减（Multi-Step）：热身後分阶段骤降 LR（如 80% tokens 后降一次，90% 后再降），性能与余弦衰减相当，灵活性高。
+- 最优 LR 选择：
+  - 小范围扫参：排除极端值（如 5e-2 发散，1e-4 收敛过慢），SmolLM3 在 3B 模型上确定 2e-4（比 1e-4 收敛快，比 3e-4 稳定）。
+  - scaling 律：基于计算预算（FLOPs=6× 参数数 ×tokens 数），LR 随计算量增加而减小，批大小随计算量增加而增大。
+
+### 批次大小
+
+批量大小是在更新模型权重之前处理的样本数量。它直接影响训练效率和最终的模型性能。如果你的硬件和训练栈能很好地跨设备扩展，增大批量大小可以提高吞吐量。但超过某个点后，更大的批量会开始损害数据效率：模型需要更多的总标记才能达到相同的损失。发生这种情况的临界点被称为**临界批量大小**（[McCandlish等人，2018](https://huggingfacetb-smol-training-playbook.hf.space/#bib-mccandlish2018empiricalmodellargebatchtraining)）。
+
+Throughput is the number of tokens processed per second during training.吞吐量是训练过程中每秒处理的令牌数量。
+
+- **Increasing the batch size while staying below critical:** after increasing the batch size and retuning the learning rate, you reach the same loss with the same number of tokens as the smaller batch size run, no data is wasted.**在保持低于临界值的同时增加批量大小：**在增加批量大小并重新调整学习率后，你会以与较小批量大小运行时相同数量的标记达到相同的损失，不会浪费任何数据。
+- **Increasing the batch size while staying above critical:** larger batches start to sacrifice data efficiency; reaching the same loss now requires more total tokens (and thus more money), even if wall-clock time drops because more chips are busy.**在保持高于临界点的同时增加批量大小：**更大的批量开始牺牲数据效率；即使由于更多芯片处于工作状态而缩短了实际时间，但要达到相同的损失，现在需要更多的总令牌（因此也需要更多资金）。
+
+### 超参数的缩放定律
+
+### 准则
+
+## 缩放定律
+
+## 准备数据
+
+### 什么是好的数据
+
+### 如何测试数据
+
+### SmolLM3 的数据混合设计
+
+## 开始训练
+
+### 训练前的检查清单
+
+### 训练中的突发问题与解决方案
+
+### 训练中期的优化
+
+## 后训练
+
+### 为什么要后训练
+
+### 确定评估什么能力
+
+### SFT
+
+### 偏好微调
+
+### 强化学习
+
+## Infra
+
+###

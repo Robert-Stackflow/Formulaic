@@ -25,7 +25,7 @@ export function Footer() {
             <ul className="space-y-2 sm:space-y-3 text-sm">
               <li>
                 <Link
-                  href="/programming-languages"
+                  href="/docs/programming-languages"
                   className="text-fd-muted-foreground hover:text-[var(--color-fd-primary)] transition-colors"
                 >
                   编程语言
@@ -33,7 +33,7 @@ export function Footer() {
               </li>
               <li>
                 <Link
-                  href="/algorithms"
+                  href="/docs/algorithms"
                   className="text-fd-muted-foreground hover:text-[var(--color-fd-primary)] transition-colors"
                 >
                   数据结构与算法
@@ -41,7 +41,7 @@ export function Footer() {
               </li>
               <li>
                 <Link
-                  href="/computer-system-basics"
+                  href="/docs/computer-system-basics"
                   className="text-fd-muted-foreground hover:text-[var(--color-fd-primary)] transition-colors"
                 >
                   计算机系统基础
@@ -49,7 +49,7 @@ export function Footer() {
               </li>
               <li>
                 <Link
-                  href="/large-language-models"
+                  href="/docs/large-language-models"
                   className="text-fd-muted-foreground hover:text-[var(--color-fd-primary)] transition-colors"
                 >
                   大语言模型
@@ -66,7 +66,7 @@ export function Footer() {
             <ul className="space-y-2 sm:space-y-3 text-sm">
               <li>
                 <Link
-                  href="/backend-development"
+                  href="/docs/backend-development"
                   className="text-fd-muted-foreground hover:text-[var(--color-fd-primary)] transition-colors"
                 >
                   后端开发
@@ -74,7 +74,7 @@ export function Footer() {
               </li>
               <li>
                 <Link
-                  href="/devops"
+                  href="/docs/devops"
                   className="text-fd-muted-foreground hover:text-[var(--color-fd-primary)] transition-colors"
                 >
                   DevOps
@@ -82,10 +82,10 @@ export function Footer() {
               </li>
               <li>
                 <Link
-                  href="/interview-preparation"
+                  href="/docs/interview"
                   className="text-fd-muted-foreground hover:text-[var(--color-fd-primary)] transition-colors"
                 >
-                  面试准备
+                  面试
                 </Link>
               </li>
             </ul>

@@ -1,0 +1,1897 @@
+---
+title: 张量
+description: 介绍 PyTorch 中的张量（Tensor）概念、创建、索引、切片、形状变换、数学运算等基础知识
+---
+
+- 参考资料
+  - [torch — PyTorch 2.10 documentation](https://docs.pytorch.org/docs/stable/torch.html#tensor-creation-ops)
+
+## 什么是张量
+
+- PyTorch 是什么
+  - PyTorch 是一个 以 Tensor 为核心、支持自动求导（autograd）、面向深度学习 / 科学计算的 Python 库
+  - 它让研究人员能高效地做「大规模数值计算」，能自动帮助计算梯度（反向传播），能在 CPU / GPU 上无缝运行
+- 张量是什么
+  - Tensor（张量）是一个带属性的多维数组，它保存数值数据、记录数值的形状、知道保存在哪个设备上、知道是否需要计算梯度
+  - 相比于普通数组只能描述数值和形状，Tensor 额外知道这些数值在哪个设备计算（device）、用什么精度计算（dtype）、是否参与反向传播
+  - 通过计算图、自动求导，Tensor 天生适合批量并行运算，高效调用底层的 C++ / CUDA
+- Tensor 与 NumPy ndarray 的异同点
+  - 都是多维数组，都支持切片、广播，API 风格相似
+  - 但是 Tensor 额外支持设备、自动求导、计算图机制
+  - NumPy 是“静态计算”，而 Tensor 是“可学习的计算”
+
+- 在 PyTorch 中，一个 Tensor 至少由下面五个维度刻画：
+  - 数据本身（data）
+  - 形状（shape / size）
+  - 数据类型（dtype）
+  - 所在设备（device）
+  - 是否参与梯度计算（requires_grad）
+
+- data：Tensor 里真正存储的数值数据
+  - 但是几乎不需要，也不应该直接操作 `.data`
+  - 直接操作 `x.data` 会绕过 autograd，无法自动求导，累计梯度
+  - 因此永远要通过 Tensor 本身操作数据
+
+- shape / size：Tensor 的结构
+  - 可以通过以下方式查看 Tensor 的形状
+
+    ```python
+    x = torch.tensor([[1, 2, 3],
+                      [4, 5, 6]])
+    x.shape # 更偏 Python 风格
+    x.size() # 更偏 PyTorch 传统
+    ```
+
+  - 可以通过以下方式查看维度（dim）
+
+    ```python
+    x.ndim
+    # 一维向量：ndim = 1
+    # 矩阵：ndim = 2
+    # 高维张量：ndim >= 3
+    ```
+
+  - 可以通过以下方式计算总元素个数
+
+    ```python
+    import torch
+
+    # 1. 标量张量（0维）
+    scalar = torch.tensor(10)
+    print(scalar.numel())  # 输出：1
+
+    # 2. 一维张量（向量）
+    vec = torch.tensor([1,2,3,4])
+    print(vec.numel())     # 输出：4
+
+    # 3. 二维张量（矩阵）
+    mat = torch.randn(3, 4)  # 3行4列
+    print(mat.numel())       # 输出：12（3*4）
+
+    # 4. 高维张量（如3维：通道×高×宽，常见于图像）
+    img = torch.zeros(2, 5, 5)  # 2通道、5×5像素
+    print(img.numel())          # 输出：50（2*5*5）
+
+    # 5. 不规则形状？不，PyTorch 张量是规整的，numel 仍正常计算
+    tensor_4d = torch.ones(2,3,4,5)
+    print(tensor_4d.numel())    # 输出：120（2*3*4*5）
+    ```
+
+- dtype：数据类型（精度）
+  - 常见的 dtype 如下
+
+    ```python
+    torch.float32   # 深度学习默认
+    torch.float64   # 双精度
+    torch.int64     # 索引、label、embedding
+    torch.int32
+    torch.bool      # mask、条件筛选
+
+    x.dtype # 查看 dtype
+    ```
+
+  - 在 PyTorch 中，模型参数、输入默认都使用 float32
+
+  - 其中，整型 Tensor 不能反向传播
+
+  - dtype 的转换
+
+    ```python
+    x = x.to(torch.float32)
+    # 返回的是新 Tensor，原 Tensor 不变
+    x.float()
+    x.long()
+    x.int()
+    x.bool()
+    ```
+
+- device：Tensor 在哪里计算
+  - device 决定这个 Tensor 存在哪，运算由谁执行
+
+  - 如 cpu、cuda:0、cuda:1
+
+  - 查看张量的设备
+
+    ```python
+    x.device
+    ```
+
+  - 参与同一次运算的 Tensor，必须在同一个 device 上
+
+    ```python
+    x = torch.tensor([1.0])          # CPU
+    y = torch.tensor([2.0]).cuda()   # GPU
+    z = x + y   # ❌
+    ```
+
+  - `torch.device` 是一个设备描述对象，用来统一、显式地管理设备，方便写“CPU / GPU 通用代码”
+
+    ```python
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    ```
+
+  - 新建的普通 Tensor 默认在 CPU 中
+
+    ```python
+    x = x + torch.zeros(10)  # 默认 CPU，如果 x 不在 CPU 中会报错
+    torch.zeros(10, device=x.device) # 正确做法
+    ```
+
+  - 张量的迁移
+
+    ```python
+    x = x.to(device)
+    x = x.to(dtype=torch.float32)
+    x = x.to(device='cuda', dtype=torch.float16)
+
+    y = x.to(device) # 不保证原地
+    # 如果 device / dtype 不变，那么会直接返回 x，否则返回新的 Tensor，因此一般直接写
+    x = x.to(device)
+
+    x = x.cuda() # x = x.to('cuda')
+    x = x.cpu() # x = x.to('cpu')
+    x.cuda() # 原来的 x 还在 CPU，只是白调用了一次函数
+    ```
+
+- requires_grad：是否需要梯度
+  - 通过指定 `requires_grad`，张量会被视为可学习参数，PyTorch 会记录它参与的所有运算，并在之后可以对它求梯度
+
+    ```python
+    w = torch.tensor([1.0, 2.0], requires_grad=True)
+    w.requires_grad # 查看是否需要梯度
+    ```
+
+  - 对于普通 Tensor，默认为 False；而对于模型参数，默认为 True
+
+  - requires_grad 决定这个 Tensor 是否“被训练”
+
+- 完整示例
+
+  ```python
+  x = torch.tensor(
+      [[1.0, 2.0],
+       [3.0, 4.0]],
+      dtype=torch.float32,
+      device="cpu",
+      requires_grad=False
+  )
+  ```
+
+## 创建张量
+
+- 在 PyTorch 里，Tensor 主要来自 6 个来源：
+  - 从 Python 数据创建
+  - 从 NumPy 创建
+  - 创建“指定形状”的 Tensor
+  - 创建随机 Tensor
+  - 创建序列型 Tensor
+  - 创建特殊结构 Tensor（单位阵、对角阵等）
+  - 使用 `_like` 后缀创建
+
+- 从 Python 数据创建
+  - `torch.tensor`
+
+    ```python
+    import torch
+
+    x = torch.tensor([1, 2, 3])
+    ```
+
+  - 通过以上方式，一定会创建新的 Tensor、会复制数据、自动推断 dtype
+
+  - 也可以指定 dtype 和 device
+
+    ```python
+    x = torch.tensor(
+        [1, 2, 3],
+        dtype=torch.float32,
+        device="cpu"
+    )
+    ```
+
+  - `torch.as_tensor` 尽量不复制数据，其行为依赖输入类型，适合性能敏感场景
+
+    ```python
+    x = torch.as_tensor([1, 2, 3])
+    ```
+
+- 从 NumPy 创建
+  - `torch.from_numpy` 不拷贝数据，和 NumPy 共享内存
+
+    ```python
+    import numpy as np
+
+    a = np.array([1, 2, 3], dtype=np.float32)
+    x = torch.from_numpy(a)
+
+    a[0] = 100
+    print(x)  # 对 a 进行操作，x 也会变化
+    ```
+
+  - 当数据本来就在 NumPy，不想额外拷贝时，才使用 `from_numpy`，否则使用 `torch.tensor` 更安全
+
+- 创建“指定形状”的 Tensor
+  - `torch.zeros` 创建元素均为 0 的 Tensor
+
+    ```python
+    x = torch.zeros(2, 3)
+    x = torch.zeros(2, 3, device=device, dtype=torch.float32)
+    ```
+
+  - `torch.ones` 创建元素均为 1 的 Tensor
+
+    ```python
+    x = torch.ones(2, 3)
+    x = torch.ones(2, 3, device=device, dtype=torch.float32)
+    ```
+
+  - `torch.empty` 不初始化 Tensor，内容是内存垃圾，只在性能敏感且马上会被完整覆盖的时候使用，其生成的数近似于 0，但不为 0
+
+    ```python
+    x = torch.empty(2, 3)
+    ```
+
+  - `torch.full` 使用指定值填充 Tensor
+
+    ```
+    x = torch.full((2, 3), 5.0) # 每个值都是 5.0
+    ```
+
+- 创建随机 Tensor
+  - `torch.rand` 创建均匀分布在 $[0,1)$ 之间的 Tensor
+
+    ```python
+    x = torch.rand(2, 3)
+    ```
+
+  - `torch.randn` 创建正态分布的 Tensor，其均值为 0，标准差为 1
+
+    ```python
+    x = torch.randn(2, 3)
+    ```
+
+  - `torch.normal` 创建指定正态分布的 Tensor
+
+    ```python
+    torch.normal(2, 3, size = (2, 2)) # 均值为 2，标准差为 3
+    ```
+
+  - `torch.randint` 创建随机整数的 Tensor，常用于随机索引，dtype 默认为 `int64`
+
+    ```python
+    x = torch.randint(low=0, high=10, size=(2, 3))
+    ```
+
+- 创建序列型 Tensor
+  - `torch.arange` 等价于 Python 的 range、NumPy 的 arange，dtype 默认为 `int64`，常用于索引
+
+    ```python
+    x = torch.arange(0, 10)
+    ```
+
+  - `torch.linspace` 常用于连续区间采样、可视化、数值实验
+
+    ```python
+    x = torch.linspace(0, 1, steps=5)
+    # 0.0, 0.25, 0.5, 0.75, 1.0
+    ```
+
+- 创建特殊结构 Tensor
+  - `torch.eye` 创建单位矩阵
+
+    ```python
+    x = torch.eye(3)
+    ```
+
+  - `torch.diag` 创建对角矩阵
+
+    ```python
+    v = torch.tensor([1, 2, 3])
+    x = torch.diag(v)
+    ```
+
+- `_like` 后缀
+  - 该方法转化需要注意转化前后数据类型一致的问题，若数据类型不一致，则会报错
+
+- 张量转换为 NumPy 数组
+  - 张量内置方法：`x.numpy()`（ `.numpy()` 只能对 CPU Tensor 用）
+
+  - NumPy 构造方法：`np.array(x)`
+
+  - CPU 上的张量与转换后的 NumPy 数组会共享内存，一方修改数值，另一方会同步变化；CUDA（GPU）张量需先通过`.cpu()`转到 CPU 再转数组
+
+    ```python
+    import torch
+    import numpy as np
+
+    t = torch.tensor([1,2,3])
+    arr1 = t.numpy()
+    arr2 = np.array(t)
+    print(type(arr1), arr1)  # <class 'numpy.ndarray'> [1 2 3]
+
+    # 如何不共享内存
+    x.clone().numpy()
+    np.array(a, copy=True)
+
+    # GPU 张量转换
+    t_cuda = t.cuda()
+    arr = t_cuda.cpu().numpy()  # 先cpu()再转数组
+    ```
+
+- 张量 → Python 列表
+  - 张量内置方法 `tensor.tolist()`：直接将张量的数值转换为 Python 原生列表，元素为 int/float 等基础数值类型，适配任意维度张量（高维张量会转为嵌套列表）
+
+  - Python 构造方法 `list(tensor)`：慎用，转换后的列表元素为零维张量，而非张量的实际数值，仅能通过零维张量的 `.item()` 再提取数值，一般仅适用于一维张量的临时转换，高维张量不推荐使用
+
+    ```python
+    t = torch.tensor([1,2,3])
+    # 推荐：转为数值构成的列表
+    lst1 = t.tolist()
+    print(type(lst1), lst1)  # <class 'list'> [1, 2, 3]
+
+    # 慎用：转为零维张量构成的列表
+    lst2 = list(t)
+    print(type(lst2), lst2)  # <class 'list'> [tensor(1), tensor(2), tensor(3)]
+    print(lst2[0].item())   # 需通过.item()提取数值
+
+    # 高维张量的tolist()（自动转为嵌套列表，更实用）
+    t_2d = torch.tensor([[1,2],[3,4]])
+    print(t_2d.tolist())    # [[1, 2], [3, 4]]
+    ```
+
+- 张量 → Python 标量：`tensor.item()`
+  - 专属用于零维（标量）张量，提取张量中唯一的数值并转为 Python 原生标量（int/float），是标量张量转换为基础数值的标准方法
+
+  - 仅能作用于标量张量（numel ()=1），一维 / 高维张量使用会直接报错
+
+    ```python
+    # 标量张量（0维）转换
+    t_scalar = torch.tensor(10)
+    num = t_scalar.item()
+    print(type(num), num)   # <class 'int'> 10
+
+    # 张量计算后得到标量张量，再转原生标量
+    t = torch.tensor([1,2,3])
+    sum_t = t.sum()  # sum_t是标量张量：tensor(6)
+    sum_num = sum_t.item()
+    print(type(sum_num), sum_num)  # <class 'int'> 6
+
+    # 错误用法：一维/高维张量不能用.item()
+    # t.item()  # 报错：ValueError: only one element tensors can be converted to Python scalars
+    ```
+
+  - 如果 Tensor 在 GPU 上，会发生什么？
+
+    ```python
+    x = torch.tensor([3.14], device='cuda')
+    v = x.item()
+    ```
+
+  - 先等待 GPU 上所有相关运算完成（同步），然后将这个一个标量值从 GPU 拷贝到 CPU，返回一个 Python 标量
+
+  - `.item()` 的显著副作用：强制 GPU 同步
+
+    ```python
+    y = model(x)   # 只是把计算丢给 GPU，GPU 默认异步执行
+    loss.item() # 等 GPU 把 loss 计算完，取回值，因此调用该函数时，会显著拖慢速度
+    ```
+
+## 索引、切片与视图
+
+- 基本索引（和 Python / NumPy 一致）
+  - 单个索引
+
+    ```python
+    x = torch.tensor([10, 20, 30, 40])
+    x[0]      # 10
+    x[-1]     # 40
+    # 索引返回的依旧是一个 Tensor，不是 Python int
+    type(x[0])  # torch.Tensor
+    x[0].item() # 获取 Python 标量
+    ```
+
+  - 多维索引
+
+    ```python
+    x = torch.tensor([
+        [1,  2,  3],
+        [4,  5,  6],
+        [7,  8,  9]
+    ])
+    # 推荐用 x[i, j]，少用 x[i][j]（容易写成链式索引）
+    x[0, 1]    # 等价于 x[0][1]，结果是 2
+    ```
+
+- 切片（和 Python / NumPy 一致）
+  - 切片操作
+
+    ```python
+    x = torch.tensor([0, 1, 2, 3, 4, 5])
+    y = x[1:4]  # y = [1, 2, 3]
+    ```
+
+  - 切片返回的是 view，共享内存
+
+    ```python
+    y[0] = 100  # 导致 x = [0, 100, 2, 3, 4, 5]
+    ```
+
+  - 行 / 列切片：每个维度一个索引，`:` 表示“这个维度全要”
+
+    ```python
+    x = torch.tensor([
+        [1,  2,  3],
+        [4,  5,  6],
+        [7,  8,  9]
+    ])
+    x[0]       # 第 0 行，shape = (3,)
+    x[:, 1]    # 第 1 列，shape = (3,)
+    x[1:3, :]  # 第 1~2 行
+    ```
+
+- 布尔索引
+  - 筛选数据
+
+    ```python
+    x = torch.tensor([1, 2, 3, 4, 5])
+    mask = x > 3  # [False, False, False, True, True]
+    y = x[mask]   # [4, 5]
+    ```
+
+  - 布尔索引返回的是 copy，不再是 view，不共享内存
+
+- 高级索引
+  - 用 Tensor 本身当索引
+
+    ```python
+    x = torch.tensor([10, 20, 30, 40, 50])
+    idx = torch.tensor([0, 2, 4])
+    y = x[idx]  # [10, 30, 50]
+    ```
+
+  - 高级索引一定返回 copy，不共享内存
+
+    ```python
+    x = torch.tensor([
+        [1, 2, 3],
+        [4, 5, 6]
+    ])
+    rows = torch.tensor([0, 1])
+    cols = torch.tensor([2, 0])
+
+    x[rows, cols]  # [3, 4]
+    ```
+
+- 使用 `clone()`
+
+  ```python
+  y = x[1:3].clone()
+  y[0] = 999 # 不会影响 x
+  ```
+
+- 在 autograd 中，如果 x 参与梯度计算，此时对 view 做原地修改，很可能直接报错，因此经验法则是训练代码中，不要随意对 view 做原地修改
+
+  ```
+  RuntimeError: one of the variables needed for gradient computation has been modified in-place
+  ```
+
+## 形状变换
+
+- 形状变换不改数据，只改“怎么看这些数据”，除非显式拷贝，否则这些操作都只是“重排视角”
+
+- 从一个简单的 Tensor 开始，这是一块连续内存
+
+  ```python
+  x = torch.tensor([0, 1, 2, 3, 4, 5])
+  ```
+
+- `view`：最底层、也最“严格”的形状变换
+  - 什么是 view
+
+    ```python
+    x = torch.arange(6)
+    y = x.view(2, 3)
+    ```
+
+  - 不拷贝数据，只是重新解释内存，上述代码只是告诉 PyTorch，“把这 6 个数，当成 2 行 3 列来看”
+
+    ```python
+    y =
+    [[0, 1, 2],
+     [3, 4, 5]]
+    ```
+
+  - 只能用于 contiguous 的 Tensor，如果内存不连续，`view` 会直接报错
+
+  - 修改 y，会直接修改 x
+
+    ```python
+    y[0, 0] = 100 # x = [100, 1, 2, 3, 4, 5]
+    ```
+
+  - `-1` 的含义：`-1` 表示“自动推断”，只能出现一次
+
+    ```python
+    x = torch.arange(12)
+    y = x.view(3, -1)
+    ```
+
+- `reshape`：更安全的 view
+  - 什么是 reshape
+
+    ```python
+    y = x.reshape(2, 3)
+    ```
+
+  - 如果内存连续，则 reshape == view，不拷贝，共享内存
+
+  - 如果内存不连续，PyTorch 新分配一块内存，将数据拷贝过去，然后返回新的 Tensor
+
+  - 判断一个 tensor 在内存上是否连续
+
+    ```python
+    y.is_contiguous()
+    ```
+
+  - 判断两个 tensor 是否共享内存
+
+    ```python
+    y.storage().data_ptr() == x.storage().data_ptr()
+    ```
+
+- `unsqueeze`：凭空加一个维度
+  - 假设一个一维张量
+
+    ```python
+    x = torch.tensor([10, 20, 30])
+    # shape: (3,)
+    ```
+
+  - `unsqueeze(0)`：没有新数据，只是说“这一行是一整个 batch”
+
+    ```python
+    y = x.unsqueeze(0)
+    # y =
+    # [[10, 20, 30]]
+    # shape: (1, 3)
+    ```
+
+  - `unsqueeze(1)`：不创建新数据，只是插入一个 size=1 的维度，返回的是 view
+
+    ```python
+    y = x.unsqueeze(1)
+    # y =
+    # [[10],
+    #  [20],
+    #  [30]]
+    # shape: (3, 1)
+    ```
+
+  - unsqueeze 会在指定 index 处添加一个新维度，并重新解释内存
+
+- `squeeze`：把 size=1 的维度删掉
+  - 假设一个二维张量
+
+    ```python
+    x = torch.tensor([[10, 20, 30]])
+    # shape: (1, 3)
+    ```
+
+  - `squeeze()`
+
+    ```python
+    y = x.squeeze()
+    # y = [10, 20, 30]
+    # shape = (3,)
+    ```
+
+  - `squeeze(dim)`
+
+    ```python
+    x = torch.zeros(1, 3, 1)
+    # y = x.squeeze(0)
+    # shape: (3, 1)
+    ```
+
+  - 为什么要指定 dim？因为有时候不想把“重要的 1”误删，比如 batch
+
+- `transpose`：交换两个维度怎么看数据
+  - 假设一个二维张量
+
+    ```python
+    x = torch.tensor([
+        [1, 2, 3],
+        [4, 5, 6]
+    ])
+    # shape: (2, 3)
+    ```
+
+  - `transpose(0, 1)`
+
+    ```python
+    y = x.transpose(0, 1)
+    # y =
+    # [[1, 4],
+    #  [2, 5],
+    #  [3, 6]]
+    # shape: (3, 2)
+    ```
+
+  - 数据顺序没变，“行和列的解释”换了，此时，y 不再是连续的
+
+    ```python
+    y.is_contiguous()  # False
+    # 原内存还是按 (2, 3) 排的，但现在按 (3, 2) 去读
+    ```
+
+- `permute`：任意维度重排
+  - 假设张量
+
+    ```python
+    x = torch.arange(24).view(2, 3, 4)
+    # shape: (2, 3, 4)
+    ```
+
+  - `permute(1, 0, 2)`
+
+    ```python
+    y = x.permute(1, 0, 2)
+    # shape: (3, 2, 4)
+    ```
+
+  - 数据依旧没动，只是怎么看变了
+
+- `contiguous`：真的把数据重排一遍
+  - 接上文，经过 `permute` 后，y 的形状变了，但内存是乱序视角
+
+    ```python
+    z = y.contiguous()
+    ```
+
+  - 此时，新分配一块连续内存，把数据按当前形状顺序拷贝进去
+
+    ```python
+    z.is_contiguous()  # True
+    ```
+
+  - 错误代码
+
+    ```python
+    x = torch.arange(6).view(2, 3)
+    y = x.transpose(0, 1)
+    z = y.view(6)  # 报错
+    ```
+
+  - y 的内存不连续，view 不允许，应该修改为：
+
+    ```python
+    z = y.contiguous().view(6)
+    ```
+
+## 数学运算（逐元素）
+
+- 此处的数学运算，包括加减乘除等，均是逐元素（element-wise）进行的
+
+- 加、减、乘、除
+
+  ```python
+  import torch
+
+  a = torch.tensor([1, 2, 3])
+  b = torch.tensor([10, 20, 30])
+
+  c = a + b # tensor([11, 22, 33])
+  # a.shape == b.shape == c.shape == torch.Size([3])
+  a - b   # tensor([-9, -18, -27])
+  a * b   # tensor([10, 40, 90])
+  b / a   # tensor([10., 10., 10.])
+  # / 永远是浮点除法，即使 a 和 b 是 int，结果也会变成 float
+
+  # 标量参与运算时，等价于把标量“扩展”为和 a 同 shape 的张量再算
+  a + 1   # tensor([2, 3, 4])
+  a * 2   # tensor([2, 4, 6])
+  ```
+
+- 广播机制
+  - PyTorch 会尝试“补维度 + 扩展维度”，只在必要时做，不会真的复制数据
+
+  - 向量 + 标量
+
+    ```python
+    a = torch.tensor([1, 2, 3])
+    a + 10 # 10 被当成 [10, 10, 10]，逐元素相加
+    ```
+
+  - 矩阵 + 向量
+
+    ```python
+    x = torch.tensor([
+        [1, 2, 3],
+        [4, 5, 6]
+    ])          # shape: (2, 3)
+
+    v = torch.tensor([10, 20, 30])  # shape: (3,)
+    y = x + v
+    # v 被看成 shape (1, 3) 再扩展成 (2, 3)，每一行都加同一个 v
+    # tensor([
+    #     [11, 22, 33],
+    #     [14, 25, 36]
+    # ])
+    ```
+
+  - 广播失败
+
+    ```python
+    x.shape = (2, 3)
+    v.shape = (2,)
+    x + v
+    # 最右维：3 vs 2，不相等，也没有一个是 1，无法广播
+    ```
+
+  - 广播规则：从右往左对齐维度，维度相等，或其中一个是 1，才能广播
+
+- 常见逐元素函数
+  - 共同点：输入一个 Tensor、对每个元素独立计算、输出 shape 不变
+
+  - 常见函数
+
+    ```python
+    x = torch.tensor([-1.0, 2.0, -3.0])
+    torch.abs(x) # tensor([1., 2., 3.])
+
+    x = torch.tensor([1.0, 4.0, 9.0])
+    torch.sqrt(x) # tensor([1., 2., 3.])
+
+    x = torch.tensor([0.0, 1.0])
+    torch.exp(x) # tensor([1.0000, 2.7183])
+
+    x = torch.tensor([1.0, 2.7183])
+    torch.log(x) # tensor([0., 1.])
+
+    # 防止数值爆炸、处理概率、像素值
+    x = torch.tensor([-5.0, 0.5, 10.0])
+    torch.clamp(x, min=0.0, max=1.0) # tensor([0.0, 0.5, 1.0])
+
+    # 比较运算，返回逐元素的 bool Tensor
+    a = torch.tensor([1, 2, 3])
+    b = torch.tensor([2, 2, 2])
+    a > b    # tensor([False, False, True])
+    a == b   # tensor([False, True, False])
+    a <= b   # tensor([True, True, False])
+    # (a > b).dtype == torch.bool
+
+    # bool Tensor 之间的运算
+    x = torch.tensor([True, False, True])
+    y = torch.tensor([True, True, False])
+    x & y   # tensor([ True, False, False])
+    x | y   # tensor([ True,  True,  True])
+    ~x      # tensor([False, True, False])
+    x and y   # 报错
+
+    # 布尔运算 + 数值 Tensor
+    a = torch.tensor([1, 2, 3, 4])
+    mask = a > 2
+    mask   # tensor([False, False, True, True])
+    ```
+
+## 线性代数运算
+
+- 线性代数运算 ≠ 逐元素运算，它们关心的是“维度如何对齐”
+
+  | 运算类型 | 例子             | 核心规则       |
+  | -------- | ---------------- | -------------- |
+  | 逐元素   | `a + b`, `a * b` | broadcasting   |
+  | 线性代数 | `a @ b`          | 内维度必须相等 |
+
+- 向量点积（dot product）：两个等长向量逐元素相乘的和，结果是标量
+
+  ```python
+  a = torch.tensor([1., 2., 3.])
+  b = torch.tensor([4., 5., 6.])
+
+  # torch.dot
+  torch.dot(a, b) # 只适用于 1D，结果为 tensor(32.)，shape 为 torch.Size([])
+
+  # @
+  a @ b # 对 1D Tensor，@ 就是点积，结果是标量
+
+  a = torch.randn(3, 1)
+  b = torch.randn(3, 1)
+  a @ b   # 报错
+  # shape 是 (3,1) @ (3,1)，内维度 1 ≠ 3，点积只适用于 1D 向量
+  ```
+
+- 矩阵乘法（matrix multiplication）：两个矩阵的中间维度必须相等
+
+  ```python
+  A = torch.randn(2, 3)
+  B = torch.randn(3, 4)
+
+  # @
+  C = A @ B # (2, 3) @ (3, 4) -> (2, 4)
+  # 每个元素怎么算的：C 的第 i 行第 j 列，是 A 的第 i 行 和 B 的第 j 列的点积
+
+  # torch.matmul
+  C = torch.matmul(A, B) # @ 是语法糖，底层调用的就是 matmul
+
+  # torch.mm
+  torch.mm(A, B) # 只能是 2D Tensor、不支持 batch、不支持 broadcasting
+  ```
+
+- 批量矩阵乘法（Batch MatMul）
+
+  ```python
+  A = torch.randn(10, 2, 3)
+  B = torch.randn(10, 3, 4)
+  # batch size = 10，每个 batch 是一个 (2,3) @ (3,4)
+  C = A @ B # (10, 2, 3) @ (10, 3, 4) -> (10, 2, 4)
+
+  # 广播
+  A = torch.randn(10, 2, 3)
+  B = torch.randn(3, 4)
+  C = A @ B # B 被 broadcast 成 (10, 3, 4)，对每个 batch 使用同一个权重矩阵
+  # 这正是 Linear layer、Transformer projection 的本质
+  ```
+
+- 转置（transpose）
+
+  ```python
+  # 2D 张量的转置
+  A.T # 等价于 A.transpose(0, 1)，即 (m, n) -> (n, m)
+
+  # 高维张量的转置
+  X = torch.randn(2, 3, 4)
+  Y = X.transpose(1, 2) # (2, 3, 4) -> (2, 4, 3)，只交换两个维度，不会重排所有维
+
+  # 共轭转置
+  A = torch.randn(3, 3, dtype=torch.complex64)
+  A.H # 先转置、再取共轭
+  ```
+
+- norm（范数）
+
+  ```python
+  x = torch.tensor([3., 4.])
+  torch.norm(x) # 5
+  ```
+
+- 矩阵范数
+
+  ```python
+  A = torch.randn(3, 4)
+  torch.norm(A) # 默认所有元素拉平成一个向量，计算 L2 norm
+  ```
+
+- trace（迹）
+
+  ```python
+  A = torch.tensor([
+      [1., 2.],
+      [3., 4.]
+  ])
+  torch.trace(A) # 1 + 4 = 5
+  ```
+
+- inverse（逆）：A 必须是方阵、A 必须可逆、数值上可能不稳定
+
+  ```python
+  A = torch.eye(3)
+  A_inv = torch.inverse(A) # torch.linalg.inv(A)
+  ```
+
+- 直接求逆很慢，数值不稳定，梯度容易爆炸，可以使用 solve
+
+  ```python
+  A = torch.tensor([[3., 1.],
+                    [1., 2.]])
+  b = torch.tensor([9., 8.])
+  x = torch.linalg.solve(A, b) # 使用 LU/QR 分解，求解出 x，不显式求解 A 的逆
+  # 等价于解方程组 3x+y=9 / x+2y=8，结果是 tensor([2., 3.])
+  ```
+
+- torch.linalg 是 PyTorch 的线性代数工具集
+
+- 对于正定对称矩阵，那么 $A=LL^T$，其中 $L$ 是下三角矩阵
+
+  ```python
+  A = torch.tensor([
+      [4., 2.],
+      [2., 3.]
+  ])
+  L = torch.linalg.cholesky(A)
+  L ≈ [[2.0000, 0.0000],
+       [1.0000, 1.4142]]
+  # 数值上近似满足：A == L @ L.T
+
+  # 用 Cholesky 解方程（前提是 A 是正定对称矩阵）
+  x = torch.cholesky_solve(b, L)
+  # 先解 Ly = b，再解 L^T x = y
+  ```
+
+- torch.linalg 提供的其他运算
+
+  ```python
+  torch.linalg.norm(x, ord=2) # 支持向量范数、矩阵范数、指定维度
+  torch.linalg.svd(A) # 奇异值分解
+  ```
+
+## 归约操作（Reduce）
+
+- reduce = 沿某个维度，把多个值“压缩成一个”
+
+- 假设张量
+
+  ```python
+  x = torch.tensor([
+      [1., 2., 3.],
+      [4., 5., 6.]
+  ])
+  # shape: (2,3)
+  ```
+
+- sum
+
+  ```python
+  torch.sum(x) # 不指定 dim，则把所有元素加起来，得到 tensor(21.)，即标量
+  torch.sum(x, dim=0) # 沿着第 0 维压缩，即跨行求和，每一列得到一个数，即 tensor([5., 7., 9.])，shape: (3,)
+  torch.sum(x, dim=1) # 沿着第 1 维压缩，即跨列求和，每一行得到一个数，即 tensor([6., 15.])，shape: (2,)
+  ```
+
+- mean 与 sum 在形状规则上一致，只是多除了参与计算的元素的数量
+
+  ```python
+  torch.mean(x, dim=0) # tensor([2.5, 3.5, 4.5])，shape: (3,)
+  torch.mean(x, dim=1) # tensor([2., 5.])，shape: (2,)
+  ```
+
+- max / min
+
+  ```python
+  torch.max(x) # 不指定 dim，即全局最大值
+  values, indices = torch.max(x, dim=1) # 对每一行找最大值，同时返回最大值和最大值的位置，即 values  = tensor([3., 6.])、indices = tensor([2, 2])
+  # shape: values:  (2,)、indices: (2,)
+  ```
+
+- argmax / argmin
+
+  ```python
+  torch.argmax(x, dim=1) # 只要 index，不要 value，即 tensor([2, 2])，其返回的是位置编号，dtype 为 torch.int64
+  # argmax 不可求导，梯度在这里中断
+  pred = torch.argmax(logits, dim=1)
+  loss = loss_fn(pred, target)   # ❌
+  ```
+
+- keepdim
+
+  ```python
+  torch.sum(x, dim=1, keepdim=False) # 被 reduce 的那个维度直接消失
+  torch.sum(x, dim=1, keepdim=True) # 压缩成 size=1 的维度
+  # tensor([[ 6.],
+  #         [15.]])
+  # shape: (2, 1)
+
+  x - torch.mean(x, dim=1) # (2,3) - (2,)，由于维度不匹配，会直接报错
+  x - torch.mean(x, dim=1, keepdim=True) # (2,3) - (2,1)，可以广播对齐
+  ```
+
+- 在归约操作中，dim 指的是“要消掉哪一根轴”
+  - dim=0：跨 batch / 跨样本
+  - dim=1：对每个样本内部算
+  - dim=2：对每个 token / feature 算
+
+- 例如
+
+  ```python
+  logits.shape == (batch, num_classes)
+  torch.argmax(logits, dim=1) # 对每个样本，在类别维度上选择一个最大概率的类别
+  ```
+
+## 拆分与拼接
+
+- 拼接 = 把多个 Tensor 接成一个；拆分 = 把一个 Tensor 拆成多个，一切都围绕 dim 展开
+
+- 假设张量
+
+  ```python
+  a = torch.tensor([[1, 2, 3],
+                    [4, 5, 6]])      # shape: (2, 3)
+
+  b = torch.tensor([[10, 20, 30],
+                    [40, 50, 60]])   # shape: (2, 3)
+  ```
+
+- cat ：沿某一维“接起来”，所有 Tensor 除 dim 以外的所有维度必须完全相同
+
+  ```python
+  torch.cat(tensors, dim=...) # 沿 dim 方向“拉长”，其他维度必须完全一样
+  c = torch.cat([a, b], dim=0) # 按行拼接，行数相加，列数不变，即 (2, 3) + (2, 3) -> (4, 3)
+  # tensor([
+  #     [ 1,  2,  3],
+  #     [ 4,  5,  6],
+  #     [10, 20, 30],
+  #     [40, 50, 60]
+  # ])
+  c = torch.cat([a, b], dim=1) # 按列拼接，列数相加，行数不变，即 (2, 3) + (2, 3) -> (2, 6)
+  # tensor([
+  #     [ 1,  2,  3, 10, 20, 30],
+  #     [ 4,  5,  6, 40, 50, 60]
+  # ])
+  ```
+
+- stack：先新建一维，再拼接，要求所有输入的 shape 完全一致
+
+  ```python
+  x = torch.tensor([1, 2, 3])
+  y = torch.tensor([4, 5, 6])
+
+  # cat
+  torch.cat([x, y], dim=0) # tensor([1, 2, 3, 4, 5, 6])
+
+  # stack
+  torch.stack([x, y], dim=0)
+  # tensor([
+  #     [1, 2, 3],
+  #     [4, 5, 6]
+  # ])
+  torch.stack([x, y], dim=1)
+  # tensor([
+  #     [1, 4],
+  #     [2, 5],
+  #     [3, 6]
+  # ])
+  # dim 表示“新维度插在哪里”
+  ```
+
+- split：按长度拆分，不改顺序，不复制数据（通常是 view），返回的是 tuple
+
+  ```python
+  torch.split(x, split_size, dim)
+  torch.split(x, split_sizes, dim)
+  # 按固定大小拆分
+  x = torch.arange(10)
+  parts = torch.split(x, 3) # 最后一个可以不等长
+  # (
+  #  tensor([0, 1, 2]),
+  #  tensor([3, 4, 5]),
+  #  tensor([6, 7, 8]),
+  #  tensor([9])
+  # )
+  torch.split(x, [2, 5, 3])
+  # (
+  #  tensor([0, 1]),
+  #  tensor([2, 3, 4, 5, 6]),
+  #  tensor([7, 8, 9])
+  # )
+  ```
+
+- chunk：尽量均分，前面的块可能多一个元素
+
+  ```python
+  x = torch.arange(10)
+  torch.chunk(x, 3)
+  # (
+  #  tensor([0, 1, 2, 3]),
+  #  tensor([4, 5, 6]),
+  #  tensor([7, 8, 9])
+  # )
+  ```
+
+- reduce 与 cat
+
+  ```python
+  s = torch.sum(x, dim=1)
+  torch.cat([x, s], dim=1)  # ❌
+  # 正确方法
+  s = torch.sum(x, dim=1, keepdim=True)
+  torch.cat([x, s], dim=1)
+  ```
+
+## 原地操作（in-place）
+
+- 原地操作 = 直接修改已有 Tensor 的内容，不创建新的 Tensor
+
+- PyTorch 的一个非常明确的约定：函数名以 \_ 结尾 → 原地操作
+
+  ```python
+  x.add_(1)
+  x.mul_(2)
+  x.relu_()
+  x.clamp_(0, 1)
+  x.zero_()
+  x = x + 1      # 非原地，这是创建新 Tensor，再让变量名 x 指向它，不是原地操作
+  x.add_(1)     # 原地
+  ```
+
+- 原地操作的优势与风险
+  - 省内存：不创建新 Tensor、对大模型 / 大 batch 很重要
+  - 少一次分配 + 拷贝：在某些场景下更快、尤其是显存紧张时
+  - 破坏计算图：autograd 需要“旧值”，但原地操作却把它改掉了
+
+- 与 autograd 的冲突
+
+  ```python
+  x = torch.tensor([1., 2., 3.], requires_grad=True)
+
+  y = x * 2
+  x.add_(1)          # ❌ 原地修改 x
+  z = y.sum()
+  z.backward()
+  # 报错：RuntimeError: one of the variables needed for gradient computation has been modified in-place
+  # y 的计算依赖旧的 x，但把 x 改了，autograd 没法回溯
+  ```
+
+- 不报错但是也计算梯度错误的情况
+
+  ```python
+  x = torch.randn(10, requires_grad=True)
+  y = x * x
+  x.relu_()          # 修改了 x
+  loss = y.sum()
+  loss.backward()
+  ```
+
+- Tensor 在计算图中被用过后，就不要再原地修改它
+
+- Tensor 是叶子节点时，叶子节点没有 grad_fn，autograd 无法计算
+
+  ```python
+  x = torch.tensor([1.], requires_grad=True)
+  x.add_(1)   # ❌
+  ```
+
+## 拷贝、共享与内存语义
+
+- Tensor = 元数据（shape / stride / dtype / device）+ 一块内存
+
+- 很多操作只改元数据（不拷贝）或明确拷贝一份新内存
+
+- clone：明确的深拷贝
+
+  ```python
+  y = x.clone() # 分配一块新内存，把 x 的数据复制过去，y 和 x 彻底独立
+  ```
+
+- detach：切断计算图，但是并不会拷贝数据
+
+  ```python
+  y = x.detach() # y 和 x 共享同一块内存，且 y 不再参与 autograd
+
+  x = torch.tensor([1., 2., 3.], requires_grad=True)
+  y = x.detach()
+
+  y[0] = 100 # x = [100., 2., 3.]
+
+  with torch.no_grad():
+      target = model(x)
+  # 等价于
+  target = model(x).detach()
+  ```
+
+## 自动微分
+
+- 训练模型的本质是在不断调整参数，让 loss 变小
+  - 假设模型有一堆参数 $\theta$，输入 $x$，输出 $\hat y = f(x; \theta)$，有一个损失函数 $L(\hat y, y)$，最终目标是
+
+    $$
+    \displaystyle\min_\theta L(f(x;\theta),y)
+    $$
+
+  - 真正关心的是该把参数 $\theta$ 往哪个方向修改
+
+  - 对单个参数 $\theta_i$ 而言，损失函数对参数 $\theta_i$ 的微分如下
+
+    $$
+    \frac{\partial L}{\partial \theta_i}
+    $$
+
+  - 所以，没有梯度 → 参数不会动；梯度算错 → 模型直接废
+
+- 可以手写反向传播吗
+  - 对于以下函数
+
+    $$
+    y = ((x \cdot w + b)^2).sum()
+    $$
+
+  - 如果手推链式法则，求每一层对上一层的偏导，再展开到每个参数，再一个三层的 MLP 中就已经开始崩溃
+
+  - 因此需要一个系统，只需要写 forward，系统就可以自动计算 backward
+
+- 数值微分（Numerical Differentiation）：每个参数都要算一次，求解速度慢，不稳定（$\epsilon$ 难以选择），精度差
+
+  $$
+  \frac{f(x+\epsilon) - f(x)}{\epsilon}
+  $$
+
+- 符号微分（Symbolic Differentiation）：容易表达式爆炸，不适合程序控制流程，是 TensorFlow 1.x 的路线
+
+  $$
+  x^2+3x\rightarrow 2x+3
+  $$
+
+- 自动微分（Automatic Differentiation）
+  - 把计算过程拆成基本算子，逐个用链式法则
+  - 计算精确，计算复杂度和 forward 同量级，可以处理任意程序结构
+  - forward 时，每做一步计算，就记录用了什么算子，输入是谁
+  - backward 时，从 loss 开始，沿着记录的路径反着走，自动计算链式法则
+
+## 计算图
+
+- 计算图 = 描述“计算是怎么一步步算出来”的有向图
+  - 节点（node）：一次计算 / 一个算子
+  - 边（edge）：数据依赖关系
+  - 它不是数学图，而是程序执行图
+
+- 例如对于以下算式
+
+  $$
+  z=(x+y)\times 2
+  $$
+  - 第一步：$a=x+y$
+
+  - 第二步：$z=a\times 2$
+
+  - 其计算图为
+
+    ```python
+    x ──┐
+        + ── a ── ×2 ── z
+    y ──┘
+    ```
+
+- PyTorch 的计算图不是一个全局大对象，而是分散存在每个 Tensor 里的，每个 Tensor 都有三个和 autograd 有关的参数：`requires_grad`、`grad`、`grad_fn`
+  - `grad_fn`：每一个“非叶子 Tensor”，都会有 `grad_fn`
+
+    ```python
+    import torch
+
+    x = torch.tensor(2.0, requires_grad=True)
+    y = torch.tensor(3.0, requires_grad=True)
+
+    z = x + y
+    z.grad_fn # <AddBackward0>
+    # z 不是凭空得到的，而是通过一个 Add 操作计算的
+
+    w = z * 2
+    w.grad_fn # <MulBackward0>
+    # 最终计算图
+    # x ──┐
+    #     Add ── z ── Mul ── w
+    # y ──┘
+
+    x.grad_fn # None
+    y.grad_fn  # None
+    # 原因是 x、y 是“叶子节点”（leaf tensor），它们不是计算得到的，而是“手写创造”出来的
+    ```
+
+  - 叶子 Tensor = 用户直接创建，且 `requires_grad=True` 的 Tensor
+    - `grad_fn is None`
+    - `.grad` 会被真正填充
+    - 通常是模型参数
+
+  - forward：做数值计算，同时构建计算图（记录依赖）
+
+  - backward：沿着 `grad_fn` 指向的路径，反向传播梯度，用链式法则
+
+- 动态计算图（Define-by-Run / Eager execution）
+  - 旧的 TensorFlow 实现采用静态计算图，先定义计算图，编译后，再加载数据进行执行，其控制流处理很麻烦，如 if / for 要用特殊 API
+  - 动态计算图则是书写 Python 代码后立刻执行并动态创建计算图，即 PyTorch 的计算图是“临时的”，只服务于当前这一次 forward
+  - 动态计算图中，每一次 forward 都是一次全新的建图，旧的计算图用完即被丢弃
+
+- 对于 Python 控制流而言，只有实际走过的那条路径才会被计入计算图中，没有走过的分支，不会进入计算图
+
+- 对于循环也是如此，每循环一次，就会多一个计算图节点
+
+- 这样，反向传播的代码十分简洁
+
+  ```python
+  for batch in dataloader:
+      loss = model(batch)
+      loss.backward()
+  ```
+
+- 计算图的生命周期
+  - forward 执行 → 图建立
+
+  - backward 调用 → 用图算梯度
+
+  - backward 结束 → 图被释放
+
+  - 因此只能 backward 一次，在反向传播后，计算图就会被立即释放
+
+  - 再次 backward 会报错：`Trying to backward through the graph a second time`
+
+  - 显式保存计算图，会导致显存不会被释放，容易 OOM
+
+    ```python
+    y.backward(retain_graph=True)
+    ```
+
+  - 这也是为什么，在 PyTorch 的 module 定义中，只需实现 forward 函数
+
+## autograd
+
+### require_grad
+
+- `requires_grad` 告诉 PyTorch 这个 Tensor 的计算过程，要不要被记录进计算图
+
+  ```python
+  x = torch.tensor(3.0, requires_grad=True)
+  # 所有由 x 推导出的结果，都会被 autoguard 追踪，可以反向传播梯度
+  x = torch.tensor(2.0, requires_grad=True)
+  y = x * 3
+  z = y + 1
+  # x.requires_grad == True
+  # y.requires_grad == True
+  # z.requires_grad == True
+  # 只要上游有一个 True，下游全 True
+  ```
+
+- PyTorch 默认假设普通 Tensor 只是“数据”，不是“参数”
+
+  ```python
+  a = torch.tensor(2.0)
+  b = a * 3
+  ```
+
+- 参数 Tensor
+
+  ```python
+  import torch.nn as nn
+
+  w = nn.Parameter(torch.randn(3, 3))
+  # 等价于 w = torch.randn(3, 3, requires_grad=True)
+  # 但多了一层语义：告诉 Module 这是“要优化的参数”
+  # 几乎所有可学习参数都要求 requires_grad=True
+  ```
+
+- 不同的叶子节点
+
+  ```python
+  x = torch.tensor(2.0, requires_grad=True)
+  w = torch.tensor(3.0)
+  y = x * w
+  y.requires_grad  # True
+  # x 可导，w 不可导
+  # 梯度能传到 x，但永远传不到 w
+  y.backward()
+  x.grad  # 有值
+  w.grad  # 永远是 None
+  ```
+
+- 在 forward 中不应该创建参数
+
+  ```python
+  # 每次 forward 都新建一个参数，优化器根本不知道它存在，梯度计算也未产生任何作用
+  class BadModel(nn.Module):
+      def forward(self, x):
+          w = torch.randn(10, 10, requires_grad=True)
+          return x @ w
+  # 正确做法：所有可学习参数都在初始化函数中定义
+  class GoodModel(nn.Module):
+      def __init__(self):
+          super().__init__()
+          self.w = nn.Parameter(torch.randn(10, 10))
+
+      def forward(self, x):
+          return x @ self.w
+  ```
+
+- requires_grad 的传播规则
+  - **任意**输入 requires_grad=True，且该操作支持 autograd，则其输出 requires_grad=True
+
+  - **所有**输入 requires_grad=False，则输出必为 False
+
+- 哪些节点保存梯度 `.grad`
+  - PyTorch 默认只给 Leaf Tensor 保存梯度
+  - 中间变量默认不保存 `.grad`，这是由于中间节点的梯度用完即丢，不存储从而节省内存
+  - 中间节点的梯度只在 backward 过程中得到，用完后就会释放
+  - 如果每个中间 Tensor 都存 `.grad`，显存 / 内存会直接爆炸
+
+  ```python
+  x = torch.tensor(2.0, requires_grad=True)
+  y = x * 3
+  y.backward()
+  x.grad  # 有
+  y.grad  # None
+  ```
+
+- 动态开关 requires_grad
+
+  ```python
+  x = torch.tensor(2.0)
+  x.requires_grad_(True) # 原地操作，常用于从数据 Tensor 升级为参数
+  ```
+
+### autograd 的组成
+
+- 每一个参与 autograd 的 Tensor，都可以从这三件事来理解：
+  - `data`：数值本体
+
+  - `grad`：反向传播算出来的梯度
+
+  - `grad_fn`：我是谁算出来的（反向函数）
+  - autograd 本质上就是：沿着 `grad_fn` 链条，把梯度写进 `.grad`
+
+- `.grad` 是累加，不是覆盖，因此在训练前需要
+
+  ```python
+  optimizer.zero_grad()
+  ```
+
+- 梯度是累积的，是为了支持多 loss、梯度累积训练、分 batch 反向传播
+
+- 反向传播必须有一个起点梯度，标量 loss 的起点是
+
+  $$
+  \frac{\partial L}{\partial L}=1
+  $$
+
+- 如果不是标量，必须手动给出
+
+  ```python
+  y = torch.tensor([1., 2., 3.], requires_grad=True)
+  y.backward()   # ❌ 报错
+  y.backward(torch.ones_like(y)) # 等价于 y 的每个元素求和
+  ```
+
+### 反向传播的流程
+
+- 一个最小的例子
+
+  ```python
+  import torch
+
+  x = torch.tensor(2.0, requires_grad=True)
+  w = torch.tensor(3.0, requires_grad=True)
+
+  y = x * w
+  loss = y ** 2
+  # 计算图为
+  # x ──┐
+  #     * ── y ── **2 ── loss
+  # w ──┘
+  loss.backward() # 反向传播的例子
+  ```
+
+- 反向传播顺序是（只更新梯度，不更新参数）：
+  - 从 `loss` 开始
+  - 调用 `loss.grad_fn`
+  - 向上游节点递归
+  - 直到叶子 Tensor
+  - 把梯度累加进 `.grad`
+
+- 反向传播完成后需清理计算图，释放由 `grad_fn` 串联起来的反向依赖结构
+  - PyTorch 的计算图不是一个独立对象，而是由各 Tensor 通过 `grad_fn` 和内部指针相互引用形成的反向依赖网
+  - `grad_fn` 仅为计算图的入口节点，并非整张图，而内存占用主要来自反向传播所需的中间 Tensor、前向传播的中间结果缓存，以及反向函数持有的 context
+  - 因此清理计算图的核心是释放这些反向相关的中间缓存与引用，而非简单将`grad_fn`置为 None
+
+- `retain_graph=True` 可以在反向传播后保留计算图，不再清理中间缓存与引用
+
+  ```python
+  loss1.backward(retain_graph=True)
+  loss2.backward()
+  # 等价于
+  (loss1 + loss2).backward()
+  ```
+
+- `detach()`
+
+  ```python
+  y = x * 2
+  z = y.detach()
+  # 创建了一个新的 Tensor，从这一点开始，不再连着原来的图
+  # z.requires_grad == False，z.grad_fn == None
+  # detach 切断未来的图，而不是清理已经存在的图
+  ```
+
+- `optimizer.step()`：在反向传播计算过梯度后，读取 `.grad` 更新参数
+
+- 强制查看中间 Tensor 的梯度
+
+  ```python
+  y.retain_grad()
+  z.backward()
+  y.grad
+  ```
+
+- tensor 与 tensor 的梯度之间的关系
+
+  ```python
+  param.grad.shape == param.shape
+  # 每个参数都要存储其对应的 grad，因此在训练过程中参数占用的显存一般与梯度占用的显存相当
+  ```
+
+- `with torch.no_grad():`
+  - 在这个作用域中，所有新的 tensor 的 `requires_grad=False`
+
+  - 不构建计算图，也不存储中间状态
+
+  - 在推理（inference）阶段，需要关闭梯度，来节省显存，并且推理速度更快，避免误用 backward
+
+    ```python
+    model.eval()
+    with torch.no_grad():
+        out = model(x)
+    ```
+
+- autograd 与 in-place
+  - 反向传播需要 forward 时的中间值来算梯度
+  - 而 in-place 操作会覆盖旧值，破坏 backward 所需信息
+  - 在反向传播时就会报错 `RuntimeError: one of the variables needed for gradient computation has been modified by an inplace operation`，表示在 forward 时记住的那个 Tensor，到 backward 时，已经不是它了
+  - 例如，`x += y` 是 in-place 操作，替换为 `x = x + y` 即可让 PyTorch 有机会保留旧值，正确构建计算图
+
+- autograd 的边界情况，以下情况都会把 Tensor 拉出计算图
+  - `.item()` → Python 标量（计算图断裂）
+  - `.numpy()` → NumPy（计算图断裂）
+  - `.cpu()` → Tensor 还在图里，但如果配合 numpy 就会导致计算图断裂
+
+- `grad_fn` 的存储结构
+
+  ```python
+  Node (Function)
+  ├── backward()              # 反向计算逻辑
+  ├── next_functions[]        # 指向前驱节点，即计算图的边，是从输出方向指向输入
+  ├── saved_tensors           # forward 保存的中间值
+  ├── needs_input_grad[]      # 哪些输入需要梯度
+  └── metadata
+  ```
+
+- 在深度学习/Autograd/显存语境下说的“激活（activations）”
+  - 不只是激活函数（ReLU / GELU）的输出，而是 forward 过程中，为了 backward 计算梯度而必须保留的所有中间 Tensor
+  - 工程语境中的 activation 指的是 Linear 的输入、Attention 的 Q / K / V、Softmax 的输入与输出、LayerNorm 的均值 / 方差、MLP 中间层输出
+  - 只要是 forward 算出来的，backward 要用到，都是 activation
+
+### 其他话题
+
+- `torch.autograd.grad` 直接返回梯度，不写入 `.grad`，不一定释放图
+
+  ```python
+  y = x ** 2
+  grad_x = torch.autograd.grad(y, x)
+  # grad_x 是一个 Tensor，x.grad 仍然是 None
+  ```
+
+- 高阶梯度（二阶、Hessian）：梯度本身也可以是计算图的一部分
+
+  ```python
+  y = x ** 2
+  dy_dx = torch.autograd.grad(y, x)
+  # dy_dx 是普通 Tensor，不可再对它求梯度
+  dy_dx = torch.autograd.grad(y, x, create_graph=True)
+  d2y_dx2 = torch.autograd.grad(dy_dx, x)
+  # 此时梯度计算本身也构建了计算图，显存和计算量显著增加
+  ```
+
+- Hessian 矩阵：在工程上一般使用 Hessian-vector product，PyTorch 内部用的就是 autograd 的链式法则
+
+  $$
+  H_{ij}=\frac{\partial^2 f}{\partial x_i\partial x_j}
+  $$
+
+- 自定义 `autograd.Function`
+  - 自定义算子的用处
+    - 写 CUDA / fused op
+    - 控制 forward 中保存哪些 activation
+    - 自定义不可微 / 分段可微操作
+
+  - 基本结构
+
+    ```python
+    class MyFunc(torch.autograd.Function):
+        @staticmethod
+        def forward(ctx, x): # 决定存储哪些 activation
+            ctx.save_for_backward(x) # ctx 即为 backward 的记忆，而 save_for_backward 即为 activation
+            return x ** 2
+
+        @staticmethod
+        def backward(ctx, grad_out): # 决定如何用存储的激活值计算梯度
+            x, = ctx.saved_tensors
+            return grad_out * 2 * x
+    ```
+
+- 如何调试检查“梯度为 None”
+  - 参数：`requires_grad=False
+  - Tensor 被 `detach()`，或在 `no_grad` 里
+  - 计算图中，loss 和该参数没有连通
+
+- 如何调试检查“梯度为 0”
+  - 激活函数饱和（ReLU 死亡）
+  - 初始化过大 / 过小
+  - 梯度被裁剪成 0
+  - loss scale 问题（fp16）
+
+- 如何调试检查“参数没有正确更新”
+  - `param.requires_grad == True`
+  - `param.grad is not None`
+  - `param.grad.norm() > 0`
+  - `optimizer.param_groups` 里有这个参数
+  - `optimizer.step()` 被调用
+  - 学习率 > 0
+
+- 用 `print(param.grad.norm())` 调试
+
+  ```python
+  for name, p in model.named_parameters():
+      if p.grad is not None:
+          print(name, p.grad.norm())
+  ```
+
+## TorchScript
+
+- 背景与目的
+  - PyTorch 默认是动态计算图（eager execution），也就是代码运行时即时构建和执行计算图，这对研究和调试非常方便，但部署到生产环境时有几个问题：
+    - 依赖 Python 解释器，不能直接在 C++ 或移动端运行
+    - 动态图每次运行都需要解释和调度，性能可能不如静态图
+    - 无法进行跨进程或跨平台优化
+  - TorchScript 就是为了解决这些问题，它可以把 PyTorch 模型“编译”成一个中间表示（IR，Intermediate Representation），然后这个 IR 可以在 Python 之外被执行，比如在 C++ 的 libtorch 或移动端环境
+
+- TorchScript 模型可以通过两种方式生成：
+  - 追踪（Tracing）
+    - 示例
+
+      ```python
+      import torch
+
+      def model_fn(x):
+          return x * 2
+
+      traced_model = torch.jit.trace(model_fn, torch.randn(3))
+      ```
+
+    - `torch.jit.trace` 会运行一次模型，并记录每一步的算子操作，生成静态计算图
+
+    - 优点：简单，适合完全依赖张量操作的模型
+
+    - 缺点：对控制流（if、for）敏感，如果模型中有数据依赖的动态分支，追踪可能不准确
+
+  - 脚本（Scripting）
+    - 示例
+
+      ```python
+      import torch
+
+      @torch.jit.script
+      def model_fn(x):
+          if x.sum() > 0:
+              return x * 2
+          else:
+              return x - 2
+      ```
+
+    - `torch.jit.script` 会直接解析 Python 函数或 nn.Module，并生成 TorchScript IR
+
+    - 优点：可以处理控制流（if/for/while）和更复杂逻辑
+
+    - 缺点：对某些 Python 特性支持有限，需要使用 TorchScript 支持的 subset
+
+- `torch.jit` 是 PyTorch 提供的 TorchScript API 的入口，常用功能包括：
+  - `torch.jit.trace(func, example_inputs)`：生成追踪模型
+  - `torch.jit.script(func_or_module)`：生成脚本模型
+  - `torch.jit.save(script_module, path)`：保存 TorchScript 模型
+  - `torch.jit.load(path)`：加载 TorchScript 模型
+  - `script_module.forward(...)`：执行模型
+
+- 换句话说，`torch.jit` 就是 TorchScript 的“工具箱”，负责将 PyTorch 模型转换、保存和加载为可部署的静态表示
+
+## einsum
+
+- `einsum` 来自 Einstein summation convention（爱因斯坦求和约定），它允许用一种简洁、符号化的方式表示张量之间的各种乘法、加和操作
+
+- 它的核心思想是：
+  - 每个轴（维度）用一个字母表示，比如 `i, j, k…`
+  - 重复出现的字母表示对该维度求和
+  - 输出可以显式指定，也可以通过未出现的字母自动推断
+
+- 形式上，`einsum` 的调用一般是：
+  - 示例
+
+    ```python
+    import torch
+    torch.einsum("axes1,axes2->axes_out", [tensor1, tensor2])
+    ```
+
+  - `"axes1,axes2"`：箭头左边表示输入张量，以逗号分隔每个输入张量
+
+  - `"axes_out"`：箭头右边表示输出张量，如果省略，默认对重复维度求和
+
+  - 表示维度的字符只能是26个英文字母 `'a' - 'z'`
+
+  - einsum 的第二个参数表示实际的输入张量列表，其数量要与表达式中的输入张量数量对应
+
+  - 对应每个张量的子表达式的字符个数要与张量的真实维度对应，例如 `ik,kj->ij` 表示输入和输出张量都是两维的
+
+  - 表达式中的字符也可以理解为索引，即输出张量的某个位置的值，是怎么从输入张量中得到的，比如矩阵乘法 `ik,kj->ij` 的输出的某个元素 `c[i, j]` 的值是通过 `a[i, k]` 和 `b[k, j]` 沿着 `k` 这个维度做内积得到的
+
+- 自由索引（Free indices）和求和索引（Summation indices）
+  - 自由索引：出现在箭头右侧的索引，例如在 `ik,kj->ij` 中，`i` 和 `j` 为自由索引
+  - 求和索引：仅出现在箭头左侧的索引，表示需要沿该维度求和以得到最终输出，例如在 `ik,kj->ij` 中，`k` 是求和索引
+
+- 三条基本规则
+  - 箭头左侧表达式中，在不同输入张量间重复出现的索引表示沿该维度执行乘法操作。例如在 `ik,kj->ij` 中，`k` 在两个输入中重复出现，因此对应维度进行元素乘积
+  - 仅出现在箭头左侧的索引表示在中间计算结果上沿该维度求和，即求和索引
+  - 箭头右侧的索引顺序可以任意调整，例如 `ik,kj->ij` 可写为 `ik,kj->ji`，此时输出结果会自动转置，开发者只需指定所需顺序
+
+- 两条特殊规则
+  - 输出部分（箭头右侧）可以省略。在这种情况下，输出张量的维度将根据默认规则推导：取输入中仅出现一次的索引，并按字母顺序排列。例如 `ik,kj->ij` 可简化为 `ik,kj`，默认输出即为 `ij`
+
+  - 表达式中支持省略号 `…`，用于表示任意数量的中间维度索引。例如对高维张量的最后两维进行转置，可写为：
+
+    ```python
+    a = torch.randn(2, 3, 5, 7, 9)
+    # 最后两维 i=7, j=9 做转置
+    b = torch.einsum('...ij->...ji', [a])
+    ```
+
+- 矩阵乘法示例
+  - 矩阵乘法公式
+
+    $$
+    C_{ik}=\sum_j A_{ij}B_{jk}
+    $$
+
+  - 用 einsum 实现，将 $\sum$ 符号省去，更加简洁
+
+    $$
+    C_{ik} = A_{ij}B_{jk}
+    $$
+
+  - 代码实现
+
+    ```python
+    c = torch.einsum('ij,jk->ik', [A, B])
+    ```
+
+  - `A` 是 `ij`，`B` 是 `jk`
+
+  - 重复字母 `j` 表示对这一维求和
+
+  - 输出维度是 `ik`，即行 × 列
+
+  - 对应传统的 `A @ B`，功能完全一样，但可以更灵活地扩展到高维张量
+
+- 向量内积
+  - 向量内积公式
+
+    $$
+    s=\sum_i a_i b_i
+    $$
+
+  - 用 einsum 实现，将 $\sum$ 符号省去，更加简洁
+
+    $$
+    s=a_i b_i
+    $$
+
+  - 代码实现
+
+    ```python
+    s = torch.einsum('i,i', [a, b])
+    ```
+
+  - `i` 在两个向量中都出现 → 对 `i` 求和
+
+  - 输出是标量
+
+- 外积
+  - 外积公式
+
+    $$
+    C_{ij}=a_i b_j
+    $$
+
+  - 用 einsum 实现
+
+    ```python
+    C = torch.einsum('i,j->ij', [a, b])
+    ```
+
+  - 不重复的字母 → 保留维度
+
+  - 输出是矩阵
+
+- 批量矩阵乘法
+  - 假设 `A` 和 `B` 的形状都是 `(batch, n, m)` 和 `(batch, m, p)`：
+
+    ```python
+    C = np.einsum('bik,bkj->bij', [A, B])
+    ```
+
+  - `b` 表示 batch 维度，不参与求和
+
+  - `i,k` 与 `k,j` 求和 → 输出维度 `b,i,j`
+
+- `einsum` 真正强大在于它可以表示任意高维张量的乘加操作，例如：
+  - 张量收缩（Tensor Contraction）
+    - 假设 `A` 形状 `(i,j,k)`，`B` 形状 `(k,j,l)`，想要做类似矩阵乘法的高维扩展：
+
+      ```python
+      C = np.einsum('ijk,kjl->il', [A, B])
+      ```
+
+    - `j,k` 出现在两个张量中 → 对它们求和
+
+    - 输出只保留 `i,l`
+
+  - 求和
+    - 实现
+
+      ```python
+      sum_A = np.einsum('ijk->', [A])
+      ```
+
+    - 没有输出维度 → 全部求和
+
+    - 等同于 `A.sum()`
+
+  - 平均或求某维度的和
+    - 实现
+
+      ```python
+      sum_over_j = np.einsum('ijk->ik', [A])
+      ```
+
+    - 对 `j` 维求和，保留 `i,k`
+
+    - 类似于 `A.sum(axis=1)`
+
+- einsum 的优势
+  - 表达能力极强：几乎可以表示任何线性代数操作，包括矩阵乘法、向量内积、外积、批量操作、多维张量收缩
+  - 简洁：避免多重 `transpose`、`reshape`、`sum`
+  - 可优化：现代框架（NumPy, PyTorch）可以自动选择高效内核来执行 `einsum`，减少临时数组
+
+- 高级用法
+  - 置换（Transpose）
+    - 实现
+
+      ```python
+      B = np.einsum('ijk->kij', [A])
+      ```
+
+    - 输出是 `A` 的维度重新排列
+    - 比 `np.transpose(A, (2,0,1))` 更直观
+
+  - 批量外积
+    - 假设 `A` 和 `B` 是 `(batch, n)` 和 `(batch, m)`：
+
+      ```python
+      C = np.einsum('bi,bj->bij', [A, B])
+      ```
+
+    - batch 内独立外积
+    - 输出 `(batch, n, m)`
+
+  - 带权求和
+    - 假设 `A` `(n,m)`，`w` `(m,)`，想要对每列加权求和：
+
+      ```python
+      s = np.einsum('ij,j->i', [A, w])
+      ```
+
+    - 输出 `(n,)`，比 `A @ w` 更清楚维度含义
+
+- 使用技巧
+  - 重复字母表示求和，唯一字母保留 → 熟记即可
+  - 输出维度可显式给出，也可省略
+  - 复杂操作建议先用小维度例子画图，理解求和和保留的维度
+  - 对高维 tensor，`einsum` 可以避免多次 `reshape` 和 `transpose`，同时让代码更可读

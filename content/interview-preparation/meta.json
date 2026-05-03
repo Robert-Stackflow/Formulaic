@@ -1,9 +1,0 @@
-{
-  "title": "面试准备",
-  "description": "面试准备相关的文档和资源",
-  "icon": "Building",
-  "root": true,
-  "pages": [
-    "index"
-  ]
-}

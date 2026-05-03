@@ -1,0 +1,21 @@
+{
+  "title": "大语言模型",
+  "description": "大语言模型相关的文档和资源",
+  "root": true,
+  "pages": [
+    "index",
+    "--- 基础知识 ---",
+    "machine-learning",
+    "pytorch",
+    "llm",
+    "--- 推理与训练 ---",
+    "distributed-training",
+    "pre-training",
+    "post-training",
+    "llm-inference",
+    "--- 应用与扩展 ---",
+    "agent",
+    "llm-frontier",
+    "other"
+  ]
+}

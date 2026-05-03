@@ -1,0 +1,9543 @@
+---
+title: Build LLM from Scratch
+description: 介绍 Build LLM from Scratch，包括 Tokenization、Batching、Model Architecture、Training Loop 等内容，帮助开发者从零开始构建一个简单的语言模型
+---
+
+## Tokenization
+
+### Naive Tokenization
+
+- 准备原始文本
+
+  ```python
+  with open("the-verdict.txt", "r", encoding="utf-8") as f:
+      raw_text = f.read()
+
+  print("Total number of character:", len(raw_text))
+  print(raw_text[:99])
+  ```
+
+- 接下来根据正则表达式切分原始文本，得到切分后的 token 列表
+
+  ```python
+  preprocessed = re.split(r'([,.:;?_!"()\']|--|\s)', raw_text)
+  preprocessed = [item.strip() for item in preprocessed if item.strip()]
+  print(preprocessed[:30])
+  ```
+
+- 将 token 列表转为 token IDs，首先进行去重（将 token 列表转为 token 集合），并按照首字母排序，然后简单地按照 token 的顺序分配对应的 token ID
+
+  ```python
+  all_words = sorted(set(preprocessed))
+  vocab_size = len(all_words)
+  print(vocab_size)
+
+  vocab = {token:integer for integer,token in enumerate(all_words)}
+
+  for i, item in enumerate(vocab.items()):
+      print(item)
+      if i >= 50:
+          break
+  ```
+
+- 将上续步骤合并得到 SimpleTokenizerV1 类
+
+  ```python
+  class SimpleTokenizerV1:
+      def __init__(self, vocab):
+          self.str_to_int = vocab
+          self.int_to_str = {i:s for s,i in vocab.items()}
+
+      def encode(self, text):
+          preprocessed = re.split(r'([,.:;?_!"()\']|--|\s)', text)
+
+          preprocessed = [
+              item.strip() for item in preprocessed if item.strip()
+          ]
+          ids = [self.str_to_int[s] for s in preprocessed]
+          return ids
+
+      def decode(self, ids):
+          text = " ".join([self.int_to_str[i] for i in ids])
+          # Replace spaces before the specified punctuations
+          text = re.sub(r'\s+([,.?!"()\'])', r'\1', text)
+          return text
+  ```
+
+- 接下来就可以使用 SimpleTokenizerV1 来处理文本
+
+  ```python
+  tokenizer = SimpleTokenizerV1(vocab)
+
+  text = """"It's the last he painted, you know,"
+             Mrs. Gisburn said with pardonable pride."""
+  ids = tokenizer.encode(text)
+  print(ids)
+  # 解码
+  tokenizer.decode(ids)
+  # 编码并解码
+  tokenizer.decode(tokenizer.encode(text))
+  ```
+
+- 添加特殊的 token：例如 `[BOS]` 表示序列的开始；`[EOS]` 表示序列的结束；`[PAD]` 表示对于多条长度不一致的序列，把短序列填充到长序列的长度，使得不同序列的长度保持一致；`[UNK]` 表示未登录词；GPT 模型则使用 `<|endoftext|>` 表示序列结束、序列填充；GPT 模型不使用特殊的 token 表示未登录词，而是通过 BPE 算法把未登录词划分为字词
+
+- 例如，对于先前的词典，当遇到未登录词会遇到问题
+
+  ```python
+  tokenizer = SimpleTokenizerV1(vocab)
+
+  text = "Hello, do you like tea. Is this-- a test?"
+
+  tokenizer.encode(text)
+  ```
+
+- 由于 `Hello` 不包含在词典中，因此会抛出错误，可以添加特殊的 token
+
+  ```python
+  all_tokens = sorted(list(set(preprocessed)))
+  all_tokens.extend(["<|endoftext|>", "<|unk|>"])
+
+  vocab = {token:integer for integer,token in enumerate(all_tokens)}
+
+  for i, item in enumerate(list(vocab.items())[-5:]):
+      print(item)
+  ```
+
+- 还需要对 SimpleTokenizerV1 进行修改
+
+  ```python
+  class SimpleTokenizerV2:
+      def __init__(self, vocab):
+          self.str_to_int = vocab
+          self.int_to_str = { i:s for s,i in vocab.items()}
+
+      def encode(self, text):
+          preprocessed = re.split(r'([,.:;?_!"()\']|--|\s)', text)
+          preprocessed = [item.strip() for item in preprocessed if item.strip()]
+          preprocessed = [
+              item if item in self.str_to_int
+              else "<|unk|>" for item in preprocessed
+          ]
+
+          ids = [self.str_to_int[s] for s in preprocessed]
+          return ids
+
+      def decode(self, ids):
+          text = " ".join([self.int_to_str[i] for i in ids])
+          # Replace spaces before the specified punctuations
+          text = re.sub(r'\s+([,.:;?!"()\'])', r'\1', text)
+          return text
+  ```
+
+- 此时处理新的句子，可以看到编码再解码后的句子包含了未登录词的 token
+
+  ```python
+  tokenizer = SimpleTokenizerV2(vocab)
+
+  text1 = "Hello, do you like tea?"
+  text2 = "In the sunlit terraces of the palace."
+
+  text = " <|endoftext|> ".join((text1, text2))
+
+  print(text)
+  # Hello, do you like tea? <|endoftext|> In the sunlit terraces of the palace.
+  print(tokenizer.encode(text))
+  # [1131, 5, 355, 1126, 628, 975, 10, 1130, 55, 988, 956, 984, 722, 988, 1131, 7]
+  print(tokenizer.decode(tokenizer.encode(text)))
+  # '<|unk|>, do you like tea? <|endoftext|> In the sunlit terraces of the <|unk|>.'
+  ```
+
+### BytePair Encoding（BPE）
+
+- GPT-2 使用了 BPE 作为 tokenizer
+
+- BPE 算法允许模型将未登录词分解为更小的字词甚至是单个的字符来使其能够用词典中的 token 表示
+
+- 例如，GPT-2 可能会将未登录词 `unfamiliarword` 划分为 `unfam`、`iliar`、`word`
+
+- BPE 的原始实现如下（[gpt-2/src/encoder.py at master · openai/gpt-2](https://github.com/openai/gpt-2/blob/master/src/encoder.py)）：
+
+  ```python
+  """Byte pair encoding utilities"""
+
+  import os
+  import json
+  import regex as re
+  from functools import lru_cache
+
+  @lru_cache()
+  def bytes_to_unicode():
+      """
+      Returns list of utf-8 byte and a corresponding list of unicode strings.
+      The reversible bpe codes work on unicode strings.
+      This means you need a large # of unicode characters in your vocab if you want to avoid UNKs.
+      When you're at something like a 10B token dataset you end up needing around 5K for decent coverage.
+      This is a signficant percentage of your normal, say, 32K bpe vocab.
+      To avoid that, we want lookup tables between utf-8 bytes and unicode strings.
+      And avoids mapping to whitespace/control characters the bpe code barfs on.
+      """
+      bs = list(range(ord("!"), ord("~")+1))+list(range(ord("¡"), ord("¬")+1))+list(range(ord("®"), ord("ÿ")+1))
+      cs = bs[:]
+      n = 0
+      for b in range(2**8):
+          if b not in bs:
+              bs.append(b)
+              cs.append(2**8+n)
+              n += 1
+      cs = [chr(n) for n in cs]
+      return dict(zip(bs, cs))
+
+  def get_pairs(word):
+      """Return set of symbol pairs in a word.
+
+      Word is represented as tuple of symbols (symbols being variable-length strings).
+      """
+      pairs = set()
+      prev_char = word[0]
+      for char in word[1:]:
+          pairs.add((prev_char, char))
+          prev_char = char
+      return pairs
+
+  class Encoder:
+      def __init__(self, encoder, bpe_merges, errors='replace'):
+          self.encoder = encoder
+          self.decoder = {v:k for k,v in self.encoder.items()}
+          self.errors = errors # how to handle errors in decoding
+          self.byte_encoder = bytes_to_unicode()
+          self.byte_decoder = {v:k for k, v in self.byte_encoder.items()}
+          self.bpe_ranks = dict(zip(bpe_merges, range(len(bpe_merges))))
+          self.cache = {}
+
+          # Should haved added re.IGNORECASE so BPE merges can happen for capitalized versions of contractions
+          self.pat = re.compile(r"""'s|'t|'re|'ve|'m|'ll|'d| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+""")
+
+      def bpe(self, token):
+          if token in self.cache:
+              return self.cache[token]
+          word = tuple(token)
+          pairs = get_pairs(word)
+
+          if not pairs:
+              return token
+
+          while True:
+              bigram = min(pairs, key = lambda pair: self.bpe_ranks.get(pair, float('inf')))
+              if bigram not in self.bpe_ranks:
+                  break
+              first, second = bigram
+              new_word = []
+              i = 0
+              while i < len(word):
+                  try:
+                      j = word.index(first, i)
+                      new_word.extend(word[i:j])
+                      i = j
+                  except:
+                      new_word.extend(word[i:])
+                      break
+
+                  if word[i] == first and i < len(word)-1 and word[i+1] == second:
+                      new_word.append(first+second)
+                      i += 2
+                  else:
+                      new_word.append(word[i])
+                      i += 1
+              new_word = tuple(new_word)
+              word = new_word
+              if len(word) == 1:
+                  break
+              else:
+                  pairs = get_pairs(word)
+          word = ' '.join(word)
+          self.cache[token] = word
+          return word
+
+      def encode(self, text):
+          bpe_tokens = []
+          for token in re.findall(self.pat, text):
+              token = ''.join(self.byte_encoder[b] for b in token.encode('utf-8'))
+              bpe_tokens.extend(self.encoder[bpe_token] for bpe_token in self.bpe(token).split(' '))
+          return bpe_tokens
+
+      def decode(self, tokens):
+          text = ''.join([self.decoder[token] for token in tokens])
+          text = bytearray([self.byte_decoder[c] for c in text]).decode('utf-8', errors=self.errors)
+          return text
+
+  def get_encoder(model_name, models_dir):
+      with open(os.path.join(models_dir, model_name, 'encoder.json'), 'r') as f:
+          encoder = json.load(f)
+      with open(os.path.join(models_dir, model_name, 'vocab.bpe'), 'r', encoding="utf-8") as f:
+          bpe_data = f.read()
+      bpe_merges = [tuple(merge_str.split()) for merge_str in bpe_data.split('\n')[1:-1]]
+      return Encoder(
+          encoder=encoder,
+          bpe_merges=bpe_merges,
+      )
+  ```
+
+- 首先需要安装 `tiktoken` 库
+
+  ```python
+  import importlib
+  import tiktoken
+
+  print("tiktoken version:", importlib.metadata.version("tiktoken"))
+  ```
+
+- 可以调用 `tiktoken` 库中的 gpt2 的 tokenizer
+
+  ```python
+  tokenizer = tiktoken.get_encoding("gpt2")
+
+  text = (
+      "Hello, do you like tea? <|endoftext|> In the sunlit terraces"
+       "of someunknownPlace."
+  )
+
+  integers = tokenizer.encode(text, allowed_special={"<|endoftext|>"})
+
+  print(integers)
+
+  strings = tokenizer.decode(integers)
+
+  print(strings)
+  ```
+
+- LLM 的训练任务是预测下一个单词，因此需要构建掩码序列
+
+  ```python
+  with open("the-verdict.txt", "r", encoding="utf-8") as f:
+      raw_text = f.read()
+
+  enc_text = tokenizer.encode(raw_text)
+  print(len(enc_text))
+
+  enc_sample = enc_text[50:]
+  context_size = 4
+
+  x = enc_sample[:context_size]
+  y = enc_sample[1:context_size+1]
+
+  print(f"x: {x}")
+  print(f"y:      {y}")
+  # x: [290, 4920, 2241, 287]
+  # y:      [4920, 2241, 287, 257]
+  ```
+
+- 那么预测目标应该类似下列所示
+
+  ```python
+  for i in range(1, context_size+1):
+      context = enc_sample[:i]
+      desired = enc_sample[i]
+
+      print(context, "---->", desired)
+  # [290] ----> 4920
+  # [290, 4920] ----> 2241
+  # [290, 4920, 2241] ----> 287
+  # [290, 4920, 2241, 287] ----> 257
+  ```
+
+- 解码结果如下
+
+  ```python
+  for i in range(1, context_size+1):
+      context = enc_sample[:i]
+      desired = enc_sample[i]
+
+      print(tokenizer.decode(context), "---->", tokenizer.decode([desired]))
+  # and ---->  established
+  # and established ---->  himself
+  # and established himself ---->  in
+  # and established himself in ---->  a
+  ```
+
+- GPT-2 处理未登录词
+
+  ```python
+  import tiktoken
+
+  tokenizer = tiktoken.get_encoding("gpt2")
+  integers = tokenizer.encode("Akwirw ier")
+  print(integers)
+  # [33901, 86, 343, 86, 220, 959]
+  for i in integers:
+      print(f"{i} -> {tokenizer.decode([i])}")
+  # 33901 -> Ak
+  # 86 -> w
+  # 343 -> ir
+  # 86 -> w
+  # 220 ->
+  # 959 -> ier
+  tokenizer.decode([33901, 86, 343, 86, 220, 959])
+  # 'Akwirw ier'
+  ```
+
+### 批量处理输入
+
+- 现在实现一个简单的 DataLoader，可以遍历处理输入的数据集，并返回其输入与预测目标
+
+- 首先需要安装 PyTorch
+
+  ```python
+  import torch
+  print("PyTorch version:", torch.__version__)
+  # PyTorch version: 2.5.1
+  ```
+
+- 创建的 Dataset 如下
+
+  ```python
+  from torch.utils.data import Dataset, DataLoader
+
+
+  class GPTDatasetV1(Dataset):
+      def __init__(self, txt, tokenizer, max_length, stride):
+          self.input_ids = []
+          self.target_ids = []
+
+          # Tokenize the entire text
+          token_ids = tokenizer.encode(txt, allowed_special={"<|endoftext|>"})
+          assert len(token_ids) > max_length, "Number of tokenized inputs must at least be equal to max_length+1"
+
+          # Use a sliding window to chunk the book into overlapping sequences of max_length
+          for i in range(0, len(token_ids) - max_length, stride):
+              input_chunk = token_ids[i:i + max_length]
+              target_chunk = token_ids[i + 1: i + max_length + 1]
+              self.input_ids.append(torch.tensor(input_chunk))
+              self.target_ids.append(torch.tensor(target_chunk))
+
+      def __len__(self):
+          return len(self.input_ids)
+
+      def __getitem__(self, idx):
+          return self.input_ids[idx], self.target_ids[idx]
+  ```
+
+- 使用 DataLoader 创建数据加载器
+
+  ```python
+  def create_dataloader_v1(txt, batch_size=4, max_length=256,
+                           stride=128, shuffle=True, drop_last=True,
+                           num_workers=0):
+
+      # Initialize the tokenizer
+      tokenizer = tiktoken.get_encoding("gpt2")
+
+      # Create dataset
+      dataset = GPTDatasetV1(txt, tokenizer, max_length, stride)
+
+      # Create dataloader
+      dataloader = DataLoader(
+          dataset,
+          batch_size=batch_size,
+          shuffle=shuffle,
+          drop_last=drop_last,
+          num_workers=num_workers
+      )
+
+      return dataloader
+  ```
+
+- 处理数据集
+
+  ```python
+  with open("the-verdict.txt", "r", encoding="utf-8") as f:
+      raw_text = f.read()
+
+  dataloader = create_dataloader_v1(
+      raw_text, batch_size=1, max_length=4, stride=1, shuffle=False
+  )
+
+  data_iter = iter(dataloader)
+  first_batch = next(data_iter)
+  print(first_batch)
+  # [tensor([[  40,  367, 2885, 1464]]), tensor([[ 367, 2885, 1464, 1807]])]
+  second_batch = next(data_iter)
+  print(second_batch)
+  # [tensor([[ 367, 2885, 1464, 1807]]), tensor([[2885, 1464, 1807, 3619]])]
+  ```
+
+- `stride` 参数决定了创建数据集移动滑动窗口的步长，如果不同的输入有重叠，可能会导致相应的过拟合风险
+
+![build-llm-from-scratch-stride](/img/llm/build-llm-from-scratch-stride.webp)
+
+- 下面是 batch_size 为 8 的示例
+
+  ```python
+  dataloader = create_dataloader_v1(raw_text, batch_size=8, max_length=4, stride=4, shuffle=False)
+
+  data_iter = iter(dataloader)
+  inputs, targets = next(data_iter)
+  print("Inputs:\n", inputs)
+  print("\nTargets:\n", targets)
+
+  # Inputs:
+  #  tensor([[   40,   367,  2885,  1464],
+  #         [ 1807,  3619,   402,   271],
+  #         [10899,  2138,   257,  7026],
+  # #         [15632,   438,  2016,   257],
+  #         [  922,  5891,  1576,   438],
+  #         [  568,   340,   373,   645],
+  #         [ 1049,  5975,   284,   502],
+  #         [  284,  3285,   326,    11]])
+  #
+  # Targets:
+  #  tensor([[  367,  2885,  1464,  1807],
+  #         [ 3619,   402,   271, 10899],
+  #         [ 2138,   257,  7026, 15632],
+  #         [  438,  2016,   257,   922],
+  #         [ 5891,  1576,   438,   568],
+  #         [  340,   373,   645,  1049],
+  #         [ 5975,   284,   502,   284],
+  #         [ 3285,   326,    11,   287]])
+  ```
+
+- max_length 与 stride
+
+  ```python
+  dataloader = create_dataloader(raw_text, batch_size=4, max_length=2, stride=2)
+
+  for batch in dataloader:
+      x, y = batch
+      break
+
+  print(x)
+  # tensor([[  40,  367],
+  #         [2885, 1464],
+  #         [1807, 3619],
+  #         [ 402,  271]])
+
+  dataloader = create_dataloader(raw_text, batch_size=4, max_length=8, stride=2)
+
+  for batch in dataloader:
+      x, y = batch
+      break
+
+  print(x)
+  # tensor([[   40,   367,  2885,  1464,  1807,  3619,   402,   271],
+  #         [ 2885,  1464,  1807,  3619,   402,   271, 10899,  2138],
+  #         [ 1807,  3619,   402,   271, 10899,  2138,   257,  7026],
+  #         [  402,   271, 10899,  2138,   257,  7026, 15632,   438]])
+  ```
+
+- 充分理解 DataLoader 的原理
+
+  ```python
+  # 假设一个输入序列为 0-1000 的序列，并以空格分隔，并直接以数字作为其 token ID
+
+  from torch.utils.data import Dataset, DataLoader
+
+  class GPTDatasetV1(Dataset):
+      def __init__(self, txt, tokenizer, max_length, stride):
+          self.input_ids = []
+          self.target_ids = []
+
+          # Modification
+          # token_ids = tokenizer.encode(txt, allowed_special={"<|endoftext|>"})
+          token_ids = [int(i) for i in txt.strip().split()]
+
+          # Use a sliding window to chunk the book into overlapping sequences of max_length
+          for i in range(0, len(token_ids) - max_length, stride):
+              input_chunk = token_ids[i:i + max_length]
+              target_chunk = token_ids[i + 1: i + max_length + 1]
+              self.input_ids.append(torch.tensor(input_chunk))
+              self.target_ids.append(torch.tensor(target_chunk))
+
+      def __len__(self):
+          return len(self.input_ids)
+
+      def __getitem__(self, idx):
+          return self.input_ids[idx], self.target_ids[idx]
+
+  def create_dataloader_v1(txt, batch_size=4, max_length=256, stride=128, shuffle=True, drop_last=True, num_workers=0):
+
+      # Initialize the tokenizer
+      # tokenizer = tiktoken.get_encoding("gpt2")
+      tokenizer = None
+
+      # Create dataset
+      dataset = GPTDatasetV1(txt, tokenizer, max_length, stride)
+
+      # Create dataloader
+      dataloader = DataLoader(
+          dataset,
+          batch_size=batch_size,
+          shuffle=shuffle,
+          drop_last=drop_last,
+          num_workers=num_workers
+      )
+
+      return dataloader
+
+  with open("number-data.txt", "r", encoding="utf-8") as f:
+      raw_text = f.read()
+
+  # 批次大小为 1，序列长度为 4，步长为 1
+  dataloader = create_dataloader_v1(raw_text, batch_size=1, max_length=4, stride=1, shuffle=False)
+
+  data_iter = iter(dataloader)
+  first_batch = next(data_iter)
+  print(first_batch)
+  # [tensor([[0, 1, 2, 3]]), tensor([[1, 2, 3, 4]])]
+  second_batch = next(data_iter)
+  print(second_batch)
+  # [tensor([[1, 2, 3, 4]]), tensor([[2, 3, 4, 5]])]
+  third_batch = next(data_iter)
+  print(third_batch)
+  # [tensor([[2, 3, 4, 5]]), tensor([[3, 4, 5, 6]])]
+  for batch in dataloader:
+      pass
+
+  last_batch = batch
+  print(last_batch)
+  # [tensor([[996, 997, 998, 999]]), tensor([[ 997,  998,  999, 1000]])]
+
+  # 批次大小为 2，序列长度为 4，步长为 4
+  dataloader = create_dataloader_v1(raw_text, batch_size=2, max_length=4, stride=4, shuffle=False)
+
+  for inputs, targets in dataloader:
+      pass
+
+  print("Inputs:\n", inputs)
+  print("\nTargets:\n", targets)
+  # Inputs:
+  #  tensor([[992, 993, 994, 995],
+  #         [996, 997, 998, 999]])
+  #
+  # Targets:
+  #  tensor([[ 993,  994,  995,  996],
+  #         [ 997,  998,  999, 1000]])
+
+  # shuffle
+  torch.manual_seed(123)
+  dataloader = create_dataloader_v1(raw_text, batch_size=2, max_length=4, stride=4, shuffle=True)
+
+  for inputs, targets in dataloader:
+      pass
+
+  print("Inputs:\n", inputs)
+  print("\nTargets:\n", targets)
+  # Inputs:
+  #  tensor([[880, 881, 882, 883],
+  #         [112, 113, 114, 115]])
+  #
+  # Targets:
+  #  tensor([[881, 882, 883, 884],
+  #         [113, 114, 115, 116]])
+  ```
+
+### 创建 Token 嵌入
+
+- 接下来，需要经过 Emedding layer 来将 tokens 嵌入处理为连续的向量表示
+
+![](/img/llm/build-llm-from-scratch-embedding.webp)
+
+- 例如，假设经过 tokenization 后，得到的 input_ids 为 2、3、5、1
+
+  ```python
+  input_ids = torch.tensor([2, 3, 5, 1])
+  ```
+
+- 假设现在有一个仅包含 6 个词汇的小型词汇表，且希望构建维度为 3 的词嵌入
+
+  ```python
+  vocab_size = 6
+  output_dim = 3
+
+  torch.manual_seed(123)
+  embedding_layer = torch.nn.Embedding(vocab_size, output_dim)
+  print(embedding_layer.weight)
+  # Parameter containing:
+  # tensor([[ 0.3374, -0.1778, -0.1690],
+  #         [ 0.9178,  1.5810,  1.3010],
+  #         [ 1.2753, -0.2010, -0.1606],
+  #         [-0.4015,  0.9666, -1.1481],
+  #         [-1.1589,  0.3255, -0.6315],
+  #         [-2.8400, -0.7849, -1.4096]], requires_grad=True)
+  ```
+
+- 当执行 `torch.nn.Embedding(vocab_size, output_dim)` 时，PyTorch 会直接初始化一个形状为`[vocab_size, output_dim]`的 Parameter 矩阵，这个矩阵就是所有单词的嵌入向量表：
+  - 矩阵的每一行对应词汇表中一个单词的嵌入向量（比如第 0 行是`w0`的 3 维嵌入，第 1 行是`w1`的 3 维嵌入，直到第 5 行`w5`）
+
+  - 这个矩阵被标记为`requires_grad=True`（可训练），后续会通过反向传播不断更新值，这也是 Embedding 层能学出语义嵌入的核心
+
+  - 在初始化时，PyTorch 的 `nn.Embedding` 层的权重，默认由`torch.nn.init.normal_`（正态分布初始化器）初始化
+
+  - PyTorch 的层初始化都遵循「层定义时绑定初始化器 + 实例化时执行初始化」的逻辑，`nn.Embedding`的初始化完全封装在框架底层，无需手动调用
+
+    ```python
+    class Embedding(Module):
+        def __init__(self, num_embeddings, embedding_dim, ...):
+            super().__init__()
+            self.num_embeddings = num_embeddings  # 对应你的vocab_size=6
+            self.embedding_dim = embedding_dim    # 对应你的output_dim=3
+            # 1. 创建可训练的Parameter权重矩阵（未初始化的空矩阵）
+            self.weight = Parameter(torch.empty(num_embeddings, embedding_dim))
+            # 2. 执行初始化：调用reset_parameters()
+            self.reset_parameters()
+
+        def reset_parameters(self) -> None:
+            # Embedding层的专用默认初始化：正态分布，sigma=1/√num_embeddings
+            init.normal_(self.weight, std=1.0 / math.sqrt(self.num_embeddings))
+    ```
+
+- 通过 embedding_layer，可以将输入的 token ID 转为 3 维向量：
+
+  ```python
+  print(embedding_layer(torch.tensor([3])))
+  # tensor([[-0.4015,  0.9666, -1.1481]], grad_fn=<EmbeddingBackward0>)
+  print(embedding_layer(input_ids))
+  # tensor([[ 1.2753, -0.2010, -0.1606],
+  #         [-0.4015,  0.9666, -1.1481],
+  #         [-2.8400, -0.7849, -1.4096],
+  #         [ 0.9178,  1.5810,  1.3010]], grad_fn=<EmbeddingBackward0>)
+  ```
+
+- 实际上，embedding_layer 就是一个查找操作
+
+![](/img/llm/build-llm-from-scratch-embedding_layer.webp)
+
+- Embedding 与 Linear 的区别
+  - Embedding 查表 = 独热编码 + Linear 矩阵乘法，以 `idx=[2,3,1]`举例
+  - 步骤 1：ID=2 的独热编码是`[0,0,1,0]`（4 维，对应 4 个 ID），ID=3 是`[0,0,0,1]`，ID=1 是`[0,1,0,0]`
+  - 步骤 2：独热向量（1×4）和 Linear 层权重矩阵（4×5）做矩阵乘法，结果就是独热向量中「1」所在位置对应的权重矩阵行向量
+  - 步骤 3：最终结果和 Embedding Layer 查表取出的行向量完全一样
+  - 独热编码有一个致命问题：极度稀疏（比如 4 维独热向量只有 1 个 1，其余都是 0）
+  - 当用稀疏的独热向量做矩阵乘法时，99% 的计算都是「0 乘任意数 = 0」，完全是无用的计算浪费
+  - Embedding Layer 的查表操作，直接跳过了所有 0 的计算，根据 ID 直接取对应行，没有任何无用计算，计算量从「O ( token 总数 × 嵌入维度)」降到了「O (1)（索引）」，在大词汇量场景下（LLM 的核心场景），效率提升是数量级的
+
+- Linear 举例
+
+  ```python
+  idx = torch.tensor([2, 3, 1])
+  onehot = torch.nn.functional.one_hot(idx)
+  onehot
+  # tensor([[0, 0, 1, 0],
+  #         [0, 0, 0, 1],
+  #         [0, 1, 0, 0]])
+  torch.manual_seed(123)
+  linear = torch.nn.Linear(num_idx, out_dim, bias=False)
+  linear.weight
+  # Parameter containing:
+  # tensor([[-0.2039,  0.0166, -0.2483,  0.1886],
+  #         [-0.4260,  0.3665, -0.3634, -0.3975],
+  #         [-0.3159,  0.2264, -0.1847,  0.1871],
+  #         [-0.4244, -0.3034, -0.1836, -0.0983],
+  #         [-0.3814,  0.3274, -0.1179,  0.1605]], requires_grad=True)
+  linear.weight = torch.nn.Parameter(embedding.weight.T)
+  # Parameter containing:
+  # tensor([[ 0.3374, -0.1778, -0.3035, -0.5880,  1.5810],
+  # #         [ 1.3010,  1.2753, -0.2010, -0.1606, -0.4015],
+  #         [ 0.6957, -1.8061, -1.1589,  0.3255, -0.6315],
+  #         [-2.8400, -0.7849, -1.4096, -0.4076,  0.7953]], requires_grad=True)
+  linear(onehot.float())
+  # tensor([[ 0.6957, -1.8061, -1.1589,  0.3255, -0.6315],
+  #         [-2.8400, -0.7849, -1.4096, -0.4076,  0.7953],
+  #         [ 1.3010,  1.2753, -0.2010, -0.1606, -0.4015]], grad_fn=<MmBackward0>)
+  ```
+
+### 位置编码
+
+- Token 嵌入并不考虑每个 token 在输入序列中的位置，需要引入位置编码来获得完整的输入嵌入
+
+- 假设词典大小是 50257，嵌入维度为 256
+
+  ```python
+  vocab_size = 50257
+  output_dim = 256
+
+  token_embedding_layer = torch.nn.Embedding(vocab_size, output_dim)
+  ```
+
+- 如果处理后的输入中，每个batch 包含 8 个输入序列，每个输入序列包含 4 个 token，那么处理的张量维度即为 8 × 4 × 256
+
+  ```python
+  max_length = 4
+  dataloader = create_dataloader_v1(
+      raw_text, batch_size=8, max_length=max_length,
+      stride=max_length, shuffle=False
+  )
+  data_iter = iter(dataloader)
+  inputs, targets = next(data_iter)
+  print("Token IDs:\n", inputs)
+  print("\nInputs shape:\n", inputs.shape)
+  # 输出
+  # Token IDs:
+  #  tensor([[   40,   367,  2885,  1464],
+  #         [ 1807,  3619,   402,   271],
+  #         [10899,  2138,   257,  7026],
+  #         [15632,   438,  2016,   257],
+  #         [  922,  5891,  1576,   438],
+  #         [  568,   340,   373,   645],
+  #         [ 1049,  5975,   284,   502],
+  #         [  284,  3285,   326,    11]])
+  #
+  # Inputs shape:
+  #  torch.Size([8, 4])
+
+  token_embeddings = token_embedding_layer(inputs)
+  print(token_embeddings.shape)
+  # torch.Size([8, 4, 256])
+  ```
+
+- GPT-2 使用了绝对位置编码，可以创建另一个 embedding layer 用于编码位置
+
+  ```python
+  context_length = max_length
+  pos_embedding_layer = torch.nn.Embedding(context_length, output_dim)
+
+  # uncomment & execute the following line to see how the embedding layer weights look like
+  print(pos_embedding_layer.weight)
+  # Parameter containing:
+  # tensor([[-0.6303, -0.4848, -0.1366,  ...,  1.0345, -0.5012,  1.1045],
+  #         [ 0.2062,  0.6078,  0.7187,  ..., -0.4628, -0.2319,  1.1980],
+  #         [ 0.5806, -1.3846,  0.3266,  ...,  0.8579,  0.5059,  1.0243],
+  #         [ 1.4323,  0.2217,  0.8599,  ...,  0.4827,  0.8459,  1.3038]],
+  #        requires_grad=True)
+
+  # 编码位置
+  pos_embeddings = pos_embedding_layer(torch.arange(max_length))
+  print(pos_embeddings.shape)
+  # uncomment & execute the following line to see how the embeddings look like
+  print(pos_embeddings)
+  # torch.Size([4, 256])
+  # tensor([[-0.6303, -0.4848, -0.1366,  ...,  1.0345, -0.5012,  1.1045],
+  #         [ 0.2062,  0.6078,  0.7187,  ..., -0.4628, -0.2319,  1.1980],
+  #         [ 0.5806, -1.3846,  0.3266,  ...,  0.8579,  0.5059,  1.0243],
+  #         [ 1.4323,  0.2217,  0.8599,  ...,  0.4827,  0.8459,  1.3038]],
+  #        grad_fn=<EmbeddingBackward0>)
+  ```
+
+- 将 token 嵌入和位置编码相加得到输入嵌入
+
+  ```python
+  input_embeddings = token_embeddings + pos_embeddings
+  print(input_embeddings.shape)
+  # torch.Size([8, 4, 256])
+  ```
+
+### 如何扩展已有的 BPE 分词器
+
+- 假设已经有一个 GPT-2 分词器，想要对下述文本进行编码：
+
+  ```python
+  import tiktoken
+
+  base_tokenizer = tiktoken.get_encoding("gpt2")
+  sample_text = "Hello, MyNewToken_1 is a new token. <|endoftext|>"
+
+  token_ids = base_tokenizer.encode(sample_text, allowed_special={"<|endoftext|>"})
+  print(token_ids)
+  # [15496, 11, 2011, 3791, 30642, 62, 16, 318, 257, 649, 11241, 13, 220, 50256]
+  ```
+
+- 遍历每个 token ID 可以发现 `MyNewToken_1` 被拆分为若干个 token
+
+  ```python
+  for token_id in token_ids:
+      print(f"{token_id} -> {base_tokenizer.decode([token_id])}")
+  # 15496 -> Hello
+  # 11 -> ,
+  # 2011 ->  My
+  # 3791 -> New
+  # 30642 -> Token
+  # 62 -> _
+  # 16 -> 1
+  # 318 ->  is
+  # 257 ->  a
+  # 649 ->  new
+  # 11241 ->  token
+  # 13 -> .
+  # 220 ->
+  # 50256 -> <|endoftext|>
+  ```
+
+- 对于新的词汇而言，必须将新词汇作为特殊标识词添加
+  - 原因在于，这些新词汇并不具备分词器训练阶段生成的专属 “合并规则”
+  - 即便我们能获取到这些规则，要将其融入现有分词体系且不破坏原有逻辑，也存在极大的实现难度
+
+- 假设要新增两个 token，具体如下：
+
+  ```python
+  # Define custom tokens and their token IDs
+  custom_tokens = ["MyNewToken_1", "MyNewToken_2"]
+  custom_token_ids = {
+      token: base_tokenizer.n_vocab + i for i, token in enumerate(custom_tokens)
+  }
+  ```
+
+- 新建一个自定义的 Encoding 来处理上述 token
+
+  ```python
+  # Create a new Encoding object with extended tokens
+  extended_tokenizer = tiktoken.Encoding(
+      name="gpt2_custom",
+      pat_str=base_tokenizer._pat_str,
+      mergeable_ranks=base_tokenizer._mergeable_ranks,
+      special_tokens={**base_tokenizer._special_tokens, **custom_token_ids},
+  )
+  ```
+
+- 使用新的 Encoding 进行编解码
+
+  ```python
+  special_tokens_set = set(custom_tokens) | {"<|endoftext|>"}
+
+  token_ids = extended_tokenizer.encode(
+      "Sample text with MyNewToken_1 and MyNewToken_2. <|endoftext|>",
+      allowed_special=special_tokens_set
+  )
+  print(token_ids)
+  # [36674, 2420, 351, 220, 50257, 290, 220, 50258, 13, 220, 50256]
+  for token_id in token_ids:
+      print(f"{token_id} -> {extended_tokenizer.decode([token_id])}")
+  # 36674 -> Sample
+  # 2420 ->  text
+  # 351 ->  with
+  # 220 ->
+  # 50257 -> MyNewToken_1
+  # 290 ->  and
+  # 220 ->
+  # 50258 -> MyNewToken_2
+  # 13 -> .
+  # 220 ->
+  # 50256 -> <|endoftext|>
+  ```
+
+- 接下来，要将更新后的分词器与预训练大模型配合使用，还需要同步更新大模型的嵌入层和输出层
+
+- 首先分别获取原始和新的 tokenizer 处理后的 token IDs
+
+  ```python
+  sample_text = "Sample text with MyNewToken_1 and MyNewToken_2. <|endoftext|>"
+
+  original_token_ids = base_tokenizer.encode(
+      sample_text, allowed_special={"<|endoftext|>"}
+  )
+  new_token_ids = extended_tokenizer.encode(
+      "Sample text with MyNewToken_1 and MyNewToken_2. <|endoftext|>",
+      allowed_special=special_tokens_set
+  )
+  ```
+
+- 将原始的 token IDs 送入 GPT 模型
+
+  ```python
+  import torch
+
+  with torch.no_grad():
+      out = gpt(torch.tensor([original_token_ids]))
+
+  print(out)
+  # tensor([[[ 0.2204,  0.8901,  1.0138,  ...,  0.2585, -0.9192, -0.2298],
+  #          [ 0.6745, -0.0726,  0.8218,  ..., -0.1768, -0.4217,  0.0703],
+  #          [-0.2009,  0.0814,  0.2417,  ...,  0.3166,  0.3629,  1.3400],
+  #          ...,
+  #          [ 0.1137, -0.1258,  2.0193,  ..., -0.0314, -0.4288, -0.1487],
+  #          [-1.1983, -0.2050, -0.1337,  ..., -0.0849, -0.4863, -0.1076],
+  #          [-1.0675, -0.5905,  0.2873,  ..., -0.0979, -0.8713,  0.8415]]])
+  ```
+
+- 那么如果将新的 token IDs 送入 GPT 模型呢？会导致 index out of range
+
+- 这是由于原始模型的输入和输出所期望的词典大小与新的 token IDs 不一致
+
+- 首先更新 Embedding Layer
+
+  ```python
+  gpt.tok_emb
+  # Embedding(50257, 768)
+
+  num_tokens, emb_size = gpt.tok_emb.weight.shape
+  new_num_tokens = num_tokens + 2
+
+  # Create a new embedding layer
+  new_embedding = torch.nn.Embedding(new_num_tokens, emb_size)
+
+  # Copy weights from the old embedding layer
+  new_embedding.weight.data[:num_tokens] = gpt.tok_emb.weight.data
+
+  # Replace the old embedding layer with the new one in the model
+  gpt.tok_emb = new_embedding
+
+  print(gpt.tok_emb)
+  # Embedding(50259, 768)
+  ```
+
+- 现在，就有了增长后的 Embedding Layer
+
+- 然后需要对输出层进行扩展，该层与嵌入层的词汇表大小相对应，输出维度为 50257
+
+  ```python
+  gpt.out_head
+  # Linear(in_features=768, out_features=50257, bias=False)
+
+  original_out_features, original_in_features = gpt.out_head.weight.shape
+
+  # Define the new number of output features (e.g., adding 2 new tokens)
+  new_out_features = original_out_features + 2
+
+  # Create a new linear layer with the extended output size
+  new_linear = torch.nn.Linear(original_in_features, new_out_features)
+
+  # Copy the weights and biases from the original linear layer
+  with torch.no_grad():
+      new_linear.weight[:original_out_features] = gpt.out_head.weight
+      if gpt.out_head.bias is not None:
+          new_linear.bias[:original_out_features] = gpt.out_head.bias
+
+  # Replace the original linear layer with the new one
+  gpt.out_head = new_linear
+
+  print(gpt.out_head)
+  # Linear(in_features=768, out_features=50259, bias=True)
+  ```
+
+- 尝试输入新的 token IDs，不再报错
+
+- 但是接下来，需要在数据集进行微调（或者继续预训练）来更新新的嵌入层和输出层
+
+## Attention
+
+### 不可训练的注意力实现
+
+- 借助注意力机制，网络中负责文本生成的 Decoder 部分能够选择性地获取所有输入 token 的信息，这意味着在生成特定输出 token 的过程中，部分输入 token 相较于其他 token 具有更高的重要性
+
+![](/img/llm/build-llm-from-scratch-attention-1.webp)
+
+- 首先介绍自注意力机制的一个高度简化版本，该版本不包含任何可训练权重
+
+- 此简化版本仅作演示之用，并非Transformer模型中实际使用的注意力机制
+
+- 假设给定输入序列 $x^{(1)}$ 至 $x^{(T)}$
+  - 该输入为文本（例如句子 “Your journey starts with one step”），且已转换为 token 嵌入向量
+  - 例如，$x^{(1)}$ 为表示单词 “Your” 的 d 维向量，其余 token 依此类推
+
+- 目标：为输入序列 $x^{(1)}$ 至 $x^{(T)}$ 中的每个元素 $x^{(i)}$ 计算上下文向量 $z^{(i)}$（$z$ 与 $x$ 维度相同），该上下文向量 $z^{(i)}$ 是输入序列 $x^{(1)}$ 至 $x^{(T)}$ 的加权和，具有针对特定输入的 “上下文” 特异性
+  - 不再将 $x^{(i)}$ 作为任意输入 token 的占位符，而是以第二个输入 $x^{(2)}$ 为例进行分析
+  - 为进一步结合具体实例，也不再使用占位符 $z^{(i)}$，而是聚焦于第二个输出上下文向量 $z^{(2)}$
+  - 第二个上下文向量 $z^{(2)}$，是所有输入 $x^{(1)}$ 至 $x^{(T)}$ 以第二个输入元素 $x^{(2)}$ 为参照计算得到的加权和
+  - 注意力权重决定了计算 $z^{(2)}$ 时，每个输入元素对该加权和的贡献程度
+  - 简言之，可将 $z^{(2)}$ 理解为 $x^{(2)}$​ 的修正版本，该版本同时融合了与当前任务相关的所有其他输入元素的信息
+
+- 按照惯例，未归一化的注意力权重被称为“注意力分数”，而求和为 1 的归一化注意力分数则被称为“注意力权重”
+
+- 假设经过嵌入后得到的输入向量如下
+
+  ```python
+  import torch
+
+  inputs = torch.tensor(
+    [[0.43, 0.15, 0.89], # Your     (x^1)
+     [0.55, 0.87, 0.66], # journey  (x^2)
+     [0.57, 0.85, 0.64], # starts   (x^3)
+     [0.22, 0.58, 0.33], # with     (x^4)
+     [0.77, 0.25, 0.10], # one      (x^5)
+     [0.05, 0.80, 0.55]] # step     (x^6)
+  )
+  ```
+
+- 第一步，计算注意力分数 $\omega$
+  - 假设选取第二个输入 token 作为查询向量，即 $q^{(2)} = x^{(2)}$，通过点积运算得到未归一化的注意力分数：
+    - $\omega_{21} = x^{(1)} q^{(2)\top}$
+    - $\omega_{22} = x^{(2)} q^{(2)\top}$
+    - $\omega_{23} = x^{(3)} q^{(2)\top}$
+    - ...
+    - $\omega_{2T} = x^{(T)} q^{(2)\top}$
+  - 式中的 $\omega_{21}$​ 中的下标 “21”，表示以输入序列中第 2 个元素为查询向量，对第 1 个元素进行相似度计算
+
+- 第一步的代码如下
+
+  ```python
+  query = inputs[1]  # 2nd input token is the query
+
+  attn_scores_2 = torch.empty(inputs.shape[0])
+  # 点积本质上是一种简写形式，对应操作是将两个向量按元素相乘，再对相乘后的结果求和
+  for i, x_i in enumerate(inputs):
+      attn_scores_2[i] = torch.dot(x_i, query) # dot product (transpose not necessary here since they are 1-dim vectors)
+
+  print(attn_scores_2)
+  # tensor([0.9544, 1.4950, 1.4754, 0.8434, 0.7070, 1.0865])
+  ```
+
+- 第二步，对注意力分数进行归一化
+
+  ```python
+  # 简易的归一化实现
+  attn_weights_2_tmp = attn_scores_2 / attn_scores_2.sum()
+
+  print("Attention weights:", attn_weights_2_tmp)
+  print("Sum:", attn_weights_2_tmp.sum())
+  # Attention weights: tensor([0.1455, 0.2278, 0.2249, 0.1285, 0.1077, 0.1656])
+  # Sum: tensor(1.0000)
+  # 在实际应用中，推荐且常用的做法是使用 softmax 函数进行归一化 —— 该函数更擅长处理极值，且在模型训练过程中具备更优良的梯度特性
+  def softmax_naive(x):
+      return torch.exp(x) / torch.exp(x).sum(dim=0)
+
+  attn_weights_2_naive = softmax_naive(attn_scores_2)
+
+  print("Attention weights:", attn_weights_2_naive)
+  print("Sum:", attn_weights_2_naive.sum())
+  # Attention weights: tensor([0.1385, 0.2379, 0.2333, 0.1240, 0.1082, 0.1581])
+  # Sum: tensor(1.)
+  # 上述简易实现方案会因数值上溢和下溢问题，在处理过大或过小的输入值时出现数值不稳定性问题。因此在实际应用中，更推荐直接使用 PyTorch 内置的 softmax 实现
+  attn_weights_2 = torch.softmax(attn_scores_2, dim=0)
+
+  print("Attention weights:", attn_weights_2)
+  print("Sum:", attn_weights_2.sum())
+  # Attention weights: tensor([0.1385, 0.2379, 0.2333, 0.1240, 0.1082, 0.1581])
+  # Sum: tensor(1.)
+  ```
+
+- 第三步，计算上下文向量。将嵌入输入 token $x^{(i)}$ 与注意力权重相乘，再对相乘得到的向量求和，以此计算上下文向量 $z^{(2)}$
+
+  ```python
+  query = inputs[1] # 2nd input token is the query
+
+  context_vec_2 = torch.zeros(query.shape)
+  for i,x_i in enumerate(inputs):
+      context_vec_2 += attn_weights_2[i]*x_i
+
+  print(context_vec_2)
+  ```
+
+- 将上述代码扩展到对所有输入 token 的计算
+
+  ```python
+  # step1
+  attn_scores = torch.empty(6, 6)
+
+  for i, x_i in enumerate(inputs):
+      for j, x_j in enumerate(inputs):
+          attn_scores[i, j] = torch.dot(x_i, x_j)
+
+  print(attn_scores)
+  # tensor([[0.9995, 0.9544, 0.9422, 0.4753, 0.4576, 0.6310],
+  #         [0.9544, 1.4950, 1.4754, 0.8434, 0.7070, 1.0865],
+  #         [0.9422, 1.4754, 1.4570, 0.8296, 0.7154, 1.0605],
+  #         [0.4753, 0.8434, 0.8296, 0.4937, 0.3474, 0.6565],
+  #         [0.4576, 0.7070, 0.7154, 0.3474, 0.6654, 0.2935],
+  #         [0.6310, 1.0865, 1.0605, 0.6565, 0.2935, 0.9450]])
+
+  # step1 也可以使用矩阵乘法实现
+  attn_scores = inputs @ inputs.T
+  print(attn_scores)
+  # tensor([[0.9995, 0.9544, 0.9422, 0.4753, 0.4576, 0.6310],
+  #         [0.9544, 1.4950, 1.4754, 0.8434, 0.7070, 1.0865],
+  #         [0.9422, 1.4754, 1.4570, 0.8296, 0.7154, 1.0605],
+  #         [0.4753, 0.8434, 0.8296, 0.4937, 0.3474, 0.6565],
+  #         [0.4576, 0.7070, 0.7154, 0.3474, 0.6654, 0.2935],
+  #         [0.6310, 1.0865, 1.0605, 0.6565, 0.2935, 0.9450]])
+
+  # step2
+  attn_weights = torch.softmax(attn_scores, dim=-1)
+  print(attn_weights)
+  # tensor([[0.2098, 0.2006, 0.1981, 0.1242, 0.1220, 0.1452],
+  #         [0.1385, 0.2379, 0.2333, 0.1240, 0.1082, 0.1581],
+  #         [0.1390, 0.2369, 0.2326, 0.1242, 0.1108, 0.1565],
+  #         [0.1435, 0.2074, 0.2046, 0.1462, 0.1263, 0.1720],
+  #         [0.1526, 0.1958, 0.1975, 0.1367, 0.1879, 0.1295],
+  #         [0.1385, 0.2184, 0.2128, 0.1420, 0.0988, 0.1896]])
+  row_2_sum = sum([0.1385, 0.2379, 0.2333, 0.1240, 0.1082, 0.1581])
+  print("Row 2 sum:", row_2_sum)
+  print("All row sums:", attn_weights.sum(dim=-1))
+  # Row 2 sum: 1.0
+  # All row sums: tensor([1.0000, 1.0000, 1.0000, 1.0000, 1.0000, 1.0000])
+
+  # step3
+  all_context_vecs = attn_weights @ inputs
+  print(all_context_vecs)
+  # tensor([[0.4421, 0.5931, 0.5790],
+  #         [0.4419, 0.6515, 0.5683],
+  #         [0.4431, 0.6496, 0.5671],
+  #         [0.4304, 0.6298, 0.5510],
+  #         [0.4671, 0.5910, 0.5266],
+  #         [0.4177, 0.6503, 0.5645]])
+  print("Previous 2nd context vector:", context_vec_2)
+  # Previous 2nd context vector: tensor([0.4419, 0.6515, 0.5683])
+  ```
+
+### 自注意力
+
+- 与基础注意力机制相比，自注意力仅有细微差别：
+  - 最显著的区别是引入了模型训练过程中会不断更新的权重矩阵
+  - 这些可训练权重矩阵至关重要 —— 它们能让模型（具体为模型内部的注意力模块）学习到如何生成 “优质的” 上下文向量
+
+- 首先引入三个可训练权重矩阵 $W_q$、$W_k$ 和 $W_v$，这三个矩阵用于通过矩阵乘法，将嵌入后的输入 token $x^{(i)}$ 分别投影为查询向量、键向量和值向量：
+  - 查询向量：$q^{(i)} = x^{(i)}\,W_q $
+  - 键向量：$k^{(i)} = x^{(i)}\,W_k $
+  - 值向量：$v^{(i)} = x^{(i)}\,W_v $​
+
+- 输入向量 $x$ 与查询向量 $q$​ 的嵌入维度可相同也可不同，具体取决于模型的设计思路与实际实现方式；GPT系列模型中，这一输入维度与输出维度通常保持一致；但为便于演示说明、让计算过程更易理解，本节将选用不同的输入和输出维度
+
+  ```python
+  x_2 = inputs[1] # second input element
+  d_in = inputs.shape[1] # the input embedding size, d=3
+  d_out = 2 # the output embedding size, d=2
+  ```
+
+- 初始化权重矩阵
+
+  ```python
+  torch.manual_seed(123)
+
+  W_query = torch.nn.Parameter(torch.rand(d_in, d_out), requires_grad=False)
+  W_key   = torch.nn.Parameter(torch.rand(d_in, d_out), requires_grad=False)
+  W_value = torch.nn.Parameter(torch.rand(d_in, d_out), requires_grad=False)
+  ```
+
+- 第一步，计算 Q/K/V 向量
+
+  ```python
+  query_2 = x_2 @ W_query # _2 because it's with respect to the 2nd input element
+  key_2 = x_2 @ W_key
+  value_2 = x_2 @ W_value
+
+  print(query_2)
+  # tensor([0.4306, 1.4551])
+  keys = inputs @ W_key
+  values = inputs @ W_value
+
+  print("keys.shape:", keys.shape)
+  print("values.shape:", values.shape)
+  # keys.shape: torch.Size([6, 2])
+  # values.shape: torch.Size([6, 2])
+  ```
+
+- 第二步，计算注意力分数
+
+  ```python
+  keys_2 = keys[1] # Python starts index at 0
+  attn_score_22 = query_2.dot(keys_2)
+  print(attn_score_22)
+  # tensor(1.8524)
+
+  attn_scores_2 = query_2 @ keys.T # All attention scores for given query
+  print(attn_scores_2)
+  # tensor([1.2705, 1.8524, 1.8111, 1.0795, 0.5577, 1.5440])
+  ```
+
+- 第三步，进行缩放
+
+  ```python
+  d_k = keys.shape[1]
+  attn_weights_2 = torch.softmax(attn_scores_2 / d_k**0.5, dim=-1)
+  print(attn_weights_2)
+  # tensor([0.1500, 0.2264, 0.2199, 0.1311, 0.0906, 0.1820])
+  ```
+
+- 第四步，计算上下文向量
+
+  ```python
+  context_vec_2 = attn_weights_2 @ values
+  print(context_vec_2)
+  # tensor([0.3061, 0.8210])
+  ```
+
+### 实现完整的自注意力
+
+- 简单的实现
+
+  ```python
+  import torch.nn as nn
+
+  class SelfAttention_v1(nn.Module):
+
+      def __init__(self, d_in, d_out):
+          super().__init__()
+          self.W_query = nn.Parameter(torch.rand(d_in, d_out))
+          self.W_key   = nn.Parameter(torch.rand(d_in, d_out))
+          self.W_value = nn.Parameter(torch.rand(d_in, d_out))
+
+      def forward(self, x):
+          keys = x @ self.W_key
+          queries = x @ self.W_query
+          values = x @ self.W_value
+
+          attn_scores = queries @ keys.T # omega
+          attn_weights = torch.softmax(
+              attn_scores / keys.shape[-1]**0.5, dim=-1
+          )
+
+          context_vec = attn_weights @ values
+          return context_vec
+
+  torch.manual_seed(123)
+  sa_v1 = SelfAttention_v1(d_in, d_out)
+  print(sa_v1(inputs))
+
+  # tensor([[0.2996, 0.8053],
+  #         [0.3061, 0.8210],
+  #         [0.3058, 0.8203],
+  #         [0.2948, 0.7939],
+  #         [0.2927, 0.7891],
+  #         [0.2990, 0.8040]], grad_fn=<MmBackward0>)
+  ```
+
+- 可以借助 PyTorch 的线性层（Linear layers）简化上述实现逻辑（如果不使用偏置，线性层的运算效果就等价于单纯的矩阵乘法）
+
+- 相较于手动通过 `nn.Parameter(torch.rand(...))` 定义权重的方式，使用 `nn.Linear` 还有一个优势是其内置了经过优化的权重初始化方案，能让模型的训练过程更稳定
+
+  ```python
+  class SelfAttention_v2(nn.Module):
+
+      def __init__(self, d_in, d_out, qkv_bias=False):
+          super().__init__()
+          self.W_query = nn.Linear(d_in, d_out, bias=qkv_bias)
+          self.W_key   = nn.Linear(d_in, d_out, bias=qkv_bias)
+          self.W_value = nn.Linear(d_in, d_out, bias=qkv_bias)
+
+      def forward(self, x):
+          keys = self.W_key(x)
+          queries = self.W_query(x)
+          values = self.W_value(x)
+
+          attn_scores = queries @ keys.T
+          attn_weights = torch.softmax(attn_scores / keys.shape[-1]**0.5, dim=-1)
+
+          context_vec = attn_weights @ values
+          return context_vec
+
+  torch.manual_seed(789)
+  sa_v2 = SelfAttention_v2(d_in, d_out)
+  print(sa_v2(inputs))
+  # tensor([[-0.0739,  0.0713],
+  #         [-0.0748,  0.0703],
+  #         [-0.0749,  0.0702],
+  #         [-0.0760,  0.0685],
+  #         [-0.0763,  0.0679],
+  #         [-0.0754,  0.0693]], grad_fn=<MmBackward0>)
+  ```
+
+- 由于初始化权重不一样，因此两个实现的输出也是不一样的
+
+### 因果注意力
+
+- 在计算得到注意力权重后，使用上三角掩码矩阵，掩盖未来的信息，并再次归一化
+
+  ```python
+  # Reuse the query and key weight matrices of the
+  # SelfAttention_v2 object from the previous section for convenience
+  queries = sa_v2.W_query(inputs)
+  keys = sa_v2.W_key(inputs)
+  attn_scores = queries @ keys.T
+
+  attn_weights = torch.softmax(attn_scores / keys.shape[-1]**0.5, dim=-1)
+  print(attn_weights)
+  # tensor([[0.1921, 0.1646, 0.1652, 0.1550, 0.1721, 0.1510],
+  #         [0.2041, 0.1659, 0.1662, 0.1496, 0.1665, 0.1477],
+  #         [0.2036, 0.1659, 0.1662, 0.1498, 0.1664, 0.1480],
+  #         [0.1869, 0.1667, 0.1668, 0.1571, 0.1661, 0.1564],
+  #         [0.1830, 0.1669, 0.1670, 0.1588, 0.1658, 0.1585],
+  #         [0.1935, 0.1663, 0.1666, 0.1542, 0.1666, 0.1529]],
+  #        grad_fn=<SoftmaxBackward0>)
+  ```
+
+- 使用 `tri` 函数，创建上三角置 0 掩码矩阵
+
+  ```python
+  context_length = attn_scores.shape[0]
+  mask_simple = torch.tril(torch.ones(context_length, context_length))
+  print(mask_simple)
+  # tensor([[1., 0., 0., 0., 0., 0.],
+  #         [1., 1., 0., 0., 0., 0.],
+  #         [1., 1., 1., 0., 0., 0.],
+  #         [1., 1., 1., 1., 0., 0.],
+  #         [1., 1., 1., 1., 1., 0.],
+  #         [1., 1., 1., 1., 1., 1.]])
+  ```
+
+- 乘以掩码矩阵
+
+  ```python
+  masked_simple = attn_weights*mask_simple
+  print(masked_simple)
+  # tensor([[0.1921, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000],
+  #         [0.2041, 0.1659, 0.0000, 0.0000, 0.0000, 0.0000],
+  #         [0.2036, 0.1659, 0.1662, 0.0000, 0.0000, 0.0000],
+  #         [0.1869, 0.1667, 0.1668, 0.1571, 0.0000, 0.0000],
+  #         [0.1830, 0.1669, 0.1670, 0.1588, 0.1658, 0.0000],
+  #         [0.1935, 0.1663, 0.1666, 0.1542, 0.1666, 0.1529]],
+  #        grad_fn=<MulBackward0>)
+  ```
+
+- 再次归一化
+
+  ```python
+  row_sums = masked_simple.sum(dim=-1, keepdim=True)
+  masked_simple_norm = masked_simple / row_sums
+  print(masked_simple_norm)
+  # tensor([[1.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000],
+  #         [0.5517, 0.4483, 0.0000, 0.0000, 0.0000, 0.0000],
+  #         [0.3800, 0.3097, 0.3103, 0.0000, 0.0000, 0.0000],
+  #         [0.2758, 0.2460, 0.2462, 0.2319, 0.0000, 0.0000],
+  #         [0.2175, 0.1983, 0.1984, 0.1888, 0.1971, 0.0000],
+  #         [0.1935, 0.1663, 0.1666, 0.1542, 0.1666, 0.1529]],
+  #        grad_fn=<DivBackward0>)
+  ```
+
+- 为了方便，可以在由注意力分数归一化计算注意力权重之前，就进行 mask
+
+  ```python
+  mask = torch.triu(torch.ones(context_length, context_length), diagonal=1)
+  masked = attn_scores.masked_fill(mask.bool(), -torch.inf)
+  print(masked)
+  # tensor([[0.2899,   -inf,   -inf,   -inf,   -inf,   -inf],
+  #         [0.4656, 0.1723,   -inf,   -inf,   -inf,   -inf],
+  #         [0.4594, 0.1703, 0.1731,   -inf,   -inf,   -inf],
+  #         [0.2642, 0.1024, 0.1036, 0.0186,   -inf,   -inf],
+  #         [0.2183, 0.0874, 0.0882, 0.0177, 0.0786,   -inf],
+  #         [0.3408, 0.1270, 0.1290, 0.0198, 0.1290, 0.0078]],
+  #        grad_fn=<MaskedFillBackward0>)
+  attn_weights = torch.softmax(masked / keys.shape[-1]**0.5, dim=-1)
+  print(attn_weights)
+  # tensor([[1.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000],
+  #         [0.5517, 0.4483, 0.0000, 0.0000, 0.0000, 0.0000],
+  #         [0.3800, 0.3097, 0.3103, 0.0000, 0.0000, 0.0000],
+  #         [0.2758, 0.2460, 0.2462, 0.2319, 0.0000, 0.0000],
+  #         [0.2175, 0.1983, 0.1984, 0.1888, 0.1971, 0.0000],
+  #         [0.1935, 0.1663, 0.1666, 0.1542, 0.1666, 0.1529]],
+  #        grad_fn=<SoftmaxBackward0>)
+  ```
+
+- 进行 Dropout 以防止过拟合，为了举例，此处的 dropout 率为 50%，即 Dropout mask 矩阵的 50% 为 1，表示对应注意力分数要被丢弃
+
+  ```python
+  torch.manual_seed(123)
+  dropout = torch.nn.Dropout(0.5) # dropout rate of 50%
+  example = torch.ones(6, 6) # create a matrix of ones
+
+  print(dropout(example))
+  # tensor([[2., 2., 0., 2., 2., 0.],
+  #         [0., 0., 0., 2., 0., 2.],
+  #         [2., 2., 2., 2., 0., 2.],
+  #         [0., 2., 2., 0., 0., 2.],
+  #         [0., 2., 0., 2., 0., 2.],
+  #         [0., 2., 2., 2., 2., 0.]])
+
+  torch.manual_seed(123)
+  print(dropout(attn_weights))
+  # tensor([[2.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000],
+  #         [0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000],
+  #         [0.7599, 0.6194, 0.6206, 0.0000, 0.0000, 0.0000],
+  #         [0.0000, 0.4921, 0.4925, 0.0000, 0.0000, 0.0000],
+  #         [0.0000, 0.3966, 0.0000, 0.3775, 0.0000, 0.0000],
+  #         [0.0000, 0.3327, 0.3331, 0.3084, 0.3331, 0.0000]],
+  #        grad_fn=<MulBackward0>)
+  ```
+
+- Dropout 的作用是训练时随机将部分神经元的输出置 0（丢弃率 `p` ），但直接置 0 会让输出的数学期望降低（比如 p=0.5 时，期望会变成原来的 0.5）
+
+- 为了抵消这个影响，PyTorch 的`nn.Dropout`会在训练模式下自动对保留的神经元输出做缩放补偿，公式是
+
+  $$
+  o=i\times\frac{1}{1-p}
+  $$
+
+- 在推理模式下，dropout 不会丢弃、也不会缩放
+
+  ```python
+  import torch
+  torch.manual_seed(123)
+  dropout = torch.nn.Dropout(0.5)
+  example = torch.ones(6, 6)
+
+  # 切换到推理模式
+  dropout.eval()
+  print(dropout(example))  # 无丢弃、无缩放，输出全1
+  # tensor([[1., 1., 1., 1., 1., 1.],
+  #         [1., 1., 1., 1., 1., 1.],
+  #         [1., 1., 1., 1., 1., 1.],
+  #         [1., 1., 1., 1., 1., 1.],
+  #         [1., 1., 1., 1., 1., 1.],
+  #         [1., 1., 1., 1., 1., 1.]])
+  ```
+
+### 实现完整的因果注意力
+
+- 为了简便，将输入复制一份，得到 batch 大小为 2 的输入
+
+  ```python
+  batch = torch.stack((inputs, inputs), dim=0)
+  print(batch.shape) # 2 inputs with 6 tokens each, and each token has embedding dimension 3
+  ```
+
+- 因果注意力实现
+
+  ```python
+  class CausalAttention(nn.Module):
+
+      def __init__(self, d_in, d_out, context_length,
+                   dropout, qkv_bias=False):
+          super().__init__()
+          self.d_out = d_out
+          self.W_query = nn.Linear(d_in, d_out, bias=qkv_bias)
+          self.W_key   = nn.Linear(d_in, d_out, bias=qkv_bias)
+          self.W_value = nn.Linear(d_in, d_out, bias=qkv_bias)
+          self.dropout = nn.Dropout(dropout) # New
+          self.register_buffer('mask', torch.triu(torch.ones(context_length, context_length), diagonal=1)) # New
+
+      def forward(self, x):
+          b, num_tokens, d_in = x.shape # New batch dimension b
+          # For inputs where `num_tokens` exceeds `context_length`, this will result in errors
+          # in the mask creation further below.
+          # In practice, this is not a problem since the LLM (chapters 4-7) ensures that inputs
+          # do not exceed `context_length` before reaching this forward method.
+          keys = self.W_key(x)
+          queries = self.W_query(x)
+          values = self.W_value(x)
+
+          attn_scores = queries @ keys.transpose(1, 2) # Changed transpose
+          attn_scores.masked_fill_(  # New, _ ops are in-place
+              self.mask.bool()[:num_tokens, :num_tokens], -torch.inf)  # `:num_tokens` to account for cases where the number of tokens in the batch is smaller than the supported context_size
+          attn_weights = torch.softmax(
+              attn_scores / keys.shape[-1]**0.5, dim=-1
+          )
+          attn_weights = self.dropout(attn_weights) # New
+
+          context_vec = attn_weights @ values
+          return context_vec
+
+  torch.manual_seed(123)
+
+  context_length = batch.shape[1]
+  ca = CausalAttention(d_in, d_out, context_length, 0.0)
+
+  context_vecs = ca(batch)
+
+  print(context_vecs)
+  print("context_vecs.shape:", context_vecs.shape)
+
+  # tensor([[[-0.4519,  0.2216],
+  #          [-0.5874,  0.0058],
+  #          [-0.6300, -0.0632],
+  #          [-0.5675, -0.0843],
+  #          [-0.5526, -0.0981],
+  #          [-0.5299, -0.1081]],
+  #
+  #         [[-0.4519,  0.2216],
+  #          [-0.5874,  0.0058],
+  #          [-0.6300, -0.0632],
+  #          [-0.5675, -0.0843],
+  #          [-0.5526, -0.0981],
+  #          [-0.5299, -0.1081]]], grad_fn=<UnsafeViewBackward0>)
+  # context_vecs.shape: torch.Size([2, 6, 2])
+  ```
+
+### 多头注意力 MHA
+
+- 代码实现
+
+  ```python
+  class MultiHeadAttentionWrapper(nn.Module):
+
+      def __init__(self, d_in, d_out, context_length, dropout, num_heads, qkv_bias=False):
+          super().__init__()
+          self.heads = nn.ModuleList(
+              [CausalAttention(d_in, d_out, context_length, dropout, qkv_bias)
+               for _ in range(num_heads)]
+          )
+
+      def forward(self, x):
+          return torch.cat([head(x) for head in self.heads], dim=-1)
+
+  torch.manual_seed(123)
+
+  context_length = batch.shape[1] # This is the number of tokens
+  d_in, d_out = 3, 2
+  mha = MultiHeadAttentionWrapper(
+      d_in, d_out, context_length, 0.0, num_heads=2
+  )
+
+  context_vecs = mha(batch)
+
+  print(context_vecs)
+  print("context_vecs.shape:", context_vecs.shape)
+
+  # tensor([[[-0.4519,  0.2216,  0.4772,  0.1063],
+  #          [-0.5874,  0.0058,  0.5891,  0.3257],
+  #          [-0.6300, -0.0632,  0.6202,  0.3860],
+  #          [-0.5675, -0.0843,  0.5478,  0.3589],
+  #          [-0.5526, -0.0981,  0.5321,  0.3428],
+  #          [-0.5299, -0.1081,  0.5077,  0.3493]],
+  #
+  #         [[-0.4519,  0.2216,  0.4772,  0.1063],
+  #          [-0.5874,  0.0058,  0.5891,  0.3257],
+  #          [-0.6300, -0.0632,  0.6202,  0.3860],
+  #          [-0.5675, -0.0843,  0.5478,  0.3589],
+  #          [-0.5526, -0.0981,  0.5321,  0.3428],
+  #          [-0.5299, -0.1081,  0.5077,  0.3493]]], grad_fn=<CatBackward0>)
+  # context_vecs.shape: torch.Size([2, 6, 4])
+  ```
+
+- 可以实现一个独立的 MultiHeadAttention 类，核心设计思路是先创建整体的 Q/K/V 权重矩阵，再切分成多个头的独立矩阵，而非拼接多个单头注意力的结果，这种实现更高效、更贴合原始 Transformer 论文的设计，也避免了多单头拼接的冗余操作
+
+  ```python
+  class MultiHeadAttention(nn.Module):
+      def __init__(self, d_in, d_out, context_length, dropout, num_heads, qkv_bias=False):
+          super().__init__()
+          assert (d_out % num_heads == 0), \
+              "d_out must be divisible by num_heads"
+
+          self.d_out = d_out
+          self.num_heads = num_heads
+          self.head_dim = d_out // num_heads # Reduce the projection dim to match desired output dim
+
+          self.W_query = nn.Linear(d_in, d_out, bias=qkv_bias)
+          self.W_key = nn.Linear(d_in, d_out, bias=qkv_bias)
+          self.W_value = nn.Linear(d_in, d_out, bias=qkv_bias)
+          self.out_proj = nn.Linear(d_out, d_out)  # Linear layer to combine head outputs
+          self.dropout = nn.Dropout(dropout)
+          self.register_buffer(
+              "mask",
+              torch.triu(torch.ones(context_length, context_length),
+                         diagonal=1)
+          )
+
+      def forward(self, x):
+          b, num_tokens, d_in = x.shape
+          # As in `CausalAttention`, for inputs where `num_tokens` exceeds `context_length`,
+          # this will result in errors in the mask creation further below.
+          # In practice, this is not a problem since the LLM (chapters 4-7) ensures that inputs
+          # do not exceed `context_length` before reaching this forward method.
+
+          keys = self.W_key(x) # Shape: (b, num_tokens, d_out)
+          queries = self.W_query(x)
+          values = self.W_value(x)
+
+          # We implicitly split the matrix by adding a `num_heads` dimension
+          # Unroll last dim: (b, num_tokens, d_out) -> (b, num_tokens, num_heads, head_dim)
+          keys = keys.view(b, num_tokens, self.num_heads, self.head_dim)
+          values = values.view(b, num_tokens, self.num_heads, self.head_dim)
+          queries = queries.view(b, num_tokens, self.num_heads, self.head_dim)
+
+          # Transpose: (b, num_tokens, num_heads, head_dim) -> (b, num_heads, num_tokens, head_dim)
+          keys = keys.transpose(1, 2)
+          queries = queries.transpose(1, 2)
+          values = values.transpose(1, 2)
+
+          # Compute scaled dot-product attention (aka self-attention) with a causal mask
+          attn_scores = queries @ keys.transpose(2, 3)  # Dot product for each head
+
+          # Original mask truncated to the number of tokens and converted to boolean
+          mask_bool = self.mask.bool()[:num_tokens, :num_tokens]
+
+          # Use the mask to fill attention scores
+          attn_scores.masked_fill_(mask_bool, -torch.inf)
+
+          attn_weights = torch.softmax(attn_scores / keys.shape[-1]**0.5, dim=-1)
+          attn_weights = self.dropout(attn_weights)
+
+          # Shape: (b, num_tokens, num_heads, head_dim)
+          context_vec = (attn_weights @ values).transpose(1, 2)
+
+          # Combine heads, where self.d_out = self.num_heads * self.head_dim
+          context_vec = context_vec.contiguous().view(b, num_tokens, self.d_out)
+          context_vec = self.out_proj(context_vec) # optional projection
+
+          return context_vec
+
+  torch.manual_seed(123)
+
+  batch_size, context_length, d_in = batch.shape
+  d_out = 2
+  mha = MultiHeadAttention(d_in, d_out, context_length, 0.0, num_heads=2)
+
+  context_vecs = mha(batch)
+
+  print(context_vecs)
+  print("context_vecs.shape:", context_vecs.shape)
+  # tensor([[[0.3190, 0.4858],
+  #          [0.2943, 0.3897],
+  #          [0.2856, 0.3593],
+  #          [0.2693, 0.3873],
+  #          [0.2639, 0.3928],
+  #          [0.2575, 0.4028]],
+  #
+  #         [[0.3190, 0.4858],
+  #          [0.2943, 0.3897],
+  #          [0.2856, 0.3593],
+  #          [0.2693, 0.3873],
+  #          [0.2639, 0.3928],
+  #          [0.2575, 0.4028]]], grad_fn=<ViewBackward0>)
+  # context_vecs.shape: torch.Size([2, 6, 2])
+  ```
+
+- 在上述`MultiHeadAttention`类中新增了一个线性投影层（`self.out_proj`）；该层仅执行不改变维度的线性变换操作，在大语言模型的实现中，使用此类投影层是一种标准惯例，但它并非严格必需的组件
+
+- 分析操作 `attn_scores = queries @ keys.transpose(2, 3)`
+
+  ```python
+  # (b, num_heads, num_tokens, head_dim) = (1, 2, 3, 4)
+  a = torch.tensor([[[[0.2745, 0.6584, 0.2775, 0.8573],
+                      [0.8993, 0.0390, 0.9268, 0.7388],
+                      [0.7179, 0.7058, 0.9156, 0.4340]],
+
+                     [[0.0772, 0.3565, 0.1479, 0.5331],
+                      [0.4066, 0.2318, 0.4545, 0.9737],
+                      [0.4606, 0.5159, 0.4220, 0.5786]]]])
+
+  print(a @ a.transpose(2, 3))
+  # tensor([[[[1.3208, 1.1631, 1.2879],
+  #           [1.1631, 2.2150, 1.8424],
+  #           [1.2879, 1.8424, 2.0402]],
+  #
+  #          [[0.4391, 0.7003, 0.5903],
+  #           [0.7003, 1.3737, 1.0620],
+  #           [0.5903, 1.0620, 0.9912]]]])
+  ```
+
+- 在这种情况下，PyTorch 中的矩阵乘法实现会对四维输入张量做适配处理：矩阵乘法会在最后两个维度（令牌数`num_tokens`、头维度`head_dim`）之间执行，再为每个独立的注意力头重复该运算
+
+- 比如，下述写法就成为了一种更简洁的方式，可分别为每个注意力头计算矩阵乘法：
+
+  ```python
+  first_head = a[0, 0, :, :]
+  first_res = first_head @ first_head.T
+  print("First head:\n", first_res)
+
+  second_head = a[0, 1, :, :]
+  second_res = second_head @ second_head.T
+  print("\nSecond head:\n", second_res)
+  # First head:
+  #  tensor([[1.3208, 1.1631, 1.2879],
+  #         [1.1631, 2.2150, 1.8424],
+  #         [1.2879, 1.8424, 2.0402]])
+  #
+  # Second head:
+  #  tensor([[0.4391, 0.7003, 0.5903],
+  #         [0.7003, 1.3737, 1.0620],
+  #         [0.5903, 1.0620, 0.9912]])
+  ```
+
+### MHA 的高效实现
+
+- 基于 `CausalAttention` 单头注意力，通过 `nn.ModuleList` 并行堆叠多个单头注意力，最后用线性层拼接输出
+
+  ```python
+  import torch.nn as nn
+
+  class CausalAttention(nn.Module):
+
+      def __init__(self, d_in, d_out, context_length, dropout, qkv_bias=False):
+          super().__init__()
+          self.d_out = d_out
+          self.W_query = nn.Linear(d_in, d_out, bias=qkv_bias)
+          self.W_key = nn.Linear(d_in, d_out, bias=qkv_bias)
+          self.W_value = nn.Linear(d_in, d_out, bias=qkv_bias)
+          self.dropout = nn.Dropout(dropout)  # New
+          self.register_buffer("mask", torch.triu(torch.ones(context_length, context_length), diagonal=1))  # New
+
+      def forward(self, x):
+          b, num_tokens, d_in = x.shape  # New batch dimension b
+          keys = self.W_key(x)
+          queries = self.W_query(x)
+          values = self.W_value(x)
+
+          attn_scores = queries @ keys.transpose(1, 2)  # Changed transpose
+          attn_scores.masked_fill_(  # New, _ ops are in-place
+              self.mask.bool()[:num_tokens, :num_tokens], -torch.inf)
+          attn_weights = torch.softmax(attn_scores / keys.shape[-1]**0.5, dim=-1)
+          attn_weights = self.dropout(attn_weights)  # New
+
+          context_vec = attn_weights @ values
+          return context_vec
+
+  class Ch03_MHA_Wrapper(nn.Module):
+
+      def __init__(self, d_in, d_out, context_length, dropout, num_heads, qkv_bias=False):
+          super().__init__()
+          self.heads = nn.ModuleList(
+              [CausalAttention(d_in, d_out, context_length, dropout, qkv_bias)
+               for _ in range(num_heads)]
+          )
+          self.out_proj = nn.Linear(d_out*num_heads, d_out*num_heads)
+
+      def forward(self, x):
+          context_vec = torch.cat([head(x) for head in self.heads], dim=-1)
+          return self.out_proj(context_vec)
+
+  mha_ch03_wrapper = Ch03_MHA_Wrapper(
+      d_in=embed_dim,
+      d_out=embed_dim//12,
+      context_length=context_len,
+      dropout=0.0,
+      num_heads=12,
+      qkv_bias=False
+  ).to(device)
+
+  out = mha_ch03_wrapper(embeddings)
+  print(out.shape)
+  ```
+
+- 优化的多头实现，通过矩阵维度拆分（ `view` + `transpose` ）替代多个独立单头，减少冗余计算
+
+  ```python
+  class Ch03_MHA(nn.Module):
+      def __init__(self, d_in, d_out, context_length, dropout, num_heads, qkv_bias=False):
+          super().__init__()
+          assert d_out % num_heads == 0, "d_out must be divisible by num_heads"
+
+          self.d_out = d_out
+          self.num_heads = num_heads
+          self.head_dim = d_out // num_heads  # Reduce the projection dim to match desired output dim
+
+          self.W_query = nn.Linear(d_in, d_out, bias=qkv_bias)
+          self.W_key = nn.Linear(d_in, d_out, bias=qkv_bias)
+          self.W_value = nn.Linear(d_in, d_out, bias=qkv_bias)
+          self.out_proj = nn.Linear(d_out, d_out)  # Linear layer to combine head outputs
+          self.dropout = nn.Dropout(dropout)
+          self.register_buffer("mask", torch.triu(torch.ones(context_length, context_length), diagonal=1))
+
+      def forward(self, x):
+          b, num_tokens, d_in = x.shape
+
+          keys = self.W_key(x)  # Shape: (b, num_tokens, d_out)
+          queries = self.W_query(x)
+          values = self.W_value(x)
+
+          # We implicitly split the matrix by adding a `num_heads` dimension
+          # Unroll last dim: (b, num_tokens, d_out) -> (b, num_tokens, num_heads, head_dim)
+          keys = keys.view(b, num_tokens, self.num_heads, self.head_dim)
+          values = values.view(b, num_tokens, self.num_heads, self.head_dim)
+          queries = queries.view(b, num_tokens, self.num_heads, self.head_dim)
+
+          # Transpose: (b, num_tokens, num_heads, head_dim) -> (b, num_heads, num_tokens, head_dim)
+          keys = keys.transpose(1, 2)
+          queries = queries.transpose(1, 2)
+          values = values.transpose(1, 2)
+
+          # Compute scaled dot-product attention (aka self-attention) with a causal mask
+          attn_scores = queries @ keys.transpose(2, 3)  # Dot product for each head
+
+          # Original mask truncated to the number of tokens and converted to boolean
+          mask_bool = self.mask.bool()[:num_tokens, :num_tokens]
+
+          # Use the mask to fill attention scores
+          attn_scores.masked_fill_(mask_bool, -torch.inf)
+
+          attn_weights = torch.softmax(attn_scores / keys.shape[-1]**0.5, dim=-1)
+          attn_weights = self.dropout(attn_weights)
+
+          # Shape: (b, num_tokens, num_heads, head_dim)
+          context_vec = (attn_weights @ values).transpose(1, 2)
+
+          # Combine heads, where self.d_out = self.num_heads * self.head_dim
+          context_vec = context_vec.contiguous().view(b, num_tokens, self.d_out)
+          context_vec = self.out_proj(context_vec)  # optional projection
+
+          return context_vec
+
+  mha_ch03 = Ch03_MHA(
+      d_in=embed_dim,
+      d_out=embed_dim,
+      context_length=context_len,
+      dropout=0.0,
+      num_heads=12,
+      qkv_bias=False
+  ).to(device)
+
+  out = mha_ch03(embeddings)
+  print(out.shape)
+  ```
+
+- 将 Q、K、V 的 3 个独立线性层合并为 1 个（ `nn.Linear(d_in, 3*d_out)` ），单次矩阵乘法生成 QKV 组合张量，再通过 `unbind` 拆分
+
+  ```python
+  import torch.nn as nn
+
+  class MultiHeadAttentionCombinedQKV(nn.Module):
+      def __init__(self, d_in, d_out, num_heads, context_length, dropout=0.0, qkv_bias=False):
+          super().__init__()
+
+          assert d_out % num_heads == 0, "d_out is indivisible by num_heads"
+
+          self.num_heads = num_heads
+          self.context_length = context_length
+          self.head_dim = d_out // num_heads
+
+          self.qkv = nn.Linear(d_in, 3 * d_out, bias=qkv_bias)
+          self.proj = nn.Linear(d_out, d_out)
+          self.dropout = nn.Dropout(dropout)
+
+          self.register_buffer(
+              "mask", torch.triu(torch.ones(context_length, context_length), diagonal=1)
+          )
+
+      def forward(self, x):
+          batch_size, num_tokens, embed_dim = x.shape
+
+          # (b, num_tokens, embed_dim) --> (b, num_tokens, 3 * embed_dim)
+          qkv = self.qkv(x)
+
+          # (b, num_tokens, 3 * embed_dim) --> (b, num_tokens, 3, num_heads, head_dim)
+          qkv = qkv.view(batch_size, num_tokens, 3, self.num_heads, self.head_dim)
+
+          # (b, num_tokens, 3, num_heads, head_dim) --> (3, b, num_heads, num_tokens, head_dim)
+          qkv = qkv.permute(2, 0, 3, 1, 4)
+
+          # (3, b, num_heads, num_tokens, head_dim) -> 3 times (b, num_head, num_tokens, head_dim)
+          queries, keys, values = qkv.unbind(0)
+
+          # (b, num_heads, num_tokens, head_dim) --> (b, num_heads, num_tokens, num_tokens)
+          attn_scores = queries @ keys.transpose(-2, -1)
+          attn_scores = attn_scores.masked_fill(
+              self.mask.bool()[:num_tokens, :num_tokens], -torch.inf
+          )
+
+          attn_weights = torch.softmax(attn_scores / keys.shape[-1]**0.5, dim=-1)
+          attn_weights = self.dropout(attn_weights)
+
+          # (b, num_heads, num_tokens, num_tokens) --> (b, num_heads, num_tokens, head_dim)
+          context_vec = attn_weights @ values
+
+          # (b, num_heads, num_tokens, head_dim) --> (b, num_tokens, num_heads, head_dim)
+          context_vec = context_vec.transpose(1, 2)
+
+          # (b, num_tokens, num_heads, head_dim) --> (b, num_tokens, embed_dim)
+          context_vec = context_vec.contiguous().view(batch_size, num_tokens, embed_dim)
+
+          context_vec = self.proj(context_vec)
+
+          return context_vec
+
+  mha_combined_qkv = MultiHeadAttentionCombinedQKV(
+      d_in=embed_dim,
+      d_out=embed_dim,
+      context_length=context_len,
+      dropout=0.0,
+      num_heads=12,
+      qkv_bias=False
+  ).to(device)
+
+  out = mha_combined_qkv(embeddings)
+  print(out.shape)
+  ```
+
+- 使用 `torch.einsum` 实现 Q、K、V 的线性变换和注意力分数计算，代码更简洁且维度关系更直观
+
+  ```python
+  import math
+
+  class MHAEinsum(nn.Module):
+
+      def __init__(self, d_in, d_out, context_length, dropout, num_heads, qkv_bias=False):
+          super().__init__()
+          assert d_out % num_heads == 0, "d_out must be divisible by num_heads"
+
+          self.d_out = d_out
+          self.num_heads = num_heads
+          self.head_dim = d_out // num_heads
+
+          self.W_query = nn.Parameter(torch.randn(d_in, d_out))
+          self.W_key = nn.Parameter(torch.randn(d_in, d_out))
+          self.W_value = nn.Parameter(torch.randn(d_in, d_out))
+
+          if qkv_bias:
+              self.bias_q = nn.Parameter(torch.zeros(d_out))
+              self.bias_k = nn.Parameter(torch.zeros(d_out))
+              self.bias_v = nn.Parameter(torch.zeros(d_out))
+          else:
+              self.register_parameter("bias_q", None)
+              self.register_parameter("bias_k", None)
+              self.register_parameter("bias_v", None)
+
+          self.out_proj = nn.Linear(d_out, d_out)
+          self.dropout = nn.Dropout(dropout)
+          self.register_buffer("mask", torch.triu(torch.ones(context_length, context_length), diagonal=1))
+          self.reset_parameters()
+
+      def reset_parameters(self):
+          nn.init.kaiming_uniform_(self.W_query, a=math.sqrt(5))
+          nn.init.kaiming_uniform_(self.W_key, a=math.sqrt(5))
+          nn.init.kaiming_uniform_(self.W_value, a=math.sqrt(5))
+          if self.bias_q is not None:
+              fan_in, _ = nn.init._calculate_fan_in_and_fan_out(self.W_query)
+              bound = 1 / math.sqrt(fan_in)
+              nn.init.uniform_(self.bias_q, -bound, bound)
+              nn.init.uniform_(self.bias_k, -bound, bound)
+              nn.init.uniform_(self.bias_v, -bound, bound)
+
+      def forward(self, x):
+          b, n, _ = x.shape
+
+          # Calculate Q, K, V using einsum, first perform linear transformations
+          Q = torch.einsum("bnd,do->bno", x, self.W_query)
+          K = torch.einsum("bnd,do->bno", x, self.W_key)
+          V = torch.einsum("bnd,do->bno", x, self.W_value)
+
+          # Add biases if they are used
+          if self.bias_q is not None:
+              Q += self.bias_q
+              K += self.bias_k
+              V += self.bias_v
+
+          # Reshape for multi-head attention
+          Q = Q.view(b, n, self.num_heads, self.head_dim).transpose(1, 2)
+          K = K.view(b, n, self.num_heads, self.head_dim).transpose(1, 2)
+          V = V.view(b, n, self.num_heads, self.head_dim).transpose(1, 2)
+
+          # Scaled dot-product attention
+          scores = torch.einsum("bhnd,bhmd->bhnm", Q, K) / (self.head_dim ** 0.5)
+
+          # Apply mask
+          mask = self.mask[:n, :n]
+          scores = scores.masked_fill(mask.bool(), -torch.inf)
+
+          # Softmax and dropout
+          attn_weights = torch.softmax(scores, dim=-1)
+          attn_weights = self.dropout(attn_weights)
+
+          # Aggregate the attended context vectors
+          context_vec = torch.einsum("bhnm,bhmd->bhnd", attn_weights, V)
+
+          # Combine heads and project the output
+          context_vec = context_vec.transpose(1, 2).reshape(b, n, self.d_out)
+          context_vec = self.out_proj(context_vec)
+
+          return context_vec
+
+  mha_einsum = MHAEinsum(
+      d_in=embed_dim,
+      d_out=embed_dim,
+      context_length=context_len,
+      dropout=0.0,
+      num_heads=12,
+      qkv_bias=False
+  ).to(device)
+
+  out = mha_einsum(embeddings)
+  print(out.shape)
+  ```
+
+- 调用 PyTorch 的 `nn.functional.scaled_dot_product_attention`，自动启用 FlashAttention（需 PyTorch 2.0+）—— SDPA
+
+  ```python
+  class MHAPyTorchScaledDotProduct(nn.Module):
+      def __init__(self, d_in, d_out, num_heads, context_length, dropout=0.0, qkv_bias=False):
+          super().__init__()
+
+          assert d_out % num_heads == 0, "d_out is indivisible by num_heads"
+
+          self.num_heads = num_heads
+          self.context_length = context_length
+          self.head_dim = d_out // num_heads
+          self.d_out = d_out
+
+          self.qkv = nn.Linear(d_in, 3 * d_out, bias=qkv_bias)
+          self.proj = nn.Linear(d_out, d_out)
+          self.dropout = dropout
+
+      def forward(self, x):
+          batch_size, num_tokens, embed_dim = x.shape
+
+          # (b, num_tokens, embed_dim) --> (b, num_tokens, 3 * embed_dim)
+          qkv = self.qkv(x)
+
+          # (b, num_tokens, 3 * embed_dim) --> (b, num_tokens, 3, num_heads, head_dim)
+          qkv = qkv.view(batch_size, num_tokens, 3, self.num_heads, self.head_dim)
+
+          # (b, num_tokens, 3, num_heads, head_dim) --> (3, b, num_heads, num_tokens, head_dim)
+          qkv = qkv.permute(2, 0, 3, 1, 4)
+
+          # (3, b, num_heads, num_tokens, head_dim) -> 3 times (b, num_heads, num_tokens, head_dim)
+          queries, keys, values = qkv
+
+          use_dropout = 0. if not self.training else self.dropout
+
+          context_vec = nn.functional.scaled_dot_product_attention(
+              queries, keys, values, attn_mask=None, dropout_p=use_dropout, is_causal=True)
+
+          # Combine heads, where self.d_out = self.num_heads * self.head_dim
+          context_vec = context_vec.transpose(1, 2).contiguous().view(batch_size, num_tokens, self.d_out)
+
+          context_vec = self.proj(context_vec)
+
+          return context_vec
+
+  mha_pytorch_scaled = MHAPyTorchScaledDotProduct(
+      d_in=embed_dim,
+      d_out=embed_dim,
+      context_length=context_len,
+      dropout=0.0,
+      num_heads=12,
+      qkv_bias=False
+  ).to(device)
+
+  out = mha_pytorch_scaled(embeddings)
+  print(out.shape)
+  ```
+
+- 与第 5 种类似，但通过显式传入因果掩码（`attn_mask=self.mask`）禁用 FlashAttention，使用 PyTorch 原生非优化实现
+
+  ```python
+  class MHAPyTorchSDPAWithoutFlash(nn.Module):
+      def __init__(self, d_in, d_out, num_heads, context_length, dropout=0.0, qkv_bias=False):
+          super().__init__()
+
+          assert d_out % num_heads == 0, "d_out is indivisible by num_heads"
+
+          self.num_heads = num_heads
+          self.context_length = context_length
+          self.head_dim = d_out // num_heads
+          self.d_out = d_out
+
+          self.qkv = nn.Linear(d_in, 3 * d_out, bias=qkv_bias)
+          self.proj = nn.Linear(d_out, d_out)
+          self.dropout = dropout
+          self.register_buffer("mask", torch.triu(torch.ones(context_length, context_length), diagonal=1).bool())
+
+      def forward(self, x):
+          batch_size, num_tokens, embed_dim = x.shape
+
+          # (b, num_tokens, embed_dim) --> (b, num_tokens, 3 * embed_dim)
+          qkv = self.qkv(x)
+
+          # (b, num_tokens, 3 * embed_dim) --> (b, num_tokens, 3, num_heads, head_dim)
+          qkv = qkv.view(batch_size, num_tokens, 3, self.num_heads, self.head_dim)
+
+          # (b, num_tokens, 3, num_heads, head_dim) --> (3, b, num_heads, num_tokens, head_dim)
+          qkv = qkv.permute(2, 0, 3, 1, 4)
+
+          # (3, b, num_heads, num_tokens, head_dim) -> 3 times (b, num_heads, num_tokens, head_dim)
+          queries, keys, values = qkv
+
+          use_dropout = 0. if not self.training else self.dropout
+
+          # Ensure attn_mask is compatible with expected shape and `batch_first=True`
+          # No need to manually adjust for num_heads; ensure it's right for the sequence
+          if self.context_length >= num_tokens:
+              attn_mask = self.mask[:num_tokens, :num_tokens]
+          else:
+              attn_mask = self.mask[:self.context_length, :self.context_length]
+
+          context_vec = nn.functional.scaled_dot_product_attention(
+              queries, keys, values, attn_mask=attn_mask, dropout_p=use_dropout, is_causal=False)
+
+          # Combine heads, where self.d_out = self.num_heads * self.head_dim
+          context_vec = context_vec.transpose(1, 2).contiguous().view(batch_size, num_tokens, self.d_out)
+
+          context_vec = self.proj(context_vec)
+
+          return context_vec
+
+  mha_pytorch_sdpa_no_flash = MHAPyTorchSDPAWithoutFlash(
+      d_in=embed_dim,
+      d_out=embed_dim,
+      context_length=context_len,
+      dropout=0.0,
+      num_heads=12,
+      qkv_bias=False
+  ).to(device)
+
+  out = mha_pytorch_sdpa_no_flash(embeddings)
+  print(out.shape)
+  ```
+
+- 封装 `torch.nn.MultiheadAttention` ，默认启用注意力权重计算（`need_weights=True`）
+
+  ```python
+  import torch.nn as nn
+
+  class MHAPyTorchClass(nn.Module):
+      def __init__(self, d_in, d_out, num_heads, context_length, dropout=0.0, qkv_bias=False, need_weights=True):
+          super().__init__()
+
+          self.context_length = context_length
+          self.multihead_attn = nn.MultiheadAttention(
+              embed_dim=d_out,
+              num_heads=num_heads,
+              dropout=dropout,
+              bias=qkv_bias,
+              add_bias_kv=qkv_bias,
+              batch_first=True,
+          )
+
+          self.need_weights = need_weights
+          self.proj = nn.Linear(d_out, d_out)
+          self.register_buffer("mask", torch.triu(torch.ones(context_length, context_length), diagonal=1).bool())
+
+      def forward(self, x):
+          batch_size, num_tokens, _ = x.shape
+
+          # Ensure attn_mask is compatible with expected shape and `batch_first=True`
+          # No need to manually adjust for num_heads; ensure it's right for the sequence
+          if self.context_length >= num_tokens:
+              attn_mask = self.mask[:num_tokens, :num_tokens]
+          else:
+              attn_mask = self.mask[:self.context_length, :self.context_length]
+
+          # attn_mask broadcasting will handle batch_size dimension implicitly
+          attn_output, _ = self.multihead_attn(
+              x, x, x, attn_mask=attn_mask, need_weights=self.need_weights
+          )
+
+          output = self.proj(attn_output)
+
+          return output
+
+  mha_pytorch_class_default = MHAPyTorchClass(
+      d_in=embed_dim,
+      d_out=embed_dim,
+      context_length=context_len,
+      dropout=0.0,
+      num_heads=12,
+      qkv_bias=False
+  ).to(device)
+
+  out = mha_pytorch_class_default(embeddings)
+  print(out.shape)
+  ```
+
+- 在第 7 种基础上设置 `need_weights=False`，触发 PyTorch 内部优化（自动调用 `scaled_dot_product_attention` ）
+
+  ```python
+  mha_pytorch_class_noweights = MHAPyTorchClass(
+      d_in=embed_dim,
+      d_out=embed_dim,
+      context_length=context_len,
+      dropout=0.0,
+      num_heads=12,
+      qkv_bias=False,
+      need_weights=False # NEW!
+  ).to(device)
+
+  out = mha_pytorch_class_noweights(embeddings)
+  print(out.shape)
+  ```
+
+- PyTorch 2.5 + 新增的 `flex_attention`，支持灵活的注意力掩码和块稀疏计算（[FlexAttention: The Flexibility of PyTorch with the Performance of FlashAttention – PyTorch](https://pytorch.org/blog/flexattention/)）
+
+  ```python
+  from packaging.version import parse as parse_version
+
+  def normalize_version(version):
+      parsed_version = parse_version(version)
+      return parse_version(f"{parsed_version.major}.{parsed_version.minor}.{parsed_version.micro}")
+
+  current_version = normalize_version(torch.__version__)
+  MIN_TORCH_VERSION = "2.5.0"
+  required_version = parse_version(MIN_TORCH_VERSION)
+
+  if current_version >= required_version and torch.cuda.is_available():
+      from torch.nn.attention.flex_attention import flex_attention, create_block_mask
+
+  def causal(b, h, q_idx, kv_idx):
+      return q_idx >= kv_idx
+
+  class MHAPyTorchFlexAttention(nn.Module):
+
+      def __init__(self, d_in, d_out, num_heads, context_length, dropout=0.0, qkv_bias=False):
+          super().__init__()
+
+          assert d_out % num_heads == 0, "d_out is indivisible by num_heads"
+
+          self.num_heads = num_heads
+          self.context_length = context_length
+          self.head_dim = d_out // num_heads
+          self.d_out = d_out
+
+          self.qkv = nn.Linear(d_in, 3 * d_out, bias=qkv_bias)
+          self.proj = nn.Linear(d_out, d_out)
+          self.dropout = dropout
+          # self.register_buffer("block_mask", create_block_mask(causal, B=None, H=None, Q_LEN=context_length, KV_LEN=context_length))
+          # `create_block_mask` function does not support buffers, yet
+          self.block_mask = create_block_mask(causal, B=None, H=None, Q_LEN=context_length, KV_LEN=context_length)
+
+      def forward(self, x):
+          batch_size, num_tokens, embed_dim = x.shape
+
+          # (b, num_tokens, embed_dim) --> (b, num_tokens, 3 * embed_dim)
+          qkv = self.qkv(x)
+
+          # (b, num_tokens, 3 * embed_dim) --> (b, num_tokens, 3, num_heads, head_dim)
+          qkv = qkv.view(batch_size, num_tokens, 3, self.num_heads, self.head_dim)
+
+          # (b, num_tokens, 3, num_heads, head_dim) --> (3, b, num_heads, num_tokens, head_dim)
+          qkv = qkv.permute(2, 0, 3, 1, 4)
+
+          # (3, b, num_heads, num_tokens, head_dim) -> 3 times (b, num_heads, num_tokens, head_dim)
+          queries, keys, values = qkv
+
+          # use_dropout = 0. if not self.training else self.dropout
+
+          # Ensure attn_mask is compatible with expected shape and `batch_first=True`
+          # No need to manually adjust for num_heads; ensure it's right for the sequence
+          if self.context_length >= num_tokens:
+              attn_mask = self.block_mask[:num_tokens, :num_tokens]
+          else:
+              attn_mask = self.block_mask[:self.context_length, :self.context_length]
+
+          context_vec = flex_attention(queries, keys, values, block_mask=attn_mask)
+
+          # Combine heads, where self.d_out = self.num_heads * self.head_dim
+          context_vec = context_vec.transpose(1, 2).contiguous().view(batch_size, num_tokens, self.d_out)
+
+          context_vec = self.proj(context_vec)
+
+          return context_vec
+
+  if current_version >= required_version and torch.cuda.is_available():
+
+      mha_pytorch_flex = MHAPyTorchFlexAttention(
+          d_in=embed_dim,
+          d_out=embed_dim,
+          context_length=context_len,
+          dropout=0.0,
+          num_heads=12,
+          qkv_bias=False
+      ).to(device)
+
+      out = mha_pytorch_flex(embeddings)
+      print(out.shape)
+  ```
+
+- 对比总结
+
+  | 实现序号 |           核心特点           | 性能（GPU 环境） |             适用场景             |
+  | :------: | :--------------------------: | :--------------: | :------------------------------: |
+  |    1     |     并行单头，直观但冗余     |       最低       |      教学演示、理解基础原理      |
+  |    2     | 标准多头拆分，平衡简洁与效率 |       中低       |          学习与简单实验          |
+  |    3     |  合并 QKV 权重，减少计算量   |        中        |          工业级基础实现          |
+  |    4     |    Einsum 语法，维度清晰     |        中        |       代码可读性优先的场景       |
+  |    5     |   原生 SDPA+FlashAttention   |       最高       |      追求极致性能的生产环境      |
+  |    6     | 禁用 FlashAttention 的 SDPA  |       中高       |     性能对比实验、兼容性需求     |
+  |    7     |  PyTorch 标准 MHA（需权重）  |        中        |     需要注意力权重分析的场景     |
+  |    8     |  PyTorch 标准 MHA（无权重）  |        高        |      兼顾便利性与性能的场景      |
+  |    9     |   FlexAttention，灵活掩码    |        高        | 定制化注意力模式（如稀疏注意力） |
+
+### 分组查询注意力 GQA
+
+- GQA 实现
+
+  ```python
+  class GroupedQueryAttention(nn.Module):
+      def __init__(
+              self, d_in, d_out, dropout, num_heads, num_kv_groups, dtype=None, qkv_bias=False
+      ):
+          super().__init__()
+          assert d_out % num_heads == 0, "d_out must be divisible by num_heads"
+          assert num_heads % num_kv_groups == 0, "num_heads must be divisible by num_kv_groups"
+
+          self.d_out = d_out
+          self.num_heads = num_heads
+          self.head_dim = d_out // num_heads
+
+          self.W_key = nn.Linear(d_in, num_kv_groups * self.head_dim, bias=qkv_bias, dtype=dtype)
+          self.W_value = nn.Linear(d_in, num_kv_groups * self.head_dim, bias=qkv_bias, dtype=dtype)
+          self.num_kv_groups = num_kv_groups
+          self.group_size = num_heads // num_kv_groups
+
+          self.W_query = nn.Linear(d_in, d_out, bias=qkv_bias, dtype=dtype)
+          self.out_proj = nn.Linear(d_out, d_out, bias=False, dtype=dtype)
+          self.dropout = nn.Dropout(dropout)
+
+          self.register_buffer("cache_k", None, persistent=False)
+          self.register_buffer("cache_v", None, persistent=False)
+          self.ptr_current_pos = 0
+
+      def forward(self, x, use_cache=False):
+          b, num_tokens, _ = x.shape
+
+          # Apply projections
+          queries = self.W_query(x)  # (b, num_tokens, num_heads * head_dim)
+          keys = self.W_key(x)       # (b, num_tokens, num_kv_groups * head_dim)
+          values = self.W_value(x)   # (b, num_tokens, num_kv_groups * head_dim)
+
+          # Reshape
+          queries = queries.view(b, num_tokens, self.num_heads, self.head_dim).transpose(1, 2)
+          keys_new = keys.view(b, num_tokens, self.num_kv_groups, self.head_dim).transpose(1, 2)
+          values_new = values.view(b, num_tokens, self.num_kv_groups, self.head_dim).transpose(1, 2)
+
+          if use_cache:
+              if self.cache_k is None:
+                  self.cache_k, self.cache_v = keys_new, values_new
+              else:
+                  self.cache_k = torch.cat([self.cache_k, keys_new], dim=2)
+                  self.cache_v = torch.cat([self.cache_v, values_new], dim=2)
+              keys_base, values_base = self.cache_k, self.cache_v
+          else:
+              keys_base, values_base = keys_new, values_new
+              if self.cache_k is not None or self.cache_v is not None:
+                  self.cache_k, self.cache_v = None, None
+                  self.ptr_current_pos = 0
+
+          # Expand keys and values to match the number of heads
+          # Shape: (b, num_heads, num_tokens, head_dim)
+          keys = keys_base.repeat_interleave(self.group_size, dim=1)  # Shape: (b, num_heads, num_tokens, head_dim)
+          values = values_base.repeat_interleave(self.group_size, dim=1)  # Shape: (b, num_heads, num_tokens, head_dim)
+          # For example, before repeat_interleave along dim=1 (query groups):
+          #   [K1, K2]
+          # After repeat_interleave (each query group is repeated group_size times):
+          #   [K1, K1, K2, K2]
+          # If we used regular repeat instead of repeat_interleave, we'd get:
+          #   [K1, K2, K1, K2]
+
+          # Compute scaled dot-product attention (aka self-attention) with a causal mask
+          # Shape: (b, num_heads, num_tokens, num_tokens)
+          attn_scores = queries @ keys.transpose(2, 3)  # Dot product for each head
+
+          ###################################
+          # causal mask
+          num_tokens_Q = queries.shape[-2]
+          num_tokens_K = keys.shape[-2]
+          device = queries.device
+          if use_cache:
+              q_positions = torch.arange(
+                  self.ptr_current_pos,
+                  self.ptr_current_pos + num_tokens_Q,
+                  device=device,
+                  dtype=torch.long,
+              )
+              self.ptr_current_pos += num_tokens_Q
+          else:
+              q_positions = torch.arange(num_tokens_Q, device=device, dtype=torch.long)
+              self.ptr_current_pos = 0
+          k_positions = torch.arange(num_tokens_K, device=device, dtype=torch.long)
+          mask = q_positions.unsqueeze(-1) < k_positions.unsqueeze(0)
+
+          # Use the mask to fill attention scores
+          attn_scores = attn_scores.masked_fill(mask, -torch.inf)
+
+          attn_weights = torch.softmax(attn_scores / keys.shape[-1]**0.5, dim=-1)
+          assert keys.shape[-1] == self.head_dim
+          attn_weights = self.dropout(attn_weights)
+
+          # Shape: (b, num_tokens, num_heads, head_dim)
+          context_vec = (attn_weights @ values).transpose(1, 2)
+
+          # Combine heads, where self.d_out = self.num_heads * self.head_dim
+          context_vec = context_vec.contiguous().view(b, num_tokens, self.d_out)
+          context_vec = self.out_proj(context_vec)  # optional projection
+
+          return context_vec
+
+      def reset_cache(self):
+          self.cache_k, self.cache_v = None, None
+          self.ptr_current_pos = 0
+  ```
+
+### 多头潜在注意力 MLA
+
+- MLA 实现
+
+  ```python
+  class MultiHeadLatentAttention(nn.Module):
+      def __init__(self, d_in, d_out, dropout, num_heads,
+                   qkv_bias=False, latent_dim=None):
+          super().__init__()
+          assert d_out % num_heads == 0, "d_out must be divisible by num_heads"
+
+          self.d_out = d_out
+          self.num_heads = num_heads
+          self.head_dim = d_out // num_heads
+          self.latent_dim = latent_dim if latent_dim is not None else max(16, d_out // 8)
+
+          # Projections
+          self.W_query = nn.Linear(d_in, d_out, bias=qkv_bias)              # per-head Q
+          self.W_DKV = nn.Linear(d_in, self.latent_dim, bias=qkv_bias)    # down to latent C
+          self.W_UK = nn.Linear(self.latent_dim, d_out, bias=qkv_bias)   # latent -> per-head K
+          self.W_UV = nn.Linear(self.latent_dim, d_out, bias=qkv_bias)   # latent -> per-head V
+
+          self.out_proj = nn.Linear(d_out, d_out)
+          self.dropout = nn.Dropout(dropout)
+
+          ###################################
+          # Latent-KV cache
+          self.register_buffer("cache_c_kv", None, persistent=False)
+          self.ptr_current_pos = 0
+          ###################################
+
+      def reset_cache(self):
+          self.cache_c_kv = None
+          self.ptr_current_pos = 0
+
+      @staticmethod
+      def _reshape_to_heads(x, num_heads, head_dim):
+          # (b, T, d_out) -> (b, num_heads, T, head_dim)
+          bsz, num_tokens, _ = x.shape
+          return x.view(bsz, num_tokens, num_heads, head_dim).transpose(1, 2).contiguous()
+
+      def forward(self, x, use_cache=False):
+          b, num_tokens, _ = x.shape
+          num_heads = self.num_heads
+          head_dim = self.head_dim
+
+          # 1) Project to queries (per-token, per-head) and new latent chunk
+          queries_all = self.W_query(x)  # (b, T, d_out)
+          latent_new = self.W_DKV(x)  # (b, T, latent_dim)
+
+          # 2) Update latent cache and choose latent sequence to up-project
+          if use_cache:
+              if self.cache_c_kv is None:
+                  latent_total = latent_new
+              else:
+                  latent_total = torch.cat([self.cache_c_kv, latent_new], dim=1)
+              self.cache_c_kv = latent_total
+          else:
+              latent_total = latent_new
+
+          # 3) Up-project latent to per-head keys/values (then split into heads)
+          keys_all = self.W_UK(latent_total)   # (b, T_k_total, d_out)
+          values_all = self.W_UV(latent_total)   # (b, T_k_total, d_out)
+
+          # 4) Reshape to heads
+          queries = self._reshape_to_heads(queries_all, num_heads, head_dim)
+          keys = self._reshape_to_heads(keys_all, num_heads, head_dim)
+          values = self._reshape_to_heads(values_all, num_heads, head_dim)
+
+          # 5) Scaled dot-product attention with causal mask
+          attn_scores = torch.matmul(queries, keys.transpose(-2, -1))
+
+          num_tokens_Q = queries.shape[-2]
+          num_tokens_K = keys.shape[-2]
+          device = queries.device
+          if use_cache:
+              q_positions = torch.arange(
+                  self.ptr_current_pos,
+                  self.ptr_current_pos + num_tokens_Q,
+                  device=device,
+                  dtype=torch.long,
+              )
+              self.ptr_current_pos += num_tokens_Q
+          else:
+              q_positions = torch.arange(num_tokens_Q, device=device, dtype=torch.long)
+              self.ptr_current_pos = 0
+          k_positions = torch.arange(num_tokens_K, device=device, dtype=torch.long)
+          mask_bool = q_positions.unsqueeze(-1) < k_positions.unsqueeze(0)
+
+          # Use the mask to fill attention scores
+          attn_scores.masked_fill_(mask_bool, -torch.inf)
+
+          attn_weights = torch.softmax(attn_scores / keys.shape[-1]**0.5, dim=-1)
+          attn_weights = self.dropout(attn_weights)
+
+          # Shape: (b, num_tokens, num_heads, head_dim)
+          context_vec = (attn_weights @ values).transpose(1, 2)
+
+          # Combine heads, where self.d_out = self.num_heads * self.head_dim
+          context_vec = context_vec.contiguous().view(b, num_tokens, self.d_out)
+          context_vec = self.out_proj(context_vec)  # optional projection
+
+          return context_vec
+  ```
+
+### 滑动窗口注意力
+
+- 滑动窗口注意力实现（Slide Window Attention）
+
+  ```python
+  class MultiHeadAttentionWithSWA(nn.Module):
+      def __init__(self, d_in, d_out, dropout, num_heads, qkv_bias=False, sliding_window_size=None):
+          super().__init__()
+          assert d_out % num_heads == 0, "d_out must be divisible by num_heads"
+
+          self.d_out = d_out
+          self.num_heads = num_heads
+          self.head_dim = d_out // num_heads  # Reduce the projection dim to match desired output dim
+
+          self.W_query = nn.Linear(d_in, d_out, bias=qkv_bias)
+          self.W_key = nn.Linear(d_in, d_out, bias=qkv_bias)
+          self.W_value = nn.Linear(d_in, d_out, bias=qkv_bias)
+          self.out_proj = nn.Linear(d_out, d_out)  # Linear layer to combine head outputs
+          self.dropout = nn.Dropout(dropout)
+          self.sliding_window_size = sliding_window_size
+
+          ###################################
+          # KV cache-related code
+          self.register_buffer("cache_k", None, persistent=False)
+          self.register_buffer("cache_v", None, persistent=False)
+          self.ptr_current_pos = 0
+          ###################################
+
+      def forward(self, x, use_cache=False):
+          b, num_tokens, d_in = x.shape
+
+          keys_new = self.W_key(x)  # Shape: (b, num_tokens, d_out)
+          values_new = self.W_value(x)
+          queries = self.W_query(x)
+
+          # We implicitly split the matrix by adding a `num_heads` dimension
+          # Unroll last dim: (b, num_tokens, d_out) -> (b, num_tokens, num_heads, head_dim)
+          keys_new = keys_new.view(b, num_tokens, self.num_heads, self.head_dim)
+          values_new = values_new.view(b, num_tokens, self.num_heads, self.head_dim)
+          queries = queries.view(b, num_tokens, self.num_heads, self.head_dim)
+
+          ###################################
+          # KV cache-related
+          if use_cache:
+              old_len = 0 if self.cache_k is None else self.cache_k.size(1)
+              if self.cache_k is None:
+                  self.cache_k, self.cache_v = keys_new, values_new
+              else:
+                  self.cache_k = torch.cat([self.cache_k, keys_new], dim=1)
+                  self.cache_v = torch.cat([self.cache_v, values_new], dim=1)
+              # Left-trim to sliding window if configured
+              if self.sliding_window_size is not None:
+                  if self.cache_k.size(1) > self.sliding_window_size:
+                      self.cache_k = self.cache_k[:, -self.sliding_window_size:, :, :]
+                      self.cache_v = self.cache_v[:, -self.sliding_window_size:, :, :]
+              # Compute absolute start positions for mask
+              total_len = old_len + num_tokens
+              k_len_now = self.cache_k.size(1)
+              dropped = max(0, total_len - k_len_now)
+              k_start_pos_abs = (self.ptr_current_pos - old_len) + dropped
+              q_start_pos_abs = self.ptr_current_pos
+              keys, values = self.cache_k, self.cache_v
+          else:
+              keys, values = keys_new, values_new
+          ###################################
+
+          # Transpose: (b, num_tokens, num_heads, head_dim) -> (b, num_heads, num_tokens, head_dim)
+          keys = keys.transpose(1, 2)
+          queries = queries.transpose(1, 2)
+          values = values.transpose(1, 2)
+
+          # Compute scaled dot-product attention (aka self-attention) with a causal mask
+          attn_scores = queries @ keys.transpose(2, 3)  # Dot product for each head
+
+          ###################################
+          # causal + sliding-window mask
+          num_tokens_Q = queries.shape[-2]
+          num_tokens_K = keys.shape[-2]
+          device = queries.device
+          # Determine absolute positions for q and k
+          if use_cache:
+              q_start = q_start_pos_abs
+              k_start = k_start_pos_abs
+          else:
+              q_start = 0
+              k_start = 0
+          q_positions = torch.arange(q_start, q_start + num_tokens_Q, device=device, dtype=torch.long)
+          k_positions = torch.arange(k_start, k_start + num_tokens_K, device=device, dtype=torch.long)
+          # Sliding window width
+          W = num_tokens_K + 1 if self.sliding_window_size is None else int(self.sliding_window_size)
+          diff = q_positions.unsqueeze(-1) - k_positions.unsqueeze(0)
+          mask_bool = (diff < 0) | (diff >= W)
+          if use_cache:
+              self.ptr_current_pos += num_tokens_Q
+          else:
+              self.ptr_current_pos = 0
+
+          # Use the mask to fill attention scores
+          attn_scores.masked_fill_(mask_bool, -torch.inf)
+
+          attn_weights = torch.softmax(attn_scores / keys.shape[-1]**0.5, dim=-1)
+          attn_weights = self.dropout(attn_weights)
+
+          # Shape: (b, num_tokens, num_heads, head_dim)
+          context_vec = (attn_weights @ values).transpose(1, 2)
+
+          # Combine heads, where self.d_out = self.num_heads * self.head_dim
+          context_vec = context_vec.contiguous().view(b, num_tokens, self.d_out)
+          context_vec = self.out_proj(context_vec)  # optional projection
+
+          return context_vec
+
+      def reset_cache(self):
+          self.cache_k, self.cache_v = None, None
+          self.ptr_current_pos = 0
+  ```
+
+## Decode-only Transformer
+
+- GPT-2 模型配置
+
+  ```python
+  GPT_CONFIG_124M = {
+      "vocab_size": 50257,    # Vocabulary size
+      "context_length": 1024, # Context length
+      "emb_dim": 768,         # Embedding dimension
+      "n_heads": 12,          # Number of attention heads
+      "n_layers": 12,         # Number of layers
+      "drop_rate": 0.1,       # Dropout rate
+      "qkv_bias": False       # Query-Key-Value bias
+  }
+  ```
+
+- 下列是模型的主要架构
+
+  ```python
+  import torch
+  import torch.nn as nn
+
+
+  class DummyGPTModel(nn.Module):
+      def __init__(self, cfg):
+          super().__init__()
+          self.tok_emb = nn.Embedding(cfg["vocab_size"], cfg["emb_dim"])
+          self.pos_emb = nn.Embedding(cfg["context_length"], cfg["emb_dim"])
+          self.drop_emb = nn.Dropout(cfg["drop_rate"])
+
+          # Use a placeholder for TransformerBlock
+          self.trf_blocks = nn.Sequential(
+              *[DummyTransformerBlock(cfg) for _ in range(cfg["n_layers"])])
+
+          # Use a placeholder for LayerNorm
+          self.final_norm = DummyLayerNorm(cfg["emb_dim"])
+          self.out_head = nn.Linear(
+              cfg["emb_dim"], cfg["vocab_size"], bias=False
+          )
+
+      def forward(self, in_idx):
+          batch_size, seq_len = in_idx.shape
+          tok_embeds = self.tok_emb(in_idx)
+          pos_embeds = self.pos_emb(torch.arange(seq_len, device=in_idx.device))
+          x = tok_embeds + pos_embeds
+          x = self.drop_emb(x)
+          x = self.trf_blocks(x)
+          x = self.final_norm(x)
+          logits = self.out_head(x)
+          return logits
+
+
+  class DummyTransformerBlock(nn.Module):
+      def __init__(self, cfg):
+          super().__init__()
+          # A simple placeholder
+
+      def forward(self, x):
+          # This block does nothing and just returns its input.
+          return x
+
+
+  class DummyLayerNorm(nn.Module):
+      def __init__(self, normalized_shape, eps=1e-5):
+          super().__init__()
+          # The parameters here are just to mimic the LayerNorm interface.
+
+      def forward(self, x):
+          # This layer does nothing and just returns its input.
+          return x
+  ```
+
+- 主要实现流程如下
+
+![](/img/llm/build-llm-from-scratch-gpt-modules.webp)
+
+- GPT 模型架构如下
+
+![](/img/llm/build-llm-from-scratch-gpt-data-flow.webp)
+
+- 测试数据设置
+
+  ```python
+  import tiktoken
+
+  tokenizer = tiktoken.get_encoding("gpt2")
+
+  batch = []
+
+  txt1 = "Every effort moves you"
+  txt2 = "Every day holds a"
+
+  batch.append(torch.tensor(tokenizer.encode(txt1)))
+  batch.append(torch.tensor(tokenizer.encode(txt2)))
+  batch = torch.stack(batch, dim=0)
+  print(batch)
+  ```
+
+### LayerNorm
+
+- 首先初始化一个简单的神经网络
+
+  ```python
+  torch.manual_seed(123)
+
+  # create 2 training examples with 5 dimensions (features) each
+  batch_example = torch.randn(2, 5)
+
+  layer = nn.Sequential(nn.Linear(5, 6), nn.ReLU())
+  out = layer(batch_example)
+  print(out)
+  # tensor([[0.2260, 0.3470, 0.0000, 0.2216, 0.0000, 0.0000],
+  #         [0.2133, 0.2394, 0.0000, 0.5198, 0.3297, 0.0000]],
+  #        grad_fn=<ReluBackward0>)
+  ```
+
+- 然后计算平均值与方差
+
+  ```python
+  mean = out.mean(dim=-1, keepdim=True)
+  var = out.var(dim=-1, keepdim=True)
+
+  print("Mean:\n", mean)
+  print("Variance:\n", var)
+  # Mean:
+  #  tensor([[0.1324],
+  #         [0.2170]], grad_fn=<MeanBackward1>)
+  # Variance:
+  #  tensor([[0.0231],
+  #         [0.0398]], grad_fn=<VarBackward0>)
+  ```
+
+- 而 LayNorm 被分别应用于每个输入，可以使用 dim=-1 来使得计算应用于最后一个维度 5（也即特征维度）而不是行维度 2
+
+- 应用 LayNorm 公式
+
+  ```python
+  out_norm = (out - mean) / torch.sqrt(var)
+  print("Normalized layer outputs:\n", out_norm)
+
+  mean = out_norm.mean(dim=-1, keepdim=True)
+  var = out_norm.var(dim=-1, keepdim=True)
+  print("Mean:\n", mean)
+  print("Variance:\n", var)
+  # Normalized layer outputs:
+  #  tensor([[ 0.6159,  1.4126, -0.8719,  0.5872, -0.8719, -0.8719],
+  #         [-0.0189,  0.1121, -1.0876,  1.5173,  0.5647, -1.0876]],
+  #        grad_fn=<DivBackward0>)
+  # Mean:
+  #  tensor([[9.9341e-09],
+  #         [1.9868e-08]], grad_fn=<MeanBackward1>)
+  # Variance:
+  #  tensor([[1.0000],
+  #         [1.0000]], grad_fn=<VarBackward0>)
+  # 禁用科学模式
+  torch.set_printoptions(sci_mode=False)
+  print("Mean:\n", mean)
+  print("Variance:\n", var)
+  # Mean:
+  #  tensor([[    -0.0000],
+  #         [     0.0000]], grad_fn=<MeanBackward1>)
+  # Variance:
+  #  tensor([[1.0000],
+  #         [1.0000]], grad_fn=<VarBackward0>)
+  ```
+
+- 这样，每个输入的平均值变为 0，而方差变为 1
+
+- 据此，可以实现 LayerNorm 模块
+
+  ```python
+  class LayerNorm(nn.Module):
+      def __init__(self, emb_dim):
+          super().__init__()
+          self.eps = 1e-5
+          self.scale = nn.Parameter(torch.ones(emb_dim))
+          self.shift = nn.Parameter(torch.zeros(emb_dim))
+
+      def forward(self, x):
+          mean = x.mean(dim=-1, keepdim=True)
+          var = x.var(dim=-1, keepdim=True, unbiased=False)
+          norm_x = (x - mean) / torch.sqrt(var + self.eps)
+          return self.scale * norm_x + self.shift
+  ```
+
+- 在以上实现中，除了完成归一化操作，还添加了两个可训练参数，即尺度缩放参数（scale）和偏移参数（shift）
+  - scale 参数的初始值为 1（即乘以 1），shift 参数的初始值为 0（即加上 0），初始状态下二者无任何作用
+  - 但这两个参数为可训练参数，若大语言模型判定调整其数值能够提升模型在训练任务上的表现，会在训练过程中自动完成参数调优
+  - 这一设计让模型能够学习到与所处理数据最适配的 scale 和 shift 方式
+  - 在计算方差的平方根前，还会加入一个极小值 $eps$，避免方差为 0 时出现除零错误
+
+- 有偏方差
+  - 在上述方差计算过程中，将 `unbiased` 设为 `False`，表示采用公式 $\frac{\sum_i(x_i-\bar{x})^2}{n}$ 计算方差（其中 $n$ 为样本量，即特征数或列数）
+  - 该公式未引入贝塞尔校正（即把分母设为 $n-1$​），因此得到的是方差的有偏估计值
+  - 对于大语言模型而言，其嵌入维度 $n$ 通常极大，使用 $n$ 和 $n−1$ 作为分母计算出的结果差异微乎其微
+  - 但 GPT-2 模型的归一化层在训练时采用的是有偏方差计算方式，后续内容中会加载预训练权重，为保证与该权重的兼容性，此处也沿用了这一设置
+
+- LayerNorm 使用
+
+  ```python
+  ln = LayerNorm(emb_dim=5)
+  out_ln = ln(batch_example)
+
+  mean = out_ln.mean(dim=-1, keepdim=True)
+  var = out_ln.var(dim=-1, unbiased=False, keepdim=True)
+
+  print("Mean:\n", mean)
+  print("Variance:\n", var)
+  # Mean:
+  #  tensor([[    -0.0000],
+  #         [     0.0000]], grad_fn=<MeanBackward1>)
+  # Variance:
+  #  tensor([[1.0000],
+  #         [1.0000]], grad_fn=<VarBackward0>)
+  ```
+
+### FFN with GELU
+
+- 在深度学习领域，ReLU（Rectified Linear Unit）激活函数因实现简洁，且在各类神经网络结构中均能取得良好效果，成为了应用最广泛的激活函数之一
+
+- 而在大语言模型中，除了传统的 ReLU，还会用到多种其他类型的激活函数；其中最具代表性的两种是GELU（Gaussian Error Linear Unit）和 SwiGLU（Swish-Gated Linear Unit）
+
+- GELU 和 SwiGLU 是更为复杂的平滑型激活函数——前者融入了高斯分布相关计算，后者则结合了 Sigmoid 门控线性单元，二者均能为深度学习模型带来更优的性能表现；这一点与结构简单、为分段线性函数的 ReLU 形成了鲜明对比
+
+- GELU 激活函数有多种实现方式，其标准定义如下，其中$Φ(x)$代表标准高斯分布的累积分布函数
+
+  $$
+  \text{GELU}(x)=x\cdot\Phi(x)
+  $$
+
+- 实际工程中，人们通常会采用一种计算成本更低的近似实现方式：
+
+  $$
+  \text{GELU}(x) \approx 0.5 \cdot x \cdot \left(1 + \tanh\left[\sqrt{\frac{2}{\pi}} \cdot \left(x + 0.044715 \cdot x^3\right)\right]\right)
+  $$
+
+- GELU 实现
+
+  ```python
+  class GELU(nn.Module):
+      def __init__(self):
+          super().__init__()
+
+      def forward(self, x):
+          return 0.5 * x * (1 + torch.tanh(
+              torch.sqrt(torch.tensor(2.0 / torch.pi)) *
+              (x + 0.044715 * torch.pow(x, 3))
+          ))
+  ```
+
+- GELU 与 ReLU 激活函数的对比
+
+  ```python
+  import matplotlib.pyplot as plt
+
+  gelu, relu = GELU(), nn.ReLU()
+
+  # Some sample data
+  x = torch.linspace(-3, 3, 100)
+  y_gelu, y_relu = gelu(x), relu(x)
+
+  plt.figure(figsize=(8, 3))
+  for i, (y, label) in enumerate(zip([y_gelu, y_relu], ["GELU", "ReLU"]), 1):
+      plt.subplot(1, 2, i)
+      plt.plot(x, y)
+      plt.title(f"{label} activation function")
+      plt.xlabel("x")
+      plt.ylabel(f"{label}(x)")
+      plt.grid(True)
+
+  plt.tight_layout()
+  plt.show()
+  ```
+
+- GELU 与 ReLU 对比图
+
+![image-20260129221958108](/img/llm/build-llm-from-scratch-gelu-relu.webp)
+
+- 可见，ReLU 是一种分段线性函数：若输入值为正，函数会直接输出该输入值；若输入值非正，则输出 0；而 GELU 是一种平滑的非线性函数，其效果与 ReLU 近似，但针对负值输入（约 - 0.75 处除外），能输出非零的梯度值
+
+- 定义 FFN 层
+
+  ```python
+  class FeedForward(nn.Module):
+      def __init__(self, cfg):
+          super().__init__()
+          self.layers = nn.Sequential(
+              nn.Linear(cfg["emb_dim"], 4 * cfg["emb_dim"]),
+              GELU(),
+              nn.Linear(4 * cfg["emb_dim"], cfg["emb_dim"]),
+          )
+
+      def forward(self, x):
+          return self.layers(x)
+
+  print(GPT_CONFIG_124M["emb_dim"])
+  # 768
+  ffn = FeedForward(GPT_CONFIG_124M)
+
+  # input shape: [batch_size, num_token, emb_size]
+  x = torch.rand(2, 3, 768)
+  out = ffn(x)
+  print(out.shape)
+  # torch.Size([2, 3, 768])
+  ```
+
+- FFN 层的可视化
+
+![](/img/llm/build-llm-from-scratch-ffn-visual.webp)
+
+### 残差连接
+
+- 捷径连接（shortcut connections）：该机制也被称作跳跃连接（skip connections）或残差连接（residual connections）
+
+- 残差连接最初被提出用于计算机视觉领域的深度网络（残差网络），核心目的是缓解梯度消失问题；这一连接机制能为梯度在网络中的传播，搭建一条更短的备选路径
+
+- 其实现方式为：将某一层的输出，与后续某一层的输出做加和运算，通常会跳过二者之间的一个或多个网络层
+
+- 一个小型的网络示例：
+
+![](/img/llm/build-llm-from-scratch-residual-network.webp)
+
+- 其代码示例如下
+
+  ```python
+  class ExampleDeepNeuralNetwork(nn.Module):
+      def __init__(self, layer_sizes, use_shortcut):
+          super().__init__()
+          self.use_shortcut = use_shortcut
+          self.layers = nn.ModuleList([
+              nn.Sequential(nn.Linear(layer_sizes[0], layer_sizes[1]), GELU()),
+              nn.Sequential(nn.Linear(layer_sizes[1], layer_sizes[2]), GELU()),
+              nn.Sequential(nn.Linear(layer_sizes[2], layer_sizes[3]), GELU()),
+              nn.Sequential(nn.Linear(layer_sizes[3], layer_sizes[4]), GELU()),
+              nn.Sequential(nn.Linear(layer_sizes[4], layer_sizes[5]), GELU())
+          ])
+
+      def forward(self, x):
+          for layer in self.layers:
+              # Compute the output of the current layer
+              layer_output = layer(x)
+              # Check if shortcut can be applied
+              if self.use_shortcut and x.shape == layer_output.shape:
+                  x = x + layer_output
+              else:
+                  x = layer_output
+          return x
+
+
+  def print_gradients(model, x):
+      # Forward pass
+      output = model(x)
+      target = torch.tensor([[0.]])
+
+      # Calculate loss based on how close the target
+      # and output are
+      loss = nn.MSELoss()
+      loss = loss(output, target)
+
+      # Backward pass to calculate the gradients
+      loss.backward()
+
+      for name, param in model.named_parameters():
+          if 'weight' in name:
+              # Print the mean absolute gradient of the weights
+              print(f"{name} has gradient mean of {param.grad.abs().mean().item()}")
+  ```
+
+- 没有残差连接的梯度值
+
+  ```python
+  layer_sizes = [3, 3, 3, 3, 3, 1]
+
+  sample_input = torch.tensor([[1., 0., -1.]])
+
+  torch.manual_seed(123)
+  model_without_shortcut = ExampleDeepNeuralNetwork(
+      layer_sizes, use_shortcut=False
+  )
+  print_gradients(model_without_shortcut, sample_input)
+
+  # layers.0.0.weight has gradient mean of 0.00020173587836325169
+  # layers.1.0.weight has gradient mean of 0.00012011159560643137
+  # layers.2.0.weight has gradient mean of 0.0007152039906941354
+  # layers.3.0.weight has gradient mean of 0.0013988736318424344
+  # layers.4.0.weight has gradient mean of 0.005049645435065031
+  ```
+
+- 有残差连接的梯度值
+
+  ```python
+  torch.manual_seed(123)
+  model_with_shortcut = ExampleDeepNeuralNetwork(
+      layer_sizes, use_shortcut=True
+  )
+  print_gradients(model_with_shortcut, sample_input)
+  # layers.0.0.weight has gradient mean of 0.22169792652130127
+  # layers.1.0.weight has gradient mean of 0.20694108307361603
+  # layers.2.0.weight has gradient mean of 0.3289699852466583
+  # layers.3.0.weight has gradient mean of 0.2665732204914093
+  # layers.4.0.weight has gradient mean of 1.3258541822433472
+  ```
+
+- 从上述输出结果可以看出，残差连接能够避免梯度在浅层网络（靠近`layer.0`的层）中发生消失
+
+### TransformerBlock
+
+- 代码实现
+
+  ```python
+  # If the `previous_chapters.py` file is not available locally,
+  # you can import it from the `llms-from-scratch` PyPI package.
+  # For details, see: https://github.com/rasbt/LLMs-from-scratch/tree/main/pkg
+  # E.g.,
+  # from llms_from_scratch.ch03 import MultiHeadAttention
+
+  from previous_chapters import MultiHeadAttention
+
+  class TransformerBlock(nn.Module):
+      def __init__(self, cfg):
+          super().__init__()
+          self.att = MultiHeadAttention(
+              d_in=cfg["emb_dim"],
+              d_out=cfg["emb_dim"],
+              context_length=cfg["context_length"],
+              num_heads=cfg["n_heads"],
+              dropout=cfg["drop_rate"],
+              qkv_bias=cfg["qkv_bias"])
+          self.ff = FeedForward(cfg)
+          self.norm1 = LayerNorm(cfg["emb_dim"])
+          self.norm2 = LayerNorm(cfg["emb_dim"])
+          self.drop_shortcut = nn.Dropout(cfg["drop_rate"])
+
+      def forward(self, x):
+          # Shortcut connection for attention block
+          shortcut = x
+          x = self.norm1(x)
+          x = self.att(x)  # Shape [batch_size, num_tokens, emb_size]
+          x = self.drop_shortcut(x)
+          x = x + shortcut  # Add the original input back
+
+          # Shortcut connection for feed forward block
+          shortcut = x
+          x = self.norm2(x)
+          x = self.ff(x)
+          x = self.drop_shortcut(x)
+          x = x + shortcut  # Add the original input back
+
+          return x
+  ```
+
+- 该 TransformerBlock 的可视化如下
+
+![](/img/llm/build-llm-from-scratch-transformer-block-visual.webp)
+
+- 假设有 2 个输入样本，每个样本包含 6 个 token ，且每个 token 对应一个 768 维的嵌入向量；该 Transformer 块会先执行自注意力计算，再经过线性层处理，最终生成维度规模相近的输出
+
+  ```python
+  torch.manual_seed(123)
+
+  x = torch.rand(2, 4, 768)  # Shape: [batch_size, num_tokens, emb_dim]
+  block = TransformerBlock(GPT_CONFIG_124M)
+  output = block(x)
+
+  print("Input shape:", x.shape)
+  print("Output shape:", output.shape)
+  # Input shape: torch.Size([2, 4, 768])
+  # Output shape: torch.Size([2, 4, 768])
+  ```
+
+### GPTModel
+
+- 代码实现
+
+  ```python
+  class GPTModel(nn.Module):
+      def __init__(self, cfg):
+          super().__init__()
+          self.tok_emb = nn.Embedding(cfg["vocab_size"], cfg["emb_dim"])
+          self.pos_emb = nn.Embedding(cfg["context_length"], cfg["emb_dim"])
+          self.drop_emb = nn.Dropout(cfg["drop_rate"])
+
+          self.trf_blocks = nn.Sequential(
+              *[TransformerBlock(cfg) for _ in range(cfg["n_layers"])])
+
+          self.final_norm = LayerNorm(cfg["emb_dim"])
+          self.out_head = nn.Linear(
+              cfg["emb_dim"], cfg["vocab_size"], bias=False
+          )
+
+      def forward(self, in_idx):
+          batch_size, seq_len = in_idx.shape
+          tok_embeds = self.tok_emb(in_idx)
+          pos_embeds = self.pos_emb(torch.arange(seq_len, device=in_idx.device))
+          x = tok_embeds + pos_embeds  # Shape [batch_size, num_tokens, emb_size]
+          x = self.drop_emb(x)
+          x = self.trf_blocks(x)
+          x = self.final_norm(x)
+          logits = self.out_head(x)
+          return logits
+  ```
+
+- 初始化默认的权重
+
+  ```python
+  torch.manual_seed(123)
+  model = GPTModel(GPT_CONFIG_124M)
+
+  out = model(batch)
+  print("Input batch:\n", batch)
+  print("\nOutput shape:", out.shape)
+  print(out)
+
+  # Input batch:
+  #  tensor([[6109, 3626, 6100,  345],
+  #         [6109, 1110, 6622,  257]])
+  #
+  # Output shape: torch.Size([2, 4, 50257])
+  # tensor([[[ 0.3613,  0.4222, -0.0711,  ...,  0.3483,  0.4661, -0.2838],
+  #          [-0.1792, -0.5660, -0.9485,  ...,  0.0477,  0.5181, -0.3168],
+  #          [ 0.7120,  0.0332,  0.1085,  ...,  0.1018, -0.4327, -0.2553],
+  #          [-1.0076,  0.3418, -0.1190,  ...,  0.7195,  0.4023,  0.0532]],
+  #
+  #         [[-0.2564,  0.0900,  0.0335,  ...,  0.2659,  0.4454, -0.6806],
+  #          [ 0.1230,  0.3653, -0.2074,  ...,  0.7705,  0.2710,  0.2246],
+  #          [ 1.0558,  1.0318, -0.2800,  ...,  0.6936,  0.3205, -0.3178],
+  #          [-0.1565,  0.3926,  0.3288,  ...,  1.2630, -0.1858,  0.0388]]],
+  #        grad_fn=<UnsafeViewBackward0>)
+  ```
+
+- 统计参数量
+
+  ```python
+  total_params = sum(p.numel() for p in model.parameters())
+  print(f"Total number of parameters: {total_params:,}")
+  # Total number of parameters: 163,009,536
+  ```
+
+- 可以看到，参数量为 163 M，而不是 124 M，这是为何？
+
+- 在 GPT-2 的原始论文中，研究人员采用了 权重共享（weight tying）策略，即将 token 嵌入层（`tok_emb`）的权重复用为输出层的权重，也就是令`self.out_head.weight = self.tok_emb.weight`
+
+- token 嵌入层的作用是，将 50257 维的独热编码输入 token ，映射为 768 维的嵌入表示；而输出层则是将 768 维的嵌入表示，反向映射回 50257 维的表示，这样我们就能把这些表示还原为文字
+
+- 因此，从权重矩阵的形状就能看出，嵌入层和输出层的权重参数量完全相同
+
+- 这个数值可以通过以下方式再次验证：
+
+  ```python
+  print("Token embedding layer shape:", model.tok_emb.weight.shape)
+  print("Output layer shape:", model.out_head.weight.shape)
+  # Token embedding layer shape: torch.Size([50257, 768])
+  # Output layer shape: torch.Size([50257, 768])
+  # 减去一个 layer 的参数量
+  total_params_gpt2 =  total_params - sum(p.numel() for p in model.out_head.parameters())
+  print(f"Number of trainable parameters considering weight tying: {total_params_gpt2:,}")
+  # Number of trainable parameters considering weight tying: 124,412,160
+  ```
+
+- 计算显存占用量
+
+  ```python
+  # Calculate the total size in bytes (assuming float32, 4 bytes per parameter)
+  total_size_bytes = total_params * 4
+
+  # Convert to megabytes
+  total_size_mb = total_size_bytes / (1024 * 1024)
+
+  print(f"Total size of the model: {total_size_mb:.2f} MB")
+  # Total size of the model: 621.83 MB
+  ```
+
+- 计算 FFN 和 Attention 的参数量
+
+  ```python
+  from gpt import TransformerBlock
+
+  GPT_CONFIG_124M = {
+      "vocab_size": 50257,
+      "context_length": 1024,
+      "emb_dim": 768,
+      "n_heads": 12,
+      "n_layers": 12,
+      "drop_rate": 0.1,
+      "qkv_bias": False
+  }
+
+  block = TransformerBlock(GPT_CONFIG_124M)
+  print(block)
+  # TransformerBlock(
+  #   (att): MultiHeadAttention(
+  #     (W_query): Linear(in_features=768, out_features=768, bias=False)
+  #     (W_key): Linear(in_features=768, out_features=768, bias=False)
+  #     (W_value): Linear(in_features=768, out_features=768, bias=False)
+  #     (out_proj): Linear(in_features=768, out_features=768, bias=True)
+  #     (dropout): Dropout(p=0.1, inplace=False)
+  #   )
+  #   (ff): FeedForward(
+  #     (layers): Sequential(
+  #       (0): Linear(in_features=768, out_features=3072, bias=True)
+  #       (1): GELU()
+  #       (2): Linear(in_features=3072, out_features=768, bias=True)
+  #     )
+  #   )
+  #   (norm1): LayerNorm()
+  #   (norm2): LayerNorm()
+  #   (drop_shortcut): Dropout(p=0.1, inplace=False)
+  # )
+
+  total_params = sum(p.numel() for p in block.ff.parameters())
+  print(f"Total number of parameters in feed forward module: {total_params:,}")
+  # Total number of parameters in feed forward module: 4,722,432
+  total_params = sum(p.numel() for p in block.att.parameters())
+  print(f"Total number of parameters in attention module: {total_params:,}")
+  # Total number of parameters in attention module: 2,360,064
+  ```
+
+- 具体计算（假设嵌入维度 emb_dim=768 ）
+  - 前馈网络模块
+    - 第一层线性层：768 个输入 × 4×768 个输出 + 4×768 个偏置单元 = 2,362,368
+
+    - 第二层线性层：4×768 个输入 × 768 个输出 + 768 个偏置单元 = 2,360,064
+
+    - 总计：第一层线性层 + 第二层线性层 = 2,362,368 + 2,360,064 = 4,722,432
+
+  - 注意力模块
+    - 查询权重矩阵（W_query）：768 个输入 × 768 个输出 = 589,824
+
+    - 键权重矩阵（W_key）：768 个输入 × 768 个输出 = 589,824
+
+    - 值权重矩阵（W_value）：768 个输入 × 768 个输出 = 589,824
+
+    - 输出投影层（out_proj）：768 个输入 × 768 个输出 + 768 个偏置单元 = 590,592
+
+    - 总计：W_query + W_key + W_value + out_proj = 3×589,824 + 590,592 = 2,360,064
+
+- 为不同的模块使用不同的 Dropout 率
+
+  ```python
+  GPT_CONFIG_124M = {
+      "vocab_size": 50257,
+      "context_length": 1024,
+      "emb_dim": 768,
+      "n_heads": 12,
+      "n_layers": 12,
+      "drop_rate_emb": 0.1,        # NEW: dropout for embedding layers
+      "drop_rate_attn": 0.1,       # NEW: dropout for multi-head attention
+      "drop_rate_shortcut": 0.1,   # NEW: dropout for shortcut connections
+      "qkv_bias": False
+  }
+  ```
+
+- GPT-2 系列模型的配置
+
+  | 模型版本    | 参数量规模     | 嵌入维度（emb_dim） | 网络层数（n_layers） | 注意力头数（n_heads） |
+  | ----------- | -------------- | ------------------- | -------------------- | --------------------- |
+  | GPT2-small  | 124M（已实现） | 768                 | 12                   | 12                    |
+  | GPT2-medium | -              | 1024                | 24                   | 16                    |
+  | GPT2-large  | -              | 1280                | 36                   | 20                    |
+  | GPT2-XL     | -              | 1600                | 48                   | 25                    |
+
+### 生成文本
+
+- 贪心解码的逻辑为：生成过程的每一步，模型都会选择概率最高的单词（或词元）作为下一个输出结果（分值最高的对数几率（logit）对应最高的概率，因此从技术角度来说，甚至无需显式计算 softmax 函数）
+
+![](/img/llm/build-llm-from-scratch-generating-text.webp)
+
+- `generate_text_simple` 函数实现了贪心解码（greedy decoding），这是一种简单高效的文本生成方法
+
+  ```python
+  def generate_text_simple(model, idx, max_new_tokens, context_size):
+      # idx is (batch, n_tokens) array of indices in the current context
+      for _ in range(max_new_tokens):
+
+          # Crop current context if it exceeds the supported context size
+          # E.g., if LLM supports only 5 tokens, and the context size is 10
+          # then only the last 5 tokens are used as context
+          idx_cond = idx[:, -context_size:]
+
+          # Get the predictions
+          with torch.no_grad():
+              logits = model(idx_cond)
+
+          # Focus only on the last time step
+          # (batch, n_tokens, vocab_size) becomes (batch, vocab_size)
+          logits = logits[:, -1, :]
+
+          # Apply softmax to get probabilities
+          probas = torch.softmax(logits, dim=-1)  # (batch, vocab_size)
+
+          # Get the idx of the vocab entry with the highest probability value
+          idx_next = torch.argmax(probas, dim=-1, keepdim=True)  # (batch, 1)
+
+          # Append sampled index to the running sequence
+          idx = torch.cat((idx, idx_next), dim=1)  # (batch, n_tokens+1)
+
+      return idx
+  ```
+
+- 输入示例
+
+  ```python
+  start_context = "Hello, I am"
+
+  encoded = tokenizer.encode(start_context)
+  print("encoded:", encoded)
+
+  encoded_tensor = torch.tensor(encoded).unsqueeze(0)
+  print("encoded_tensor.shape:", encoded_tensor.shape)
+  # encoded: [15496, 11, 314, 716]
+  # encoded_tensor.shape: torch.Size([1, 4])
+  ```
+
+- 输出示例
+
+  ```python
+  model.eval() # disable dropout
+
+  out = generate_text_simple(
+      model=model,
+      idx=encoded_tensor,
+      max_new_tokens=6,
+      context_size=GPT_CONFIG_124M["context_length"]
+  )
+
+  print("Output:", out)
+  print("Output length:", len(out[0]))
+  # Output: tensor([[15496,    11,   314,   716, 27018, 24086, 47843, 30961, 42348,  7267]])
+  # Output length: 10
+  # 解码输出
+  decoded_text = tokenizer.decode(out.squeeze(0).tolist())
+  print(decoded_text)
+  # Hello, I am Featureiman Byeswickattribute argue
+  ```
+
+- 这个模型还没有被训练过，因此输出到文本是随机的
+
+### KV Cache
+
+- 修改 MHA 部分
+
+  ```python
+  class MultiHeadAttention(nn.Module):
+      def __init__(self, d_in, d_out, context_length, dropout, num_heads, qkv_bias=False):
+          super().__init__()
+          assert d_out % num_heads == 0, "d_out must be divisible by num_heads"
+
+          self.d_out = d_out
+          self.num_heads = num_heads
+          self.head_dim = d_out // num_heads  # Reduce the projection dim to match desired output dim
+
+          self.W_query = nn.Linear(d_in, d_out, bias=qkv_bias)
+          self.W_key = nn.Linear(d_in, d_out, bias=qkv_bias)
+          self.W_value = nn.Linear(d_in, d_out, bias=qkv_bias)
+          self.out_proj = nn.Linear(d_out, d_out)  # Linear layer to combine head outputs
+          self.dropout = nn.Dropout(dropout)
+          self.register_buffer(
+              "mask",
+              torch.triu(torch.ones(context_length, context_length), diagonal=1),
+              persistent=False
+          )
+
+          ###################################
+          # NEW
+          self.register_buffer("cache_k", None, persistent=False)
+          self.register_buffer("cache_v", None, persistent=False)
+          self.ptr_current_pos = 0
+          ###################################
+
+      def forward(self, x, use_cache=False):
+          b, num_tokens, d_in = x.shape
+
+          keys_new = self.W_key(x)  # Shape: (b, num_tokens, d_out)
+          values_new = self.W_value(x)
+          queries = self.W_query(x)
+
+          # We implicitly split the matrix by adding a `num_heads` dimension
+          # Unroll last dim: (b, num_tokens, d_out) -> (b, num_tokens, num_heads, head_dim)
+          keys_new = keys_new.view(b, num_tokens, self.num_heads, self.head_dim)
+          values_new = values_new.view(b, num_tokens, self.num_heads, self.head_dim)
+          queries = queries.view(b, num_tokens, self.num_heads, self.head_dim)
+
+          ###################################
+          # NEW
+          if use_cache:
+              if self.cache_k is None:
+                  self.cache_k, self.cache_v = keys_new, values_new
+              else:
+                  self.cache_k = torch.cat([self.cache_k, keys_new], dim=1)
+                  self.cache_v = torch.cat([self.cache_v, values_new], dim=1)
+              keys, values = self.cache_k, self.cache_v
+          else:
+              keys, values = keys_new, values_new
+          ###################################
+
+          # Transpose: (b, num_tokens, num_heads, head_dim) -> (b, num_heads, num_tokens, head_dim)
+          keys = keys.transpose(1, 2)
+          queries = queries.transpose(1, 2)
+          values = values.transpose(1, 2)
+
+          # Compute scaled dot-product attention (aka self-attention) with a causal mask
+          attn_scores = queries @ keys.transpose(2, 3)  # Dot product for each head
+
+          ###################################
+          # NEW
+          num_tokens_Q = queries.shape[-2]
+          num_tokens_K = keys.shape[-2]
+          if use_cache:
+              mask_bool = self.mask.bool()[
+                  self.ptr_current_pos:self.ptr_current_pos + num_tokens_Q, :num_tokens_K
+              ]
+              self.ptr_current_pos += num_tokens_Q
+          ###################################
+          # Original mask truncated to the number of tokens and converted to boolean
+          else:
+              mask_bool = self.mask.bool()[:num_tokens_Q, :num_tokens_K]
+
+          # Use the mask to fill attention scores
+          attn_scores.masked_fill_(mask_bool, -torch.inf)
+
+          attn_weights = torch.softmax(attn_scores / keys.shape[-1]**0.5, dim=-1)
+          attn_weights = self.dropout(attn_weights)
+
+          # Shape: (b, num_tokens, num_heads, head_dim)
+          context_vec = (attn_weights @ values).transpose(1, 2)
+
+          # Combine heads, where self.d_out = self.num_heads * self.head_dim
+          context_vec = context_vec.contiguous().view(b, num_tokens, self.d_out)
+          context_vec = self.out_proj(context_vec)  # optional projection
+
+          return context_vec
+
+      ###################################
+      # NEW
+      def reset_cache(self):
+          self.cache_k, self.cache_v = None, None
+          self.ptr_current_pos = 0
+      ###################################
+  ```
+
+- 修改 TransformerBlock
+
+  ```python
+  class TransformerBlock(nn.Module):
+      def __init__(self, cfg):
+          super().__init__()
+          self.att = MultiHeadAttention(
+              d_in=cfg["emb_dim"],
+              d_out=cfg["emb_dim"],
+              context_length=cfg["context_length"],
+              num_heads=cfg["n_heads"],
+              dropout=cfg["drop_rate"],
+              qkv_bias=cfg["qkv_bias"])
+          self.ff = FeedForward(cfg)
+          self.norm1 = LayerNorm(cfg["emb_dim"])
+          self.norm2 = LayerNorm(cfg["emb_dim"])
+          self.drop_shortcut = nn.Dropout(cfg["drop_rate"])
+
+      def forward(self, x, use_cache=False):
+          # Shortcut connection for attention block
+          shortcut = x
+          x = self.norm1(x)
+
+          # x = self.att(x)   # Shape [batch_size, num_tokens, emb_size]
+          ###################################
+          # NEW
+          x = self.att(x, use_cache=use_cache)
+          ###################################
+
+          x = self.drop_shortcut(x)
+          x = x + shortcut  # Add the original input back
+
+          # Shortcut connection for feed-forward block
+          shortcut = x
+          x = self.norm2(x)
+          x = self.ff(x)
+          x = self.drop_shortcut(x)
+          x = x + shortcut  # Add the original input back
+
+          return x
+  ```
+
+- 修改 GPTModel
+
+  ```python
+  class GPTModel(nn.Module):
+      def __init__(self, cfg):
+          super().__init__()
+          self.tok_emb = nn.Embedding(cfg["vocab_size"], cfg["emb_dim"])
+          self.pos_emb = nn.Embedding(cfg["context_length"], cfg["emb_dim"])
+          self.drop_emb = nn.Dropout(cfg["drop_rate"])
+
+          # self.trf_blocks = nn.Sequential(
+          #    *[TransformerBlock(cfg) for _ in range(cfg["n_layers"])])
+          ###################################
+          # NEW
+          self.trf_blocks = nn.ModuleList(
+              [TransformerBlock(cfg) for _ in range(cfg["n_layers"])])
+
+          self.current_pos = 0
+          ###################################
+
+          self.final_norm = LayerNorm(cfg["emb_dim"])
+          self.out_head = nn.Linear(cfg["emb_dim"], cfg["vocab_size"], bias=False)
+
+      def forward(self, in_idx, use_cache=False):
+          batch_size, seq_len = in_idx.shape
+          tok_embeds = self.tok_emb(in_idx)
+
+          # pos_embeds = self.pos_emb(torch.arange(seq_len, device=in_idx.device))
+
+          ###################################
+          # NEW
+
+          if use_cache:
+              pos_ids = torch.arange(self.current_pos, self.current_pos + seq_len, device=in_idx.device, dtype=torch.long)
+              self.current_pos += seq_len
+          else:
+              pos_ids = torch.arange(0, seq_len, device=in_idx.device, dtype=torch.long)
+          pos_embeds = self.pos_emb(pos_ids).unsqueeze(0)
+          ###################################
+
+          x = tok_embeds + pos_embeds  # Shape [batch_size, num_tokens, emb_size]
+          x = self.drop_emb(x)
+
+          # x = self.trf_blocks(x)
+          ###################################
+          # NEW
+          for blk in self.trf_blocks:
+              x = blk(x, use_cache=use_cache)
+          ###################################
+
+          x = self.final_norm(x)
+          logits = self.out_head(x)
+          return logits
+
+      ###################################
+      # NEW
+      def reset_kv_cache(self):
+          for blk in self.trf_blocks:
+              blk.att.reset_cache()
+          self.current_pos = 0
+      ###################################
+  ```
+
+- 修改生成文本函数
+
+  ```python
+  def generate_text_simple_cached(model, idx, max_new_tokens,
+                                  context_size=None, use_cache=True):
+      model.eval()
+      ctx_len = context_size or model.pos_emb.num_embeddings
+
+      with torch.no_grad():
+          if use_cache:
+              # Init cache with full prompt
+              model.reset_kv_cache()
+              logits = model(idx[:, -ctx_len:], use_cache=True)
+
+              for _ in range(max_new_tokens):
+                  # a) pick the token with the highest log-probability (greedy sampling)
+                  next_idx = logits[:, -1].argmax(dim=-1, keepdim=True)
+                  # b) append it to the running sequence
+                  idx = torch.cat([idx, next_idx], dim=1)
+                  # c) feed model only the new token
+                  logits = model(next_idx, use_cache=True)
+          else:
+              for _ in range(max_new_tokens):
+                  logits = model(idx[:, -ctx_len:], use_cache=False)
+                  next_idx = logits[:, -1].argmax(dim=-1, keepdim=True)
+                  idx = torch.cat([idx, next_idx], dim=1)
+
+      return idx
+  ```
+
+### MoE 实现
+
+- 实现 MoE 层，这其中就包括了门控网络和
+
+  ```python
+  class Expert(nn.Module):
+      def __init__(self, emb_dim, hidden_dim):
+          super().__init__()
+          # 单个专家的fc1/fc2/fc3，与原代码一致（无偏置、维度匹配）
+          self.fc1 = nn.Linear(emb_dim, hidden_dim, bias=False)
+          self.fc2 = nn.Linear(emb_dim, hidden_dim, bias=False)
+          self.fc3 = nn.Linear(hidden_dim, emb_dim, bias=False)
+
+      def forward(self, x):
+          # 封装原SwiGLU计算逻辑，外部无需关心内部层的调用
+          # x: [num_tokens, emb_dim]（单个专家的输入token）
+          hidden = torch.nn.functional.silu(self.fc1(x)) * self.fc2(x)
+          out = self.fc3(hidden)
+          return out
+
+  class MoEFeedForward(nn.Module):
+      def __init__(self, cfg):
+          super().__init__()
+          self.num_experts_per_tok = cfg["num_experts_per_tok"]
+          self.num_experts = cfg["num_experts"]
+          self.emb_dim = cfg["emb_dim"]
+
+          self.gate = nn.Linear(cfg["emb_dim"], cfg["num_experts"], bias=False)
+          # 核心改造：用1个ModuleList管理所有Expert实例，替代原3个ModuleList
+          self.experts = nn.ModuleList(
+              [Expert(cfg["emb_dim"], cfg["hidden_dim"]) for _ in range(self.num_experts)]
+          )
+
+      def forward(self, x):
+          # x: (batch, seq_len, emb_dim)
+          scores = self.gate(x)  # (b, seq_len, num_experts)
+          topk_scores, topk_indices = torch.topk(scores, self.num_experts_per_tok, dim=-1)
+          topk_probs = torch.softmax(topk_scores, dim=-1)
+
+          batch, seq_len, _ = x.shape
+          x_flat = x.reshape(batch * seq_len, -1)
+          out_flat = torch.zeros(batch * seq_len, self.emb_dim, device=x.device, dtype=x.dtype)
+
+          topk_indices_flat = topk_indices.reshape(-1, self.num_experts_per_tok)
+          topk_probs_flat = topk_probs.reshape(-1, self.num_experts_per_tok)
+
+          unique_experts = torch.unique(topk_indices_flat)
+
+          for expert_id_tensor in unique_experts:
+              expert_id = int(expert_id_tensor.item())
+              mask = topk_indices_flat == expert_id
+              if not mask.any():
+                  continue
+
+              token_mask = mask.any(dim=-1)
+              selected_idx = token_mask.nonzero(as_tuple=False).squeeze(-1)
+              if selected_idx.numel() == 0:
+                  continue
+
+              expert_input = x_flat.index_select(0, selected_idx)
+              expert_out = self.experts[expert_id](expert_input)
+
+              mask_selected = mask[selected_idx]
+              slot_indices = mask_selected.int().argmax(dim=-1, keepdim=True)
+              selected_probs = torch.gather(
+                  topk_probs_flat.index_select(0, selected_idx), dim=-1, index=slot_indices
+              ).squeeze(-1)
+
+              out_flat.index_add_(0, selected_idx, expert_out * selected_probs.unsqueeze(-1))
+
+          return out_flat.reshape(batch, seq_len, self.emb_dim)
+  ```
+
+- 修改 TransformerBlock
+
+  ```python
+  class TransformerBlock(nn.Module):
+      def __init__(self, cfg):
+          super().__init__()
+          self.att = MultiHeadAttention(
+              d_in=cfg["emb_dim"],
+              d_out=cfg["emb_dim"],
+              num_heads=cfg["n_heads"],
+              dropout=cfg["drop_rate"],
+              qkv_bias=cfg["qkv_bias"],
+          )
+          self.ff = MoEFeedForward(cfg) if cfg["num_experts"] > 0 else FeedForward(cfg)
+          self.norm1 = LayerNorm(cfg["emb_dim"])
+          self.norm2 = LayerNorm(cfg["emb_dim"])
+          self.drop_shortcut = nn.Dropout(cfg["drop_rate"])
+
+      def forward(self, x, use_cache=False):
+          # Shortcut connection for attention block
+          shortcut = x
+          x = self.norm1(x)
+
+          # x = self.att(x)   # Shape [batch_size, num_tokens, emb_size]
+          ###################################
+          #  KV cache-related
+          x = self.att(x, use_cache=use_cache)
+          ###################################
+
+          x = self.drop_shortcut(x)
+          x = x + shortcut  # Add the original input back
+
+          # Shortcut connection for feed-forward block
+          shortcut = x
+          x = self.norm2(x)
+          use_cuda = torch.cuda.is_available()
+          if use_cuda:
+              torch.cuda.synchronize()
+              torch.cuda.reset_peak_memory_stats()
+              base_mem = torch.cuda.memory_allocated()
+          start = time.perf_counter()
+          x = self.ff(x)
+          if use_cuda:
+              torch.cuda.synchronize()
+              peak_mem = torch.cuda.max_memory_allocated()
+              MOE_FF_MEM_BYTES.append(peak_mem - base_mem)
+          MOE_FF_TIME_MS.append((time.perf_counter() - start) * 1000.0)
+          x = self.drop_shortcut(x)
+          x = x + shortcut  # Add the original input back
+
+          return x
+  ```
+
+## Pretrain
+
+### 准备工作
+
+- 首先初始化 GPT 模型
+
+  ```python
+  import torch
+  from previous_chapters import GPTModel
+  # If the `previous_chapters.py` file is not available locally,
+  # you can import it from the `llms-from-scratch` PyPI package.
+  # For details, see: https://github.com/rasbt/LLMs-from-scratch/tree/main/pkg
+  # E.g.,
+  # from llms_from_scratch.ch04 import GPTModel
+
+  GPT_CONFIG_124M = {
+      "vocab_size": 50257,   # Vocabulary size
+      "context_length": 256, # Shortened context length (orig: 1024)
+      "emb_dim": 768,        # Embedding dimension
+      "n_heads": 12,         # Number of attention heads
+      "n_layers": 12,        # Number of layers
+      "drop_rate": 0.1,      # Dropout rate
+      "qkv_bias": False      # Query-key-value bias
+  }
+
+  torch.manual_seed(123)
+  model = GPTModel(GPT_CONFIG_124M)
+  model.eval();  # Disable dropout during inference
+  ```
+
+- 以上配置将 Dropout 率设为 0.1，但如今训练大语言模型时，已经普遍不使用 dropout
+
+- 现代大语言模型在查询、键、值矩阵对应的线性层（`nn.Linear`）中，也不再使用偏置向量（这一点与早期 GPT 模型不同），只需将配置项`"qkv_bias"`设为`False`即可实现
+
+- 为降低模型训练对计算资源的要求，将上下文长度（`context_length`）仅设为 256 个 token，而原版 1.24 亿参数量的 GPT-2 模型，其上下文长度为 1024 个 token
+
+- 整体流程如下
+
+![](/img/llm/build-llm-from-scratch-pretrain-1.webp)
+
+- 实现两个工具函数
+
+  ```python
+  import tiktoken
+  from previous_chapters import generate_text_simple
+
+  # Alternatively:
+  # from llms_from_scratch.ch04 import generate_text_simple
+
+  def text_to_token_ids(text, tokenizer):
+      encoded = tokenizer.encode(text, allowed_special={'<|endoftext|>'})
+      encoded_tensor = torch.tensor(encoded).unsqueeze(0) # add batch dimension
+      return encoded_tensor
+
+  def token_ids_to_text(token_ids, tokenizer):
+      flat = token_ids.squeeze(0) # remove batch dimension
+      return tokenizer.decode(flat.tolist())
+
+  start_context = "Every effort moves you"
+  tokenizer = tiktoken.get_encoding("gpt2")
+
+  token_ids = generate_text_simple(
+      model=model,
+      idx=text_to_token_ids(start_context, tokenizer),
+      max_new_tokens=10,
+      context_size=GPT_CONFIG_124M["context_length"]
+  )
+
+  print("Output text:\n", token_ids_to_text(token_ids, tokenizer))
+  # Output text:
+  #  Every effort moves you rentingetic wasnم refres RexMeCHicular stren
+  ```
+
+- 从上述结果可以看出，该模型目前生成的文本效果较差，原因是模型尚未经过训练
+
+- 那么该如何将 “优质文本” 的评判标准转化为数值形式，以便在训练过程中对其进行跟踪评估？
+
+### 损失计算
+
+- 假设有包含 2 个训练样本的输入张量 inputs，相应的有包含想要模型输出的 token ID 对应的 targets
+
+  ```python
+  inputs = torch.tensor([[16833, 3626, 6100],   # ["every effort moves",
+                         [40,    1107, 588]])   #  "I really like"]
+
+  targets = torch.tensor([[3626, 6100, 345  ],  # [" effort moves you",
+                          [1107,  588, 11311]]) #  " really like chocolate"]
+  ```
+
+- 将输入张量`inputs`送入模型后，会得到 2 个输入样本对应的 logits 值向量，每个样本均包含 3 个 token
+
+- 模型为每个 token 输出一个 50257 维的向量，该维度与词表的大小保持一致
+
+- 对 logits 值张量应用 softmax 函数后，就能将其转换为同维度的概率得分张量
+
+  ```python
+  with torch.no_grad():
+      logits = model(inputs)
+
+  probas = torch.softmax(logits, dim=-1) # Probability of each token in vocabulary
+  print(probas.shape) # Shape: (batch_size, num_tokens, vocab_size)
+  # torch.Size([2, 3, 50257])
+  ```
+
+- 上述流程可视化如下
+
+  ![](/img/llm/build-llm-from-scratch-pretrain-2.webp)
+
+- 可以通过调用`argmax`函数，将这些概率得分转换为模型预测的 token 编号（ID）
+
+- softmax 函数为每个 token 生成了一个 50257 维的概率向量，而`argmax`函数会返回该向量中概率得分最大值对应的索引位置，这个位置就是对应 token 的预测编号（ID）
+
+  ```python
+  token_ids = torch.argmax(probas, dim=-1, keepdim=True)
+  print("Token IDs:\n", token_ids)
+  # Token IDs:
+  #  tensor([[[16657],
+  #          [  339],
+  #          [42826]],
+  #
+  #         [[49906],
+  #          [29669],
+  #          [41751]]])
+  ```
+
+- 解码这些 token ，可以看到完全不是我们想要模型预测的
+
+  ```python
+  print(f"Targets batch 1: {token_ids_to_text(targets[0], tokenizer)}")
+  print(f"Outputs batch 1: {token_ids_to_text(token_ids[0].flatten(), tokenizer)}")
+  # Targets batch 1:  effort moves you
+  # Outputs batch 1:  Armed heNetflix
+  ```
+
+- 为了训练模型，需要知道当前的模型与正确的预测即 targets 差距有多大
+
+- targets 对应的 logits 概率如下
+
+  ```python
+  text_idx = 0
+  target_probas_1 = probas[text_idx, [0, 1, 2], targets[text_idx]]
+  print("Text 1:", target_probas_1)
+
+  text_idx = 1
+  target_probas_2 = probas[text_idx, [0, 1, 2], targets[text_idx]]
+  print("Text 2:", target_probas_2)
+  # Text 1: tensor([7.4541e-05, 3.1061e-05, 1.1563e-05])
+  # Text 2: tensor([1.0337e-05, 5.6776e-05, 4.7559e-06])
+  ```
+
+- 那么即希望让所有这些概率值尽可能取到最大值，使其无限接近 1
+
+- 在数学优化中，最大化概率得分的对数，比直接最大化概率得分本身更易实现
+
+  ```python
+  # Compute logarithm of all token probabilities
+  log_probas = torch.log(torch.cat((target_probas_1, target_probas_2)))
+  print(log_probas)
+  # tensor([ -9.5042, -10.3796, -11.3677, -11.4798,  -9.7764, -12.2561])
+  ```
+
+- 其平均的对数概率为
+
+  ```python
+  # Calculate the average probability for each token
+  avg_log_probas = torch.mean(log_probas)
+  print(avg_log_probas)
+  # tensor(-10.7940)
+  ```
+
+- 目标是通过优化模型权重，让这个平均对数概率尽可能取到最大值
+
+- 由于取了对数，该值的理论最大值为 0，而当前的计算结果与 0 仍相去甚远
+
+- 在深度学习中，标准做法并非最大化平均对数概率，而是最小化其负值
+
+- 对于这个例子，不会去最大化 - 10.7722 以使其趋近于 0，而是通过最小化 10.7722，实现同样的趋近于 0 的目标
+
+- 这里 - 10.7722 的负值，也就是 10.7722，在深度学习中也被称作交叉熵损失
+
+  ![](/img/llm/build-llm-from-scratch-cross_entropy.webp)
+
+- 计算交叉熵损失
+
+  ```python
+  # Logits have shape (batch_size, num_tokens, vocab_size)
+  print("Logits shape:", logits.shape)
+
+  # Targets have shape (batch_size, num_tokens)
+  print("Targets shape:", targets.shape)
+  # Logits shape: torch.Size([2, 3, 50257])
+  # Targets shape: torch.Size([2, 3])
+
+  # 对于 PyTorch 中的cross_entropy函数，需要合并批次维度对这些张量做展平处理
+  logits_flat = logits.flatten(0, 1)
+  targets_flat = targets.flatten()
+
+  print("Flattened logits:", logits_flat.shape)
+  print("Flattened targets:", targets_flat.shape)
+  # Flattened logits: torch.Size([6, 50257])
+  # Flattened targets: torch.Size([6])
+  ```
+
+- 需注意，这里的目标值是 token 编号（ID），而这些编号恰好对应希望在 logits 张量中最大化的那些索引位置
+
+- PyTorch 中的`cross_entropy`函数会自动完成一系列操作：在逻辑值张量中，针对这些需要最大化的 token 索引，内部依次执行 softmax 归一化和对数概率的计算
+
+  ```python
+  loss = torch.nn.functional.cross_entropy(logits_flat, targets_flat)
+  print(loss)
+  # tensor(10.7940)
+  ```
+
+- 与交叉熵损失相关的一个概念是大语言模型的困惑度（perplexity）
+
+- 困惑度的计算方式十分简单，就是对交叉熵损失取指数
+
+  ```python
+  perplexity = torch.exp(loss)
+  print(perplexity)
+  # tensor(48725.8203)
+  ```
+
+- 困惑度的可解释性通常更强，因为它可以理解为模型在每一步预测时，对有效词表规模的不确定程度（在上述例子中，这一数值约为 48725 个单词或 token）
+
+- 换言之，困惑度用于衡量模型预测的概率分布，与数据集中真实的词汇概率分布的匹配程度
+
+- 与损失值类似，困惑度越低，说明模型的预测分布与真实分布越接近
+
+### 训练集和验证集的损失计算
+
+- 这次训练大语言模型，选用的数据集规模相对较小（实际上，仅用了一篇短篇故事）
+
+- 举个例子，Llama 2 7B 模型在 2 万亿个 token 的数据集上完成训练，耗费了 A100 显卡 184320 个 GPU 小时；亚马逊云服务（AWS）上 8 卡 A100 云服务器的每小时租赁费用约为 30 美元；粗略估算下来，训练该大语言模型的成本约为：184320 ÷ 8 × 30 = 69 万美元
+
+- 加载原始数据
+
+  ```python
+  import os
+  import requests
+
+  file_path = "the-verdict.txt"
+  url = "https://raw.githubusercontent.com/rasbt/LLMs-from-scratch/main/ch02/01_main-chapter-code/the-verdict.txt"
+
+  if not os.path.exists(file_path):
+      response = requests.get(url, timeout=30)
+      response.raise_for_status()
+      text_data = response.text
+      with open(file_path, "w", encoding="utf-8") as file:
+          file.write(text_data)
+  else:
+      with open(file_path, "r", encoding="utf-8") as file:
+          text_data = file.read()
+
+  total_characters = len(text_data)
+  total_tokens = len(tokenizer.encode(text_data))
+
+  print("Characters:", total_characters)
+  print("Tokens:", total_tokens)
+  # Characters: 20479
+  # Tokens: 5145
+  ```
+
+- 将数据集划分为训练集和验证集，并使用之前实现的数据加载器，为大语言模型的训练准备批次数据
+
+- 为便于可视化展示，下图中假定最大序列长度 max_length=6；而实际训练用的数据加载器中，会将 max_length 设为与大语言模型支持的上下文长度保持一致；为简化展示，下图仅呈现了输入的 token 序列
+
+![](/img/llm/build-llm-from-scratch-pretrain-3.webp)
+
+- 由于训练大语言模型的目标是预测文本中的下一个词，因此目标序列与输入序列的内容完全一致，仅在位置上整体后移一位
+
+  ```python
+  from previous_chapters import create_dataloader_v1
+  # Alternatively:
+  # from llms_from_scratch.ch02 import create_dataloader_v1
+
+  # Train/validation ratio
+  train_ratio = 0.90
+  split_idx = int(train_ratio * len(text_data))
+  train_data = text_data[:split_idx]
+  val_data = text_data[split_idx:]
+
+  torch.manual_seed(123)
+
+  train_loader = create_dataloader_v1(
+      train_data,
+      batch_size=2,
+      max_length=GPT_CONFIG_124M["context_length"],
+      stride=GPT_CONFIG_124M["context_length"],
+      drop_last=True,
+      shuffle=True,
+      num_workers=0
+  )
+
+  val_loader = create_dataloader_v1(
+      val_data,
+      batch_size=2,
+      max_length=GPT_CONFIG_124M["context_length"],
+      stride=GPT_CONFIG_124M["context_length"],
+      drop_last=False,
+      shuffle=False,
+      num_workers=0
+  )
+
+  # Sanity check
+
+  if total_tokens * (train_ratio) < GPT_CONFIG_124M["context_length"]:
+      print("Not enough tokens for the training loader. "
+            "Try to lower the `GPT_CONFIG_124M['context_length']` or "
+            "increase the `training_ratio`")
+
+  if total_tokens * (1-train_ratio) < GPT_CONFIG_124M["context_length"]:
+      print("Not enough tokens for the validation loader. "
+            "Try to lower the `GPT_CONFIG_124M['context_length']` or "
+            "decrease the `training_ratio`")
+  ```
+
+- 这里选用了相对较小的批次大小，一来是为了降低对计算资源的要求，二来也是因为本就使用了体量极小的数据集
+
+- 以 Llama 2 7B 模型为例，其训练时所采用的批次大小为 1024
+
+  ```python
+  print("Train loader:")
+  for x, y in train_loader:
+      print(x.shape, y.shape)
+
+  print("\nValidation loader:")
+  for x, y in val_loader:
+      print(x.shape, y.shape)
+
+  # Train loader:
+  # torch.Size([2, 256]) torch.Size([2, 256])
+  # torch.Size([2, 256]) torch.Size([2, 256])
+  # torch.Size([2, 256]) torch.Size([2, 256])
+  # torch.Size([2, 256]) torch.Size([2, 256])
+  # torch.Size([2, 256]) torch.Size([2, 256])
+  # torch.Size([2, 256]) torch.Size([2, 256])
+  # torch.Size([2, 256]) torch.Size([2, 256])
+  # torch.Size([2, 256]) torch.Size([2, 256])
+  # torch.Size([2, 256]) torch.Size([2, 256])
+  #
+  # Validation loader:
+  # torch.Size([2, 256]) torch.Size([2, 256])
+
+  train_tokens = 0
+  for input_batch, target_batch in train_loader:
+      train_tokens += input_batch.numel()
+
+  val_tokens = 0
+  for input_batch, target_batch in val_loader:
+      val_tokens += input_batch.numel()
+
+  print("Training tokens:", train_tokens)
+  print("Validation tokens:", val_tokens)
+  print("All tokens:", train_tokens + val_tokens)
+
+  # Training tokens: 4608
+  # Validation tokens: 512
+  # All tokens: 5120
+  ```
+
+- 实现计算损失的工具函数
+
+  ```python
+  def calc_loss_batch(input_batch, target_batch, model, device):
+      input_batch, target_batch = input_batch.to(device), target_batch.to(device)
+      logits = model(input_batch)
+      loss = torch.nn.functional.cross_entropy(logits.flatten(0, 1), target_batch.flatten())
+      return loss
+
+
+  def calc_loss_loader(data_loader, model, device, num_batches=None):
+      total_loss = 0.
+      if len(data_loader) == 0:
+          return float("nan")
+      elif num_batches is None:
+          num_batches = len(data_loader)
+      else:
+          # Reduce the number of batches to match the total number of batches in the data loader
+          # if num_batches exceeds the number of batches in the data loader
+          num_batches = min(num_batches, len(data_loader))
+      for i, (input_batch, target_batch) in enumerate(data_loader):
+          if i < num_batches:
+              loss = calc_loss_batch(input_batch, target_batch, model, device)
+              total_loss += loss.item()
+          else:
+              break
+      return total_loss / num_batches
+  ```
+
+- 如果计算设备搭载了支持 CUDA 的 GPU，无需对代码做任何修改，大语言模型就会自动在 GPU 上完成训练；可与通过 `device` 这个配置项来确保，训练数据会被加载到与大语言模型相同的计算设备上
+
+- 计算初始损失
+
+  ```python
+  if torch.cuda.is_available():
+      device = torch.device("cuda")
+  elif torch.backends.mps.is_available():
+      # Use PyTorch 2.9 or newer for stable mps results
+      major, minor = map(int, torch.__version__.split(".")[:2])
+      if (major, minor) >= (2, 9):
+          device = torch.device("mps")
+      else:
+          device = torch.device("cpu")
+  else:
+      device = torch.device("cpu")
+
+
+  print(f"Using {device} device.")
+
+
+  model.to(device) # no assignment model = model.to(device) necessary for nn.Module classes
+
+
+  torch.manual_seed(123) # For reproducibility due to the shuffling in the data loader
+
+  with torch.no_grad(): # Disable gradient tracking for efficiency because we are not training, yet
+      train_loss = calc_loss_loader(train_loader, model, device)
+      val_loss = calc_loss_loader(val_loader, model, device)
+
+  print("Training loss:", train_loss)
+  print("Validation loss:", val_loss)
+
+  # Using cuda device.
+  # Training loss: 10.98758347829183
+  # Validation loss: 10.98110580444336
+  ```
+
+### 开始训练
+
+- 简易的训练代码
+
+  ```python
+  def train_model_simple(model, train_loader, val_loader, optimizer, device, num_epochs,
+                         eval_freq, eval_iter, start_context, tokenizer):
+      # Initialize lists to track losses and tokens seen
+      train_losses, val_losses, track_tokens_seen = [], [], []
+      tokens_seen, global_step = 0, -1
+
+      # Main training loop
+      for epoch in range(num_epochs):
+          model.train()  # Set model to training mode
+
+          for input_batch, target_batch in train_loader:
+              optimizer.zero_grad() # Reset loss gradients from previous batch iteration
+              loss = calc_loss_batch(input_batch, target_batch, model, device)
+              loss.backward() # Calculate loss gradients
+              optimizer.step() # Update model weights using loss gradients
+              tokens_seen += input_batch.numel()
+              global_step += 1
+
+              # Optional evaluation step
+              if global_step % eval_freq == 0:
+                  train_loss, val_loss = evaluate_model(
+                      model, train_loader, val_loader, device, eval_iter)
+                  train_losses.append(train_loss)
+                  val_losses.append(val_loss)
+                  track_tokens_seen.append(tokens_seen)
+                  print(f"Ep {epoch+1} (Step {global_step:06d}): "
+                        f"Train loss {train_loss:.3f}, Val loss {val_loss:.3f}")
+
+          # Print a sample text after each epoch
+          generate_and_print_sample(
+              model, tokenizer, device, start_context
+          )
+
+      return train_losses, val_losses, track_tokens_seen
+
+
+  def evaluate_model(model, train_loader, val_loader, device, eval_iter):
+      model.eval()
+      with torch.no_grad():
+          train_loss = calc_loss_loader(train_loader, model, device, num_batches=eval_iter)
+          val_loss = calc_loss_loader(val_loader, model, device, num_batches=eval_iter)
+      model.train()
+      return train_loss, val_loss
+
+
+  def generate_and_print_sample(model, tokenizer, device, start_context):
+      model.eval()
+      context_size = model.pos_emb.weight.shape[0]
+      encoded = text_to_token_ids(start_context, tokenizer).to(device)
+      with torch.no_grad():
+          token_ids = generate_text_simple(
+              model=model, idx=encoded,
+              max_new_tokens=50, context_size=context_size
+          )
+      decoded_text = token_ids_to_text(token_ids, tokenizer)
+      print(decoded_text.replace("\n", " "))  # Compact print format
+      model.train()
+  ```
+
+- 进行训练
+
+  ```python
+  # Note:
+  # Uncomment the following code to calculate the execution time
+  # import time
+  # start_time = time.time()
+
+  torch.manual_seed(123)
+  model = GPTModel(GPT_CONFIG_124M)
+  model.to(device)
+  optimizer = torch.optim.AdamW(model.parameters(), lr=0.0004, weight_decay=0.1)
+
+  num_epochs = 10
+  train_losses, val_losses, tokens_seen = train_model_simple(
+      model, train_loader, val_loader, optimizer, device,
+      num_epochs=num_epochs, eval_freq=5, eval_iter=5,
+      start_context="Every effort moves you", tokenizer=tokenizer
+  )
+
+  # Note:
+  # Uncomment the following code to show the execution time
+  # end_time = time.time()
+  # execution_time_minutes = (end_time - start_time) / 60
+  # print(f"Training completed in {execution_time_minutes:.2f} minutes.")
+  ```
+
+- 训练输出如下
+
+  ```python
+  Ep 1 (Step 000000): Train loss 9.820, Val loss 9.933
+  Ep 1 (Step 000005): Train loss 8.066, Val loss 8.341
+  Every effort moves you,,,,,,,,,,,,.
+  Ep 2 (Step 000010): Train loss 6.621, Val loss 7.052
+  Ep 2 (Step 000015): Train loss 6.048, Val loss 6.601
+  Every effort moves you, and,, and,,,,,,, and,.
+  Ep 3 (Step 000020): Train loss 5.589, Val loss 6.480
+  Ep 3 (Step 000025): Train loss 5.550, Val loss 6.413
+  Every effort moves you, and, and, and, and, and, and, and, and, and, and, and, and, and, and, and, and, and, and, and, and, and, and, and, and, and
+  Ep 4 (Step 000030): Train loss 5.170, Val loss 6.370
+  Ep 4 (Step 000035): Train loss 4.987, Val loss 6.377
+  Every effort moves you a a him, and the of the picture to the picture. Gisburn, and a was, and the of the of the of the a. I had been. I had been the of the of the a of the. I had been
+  Ep 5 (Step 000040): Train loss 4.327, Val loss 6.257
+  Every effort moves you, I had been, I had been, I had been. Gisburn, I had been, I had been, in the of the of the of the of the of the of the honour of the of the man of the of the of
+  Ep 6 (Step 000045): Train loss 4.064, Val loss 6.266
+  Ep 6 (Step 000050): Train loss 3.585, Val loss 6.209
+  Every effort moves you know the
+  Ep 7 (Step 000055): Train loss 3.622, Val loss 6.183
+  Ep 7 (Step 000060): Train loss 2.821, Val loss 6.153
+  Every effort moves you know the picture to see the picture.                    "I he was his pictures-c.
+  Ep 8 (Step 000065): Train loss 2.390, Val loss 6.143
+  Ep 8 (Step 000070): Train loss 2.032, Val loss 6.192
+  Every effort moves you know," was, and pushed one of the deep arm-chairs forward. "There: make yourself comfortable--and here are the cigars you of the moment--as Jack himself, as he was his own of Jack's "There were, in his
+  Ep 9 (Step 000075): Train loss 1.665, Val loss 6.221
+  Ep 9 (Step 000080): Train loss 1.318, Val loss 6.262
+  Every effort moves you know," was not that my hostess was "interesting": on the last word.    "!  "Oh, I felt him back his head to the donkey--and I saw that, and down the room, I had
+  Ep 10 (Step 000085): Train loss 1.022, Val loss 6.291
+  Every effort moves you?"  "Yes--quite insensible to the irony. She wanted him vindicated--and by me!"    "I must he had the head to look up at the sketch of the donkey. "There were days when I
+  ```
+
+- 绘制损失曲线
+
+  ```python
+  import matplotlib.pyplot as plt
+  from matplotlib.ticker import MaxNLocator
+
+
+  def plot_losses(epochs_seen, tokens_seen, train_losses, val_losses):
+      fig, ax1 = plt.subplots(figsize=(5, 3))
+
+      # Plot training and validation loss against epochs
+      ax1.plot(epochs_seen, train_losses, label="Training loss")
+      ax1.plot(epochs_seen, val_losses, linestyle="-.", label="Validation loss")
+      ax1.set_xlabel("Epochs")
+      ax1.set_ylabel("Loss")
+      ax1.legend(loc="upper right")
+      ax1.xaxis.set_major_locator(MaxNLocator(integer=True))  # only show integer labels on x-axis
+
+      # Create a second x-axis for tokens seen
+      ax2 = ax1.twiny()  # Create a second x-axis that shares the same y-axis
+      ax2.plot(tokens_seen, train_losses, alpha=0)  # Invisible plot for aligning ticks
+      ax2.set_xlabel("Tokens seen")
+
+      fig.tight_layout()  # Adjust layout to make room
+      plt.savefig("loss-plot.pdf")
+      plt.show()
+
+  epochs_tensor = torch.linspace(0, num_epochs, len(train_losses))
+  plot_losses(epochs_tensor, tokens_seen, train_losses, val_losses)
+  ```
+
+- 损失曲线如下：
+
+  ![build-llm-from-scratch-loss-curve](/img/llm/build-llm-from-scratch-loss-curve.png)
+
+- 从上述训练结果能看出，模型训练初期生成的是毫无意义的词汇组合，而训练后期已经能生成语法基本通顺的句子
+
+- 但从训练集和验证集的损失值变化中，能发现模型出现了过拟合的现象
+
+- 倘若查看模型训练后期生成的几段文本，会发现这些内容完全照搬了训练集中的原文 —— 也就是说，模型只是单纯记住了训练数据而已，而不同的解码策略能在一定程度上缓解这种数据记忆的问题
+
+- 这次训练出现过拟合，根源在于使用的训练集规模极小，且对数据集进行了大量的迭代训练
+
+### 解码策略
+
+- 贪心策略：即便多次运行 generate_text_simple` 函数，这个大语言模型生成的结果也始终是完全相同的
+
+  ```python
+  # NEW: use CPU here as inference is cheap with
+  # this model and to ensure readers get same results in the
+  # remaining sections of this book
+  inference_device = torch.device("cpu")
+
+  model.to(inference_device)
+  model.eval()
+
+  tokenizer = tiktoken.get_encoding("gpt2")
+
+  token_ids = generate_text_simple(
+      model=model,
+      idx=text_to_token_ids("Every effort moves you", tokenizer).to(inference_device),
+      max_new_tokens=25,
+      context_size=GPT_CONFIG_124M["context_length"]
+  )
+
+  print("Output text:\n", token_ids_to_text(token_ids, tokenizer))
+  # Output text:
+  #  Every effort moves you?"
+  #
+  # "Yes--quite insensible to the irony. She wanted him vindicated--and by me!"
+  ```
+
+- 此前，一直通过 `torch.argmax` 函数，选取概率最高的 token 作为下一个生成的 token；若要增加生成文本的多样性，可以改用 `torch.multinomial(probs, num_samples=1)` 函数，从模型输出的概率分布中随机采样得到下一个 token
+
+- 在这个采样过程中，每个索引被选中的概率，与它在输入张量中对应的概率值完全一致
+
+- 以一个简单例子示例
+
+  ```python
+  vocab = {
+      "closer": 0,
+      "every": 1,
+      "effort": 2,
+      "forward": 3,
+      "inches": 4,
+      "moves": 5,
+      "pizza": 6,
+      "toward": 7,
+      "you": 8,
+  }
+
+  inverse_vocab = {v: k for k, v in vocab.items()}
+
+  # Suppose input is "every effort moves you", and the LLM
+  # returns the following logits for the next token:
+  next_token_logits = torch.tensor(
+      [4.51, 0.89, -1.90, 6.75, 1.63, -1.62, -1.89, 6.28, 1.79]
+  )
+
+  probas = torch.softmax(next_token_logits, dim=0)
+  next_token_id = torch.argmax(probas).item()
+
+  # The next generated token is then as follows:
+  print(inverse_vocab[next_token_id])
+  # forward
+  ```
+
+- 采样输出
+
+  ```python
+  torch.manual_seed(123)
+  next_token_id = torch.multinomial(probas, num_samples=1).item()
+  print(inverse_vocab[next_token_id])
+  ```
+
+- 采样 1000 次的结果
+
+  ```python
+  def print_sampled_tokens(probas):
+      torch.manual_seed(123) # Manual seed for reproducibility
+      sample = [torch.multinomial(probas, num_samples=1).item() for i in range(1_000)]
+      sampled_ids = torch.bincount(torch.tensor(sample), minlength=len(probas))
+      for i, freq in enumerate(sampled_ids):
+          print(f"{freq} x {inverse_vocab[i]}")
+
+  print_sampled_tokens(probas)
+  # 73 x closer
+  # 0 x every
+  # 0 x effort
+  # 582 x forward
+  # 2 x inches
+  # 0 x moves
+  # 0 x pizza
+  # 343 x toward
+  # 0 x you
+  ```
+
+- 可以通过温度缩放这一方法，来调控概率分布的形态与 token 的选择过程
+  - “温度缩放” 其实只是个专业说法，它的本质操作就是将模型输出的 logits 除以一个大于 0 的数值
+  - 当温度值大于 1 时，经 softmax 归一化后，各 token 的概率分布会变得更均匀
+  - 当温度值小于 1 时，经 softmax 归一化后，得到的概率分布会更具倾向性（分布曲线更陡峭、峰值更突出）
+
+- 温度缩放示例
+
+  ```python
+  def softmax_with_temperature(logits, temperature):
+      scaled_logits = logits / temperature
+      return torch.softmax(scaled_logits, dim=0)
+
+  # Temperature values
+  temperatures = [1, 0.1, 5]  # Original, higher confidence, and lower confidence
+
+  # Calculate scaled probabilities
+  scaled_probas = [softmax_with_temperature(next_token_logits, T) for T in temperatures]
+
+  # Plotting
+  x = torch.arange(len(vocab))
+  bar_width = 0.15
+
+  fig, ax = plt.subplots(figsize=(5, 3))
+  for i, T in enumerate(temperatures):
+      rects = ax.bar(x + i * bar_width, scaled_probas[i], bar_width, label=f'Temperature = {T}')
+
+  ax.set_ylabel('Probability')
+  ax.set_xticks(x)
+  ax.set_xticklabels(vocab.keys(), rotation=90)
+  ax.legend()
+
+  plt.tight_layout()
+  plt.savefig("temperature-plot.pdf")
+  plt.show()
+  ```
+
+- 输出可视化如下：
+
+  ![image-20260130001636811](/img/llm/build-llm-from-scratch-temperature-curve.png)
+
+- 可以看到，将温度值设为 0.1 做重新缩放后，得到的概率分布会更加陡峭，其效果已接近 `torch.argmax` 的贪心选择 —— 此时模型几乎每次都会选中那个最可能的 token
+
+- 假设给大模型的输入是 “every effort moves you”，采用上述方法生成文本时，偶尔会出现毫无意义的内容；比如生成 “every effort moves you pizza” 这类表述的概率为 3.2%（1000 次生成中有 32 次出现该情况）
+
+- Tok-k 采样
+
+  ```python
+  top_k = 3
+  top_logits, top_pos = torch.topk(next_token_logits, top_k)
+
+  print("Top logits:", top_logits)
+  print("Top positions:", top_pos)
+  # Top logits: tensor([6.7500, 6.2800, 4.5100])
+  # Top positions: tensor([3, 7, 0])
+  new_logits = torch.where(
+      condition=next_token_logits < top_logits[-1],
+      input=torch.tensor(float("-inf")),
+      other=next_token_logits
+  )
+
+  print(new_logits)
+  # tensor([4.5100,   -inf,   -inf, 6.7500,   -inf,   -inf,   -inf, 6.2800,   -inf])
+
+  ## 另一种实现效率更高
+  new_logits = torch.full_like( # 创建全为负无穷值的张量
+     next_token_logits, -torch.inf
+  )
+  new_logits[top_pos] = next_token_logits[top_pos] # 仅将前k个高概率值复制到负无穷张量中
+
+  # 进行归一化
+  topk_probas = torch.softmax(new_logits, dim=0)
+  print(topk_probas)
+  # tensor([0.0615, 0.0000, 0.0000, 0.5775, 0.0000, 0.0000, 0.0000, 0.3610, 0.0000])
+  ```
+
+- 新的生成文本函数
+
+  ```python
+  def generate(model, idx, max_new_tokens, context_size, temperature=0.0, top_k=None, eos_id=None):
+
+      # For-loop is the same as before: Get logits, and only focus on last time step
+      for _ in range(max_new_tokens):
+          idx_cond = idx[:, -context_size:]
+          with torch.no_grad():
+              logits = model(idx_cond)
+          logits = logits[:, -1, :]
+
+          # New: Filter logits with top_k sampling
+          if top_k is not None:
+              # Keep only top_k values
+              top_logits, _ = torch.topk(logits, top_k)
+              min_val = top_logits[:, -1]
+              logits = torch.where(logits < min_val, torch.tensor(float("-inf")).to(logits.device), logits)
+
+          # New: Apply temperature scaling
+          if temperature > 0.0:
+              logits = logits / temperature
+
+              # New (not in book): numerical stability tip to get equivalent results on mps device
+              # subtract rowwise max before softmax
+              logits = logits - logits.max(dim=-1, keepdim=True).values
+
+              # Apply softmax to get probabilities
+              probs = torch.softmax(logits, dim=-1)  # (batch_size, context_len)
+
+              # Sample from the distribution
+              idx_next = torch.multinomial(probs, num_samples=1)  # (batch_size, 1)
+
+          # Otherwise same as before: get idx of the vocab entry with the highest logits value
+          else:
+              idx_next = torch.argmax(logits, dim=-1, keepdim=True)  # (batch_size, 1)
+
+          if idx_next == eos_id:  # Stop generating early if end-of-sequence token is encountered and eos_id is specified
+              break
+
+          # Same as before: append sampled index to the running sequence
+          idx = torch.cat((idx, idx_next), dim=1)  # (batch_size, num_tokens+1)
+
+      return idx
+  ```
+
+- 生成新的文本
+
+  ```python
+  torch.manual_seed(123)
+
+  token_ids = generate(
+      model=model,
+      idx=text_to_token_ids("Every effort moves you", tokenizer).to(inference_device),
+      max_new_tokens=15,
+      context_size=GPT_CONFIG_124M["context_length"],
+      top_k=25,
+      temperature=1.4
+  )
+
+  print("Output text:\n", token_ids_to_text(token_ids, tokenizer))
+  # Output text:
+  #  Every effort moves you stand," she down." For Mrs. Gisburn! The women had
+  ```
+
+### 保存和加载权重
+
+- 保存权重
+
+  ```python
+  torch.save(model.state_dict(), "model.pth")
+  ```
+
+- 加载权重
+
+  ```python
+  model = GPTModel(GPT_CONFIG_124M)
+
+  if torch.cuda.is_available():
+      device = torch.device("cuda")
+  elif torch.backends.mps.is_available():
+      # Use PyTorch 2.9 or newer for stable mps results
+      major, minor = map(int, torch.__version__.split(".")[:2])
+      if (major, minor) >= (2, 9):
+          device = torch.device("mps")
+  else:
+      device = torch.device("cpu")
+
+  print("Device:", device)
+
+  model.load_state_dict(torch.load("model.pth", map_location=device, weights_only=True))
+  model.eval();
+  ```
+
+- 保存优化器状态，以便于继续进行预训练
+
+  ```python
+  torch.save({
+      "model_state_dict": model.state_dict(),
+      "optimizer_state_dict": optimizer.state_dict(),
+      },
+      "model_and_optimizer.pth"
+  )
+  ```
+
+- 加载优化器状态
+
+  ```python
+  checkpoint = torch.load("model_and_optimizer.pth", weights_only=True)
+
+  model = GPTModel(GPT_CONFIG_124M)
+  model.load_state_dict(checkpoint["model_state_dict"])
+
+  optimizer = torch.optim.AdamW(model.parameters(), lr=0.0005, weight_decay=0.1)
+  optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
+  model.train();
+  ```
+
+- 下载 GPT 模型
+
+  ```python
+  settings, params = download_and_load_gpt2(model_size="124M", models_dir="gpt2")
+
+  print("Settings:", settings)
+  # Settings: {'n_vocab': 50257, 'n_ctx': 1024, 'n_embd': 768, 'n_head': 12, 'n_layer': 12}
+  print("Parameter dictionary keys:", params.keys())
+  # Parameter dictionary keys: dict_keys(['blocks', 'b', 'g', 'wpe', 'wte'])
+  print(params["wte"])
+  print("Token embedding weight tensor dimensions:", params["wte"].shape)
+  # Token embedding weight tensor dimensions: (50257, 768)
+
+  ```
+
+- 不同模型的参数对比
+
+![](/img/llm/build-llm-from-scratch-gpt-modelparams.webp)
+
+- 接下来，需要把 GPT-2（124M）的预训练权重加载到自定义的 `GPTModel` 实例中
+  - 初始化 `GPTModel` 时需开启 `qkv_bias=True`（匹配原 GPT-2 多头注意力的 Q/K/V 线性层带偏置的设计）
+  - 使用原模型的 1024 token 上下文长度
+  - 先完成模型实例化再做权重迁移
+
+- 初始化模型
+
+  ```python
+  # Define model configurations in a dictionary for compactness
+  model_configs = {
+      "gpt2-small (124M)": {"emb_dim": 768, "n_layers": 12, "n_heads": 12},
+      "gpt2-medium (355M)": {"emb_dim": 1024, "n_layers": 24, "n_heads": 16},
+      "gpt2-large (774M)": {"emb_dim": 1280, "n_layers": 36, "n_heads": 20},
+      "gpt2-xl (1558M)": {"emb_dim": 1600, "n_layers": 48, "n_heads": 25},
+  }
+
+  # Copy the base configuration and update with specific model settings
+  model_name = "gpt2-small (124M)"  # Example model name
+  NEW_CONFIG = GPT_CONFIG_124M.copy()
+  NEW_CONFIG.update(model_configs[model_name])
+  NEW_CONFIG.update({"context_length": 1024, "qkv_bias": True})
+
+  gpt = GPTModel(NEW_CONFIG)
+  gpt.eval();
+  ```
+
+- 下一步，将 GPT-2 的权重加载到 GPTModel 实例中
+
+  ```python
+  def assign(left, right):
+      if left.shape != right.shape:
+          raise ValueError(f"Shape mismatch. Left: {left.shape}, Right: {right.shape}")
+      return torch.nn.Parameter(torch.tensor(right))
+
+  import numpy as np
+
+  def load_weights_into_gpt(gpt, params):
+      gpt.pos_emb.weight = assign(gpt.pos_emb.weight, params['wpe'])
+      gpt.tok_emb.weight = assign(gpt.tok_emb.weight, params['wte'])
+
+      for b in range(len(params["blocks"])):
+          q_w, k_w, v_w = np.split(
+              (params["blocks"][b]["attn"]["c_attn"])["w"], 3, axis=-1)
+          gpt.trf_blocks[b].att.W_query.weight = assign(
+              gpt.trf_blocks[b].att.W_query.weight, q_w.T)
+          gpt.trf_blocks[b].att.W_key.weight = assign(
+              gpt.trf_blocks[b].att.W_key.weight, k_w.T)
+          gpt.trf_blocks[b].att.W_value.weight = assign(
+              gpt.trf_blocks[b].att.W_value.weight, v_w.T)
+
+          q_b, k_b, v_b = np.split(
+              (params["blocks"][b]["attn"]["c_attn"])["b"], 3, axis=-1)
+          gpt.trf_blocks[b].att.W_query.bias = assign(
+              gpt.trf_blocks[b].att.W_query.bias, q_b)
+          gpt.trf_blocks[b].att.W_key.bias = assign(
+              gpt.trf_blocks[b].att.W_key.bias, k_b)
+          gpt.trf_blocks[b].att.W_value.bias = assign(
+              gpt.trf_blocks[b].att.W_value.bias, v_b)
+
+          gpt.trf_blocks[b].att.out_proj.weight = assign(
+              gpt.trf_blocks[b].att.out_proj.weight,
+              params["blocks"][b]["attn"]["c_proj"]["w"].T)
+          gpt.trf_blocks[b].att.out_proj.bias = assign(
+              gpt.trf_blocks[b].att.out_proj.bias,
+              params["blocks"][b]["attn"]["c_proj"]["b"])
+
+          gpt.trf_blocks[b].ff.layers[0].weight = assign(
+              gpt.trf_blocks[b].ff.layers[0].weight,
+              params["blocks"][b]["mlp"]["c_fc"]["w"].T)
+          gpt.trf_blocks[b].ff.layers[0].bias = assign(
+              gpt.trf_blocks[b].ff.layers[0].bias,
+              params["blocks"][b]["mlp"]["c_fc"]["b"])
+          gpt.trf_blocks[b].ff.layers[2].weight = assign(
+              gpt.trf_blocks[b].ff.layers[2].weight,
+              params["blocks"][b]["mlp"]["c_proj"]["w"].T)
+          gpt.trf_blocks[b].ff.layers[2].bias = assign(
+              gpt.trf_blocks[b].ff.layers[2].bias,
+              params["blocks"][b]["mlp"]["c_proj"]["b"])
+
+          gpt.trf_blocks[b].norm1.scale = assign(
+              gpt.trf_blocks[b].norm1.scale,
+              params["blocks"][b]["ln_1"]["g"])
+          gpt.trf_blocks[b].norm1.shift = assign(
+              gpt.trf_blocks[b].norm1.shift,
+              params["blocks"][b]["ln_1"]["b"])
+          gpt.trf_blocks[b].norm2.scale = assign(
+              gpt.trf_blocks[b].norm2.scale,
+              params["blocks"][b]["ln_2"]["g"])
+          gpt.trf_blocks[b].norm2.shift = assign(
+              gpt.trf_blocks[b].norm2.shift,
+              params["blocks"][b]["ln_2"]["b"])
+
+      gpt.final_norm.scale = assign(gpt.final_norm.scale, params["g"])
+      gpt.final_norm.shift = assign(gpt.final_norm.shift, params["b"])
+      gpt.out_head.weight = assign(gpt.out_head.weight, params["wte"])
+
+
+  load_weights_into_gpt(gpt, params)
+  gpt.to(device)
+  ```
+
+- 可以看到 GPT 模型的模型结构
+
+  ```python
+  GPTModel(
+    (tok_emb): Embedding(50257, 768)
+    (pos_emb): Embedding(1024, 768)
+    (drop_emb): Dropout(p=0.1, inplace=False)
+    (trf_blocks): Sequential(
+      (0): TransformerBlock(
+        (att): MultiHeadAttention(
+          (W_query): Linear(in_features=768, out_features=768, bias=True)
+          (W_key): Linear(in_features=768, out_features=768, bias=True)
+          (W_value): Linear(in_features=768, out_features=768, bias=True)
+          (out_proj): Linear(in_features=768, out_features=768, bias=True)
+          (dropout): Dropout(p=0.1, inplace=False)
+        )
+        (ff): FeedForward(
+          (layers): Sequential(
+            (0): Linear(in_features=768, out_features=3072, bias=True)
+            (1): GELU()
+            (2): Linear(in_features=3072, out_features=768, bias=True)
+          )
+        )
+        (norm1): LayerNorm()
+        (norm2): LayerNorm()
+        (drop_shortcut): Dropout(p=0.1, inplace=False)
+      )
+      (1): TransformerBlock(
+        (att): MultiHeadAttention(
+          (W_query): Linear(in_features=768, out_features=768, bias=True)
+          (W_key): Linear(in_features=768, out_features=768, bias=True)
+          (W_value): Linear(in_features=768, out_features=768, bias=True)
+          (out_proj): Linear(in_features=768, out_features=768, bias=True)
+          (dropout): Dropout(p=0.1, inplace=False)
+        )
+        (ff): FeedForward(
+          (layers): Sequential(
+            (0): Linear(in_features=768, out_features=3072, bias=True)
+            (1): GELU()
+            (2): Linear(in_features=3072, out_features=768, bias=True)
+          )
+        )
+        (norm1): LayerNorm()
+        (norm2): LayerNorm()
+        (drop_shortcut): Dropout(p=0.1, inplace=False)
+      )
+      (2): TransformerBlock(
+        (att): MultiHeadAttention(
+          (W_query): Linear(in_features=768, out_features=768, bias=True)
+          (W_key): Linear(in_features=768, out_features=768, bias=True)
+          (W_value): Linear(in_features=768, out_features=768, bias=True)
+          (out_proj): Linear(in_features=768, out_features=768, bias=True)
+          (dropout): Dropout(p=0.1, inplace=False)
+        )
+        (ff): FeedForward(
+          (layers): Sequential(
+            (0): Linear(in_features=768, out_features=3072, bias=True)
+            (1): GELU()
+            (2): Linear(in_features=3072, out_features=768, bias=True)
+          )
+        )
+        (norm1): LayerNorm()
+        (norm2): LayerNorm()
+        (drop_shortcut): Dropout(p=0.1, inplace=False)
+      )
+      (3): TransformerBlock(
+        (att): MultiHeadAttention(
+          (W_query): Linear(in_features=768, out_features=768, bias=True)
+          (W_key): Linear(in_features=768, out_features=768, bias=True)
+          (W_value): Linear(in_features=768, out_features=768, bias=True)
+          (out_proj): Linear(in_features=768, out_features=768, bias=True)
+          (dropout): Dropout(p=0.1, inplace=False)
+        )
+        (ff): FeedForward(
+          (layers): Sequential(
+            (0): Linear(in_features=768, out_features=3072, bias=True)
+            (1): GELU()
+            (2): Linear(in_features=3072, out_features=768, bias=True)
+          )
+        )
+        (norm1): LayerNorm()
+        (norm2): LayerNorm()
+        (drop_shortcut): Dropout(p=0.1, inplace=False)
+      )
+      (4): TransformerBlock(
+        (att): MultiHeadAttention(
+          (W_query): Linear(in_features=768, out_features=768, bias=True)
+          (W_key): Linear(in_features=768, out_features=768, bias=True)
+          (W_value): Linear(in_features=768, out_features=768, bias=True)
+          (out_proj): Linear(in_features=768, out_features=768, bias=True)
+          (dropout): Dropout(p=0.1, inplace=False)
+        )
+        (ff): FeedForward(
+          (layers): Sequential(
+            (0): Linear(in_features=768, out_features=3072, bias=True)
+            (1): GELU()
+            (2): Linear(in_features=3072, out_features=768, bias=True)
+          )
+        )
+        (norm1): LayerNorm()
+        (norm2): LayerNorm()
+        (drop_shortcut): Dropout(p=0.1, inplace=False)
+      )
+      (5): TransformerBlock(
+        (att): MultiHeadAttention(
+          (W_query): Linear(in_features=768, out_features=768, bias=True)
+          (W_key): Linear(in_features=768, out_features=768, bias=True)
+          (W_value): Linear(in_features=768, out_features=768, bias=True)
+          (out_proj): Linear(in_features=768, out_features=768, bias=True)
+          (dropout): Dropout(p=0.1, inplace=False)
+        )
+        (ff): FeedForward(
+          (layers): Sequential(
+            (0): Linear(in_features=768, out_features=3072, bias=True)
+            (1): GELU()
+            (2): Linear(in_features=3072, out_features=768, bias=True)
+          )
+        )
+        (norm1): LayerNorm()
+        (norm2): LayerNorm()
+        (drop_shortcut): Dropout(p=0.1, inplace=False)
+      )
+      (6): TransformerBlock(
+        (att): MultiHeadAttention(
+          (W_query): Linear(in_features=768, out_features=768, bias=True)
+          (W_key): Linear(in_features=768, out_features=768, bias=True)
+          (W_value): Linear(in_features=768, out_features=768, bias=True)
+          (out_proj): Linear(in_features=768, out_features=768, bias=True)
+          (dropout): Dropout(p=0.1, inplace=False)
+        )
+        (ff): FeedForward(
+          (layers): Sequential(
+            (0): Linear(in_features=768, out_features=3072, bias=True)
+            (1): GELU()
+            (2): Linear(in_features=3072, out_features=768, bias=True)
+          )
+        )
+        (norm1): LayerNorm()
+        (norm2): LayerNorm()
+        (drop_shortcut): Dropout(p=0.1, inplace=False)
+      )
+      (7): TransformerBlock(
+        (att): MultiHeadAttention(
+          (W_query): Linear(in_features=768, out_features=768, bias=True)
+          (W_key): Linear(in_features=768, out_features=768, bias=True)
+          (W_value): Linear(in_features=768, out_features=768, bias=True)
+          (out_proj): Linear(in_features=768, out_features=768, bias=True)
+          (dropout): Dropout(p=0.1, inplace=False)
+        )
+        (ff): FeedForward(
+          (layers): Sequential(
+            (0): Linear(in_features=768, out_features=3072, bias=True)
+            (1): GELU()
+            (2): Linear(in_features=3072, out_features=768, bias=True)
+          )
+        )
+        (norm1): LayerNorm()
+        (norm2): LayerNorm()
+        (drop_shortcut): Dropout(p=0.1, inplace=False)
+      )
+      (8): TransformerBlock(
+        (att): MultiHeadAttention(
+          (W_query): Linear(in_features=768, out_features=768, bias=True)
+          (W_key): Linear(in_features=768, out_features=768, bias=True)
+          (W_value): Linear(in_features=768, out_features=768, bias=True)
+          (out_proj): Linear(in_features=768, out_features=768, bias=True)
+          (dropout): Dropout(p=0.1, inplace=False)
+        )
+        (ff): FeedForward(
+          (layers): Sequential(
+            (0): Linear(in_features=768, out_features=3072, bias=True)
+            (1): GELU()
+            (2): Linear(in_features=3072, out_features=768, bias=True)
+          )
+        )
+        (norm1): LayerNorm()
+        (norm2): LayerNorm()
+        (drop_shortcut): Dropout(p=0.1, inplace=False)
+      )
+      (9): TransformerBlock(
+        (att): MultiHeadAttention(
+          (W_query): Linear(in_features=768, out_features=768, bias=True)
+          (W_key): Linear(in_features=768, out_features=768, bias=True)
+          (W_value): Linear(in_features=768, out_features=768, bias=True)
+          (out_proj): Linear(in_features=768, out_features=768, bias=True)
+          (dropout): Dropout(p=0.1, inplace=False)
+        )
+        (ff): FeedForward(
+          (layers): Sequential(
+            (0): Linear(in_features=768, out_features=3072, bias=True)
+            (1): GELU()
+            (2): Linear(in_features=3072, out_features=768, bias=True)
+          )
+        )
+        (norm1): LayerNorm()
+        (norm2): LayerNorm()
+        (drop_shortcut): Dropout(p=0.1, inplace=False)
+      )
+      (10): TransformerBlock(
+        (att): MultiHeadAttention(
+          (W_query): Linear(in_features=768, out_features=768, bias=True)
+          (W_key): Linear(in_features=768, out_features=768, bias=True)
+          (W_value): Linear(in_features=768, out_features=768, bias=True)
+          (out_proj): Linear(in_features=768, out_features=768, bias=True)
+          (dropout): Dropout(p=0.1, inplace=False)
+        )
+        (ff): FeedForward(
+          (layers): Sequential(
+            (0): Linear(in_features=768, out_features=3072, bias=True)
+            (1): GELU()
+            (2): Linear(in_features=3072, out_features=768, bias=True)
+          )
+        )
+        (norm1): LayerNorm()
+        (norm2): LayerNorm()
+        (drop_shortcut): Dropout(p=0.1, inplace=False)
+      )
+      (11): TransformerBlock(
+        (att): MultiHeadAttention(
+          (W_query): Linear(in_features=768, out_features=768, bias=True)
+          (W_key): Linear(in_features=768, out_features=768, bias=True)
+          (W_value): Linear(in_features=768, out_features=768, bias=True)
+          (out_proj): Linear(in_features=768, out_features=768, bias=True)
+          (dropout): Dropout(p=0.1, inplace=False)
+        )
+        (ff): FeedForward(
+          (layers): Sequential(
+            (0): Linear(in_features=768, out_features=3072, bias=True)
+            (1): GELU()
+            (2): Linear(in_features=3072, out_features=768, bias=True)
+          )
+        )
+        (norm1): LayerNorm()
+        (norm2): LayerNorm()
+        (drop_shortcut): Dropout(p=0.1, inplace=False)
+      )
+    )
+    (final_norm): LayerNorm()
+    (out_head): Linear(in_features=768, out_features=50257, bias=False)
+  )
+  ```
+
+- 接下来即可生成文本
+
+  ```python
+  torch.manual_seed(123)
+
+  token_ids = generate(
+      model=gpt,
+      idx=text_to_token_ids("Every effort moves you", tokenizer).to(device),
+      max_new_tokens=25,
+      context_size=NEW_CONFIG["context_length"],
+      top_k=50,
+      temperature=1.5
+  )
+
+  print("Output text:\n", token_ids_to_text(token_ids, tokenizer))
+  # Output text:
+  #  Every effort moves you toward finding an ideal new way to practice something!
+  #
+  # What makes us want to be on top of that?
+  ```
+
+### Llama 2
+
+- GPT-2 模型和 Llama 模型结构对比
+
+![](/img/llm/gpt2-to-llama2-llama3.webp)
+
+- 三个模型的具体对比表
+
+  | 模型对比维度        | GPT-2-XL 1.5B     | Llama2-7B              | Llama3-8B                  |
+  | ------------------- | ----------------- | ---------------------- | -------------------------- |
+  | Dropout 层          | 保留              | 删去                   | 沿用删去逻辑               |
+  | 归一化层            | LayerNorm         | RMSNorm                | 沿用 RMSNorm               |
+  | 词典大小            | 50257             | 32000                  | 沿用 32000                 |
+  | MHA 头数            | 25                | 32                     | 32（改为 GQA）             |
+  | TransformerBlock 数 | 48                | 32                     | 沿用 32                    |
+  | 位置编码            | 1024 绝对位置编码 | 4096 RoPE（绝对+相对） | 8192 RoPE（修改后的 RoPE） |
+  | 嵌入维度            | 1600              | 4096                   | 沿用 4096                  |
+  | FFN 激活函数        | GELU              | SiLU/Swish             | 沿用 SiLU/Swish            |
+  | FFN 隐藏层维度      | 6400              | 11008                  | 14336                      |
+  | FFN 结构            | 基础线性层        | 添加额外线性层作为门控 | 沿用门控结构               |
+  | MHA 机制            | 标准 MHA          | 标准 MHA               | GQA（分组查询注意力）      |
+
+#### RMSNorm
+
+- 首先，将层归一化（LayerNorm）替换为均方根层归一化（RMSNorm）
+
+- 层归一化会利用均值和方差对输入做归一化处理，而均方根层归一化仅使用均方根进行计算，这一改进提升了计算效率
+
+- 均方根层归一化的运算公式如下，其中$x$为输入，$\gamma$为可训练参数（向量），$\epsilon$为用于避免除零错误的小常数：
+
+  $$
+  y_i = \frac{x_i}{\text{RMS}(x)} \gamma_i, \quad \text{其中} \quad \text{RMS}(x) = \sqrt{\epsilon + \frac{1}{n} \sum x_i^2}
+  $$
+
+- RMSNorm 的实现
+
+  ```python
+  import torch
+  import torch.nn as nn
+
+  #########################
+  # Chapter 4
+  #########################
+
+  # class LayerNorm(nn.Module):
+  #     def __init__(self, emb_dim):
+  #         super().__init__()
+  #         self.eps = 1e-5
+  #         self.scale = nn.Parameter(torch.ones(emb_dim))
+  #         self.shift = nn.Parameter(torch.zeros(emb_dim))
+
+  #     def forward(self, x):
+  #         mean = x.mean(dim=-1, keepdim=True)
+  #         var = x.var(dim=-1, keepdim=True, unbiased=False)
+  #         norm_x = (x - mean) / torch.sqrt(var + self.eps)
+  #         return self.scale * norm_x + self.shift
+
+  class RMSNorm(nn.Module):
+      def __init__(self, emb_dim, eps=1e-5):
+          super().__init__()
+          self.eps = eps
+          self.emb_dim = emb_dim
+          self.weight = nn.Parameter(torch.ones(emb_dim)).float()
+
+      def forward(self, x):
+          means = x.pow(2).mean(dim=-1, keepdim=True)
+          x_normed = x * torch.rsqrt(means + self.eps)
+          return (x_normed * self.weight).to(dtype=x.dtype)
+
+  # 也可以使用 PyTorch 的内置实现
+  torch.manual_seed(123)
+
+  example_batch = torch.randn(2, 3, 4)
+
+  rms_norm = RMSNorm(emb_dim=example_batch.shape[-1])
+  rmsnorm_pytorch = torch.nn.RMSNorm(example_batch.shape[-1], eps=1e-5)
+
+  assert torch.allclose(rms_norm(example_batch), rmsnorm_pytorch(example_batch))
+  ```
+
+#### SiLU
+
+- 替换 GELU 激活函数为 SiLU 激活函数，也被称作Swish函数，公式如下：
+
+  $$
+  \text{silu}(x) = x \cdot \sigma(x), \quad \text{其中} \sigma(x) \text{为 Sigmoid函数}
+  $$
+
+- SiLU 的代码实现
+
+  ```python
+  #########################
+  # Chapter 4
+  #########################
+
+  # class GELU(nn.Module):
+  #     def __init__(self):
+  #         super().__init__()
+
+  #     def forward(self, x):
+  #         return 0.5 * x * (1 + torch.tanh(
+  #             torch.sqrt(torch.tensor(2.0 / torch.pi)) *
+  #             (x + 0.044715 * torch.pow(x, 3))
+  #         ))
+
+  class SiLU(nn.Module):
+      def __init__(self):
+          super(SiLU, self).__init__()
+
+      def forward(self, x):
+          return x * torch.sigmoid(x)
+
+  # 也可以用 PyTorch 的内置实现
+  silu = SiLU()
+
+  assert torch.allclose(silu(example_batch), torch.nn.functional.silu(example_batch))
+  ```
+
+#### 修改 FFN 层
+
+- Llama 使用了 SiLU 的一个 GLU 变体，即 SwiGLU，其公式如下
+
+  $$
+  \text{SwiGLU}(x) = \text{SiLU}(\text{Linear}_1(x)) * (\text{Linear}_2(x))
+  $$
+
+- 这里有两个线性层，\* 表示逐元素乘法，而第三个线性层被应用于门控之后
+
+- FFN 的新实现
+
+  ```python
+  #########################
+  # Chapter 4
+  #########################
+  # class FeedForward(nn.Module):
+  #     def __init__(self, cfg):
+  #         super().__init__()
+  #         self.layers = nn.Sequential(
+  #             nn.Linear(cfg["emb_dim"], 4 * cfg["emb_dim"]),
+  #             GELU(),
+  #             nn.Linear(4 * cfg["emb_dim"], cfg["emb_dim"]),
+  #         )
+
+  #     def forward(self, x):
+  #         return self.layers(x)
+
+  class FeedForward(nn.Module):
+      def __init__(self, cfg):
+          super().__init__()
+          self.fc1 = nn.Linear(cfg["emb_dim"], cfg["hidden_dim"], dtype=cfg["dtype"], bias=False)
+          self.fc2 = nn.Linear(cfg["emb_dim"], cfg["hidden_dim"], dtype=cfg["dtype"], bias=False)
+          self.fc3 = nn.Linear(cfg["hidden_dim"], cfg["emb_dim"], dtype=cfg["dtype"], bias=False)
+          self.silu = SiLU()
+
+      def forward(self, x):
+          x_fc1 = self.fc1(x)
+          x_fc2 = self.fc2(x)
+          x = self.silu(x_fc1) * x_fc2
+          return self.fc3(x)
+  ```
+
+- 需注意，在上述代码中新增了 `dtype=cfg["dtype"]` 配置项，这一设置能在后续直接以低精度格式加载模型，从而降低内存占用（相比先以原始 32 位精度实例化模型、再进行精度转换的方式更高效）
+
+- 同时将 `bias` 设为 `False`，因为 Llama 模型的所有层均未使用偏置单元
+
+#### 实现 RoPE
+
+- 在 GPT 模型中，位置嵌入的实现方式如下：
+
+  ```python
+  self.pos_emb = nn.Embedding(cfg["context_length"], cfg["emb_dim"])
+  ```
+
+- 与传统的绝对位置嵌入不同，Llama 模型采用旋转位置嵌入（RoPE），该方式能让模型同时捕捉绝对位置信息与相对位置信息
+
+- RoPE 存在两种数学等价的实现方式：分半式实现（split-halves）与奇偶交错式实现（interleaved even/odd）；只要维度配对方式一致、正余弦排序规则相同，两种方式的数学效果完全一致
+
+- 本代码采用的是 RoPE 分半式实现方案，与 Hugging Face Transformers 库的实现逻辑一致
+
+- 而 RoPE 原始论文与 Meta 官方的 Llama 2 代码仓库，则采用奇偶交错式实现方案
+
+- 代码实现如下
+
+  ```python
+  def precompute_rope_params(head_dim, theta_base=10_000, context_length=4096):
+      assert head_dim % 2 == 0, "Embedding dimension must be even"
+
+      # Compute the inverse frequencies
+      inv_freq = 1.0 / (theta_base ** (torch.arange(0, head_dim, 2)[: (head_dim // 2)].float() / head_dim))
+
+      # Generate position indices
+      positions = torch.arange(context_length)
+
+      # Compute the angles
+      angles = positions.unsqueeze(1) * inv_freq.unsqueeze(0)  # Shape: (context_length, head_dim // 2)
+
+      # Expand angles to match the head_dim
+      angles = torch.cat([angles, angles], dim=1)  # Shape: (context_length, head_dim)
+
+      # Precompute sine and cosine
+      cos = torch.cos(angles)
+      sin = torch.sin(angles)
+
+      return cos, sin
+
+  def compute_rope(x, cos, sin):
+      # x: (batch_size, num_heads, seq_len, head_dim)
+      batch_size, num_heads, seq_len, head_dim = x.shape
+      assert head_dim % 2 == 0, "Head dimension must be even"
+
+      # Split x into first half and second half
+      x1 = x[..., : head_dim // 2]  # First half
+      x2 = x[..., head_dim // 2 :]  # Second half
+
+      # Adjust sin and cos shapes
+      cos = cos[:seq_len, :].unsqueeze(0).unsqueeze(0)  # Shape: (1, 1, seq_len, head_dim)
+      sin = sin[:seq_len, :].unsqueeze(0).unsqueeze(0)
+
+      # Apply the rotary transformation
+      rotated = torch.cat((-x2, x1), dim=-1)
+      x_rotated = (x * cos) + (rotated * sin)
+
+      return x_rotated.to(dtype=x.dtype)
+  ```
+
+- 然后将 RoPE 应用与 Q/K 张量
+
+  ```python
+  # Settings
+  batch_size = 2
+  context_len = 5
+  num_heads = 4
+  head_dim = 16
+
+  # Instantiate RoPE parameters
+  cos, sin = precompute_rope_params(head_dim=head_dim, context_length=context_len)
+
+  # Dummy query and key tensors
+  torch.manual_seed(123)
+  queries = torch.randn(batch_size, num_heads, context_len, head_dim)
+  keys = torch.randn(batch_size, num_heads, context_len, head_dim)
+
+  # Apply rotary position embeddings
+  queries_rot = compute_rope(queries, cos, sin)
+  keys_rot = compute_rope(keys, cos, sin)
+  ```
+
+- 将 RoPE 添加到 MHA 中
+
+- 需注意：GPT 模型是将位置嵌入直接作用于输入向量，而 Llama 模型则是在自注意力机制内部，对查询（query）和键（key）向量执行旋转变换
+
+- 同时，移除了 `qkv_bias` 配置，并将 `bias=False` 直接硬编码为固定设置
+
+- 此外，新增了精度（dtype）配置，确保后续能以低精度格式实例化模型
+
+- 由于下文中要实现的 TransformerBlock 是完全重复堆叠的，本可以对代码做简化处理 —— 只需初始化一次 RoPE 相关缓冲区，而非为每个多头注意力模块都重复初始化；但这里仍将预计算好的 RoPE 参数集成到 `MultiHeadAttention` 类中，这样该类就能作为独立模块正常工作
+
+- 代码实现
+
+  ```python
+  #########################
+  # Chapter 3
+  #########################
+  class MultiHeadAttention(nn.Module):
+      def __init__(self, d_in, d_out, context_length, num_heads, dtype=None):  # ,dropout, num_heads, qkv_bias=False):
+          super().__init__()
+          assert d_out % num_heads == 0, "d_out must be divisible by n_heads"
+
+          self.d_out = d_out
+          self.num_heads = num_heads
+          self.head_dim = d_out // num_heads  # Reduce the projection dim to match desired output dim
+
+          ######################## NEW ########################
+          # Set bias=False and dtype=dtype for all linear layers below
+          ##################################################
+          self.W_query = nn.Linear(d_in, d_out, bias=False, dtype=dtype)
+          self.W_key = nn.Linear(d_in, d_out, bias=False, dtype=dtype)
+          self.W_value = nn.Linear(d_in, d_out, bias=False, dtype=dtype)
+          self.out_proj = nn.Linear(d_out, d_out, bias=False, dtype=dtype)  # Linear layer to combine head outputs
+          # self.dropout = nn.Dropout(dropout)
+          self.register_buffer("mask", torch.triu(torch.ones(context_length, context_length), diagonal=1))
+
+          ######################## NEW ########################
+          cos, sin = precompute_rope_params(head_dim=self.head_dim, context_length=context_length)
+          self.register_buffer("cos", cos)
+          self.register_buffer("sin", sin)
+          ##################################################
+
+
+      def forward(self, x):
+
+          b, num_tokens, d_in = x.shape
+
+          keys = self.W_key(x)  # Shape: (b, num_tokens, d_out)
+          queries = self.W_query(x)
+          values = self.W_value(x)
+
+          # We implicitly split the matrix by adding a `num_heads` dimension
+          # Unroll last dim: (b, num_tokens, d_out) -> (b, num_tokens, num_heads, head_dim)
+          keys = keys.view(b, num_tokens, self.num_heads, self.head_dim)
+          values = values.view(b, num_tokens, self.num_heads, self.head_dim)
+          queries = queries.view(b, num_tokens, self.num_heads, self.head_dim)
+
+          # Transpose: (b, num_tokens, num_heads, head_dim) -> (b, num_heads, num_tokens, head_dim)
+          keys = keys.transpose(1, 2)
+          queries = queries.transpose(1, 2)
+          values = values.transpose(1, 2)
+
+          ######################## NEW ########################
+          keys = compute_rope(keys, self.cos, self.sin)
+          queries = compute_rope(queries, self.cos, self.sin)
+          ##################################################
+
+          # Compute scaled dot-product attention (aka self-attention) with a causal mask
+          attn_scores = queries @ keys.transpose(2, 3)  # Dot product for each head
+
+          # Original mask truncated to the number of tokens and converted to boolean
+          mask_bool = self.mask.bool()[:num_tokens, :num_tokens]
+
+          # Use the mask to fill attention scores
+          attn_scores.masked_fill_(mask_bool, -torch.inf)
+
+          attn_weights = torch.softmax(attn_scores / keys.shape[-1]**0.5, dim=-1)
+          # attn_weights = self.dropout(attn_weights)
+
+          # Shape: (b, num_tokens, num_heads, head_dim)
+          context_vec = (attn_weights @ values).transpose(1, 2)
+
+          # Combine heads, where self.d_out = self.num_heads * self.head_dim
+          context_vec = context_vec.reshape(b, num_tokens, self.d_out)
+          context_vec = self.out_proj(context_vec)  # optional projection
+
+          return context_vec
+  ```
+
+- MHA 的使用示例
+
+  ```python
+  # Settings
+  batch_size = 1
+  context_len = 100
+  max_context_len = 4096
+  embed_dim = 128
+  num_heads = 4
+
+
+  example_batch = torch.randn((batch_size, context_len, embed_dim))
+
+  mha = MultiHeadAttention(
+      d_in=embed_dim,
+      d_out=embed_dim,
+      context_length=max_context_len,
+      num_heads=num_heads
+  )
+
+  mha(example_batch)
+
+  del mha  # delete to free up memory
+  ```
+
+#### TransformerBlock
+
+- 主要工作包括：替换 LayerNorm 为 RMSNorm、删除 Dropout、删除 `qkv_bias` 配置、添加 `dtype` 配置
+
+  ```python
+  class TransformerBlock(nn.Module):
+      def __init__(self, cfg):
+          super().__init__()
+          self.att = MultiHeadAttention(
+              d_in=cfg["emb_dim"],
+              d_out=cfg["emb_dim"],
+              context_length=cfg["context_length"],
+              num_heads=cfg["n_heads"],
+              dtype=cfg["dtype"]  # NEW
+              # dropout=cfg["drop_rate"],
+              # qkv_bias=cfg["qkv_bias"]
+          )
+          self.ff = FeedForward(cfg)
+
+          ######################## NEW ########################
+          # self.norm1 = LayerNorm(cfg["emb_dim"])
+          # self.norm2 = LayerNorm(cfg["emb_dim"])
+          self.norm1 = RMSNorm(cfg["emb_dim"])
+          self.norm2 = RMSNorm(cfg["emb_dim"])
+          ##################################################
+
+          # self.drop_shortcut = nn.Dropout(cfg["drop_rate"])
+
+      def forward(self, x):
+          # Shortcut connection for attention block
+          shortcut = x
+          x = self.norm1(x)
+          x = self.att(x)   # Shape [batch_size, num_tokens, emb_size]
+          # x = self.drop_shortcut(x)
+          x = x + shortcut  # Add the original input back
+
+          # Shortcut connection for feed-forward block
+          shortcut = x
+          x = self.norm2(x)
+          x = self.ff(x)
+          # x = self.drop_shortcut(x)
+          x = x + shortcut  # Add the original input back
+
+          return x
+  ```
+
+#### Llama2Model
+
+- 主要工作包括：删除绝对位置编码、替换 LayerNorm 为 RMSNorm、删除 Dropout、添加 `dtype` 配置
+
+  ```python
+  # class GPTModel(nn.Module):
+  class Llama2Model(nn.Module):
+      def __init__(self, cfg):
+          super().__init__()
+          self.tok_emb = nn.Embedding(cfg["vocab_size"], cfg["emb_dim"], dtype=cfg["dtype"])
+          # self.pos_emb = nn.Embedding(cfg["context_length"], cfg["emb_dim"])
+          # self.drop_emb = nn.Dropout(cfg["drop_rate"])
+
+          self.trf_blocks = nn.Sequential(
+              *[TransformerBlock(cfg) for _ in range(cfg["n_layers"])])
+
+          ######################## NEW ########################
+          # self.final_norm = LayerNorm(cfg["emb_dim"])
+          self.final_norm = RMSNorm(cfg["emb_dim"])
+          ##################################################
+          self.out_head = nn.Linear(cfg["emb_dim"], cfg["vocab_size"], bias=False, dtype=cfg["dtype"])
+
+      def forward(self, in_idx):
+          # batch_size, seq_len = in_idx.shape
+          tok_embeds = self.tok_emb(in_idx)
+          # pos_embeds = self.pos_emb(torch.arange(seq_len, device=in_idx.device))
+          x = tok_embeds  # + pos_embeds  # Shape [batch_size, num_tokens, emb_size]
+          # x = self.drop_emb(x)
+          x = self.trf_blocks(x)
+          x = self.final_norm(x)
+          logits = self.out_head(x)
+          return logits
+  ```
+
+#### 初始化模型
+
+- Llama2 模型配置
+
+  ```python
+  LLAMA2_CONFIG_7B = {
+      "vocab_size": 32000,     # Vocabulary size
+      "context_length": 4096,  # Context length
+      "emb_dim": 4096,         # Embedding dimension
+      "n_heads": 32,           # Number of attention heads
+      "n_layers": 32,          # Number of layers
+      "hidden_dim": 11008,     # NEW: Size of the intermediate dimension in FeedForward
+      "dtype": torch.bfloat16  # NEW: Lower-precision dtype to reduce memory usage
+  }
+  ```
+
+- 初始化模型
+
+  ```python
+  model = Llama2Model(LLAMA2_CONFIG_7B)
+  total_params = sum(p.numel() for p in model.parameters())
+  print(f"Total number of parameters: {total_params:,}")
+  # Total number of parameters: 6,738,415,616
+  ```
+
+- 该模型包含 67 亿个参数（行业中通常取整，称其为 70 亿参数模型 / 7B 模型）
+
+- 可以计算模型所需显存
+
+  ```python
+  def model_memory_size(model, input_dtype=torch.float32):
+      total_params = 0
+      total_grads = 0
+      for param in model.parameters():
+          # Calculate total number of elements per parameter
+          param_size = param.numel()
+          total_params += param_size
+          # Check if gradients are stored for this parameter
+          if param.requires_grad:
+              total_grads += param_size
+
+      # Calculate buffer size (non-parameters that require memory)
+      total_buffers = sum(buf.numel() for buf in model.buffers())
+
+      # Size in bytes = (Number of elements) * (Size of each element in bytes)
+      # We assume parameters and gradients are stored in the same type as input dtype
+      element_size = torch.tensor(0, dtype=input_dtype).element_size()
+      total_memory_bytes = (total_params + total_grads + total_buffers) * element_size
+
+      # Convert bytes to gigabytes
+      total_memory_gb = total_memory_bytes / (1024**3)
+
+      return total_memory_gb
+
+  print(f"float32 (PyTorch default): {model_memory_size(model, input_dtype=torch.float32):.2f} GB")
+  print(f"bfloat16: {model_memory_size(model, input_dtype=torch.bfloat16):.2f} GB")
+  # float32 (PyTorch default): 52.33 GB
+  # bfloat16: 26.17 GB
+  ```
+
+- 将模型转移到 GPU 中
+
+  ```python
+  if torch.cuda.is_available():
+      device = torch.device("cuda")
+  elif torch.backends.mps.is_available():
+      device = torch.device("mps")
+  else:
+      device = torch.device("cpu")
+
+  model.to(device);
+  ```
+
+#### 加载 Tokenizer
+
+- Llama2 使用 SentencePiece 来创建 Tokenizer；但是 Llama3 使用了 Tiktoken
+
+- 实现一个 Wrapper 类
+
+  ```python
+  import sentencepiece as spm
+
+
+  class LlamaTokenizer:
+      def __init__(self, tokenizer_file):
+          sp = spm.SentencePieceProcessor()
+          sp.load(tokenizer_file)
+          self.tokenizer = sp
+
+      def encode(self, text):
+          return self.tokenizer.encode(text, out_type=int)
+
+      def decode(self, ids):
+          return self.tokenizer.decode(ids)
+
+
+  tokenizer = LlamaTokenizer(tokenizer_file)
+  ```
+
+- 下载 tokenizer
+
+  ```python
+  from huggingface_hub import hf_hub_download
+
+  tokenizer_file = hf_hub_download(
+      repo_id="meta-llama/Llama-2-7b",
+      filename="tokenizer.model",
+      local_dir="Llama-2-7b"
+  )
+  ```
+
+- 生成文本
+
+  ```python
+  from previous_chapters import generate, text_to_token_ids, token_ids_to_text
+  # If the `previous_chapters.py` file is not available locally,
+  # you can import it from the `llms-from-scratch` PyPI package.
+  # For details, see: https://github.com/rasbt/LLMs-from-scratch/tree/main/pkg
+  # E.g.,
+  # from llms_from_scratch.ch05 import generate, text_to_token_ids, token_ids_to_text
+
+  torch.manual_seed(123)
+
+  token_ids = generate(
+      model=model,
+      idx=text_to_token_ids("Every effort moves", tokenizer).to(device),
+      max_new_tokens=30,
+      context_size=LLAMA2_CONFIG_7B["context_length"],
+      top_k=1,
+      temperature=0.
+  )
+
+  print("Output text:\n", token_ids_to_text(token_ids, tokenizer))
+  # Output text:
+  #  Every effort movesαllRadius deletingpretcc否']; future eer napulate lackус während inter DES издаSchéonkkarto Оryptato#{ningproof eerbye
+  ```
+
+- 由于模型还没有训练，因此其输出是没有任何语义的
+
+#### 加载模型权重
+
+- 下载模型权重
+
+  ```python
+  weights_file = hf_hub_download(
+     repo_id="meta-llama/Llama-2-7b",
+     filename="consolidated.00.pth",
+     local_dir="Llama-2-7b"
+  )
+  weights = torch.load(weights_file, weights_only=True)
+  list(weights.keys())[:15]
+  # ['tok_embeddings.weight',
+  #  'norm.weight',
+  #  'output.weight',
+  #  'layers.0.attention.wq.weight',
+  #  'layers.0.attention.wk.weight',
+  #  'layers.0.attention.wv.weight',
+  #  'layers.0.attention.wo.weight',
+  #  'layers.0.feed_forward.w1.weight',
+  #  'layers.0.feed_forward.w2.weight',
+  #  'layers.0.feed_forward.w3.weight',
+  #  'layers.0.attention_norm.weight',
+  #  'layers.0.ffn_norm.weight',
+  #  'layers.1.attention.wq.weight',
+  #  'layers.1.attention.wk.weight',
+  #  'layers.1.attention.wv.weight']
+  ```
+
+- 类似 GPT 模型，加载模型权重
+
+  ```python
+  def assign(left, right, tensor_name="unknown"):
+      if left.shape != right.shape:
+          raise ValueError(f"Shape mismatch in tensor '{tensor_name}'. Left: {left.shape}, Right: {right.shape}")
+
+      with torch.no_grad():
+          if isinstance(right, torch.Tensor):
+              left.copy_(right)
+          else:
+              left.copy_(torch.as_tensor(right, dtype=left.dtype, device=left.device))
+
+      return left
+
+
+  def permute(w: torch.Tensor, n_heads, out_dim, in_dim):
+      return (w.view(n_heads, out_dim // n_heads // 2, 2, in_dim)
+               .transpose(1, 2)          # put axis 2 next to heads
+               .reshape(out_dim, in_dim))
+
+
+  def load_weights_into_llama(model, param_config, params):
+
+      cfg = LLAMA2_CONFIG_7B
+
+      model.tok_emb.weight = assign(model.tok_emb.weight, params["tok_embeddings.weight"])
+
+      for l in range(param_config["n_layers"]):
+
+          # The original Meta/Llama checkpoints store Q and K so that the two numbers
+          # that form one complex RoPE pair sit next to each other inside the head dimension ("sliced" layout).
+          # Our RoPE implementation, similar to the one in Hugging Face, expects an interleaved layout
+          # For example, with n_heads=2 and head_dim = 8
+          #                         ┌── pair 0 ──┐      ┌── pair 1 ──┐
+          # Meta (sliced):    [ h0:  r0 r1 r2 r3,   h1:  r0 r1 r2 r3  ]
+          # Ours & HF (interleaved):  [ h0: r0 r0 r1 r1 r2 r2 r3 r3  , h1: ... ]
+          # For more information, please see the discussion in the PR: https://github.com/rasbt/LLMs-from-scratch/pull/747
+
+          # So, below, for q_raw and k_raw, we must re‑order the checkpoint weights using the slices_to_interleave helper
+
+          q_raw = params[f"layers.{l}.attention.wq.weight"]
+          model.trf_blocks[l].att.W_query.weight = assign(
+              model.trf_blocks[l].att.W_query.weight,
+              permute(q_raw, cfg["n_heads"], cfg["emb_dim"], cfg["emb_dim"])
+          )
+          k_raw = params[f"layers.{l}.attention.wk.weight"]
+          model.trf_blocks[l].att.W_key.weight = assign(
+              model.trf_blocks[l].att.W_key.weight,
+              permute(k_raw, cfg["n_heads"], cfg["emb_dim"], cfg["emb_dim"])
+          )
+          model.trf_blocks[l].att.W_value.weight = assign(
+              model.trf_blocks[l].att.W_value.weight,
+              params[f"layers.{l}.attention.wv.weight"]
+          )
+          model.trf_blocks[l].att.out_proj.weight = assign(
+              model.trf_blocks[l].att.out_proj.weight,
+              params[f"layers.{l}.attention.wo.weight"]
+          )
+          model.trf_blocks[l].norm1.weight = assign(
+              model.trf_blocks[l].norm1.weight,
+              params[f"layers.{l}.attention_norm.weight"]
+          )
+
+          # Load FeedForward weights
+          model.trf_blocks[l].ff.fc1.weight = assign(
+              model.trf_blocks[l].ff.fc1.weight,
+              params[f"layers.{l}.feed_forward.w1.weight"]
+          )
+          # For some reason w2 and w3 are provided in the wrong order in the weights file
+          model.trf_blocks[l].ff.fc2.weight = assign(
+              model.trf_blocks[l].ff.fc2.weight,
+              params[f"layers.{l}.feed_forward.w3.weight"]
+          )
+          model.trf_blocks[l].ff.fc3.weight = assign(
+              model.trf_blocks[l].ff.fc3.weight,
+              params[f"layers.{l}.feed_forward.w2.weight"]
+          )
+          model.trf_blocks[l].norm2.weight = assign(
+              model.trf_blocks[l].norm2.weight,
+              params[f"layers.{l}.ffn_norm.weight"]
+          )
+
+      # Load output layer weights
+      model.final_norm.weight = assign(model.final_norm.weight, params["norm.weight"])
+      model.out_head.weight = assign(model.out_head.weight, params["output.weight"])
+
+  load_weights_into_llama(model, LLAMA2_CONFIG_7B, weights)
+  model.to(device);
+  ```
+
+- 使用加载后的模型重新生成文本
+
+  ```python
+  torch.manual_seed(123)
+
+  token_ids = generate(
+      model=model,
+      idx=text_to_token_ids("Every effort", tokenizer).to(device),
+      max_new_tokens=25,
+      context_size=LLAMA2_CONFIG_7B["context_length"],
+      top_k=1,
+      temperature=0.
+  )
+
+  print("Output text:\n", token_ids_to_text(token_ids, tokenizer))
+  # Output text:
+  #  Every effort has been made to ensure the accuracy of the information contained in this website. However, the information contained in this website is not
+  ```
+
+- 也可以使用指令微调后的模型
+
+  ```python
+  del model  # to free up memory
+
+  weights_file = hf_hub_download(
+     repo_id="meta-llama/Llama-2-7b-chat",
+     filename="consolidated.00.pth",
+     local_dir="Llama-2-7b-chat"
+  )
+
+  weights = torch.load(weights_file, weights_only=True)
+  model = Llama2Model(LLAMA2_CONFIG_7B)
+  load_weights_into_llama(model, LLAMA2_CONFIG_7B, weights)
+  model.to(device);
+
+  torch.manual_seed(123)
+
+  token_ids = generate(
+      model=model,
+      idx=text_to_token_ids("What do llamas eat?", tokenizer).to(device),
+      max_new_tokens=25,
+      context_size=LLAMA2_CONFIG_7B["context_length"],
+      top_k=1,
+      temperature=0.
+  )
+
+  print("Output text:\n", token_ids_to_text(token_ids, tokenizer))
+  # Output text:
+  #  What do llamas eat?
+  #
+  # Llamas are herbivores, which means they eat plants for their food. They feed on a variety
+  ```
+
+### Llama 3
+
+#### RoPE
+
+- Llama 3 采用了与 Llama 2 相似的旋转位置编码（RoPE），但二者的旋转位置编码配置存在一些细微差异：
+  - Llama 3 的上下文窗口支持的 token 数上限提升至 8192 个，是 Llama 2（4096 个）的两倍
+
+  - 下述公式中，旋转位置编码的基准值 $\theta$ 已从 Llama 2 的 10000 上调至 Llama 3 的 500000
+
+    $$
+    \Theta = \left\{\theta_i = \text{base}^{\frac{-2(i-1)}{d}}, i \in \left[1, 2, ..., d/2\right]\right\}
+    $$
+
+  - 上述 $\theta$ 值为一组预定义参数，用于确定旋转矩阵中的旋转角度，其中$d$代表嵌入空间的维度
+
+- 将基准值从 10000 提升至 500000，会让频率随维度的增加衰减得更快，这意味着高维分量对应的旋转角度相较以往更小，因此整体的频率范围会呈现压缩趋势，而非扩展趋势
+
+  ```python
+  import matplotlib.pyplot as plt
+  import torch
+
+  d = 128
+  i = torch.arange(1, d // 2 + 1)
+
+  base_llama2 = 10_000
+  base_llama3 = 500_000
+
+  theta_llama2 = base_llama2 ** (-2 * (i - 1) / d)
+  theta_llama3 = base_llama3 ** (-2 * (i - 1) / d)
+
+  plt.plot(i, theta_llama2, label="base = 10,000 (Llama 2)")
+  plt.plot(i, theta_llama3, label="base = 500,000 (Llama 3)", ls="--")
+  plt.xlabel("dimension index i (1 … d/2)")
+  plt.ylabel(r"$\theta_i = \mathrm{base}^{-2(i-1)/d}$")
+  plt.legend()
+  plt.tight_layout()
+  ```
+
+- 运行可视化如下：
+
+  ![build-llm-from-scratch-rope-theta](/img/llm/build-llm-from-scratch-rope-theta.webp)
+
+- 调整后的这一衰减率，是为了更好地支持更长的上下文长度，避免高维度（更远位置）的旋转操作幅度过大、作用过强
+
+- 此外，在下方代码中新增了一个 `freq_config` 配置段，用于调节频率；但该配置在 Llama 3 中暂未启用（仅适用于 Llama 3.1 和 Llama 3.2 版本），因此该配置默认设为`None`，会被直接忽略
+
+  ```python
+  import torch
+
+  def precompute_rope_params(head_dim, theta_base=10_000, context_length=4096, freq_config=None):
+      assert head_dim % 2 == 0, "Embedding dimension must be even"
+
+      # Compute the inverse frequencies
+      inv_freq = 1.0 / (theta_base ** (torch.arange(0, head_dim, 2)[: (head_dim // 2)].float() / head_dim))
+
+      ###################### NEW ################################
+      # Frequency adjustments
+      if freq_config is not None:
+          low_freq_wavelen = freq_config["original_context_length"] / freq_config["low_freq_factor"]
+          high_freq_wavelen = freq_config["original_context_length"] / freq_config["high_freq_factor"]
+
+          wavelen = 2 * torch.pi / inv_freq
+
+          inv_freq_llama = torch.where(
+              wavelen > low_freq_wavelen, inv_freq / freq_config["factor"], inv_freq
+          )
+
+          smooth_factor = (freq_config["original_context_length"] / wavelen - freq_config["low_freq_factor"]) / (
+              freq_config["high_freq_factor"] - freq_config["low_freq_factor"]
+          )
+
+          smoothed_inv_freq = (
+              (1 - smooth_factor) * (inv_freq / freq_config["factor"]) + smooth_factor * inv_freq
+          )
+
+          is_medium_freq = (wavelen <= low_freq_wavelen) & (wavelen >= high_freq_wavelen)
+          inv_freq_llama = torch.where(is_medium_freq, smoothed_inv_freq, inv_freq_llama)
+          inv_freq = inv_freq_llama
+      ########################################################
+
+
+      # Generate position indices
+      positions = torch.arange(context_length)
+
+      # Compute the angles
+      angles = positions.unsqueeze(1) * inv_freq.unsqueeze(0)  # Shape: (context_length, head_dim // 2)
+
+      # Expand angles to match the head_dim
+      angles = torch.cat([angles, angles], dim=1)  # Shape: (context_length, head_dim)
+
+      # Precompute sine and cosine
+      cos = torch.cos(angles)
+      sin = torch.sin(angles)
+
+      return cos, sin
+  ```
+
+- Llama 2 与 Llama 3 的改动对比如下
+
+  ```python
+  # Instantiate RoPE parameters
+
+  llama_2_context_len = 4096
+  llama_3_context_len = 8192
+
+  llama_2_theta_base = 10_000
+  llama_3_theta_base = 500_000
+  ```
+
+- 使用方法与 Llama 2 类似
+
+  ```python
+  # Settings
+  batch_size = 2
+  num_heads = 4
+  head_dim = 16
+
+  # Instantiate RoPE parameters
+  cos, sin = precompute_rope_params(
+      head_dim=head_dim,
+      theta_base=llama_3_theta_base,
+      context_length=llama_3_context_len
+  )
+
+  # Dummy query and key tensors
+  torch.manual_seed(123)
+  queries = torch.randn(batch_size, num_heads, llama_3_context_len, head_dim)
+  keys = torch.randn(batch_size, num_heads, llama_3_context_len, head_dim)
+
+  # Apply rotary position embeddings
+  queries_rot = compute_rope(queries, cos, sin)
+  keys_rot = compute_rope(keys, cos, sin)
+  ```
+
+#### GQA
+
+- 下列还对注意力机制做了重新设计：让该类通过前向传播方法接收掩码，而非将掩码存储为 `self.mask` 并通过该属性调用，这样就能动态生成掩码，从而降低内存占用
+
+- 这样设计的初衷：Llama 3.1 支持处理长度高达 128k 的 token 序列，而预计算一个 128k×128k 的因果掩码会耗费极大的内存，因此除非确有必要，都会避免这种预计算的方式
+
+- 实现代码
+
+  ```python
+  import torch.nn as nn
+
+
+  class GroupedQueryAttention(nn.Module):
+      def __init__(
+              self, d_in, d_out, num_heads,
+              num_kv_groups,       # NEW
+              dtype=None
+          ):
+          super().__init__()
+          assert d_out % num_heads == 0, "d_out must be divisible by num_heads"
+          assert num_heads % num_kv_groups == 0, "num_heads must be divisible by num_kv_groups"  # NEW
+
+          self.d_out = d_out
+          self.num_heads = num_heads
+          self.head_dim = d_out // num_heads
+
+          #################### NEW  ####################
+          # self.W_key = nn.Linear(d_in, d_out, bias=False, dtype=dtype)
+          # self.W_value = nn.Linear(d_in, d_out, bias=False, dtype=dtype)
+          self.W_key = nn.Linear(d_in, num_kv_groups * self.head_dim, bias=False, dtype=dtype)
+          self.W_value = nn.Linear(d_in, num_kv_groups * self.head_dim, bias=False, dtype=dtype)
+          self.num_kv_groups = num_kv_groups
+          self.group_size = num_heads // num_kv_groups
+          ###########################################
+
+          self.W_query = nn.Linear(d_in, d_out, bias=False, dtype=dtype)
+          self.out_proj = nn.Linear(d_out, d_out, bias=False, dtype=dtype)
+
+
+      def forward(self, x, mask=None, cos=None, sin=None):
+          ############## NEW  ##############
+          # The forward method now accepts `mask` instead of accessing it via self.mask.
+          # Also, we now have cos and sin as input for RoPE
+          ################################
+          b, num_tokens, d_in = x.shape
+
+          queries = self.W_query(x)  # Shape: (b, num_tokens, d_out)
+          keys = self.W_key(x)  # Shape: (b, num_tokens, num_kv_groups * head_dim)
+          values = self.W_value(x)  # Shape: (b, num_tokens, num_kv_groups * head_dim)
+
+          # Reshape queries, keys, and values
+          queries = queries.view(b, num_tokens, self.num_heads, self.head_dim)
+
+          ############## NEW  ##############
+          # keys = keys.view(b, num_tokens, self.num_heads, self.head_dim)
+          # values = values.view(b, num_tokens, self.num_heads, self.head_dim)
+          keys = keys.view(b, num_tokens, self.num_kv_groups, self.head_dim)
+          values = values.view(b, num_tokens, self.num_kv_groups, self.head_dim)
+          ################################
+
+          # Transpose keys, values, and queries
+          keys = keys.transpose(1, 2)  # Shape: (b, num_kv_groups, num_tokens, head_dim)
+          values = values.transpose(1, 2)  # Shape: (b, num_kv_groups, num_tokens, head_dim)
+          queries = queries.transpose(1, 2)  # Shape: (b, num_heads, num_tokens, head_dim)
+
+          ############## NEW ##############
+          # Apply RoPE
+          if cos is not None:
+              keys = compute_rope(keys, cos, sin)
+              queries = compute_rope(queries, cos, sin)
+          ################################
+
+          ############## NEW  ##############
+          # Expand keys and values to match the number of heads
+          # Shape: (b, num_heads, num_tokens, head_dim)
+
+          keys = keys.repeat_interleave(self.group_size, dim=1)  # Shape: (b, num_heads, num_tokens, head_dim)
+          values = values.repeat_interleave(self.group_size, dim=1)  # Shape: (b, num_heads, num_tokens, head_dim)
+          # For example, before repeat_interleave along dim=1 (query groups):
+          #   [K1, K2]
+          # After repeat_interleave (each query group is repeated group_size times):
+          #   [K1, K1, K2, K2]
+          # If we used regular repeat instead of repeat_interleave, we'd get:
+          #   [K1, K2, K1, K2]
+          ################################
+
+          # Compute scaled dot-product attention (aka self-attention) with a causal mask
+          # Shape: (b, num_heads, num_tokens, num_tokens)
+          attn_scores = queries @ keys.transpose(2, 3)  # Dot product for each head
+
+          ############## NEW ##############
+          # Create mask on the fly
+          if mask is None:
+              mask = torch.triu(torch.ones(num_tokens, num_tokens, device=x.device, dtype=torch.bool), diagonal=1)
+          ################################
+
+          # Use the mask to fill attention scores
+          attn_scores.masked_fill_(mask, -torch.inf)
+
+          attn_weights = torch.softmax(attn_scores / keys.shape[-1]**0.5, dim=-1)
+          assert keys.shape[-1] == self.head_dim
+
+          # Shape: (b, num_tokens, num_heads, head_dim)
+          context_vec = (attn_weights @ values).transpose(1, 2)
+
+          # Combine heads, where self.d_out = self.num_heads * self.head_dim
+          context_vec = context_vec.reshape(b, num_tokens, self.d_out)
+          context_vec = self.out_proj(context_vec)  # optional projection
+
+          return context_vec
+  ```
+
+- 考虑 MHA 与 GQA 的 Q/K/V 矩阵大小对比
+
+  ```python
+  # Settings
+  batch_size = 1
+  context_len = 3000
+  max_context_len = 8192
+  embed_dim = 4096
+  num_heads = 32
+
+
+  example_batch = torch.randn((batch_size, context_len, embed_dim))
+
+  mha = MultiHeadAttention(
+      d_in=embed_dim,
+      d_out=embed_dim,
+      context_length=max_context_len,
+      num_heads=num_heads
+  )
+
+  mha(example_batch)
+
+  print("W_key:", mha.W_key.weight.shape)
+  print("W_value:", mha.W_value.weight.shape)
+  print("W_query:", mha.W_query.weight.shape)
+  # W_key: torch.Size([4096, 4096])
+  # W_value: torch.Size([4096, 4096])
+  # W_query: torch.Size([4096, 4096])
+
+  gqa = GroupedQueryAttention(
+      d_in=embed_dim,
+      d_out=embed_dim,
+      num_heads=num_heads,
+      num_kv_groups=8,
+  )
+
+  gqa(example_batch)
+
+  print("W_key:", gqa.W_key.weight.shape)
+  print("W_value:", gqa.W_value.weight.shape)
+  print("W_query:", gqa.W_query.weight.shape)
+  # W_key: torch.Size([1024, 4096])
+  # W_value: torch.Size([1024, 4096])
+  # W_query: torch.Size([4096, 4096])
+
+  print("Total number of parameters:")
+
+  mha_total_params = sum(p.numel() for p in mha.parameters())
+  print(f"MHA: {mha_total_params:,}")
+
+  gqa_total_params = sum(p.numel() for p in gqa.parameters())
+  print(f"GQA: {gqa_total_params:,}")
+  # Total number of parameters:
+  # MHA: 67,108,864
+  # GQA: 41,943,040
+  ```
+
+- 可以看到，由于一共有 32 个头，8 个 KV 组，因此每 4 个头共享一个 K/V 矩阵，W_key 和 W_value 也相应的是 MHA 的四分之一
+
+#### TranformerBlock
+
+- 直接将 MHA 替换为 GQA 即可
+
+  ```python
+  class TransformerBlock(nn.Module):
+      def __init__(self, cfg):
+          super().__init__()
+          self.att =  GroupedQueryAttention(  # MultiHeadAttention(
+              d_in=cfg["emb_dim"],
+              d_out=cfg["emb_dim"],
+              num_heads=cfg["n_heads"],
+              num_kv_groups=cfg["n_kv_groups"],  # NEW
+              dtype=cfg["dtype"]
+          )
+          self.ff = FeedForward(cfg)
+          self.norm1 = RMSNorm(cfg["emb_dim"], eps=1e-5)
+          self.norm2 = RMSNorm(cfg["emb_dim"], eps=1e-5)
+
+      def forward(self, x, mask=None, cos=None, sin=None):
+          ############## NEW  ##############
+          # The forward method now accepts `mask` instead of accessing it via self.mask.
+          # Also, we now have cos and sin as input for RoPE
+          ################################
+          # Shortcut connection for attention block
+          shortcut = x
+          x = self.norm1(x)
+          x = self.att(x.to(torch.bfloat16), mask, cos, sin)   # Shape [batch_size, num_tokens, emb_size]
+          x = x + shortcut  # Add the original input back
+
+          # Shortcut connection for feed-forward block
+          shortcut = x
+          x = self.norm2(x)
+          x = self.ff(x.to(torch.bfloat16))
+          x = x + shortcut  # Add the original input back
+
+          return x
+  ```
+
+#### Llama3Model
+
+- 传递 `mask`、`cos`、`sin`
+
+  ```python
+  # class Llama2Model(nn.Module):
+  class Llama3Model(nn.Module):
+      def __init__(self, cfg):
+          super().__init__()
+          self.tok_emb = nn.Embedding(cfg["vocab_size"], cfg["emb_dim"], dtype=cfg["dtype"])
+
+          self.trf_blocks = nn.Sequential(
+              *[TransformerBlock(cfg) for _ in range(cfg["n_layers"])])
+
+          self.final_norm = RMSNorm(cfg["emb_dim"], eps=1e-5)
+          self.out_head = nn.Linear(cfg["emb_dim"], cfg["vocab_size"], bias=False, dtype=cfg["dtype"])
+
+          ############## NEW ##############
+          cos, sin = precompute_rope_params(
+              head_dim=cfg["emb_dim"] // cfg["n_heads"],
+              theta_base=cfg["rope_base"],
+              context_length=cfg["context_length"],
+              freq_config=cfg["rope_freq"]
+          )
+
+          self.register_buffer("cos", cos, persistent=False)
+          self.register_buffer("sin", sin, persistent=False)
+          ###############################
+
+          self.cfg = cfg
+
+      def forward(self, in_idx):
+          tok_embeds = self.tok_emb(in_idx)
+          x = tok_embeds
+
+          ############## NEW ##############
+          num_tokens = x.shape[1]
+          mask = torch.triu(torch.ones(num_tokens, num_tokens, device=x.device, dtype=torch.bool), diagonal=1)
+          ###############################
+
+          for block in self.trf_blocks:
+              x = block(x, mask, self.cos, self.sin)
+          x = self.final_norm(x)
+          logits = self.out_head(x.to(self.cfg["dtype"]))
+          return logits
+  ```
+
+- 初始化模型
+
+  ```python
+  LLAMA2_CONFIG_7B = {
+      "vocab_size": 32_000,    # Vocabulary size
+      "context_length": 4096,  # Context length
+      "emb_dim": 4096,         # Embedding dimension
+      "n_heads": 32,           # Number of attention heads
+      "n_layers": 32,          # Number of layers
+      "hidden_dim": 11_008,    # Size of the intermediate dimension in FeedForward
+      "dtype": torch.bfloat16  # Lower-precision dtype to reduce memory usage
+  }
+
+  LLAMA3_CONFIG_8B = {
+      "vocab_size": 128_256,   # NEW: Larger vocabulary size
+      "context_length": 8192,  # NEW: Larger context length
+      "emb_dim": 4096,         # Embedding dimension
+      "n_heads": 32,           # Number of attention heads
+      "n_layers": 32,          # Number of layers
+      "hidden_dim": 14_336,    # NEW: Larger size of the intermediate dimension in FeedForward
+      "n_kv_groups": 8,        # NEW: Key-Value groups for grouped-query attention
+      "rope_base": 500_000.0,  # NEW: The base in RoPE's "theta" was increased to 500_000
+      "rope_freq": None,       # NEW: Additional configuration for adjusting the RoPE frequencies
+      "dtype": torch.bfloat16  # Lower-precision dtype to reduce memory usage
+  }
+
+  model = Llama3Model(LLAMA3_CONFIG_8B)
+  total_params = sum(p.numel() for p in model.parameters())
+  print(f"Total number of parameters: {total_params:,}")
+  # Total number of parameters: 8,030,261,248
+  def model_memory_size(model, input_dtype=torch.float32):
+      total_params = 0
+      total_grads = 0
+      for param in model.parameters():
+          # Calculate total number of elements per parameter
+          param_size = param.numel()
+          total_params += param_size
+          # Check if gradients are stored for this parameter
+          if param.requires_grad:
+              total_grads += param_size
+
+      # Calculate buffer size (non-parameters that require memory)
+      total_buffers = sum(buf.numel() for buf in model.buffers())
+
+      # Size in bytes = (Number of elements) * (Size of each element in bytes)
+      # We assume parameters and gradients are stored in the same type as input dtype
+      element_size = torch.tensor(0, dtype=input_dtype).element_size()
+      total_memory_bytes = (total_params + total_grads + total_buffers) * element_size
+
+      # Convert bytes to gigabytes
+      total_memory_gb = total_memory_bytes / (1024**3)
+
+      return total_memory_gb
+
+  print(f"float32 (PyTorch default): {model_memory_size(model, input_dtype=torch.float32):.2f} GB")
+  print(f"bfloat16: {model_memory_size(model, input_dtype=torch.bfloat16):.2f} GB")
+  # float32 (PyTorch default): 59.84 GB
+  # bfloat16: 29.92 GB
+  ```
+
+#### Tokenizer
+
+- Llama 3 恢复使用了 Tiktoken 中的 BPE 分词器
+
+  ```python
+  from pathlib import Path
+
+  import tiktoken
+  from tiktoken.load import load_tiktoken_bpe
+
+
+  class Tokenizer:
+      """Thin wrapper around tiktoken that keeps track of Llama-3 special IDs."""
+      def __init__(self, model_path):
+          if not os.path.isfile(model_path):
+              raise FileNotFoundError(model_path)
+
+          mergeable = load_tiktoken_bpe(model_path)
+
+          # hard-coded from Meta's tokenizer.json
+          self.special = {
+              "<|begin_of_text|>": 128000,
+              "<|end_of_text|>": 128001,
+              "<|start_header_id|>": 128006,
+              "<|end_header_id|>": 128007,
+              "<|eot_id|>": 128009,
+          }
+          self.special.update({f"<|reserved_{i}|>": 128002 + i
+                               for i in range(256)
+                               if 128002 + i not in self.special.values()})
+
+          self.model = tiktoken.Encoding(
+              name=Path(model_path).name,
+              pat_str=r"(?i:'s|'t|'re|'ve|'m|'ll|'d)"
+                      r"|[^\r\n\p{L}\p{N}]?\p{L}+"
+                      r"|\p{N}{1,3}"
+                      r"| ?[^\s\p{L}\p{N}]+[\r\n]*"
+                      r"|\s*[\r\n]+"
+                      r"|\s+(?!\S)"
+                      r"|\s+",
+              mergeable_ranks=mergeable,
+              special_tokens=self.special,
+          )
+
+      def encode(self, text, bos=False, eos=False):
+          ids = ([self.special["<|begin_of_text|>"]] if bos else []) \
+                + self.model.encode(text)
+          if eos:
+              ids.append(self.special["<|end_of_text|>"])
+          return ids
+
+      def decode(self, ids):
+          return self.model.decode(ids)
+  ```
+
+- 下载并加载 tokenizer
+
+  ```python
+
+  ```
+
+#### 加载模型权重
+
+- 下载并加载模型权重
+
+  ```python
+  from safetensors.torch import load_file
+
+  combined_weights = {}
+
+  for i in range(1, 5):
+      weights_file = hf_hub_download(
+          repo_id="meta-llama/Meta-Llama-3-8B",
+          filename=f"model-0000{i}-of-00004.safetensors",
+          local_dir="Llama-3-8B"
+      )
+      current_weights = load_file(weights_file)
+      combined_weights.update(current_weights)
+
+  list(combined_weights.keys())[:15]
+  # ['model.embed_tokens.weight',
+  #  'model.layers.0.input_layernorm.weight',
+  #  'model.layers.0.mlp.down_proj.weight',
+  #  'model.layers.0.mlp.gate_proj.weight',
+  #  'model.layers.0.mlp.up_proj.weight',
+  #  'model.layers.0.post_attention_layernorm.weight',
+  #  'model.layers.0.self_attn.k_proj.weight',
+  #  'model.layers.0.self_attn.o_proj.weight',
+  #  'model.layers.0.self_attn.q_proj.weight',
+  #  'model.layers.0.self_attn.v_proj.weight',
+  #  'model.layers.1.input_layernorm.weight',
+  #  'model.layers.1.mlp.down_proj.weight',
+  #  'model.layers.1.mlp.gate_proj.weight',
+  #  'model.layers.1.mlp.up_proj.weight',
+  #  'model.layers.1.post_attention_layernorm.weight']
+  ```
+
+- 加载模型权重
+
+  ```python
+  def assign(left, right, tensor_name="unknown"):
+      if left.shape != right.shape:
+          raise ValueError(f"Shape mismatch in tensor '{tensor_name}'. Left: {left.shape}, Right: {right.shape}")
+
+      with torch.no_grad():
+          if isinstance(right, torch.Tensor):
+              left.copy_(right)
+          else:
+              left.copy_(torch.as_tensor(right, dtype=left.dtype, device=left.device))
+
+      return left
+
+
+  def load_weights_into_llama(model, param_config, params):
+      model.tok_emb.weight = assign(model.tok_emb.weight, params["model.embed_tokens.weight"], "model.embed_tokens.weight")
+
+      for l in range(param_config["n_layers"]):
+
+          # Load attention weights
+          model.trf_blocks[l].att.W_query.weight = assign(
+              model.trf_blocks[l].att.W_query.weight,
+              params[f"model.layers.{l}.self_attn.q_proj.weight"],
+              f"model.layers.{l}.self_attn.q_proj.weight"
+          )
+          model.trf_blocks[l].att.W_key.weight = assign(
+              model.trf_blocks[l].att.W_key.weight,
+              params[f"model.layers.{l}.self_attn.k_proj.weight"],
+              f"model.layers.{l}.self_attn.k_proj.weight"
+          )
+          model.trf_blocks[l].att.W_value.weight = assign(
+              model.trf_blocks[l].att.W_value.weight,
+              params[f"model.layers.{l}.self_attn.v_proj.weight"],
+              f"model.layers.{l}.self_attn.v_proj.weight"
+          )
+          model.trf_blocks[l].att.out_proj.weight = assign(
+              model.trf_blocks[l].att.out_proj.weight,
+              params[f"model.layers.{l}.self_attn.o_proj.weight"],
+              f"model.layers.{l}.self_attn.o_proj.weight"
+          )
+          model.trf_blocks[l].norm1.weight = assign(
+              model.trf_blocks[l].norm1.weight,
+              params[f"model.layers.{l}.input_layernorm.weight"],
+              f"model.layers.{l}.input_layernorm.weight"
+          )
+
+          # Load FeedForward weights
+          model.trf_blocks[l].ff.fc1.weight = assign(
+              model.trf_blocks[l].ff.fc1.weight,
+              params[f"model.layers.{l}.mlp.gate_proj.weight"],
+              f"model.layers.{l}.mlp.gate_proj.weight"
+          )
+          model.trf_blocks[l].ff.fc2.weight = assign(
+              model.trf_blocks[l].ff.fc2.weight,
+              params[f"model.layers.{l}.mlp.up_proj.weight"],
+              f"model.layers.{l}.mlp.up_proj.weight"
+          )
+          model.trf_blocks[l].ff.fc3.weight = assign(
+              model.trf_blocks[l].ff.fc3.weight,
+              params[f"model.layers.{l}.mlp.down_proj.weight"],
+              f"model.layers.{l}.mlp.down_proj.weight"
+          )
+          model.trf_blocks[l].norm2.weight = assign(
+              model.trf_blocks[l].norm2.weight,
+              params[f"model.layers.{l}.post_attention_layernorm.weight"],
+              f"model.layers.{l}.post_attention_layernorm.weight"
+          )
+
+      # Load output layer weights
+      model.final_norm.weight = assign(model.final_norm.weight, params["model.norm.weight"], "model.norm.weight")
+
+      if "lm_head.weight" in params.keys():
+          model.out_head.weight = assign(model.out_head.weight, params["lm_head.weight"], "lm_head.weight")
+      else:
+          model.out_head.weight = model.tok_emb.weight
+          print("Model uses weight tying.")
+
+
+  load_weights_into_llama(model, LLAMA3_CONFIG_8B, combined_weights)
+  model.to(device);
+  del combined_weights  # free up memory
+  ```
+
+- 生成文本
+
+  ```python
+  torch.manual_seed(123)
+
+  token_ids = generate(
+      model=model,
+      idx=text_to_token_ids("Every effort", tokenizer).to(device),
+      max_new_tokens=25,
+      context_size=LLAMA3_CONFIG_8B["context_length"],
+      top_k=1,
+      temperature=0.
+  )
+
+  print("Output text:\n", token_ids_to_text(token_ids, tokenizer))
+  ```
+
+- 下载指令微调版本的模型
+
+  ```python
+  combined_weights = {}
+
+  for i in range(1, 5):
+      weights_file = hf_hub_download(
+          repo_id="meta-llama/Meta-Llama-3-8B-Instruct",
+          filename=f"model-0000{i}-of-00004.safetensors",
+          local_dir="Llama-3-8B-Instruct"
+      )
+      current_weights = load_file(weights_file)
+      combined_weights.update(current_weights)
+
+
+  model = Llama3Model(LLAMA3_CONFIG_8B)
+  load_weights_into_llama(model, LLAMA3_CONFIG_8B, combined_weights)
+  model.to(device)
+  del combined_weights  # free up memory
+  ```
+
+- Llama 3 模型的理想使用方式是搭配其微调阶段所用的标准提示词模板，因此需要定义聊天模板
+
+  ```python
+  class ChatFormat:
+
+      def __init__(self, tokenizer: Tokenizer, *,
+                   default_system="You are a helpful assistant."):
+          self.tok = tokenizer
+          self.default_system = default_system
+
+      def _header(self, role):
+          """Encode <|start_header_id|>role<|end_header_id|>\n\n"""
+          return (
+              [self.tok.special["<|start_header_id|>"]]
+              + self.tok.encode(role)
+              + [self.tok.special["<|end_header_id|>"]]
+              + self.tok.encode("\n\n")
+          )
+
+      def encode(self, user_message, system_message=None):
+          sys_msg = system_message if system_message is not None else self.default_system
+
+          ids = [self.tok.special["<|begin_of_text|>"]]
+
+          # system
+          ids += self._header("system")
+          ids += self.tok.encode(sys_msg)
+          ids += [self.tok.special["<|eot_id|>"]]
+
+          # user
+          ids += self._header("user")
+          ids += self.tok.encode(user_message)
+          ids += [self.tok.special["<|eot_id|>"]]
+
+          # assistant header (no content yet)
+          ids += self._header("assistant")
+
+          return ids
+  ```
+
+- 启用聊天模板后的编码解码
+
+  ```python
+  tokenizer = Tokenizer(tokenizer_file_path)
+  chat_tokenizer = ChatFormat(tokenizer)
+
+  token_ids = chat_tokenizer.encode("Hello World!")
+  print(token_ids)
+  # [128000, 128006, 9125, 128007, 271, 2675, 527, 264, 11190, 18328, 13, 128009, 128006, 882, 128007, 271, 9906, 4435, 0, 128009, 128006, 78191, 128007, 271]
+  tokenizer.decode(token_ids)
+  # '<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\nYou are a helpful assistant.<|eot_id|><|start_header_id|>user<|end_header_id|>\n\nHello World!<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n'
+  ```
+
+- 可以看到，通过聊天模板，原先的输入，会被处理为新的包含角色定义的格式
+
+- 生成具体的文本
+
+  ```python
+  torch.manual_seed(123)
+
+  token_ids = generate(
+      model=model,
+      idx=text_to_token_ids("What do llamas eat?", chat_tokenizer).to(device),
+      max_new_tokens=150,
+      context_size=LLAMA3_CONFIG_8B["context_length"],
+      top_k=1,
+      temperature=0.
+  )
+
+  output_text = token_ids_to_text(token_ids, tokenizer)
+
+  def clean_text(text, header_end="assistant<|end_header_id|>\n\n"):
+      # Find the index of the first occurrence of "<|end_header_id|>"
+      index = text.find(header_end)
+
+      if index != -1:
+          # Return the substring starting after "<|end_header_id|>"
+          return text[index + len(header_end):].strip()  # Strip removes leading/trailing whitespace
+      else:
+          # If the token is not found, return the original text
+          return text
+
+  # Output text:
+  #  Llamas are herbivores, which means they primarily eat plants and plant-based foods. Their diet typically consists of:
+  #
+  # 1. Grasses: Llamas love to graze on grasses, including tall grasses, short grasses, and even weeds.
+  # 2. Hay: Hay is a staple in a llama's diet. They enjoy a variety of hays, such as timothy hay, alfalfa hay, and oat hay.
+  # 3. Grains: Llamas may be fed grains like oats, corn, and barley as a supplement to their diet.
+  # 4. Fruits and vegetables: Llamas enjoy fruits and vegetables like apples, carrots, and sweet potatoes as treats or additions to their meals.
+  # 5. Minerals:
+  ```
+
+### Llama 3.1 8B
+
+- Llama 3 和 Llama 3.1 的对比
+
+![](/img/llm/llama3-to-llama31.webp)
+
+- 模型对比
+  - RoPE 替换为 RoPE rescaling，支持 131K 的上下文大小
+
+- 模型配置区别
+
+  ```python
+  LLAMA3_CONFIG_8B = {
+      "vocab_size": 128_256,   # Vocabulary size
+      "context_length": 8192,  # Context length
+      "emb_dim": 4096,         # Embedding dimension
+      "n_heads": 32,           # Number of attention heads
+      "n_layers": 32,          # Number of layers
+      "hidden_dim": 14_336,    # Size of the intermediate dimension in FeedForward
+      "n_kv_groups": 8,        # Key-Value groups for grouped-query attention
+      "rope_base": 500_000.0,  # The base in RoPE's "theta"
+      "rope_freq": None,       # Additional configuration for adjusting the RoPE frequencies
+      "dtype": torch.bfloat16  # Lower-precision dtype to reduce memory usage
+  }
+
+  LLAMA31_CONFIG_8B = {
+      "vocab_size": 128_256,      # Vocabulary size
+      "context_length": 131_072,  # NEW: Larger supported context length
+      "emb_dim": 4096,            # Embedding dimension
+      "n_heads": 32,              # Number of attention heads
+      "n_layers": 32,             # Number of layers
+      "hidden_dim": 14_336,       # Size of the intermediate dimension in FeedForward
+      "n_kv_groups": 8,           # Key-Value groups for grouped-query attention
+      "rope_base": 500_000.0,     # The base in RoPE's "theta"
+      "dtype": torch.bfloat16,    # Lower-precision dtype to reduce memory usage
+      "rope_freq": {              # NEW: RoPE frequency scaling
+          "factor": 8.0,
+          "low_freq_factor": 1.0,
+          "high_freq_factor": 4.0,
+          "original_context_length": 8192,
+      }
+  }
+  ```
+
+- 如前文所述，旋转位置编码（RoPE）方法通过正弦函数（正弦与余弦），将位置信息直接嵌入至注意力机制中
+
+- 在 Llama 3.1 中，通过新增的配置项，对逆频率（inverse frequency）的计算逻辑做了额外调整，这些调整会影响不同频率分量对位置编码的作用方式
+
+### Llama 3.2 1B
+
+- Llama 3.2 文本模型的代码与 Llama 3.1 基本一致，仅在模型体量上做了轻量化调整（目前提供 10 亿和 30 亿参数两个版本）
+
+- 另一项针对性能效率的优化是，Meta 重新启用了权重共享机制，即模型的输入嵌入层与输出层会复用同一组权重参数值
+
+- 下图直观展示了 Llama 3.1 8B 与 Llama 3.2 1B 在模型架构上的差异
+
+![](/img/llm/llama31-to-llama32.webp)
+
+### Qwen3
+
+- Qwen3 0.6B 和 Llama 3.2 1B 的对比
+
+![](/img/llm/qwen-overview-with-llama.webp)
+
+- 模型对比
+  - RoPE 的上下文长度为 41K
+  - 一共堆叠了 28 个 TransformerBlock，FFN 的隐藏层维度为 3072
+  - token 嵌入维度为 1024
+
+- Qwen 系列模型包含 基础版（base）和混合版（hybrid）两款模型，其中混合版可灵活切换为推理专用模式，或常规的指令遵循模式：
+  - `base`：预训练基础模型，但 Qwen3 的预训练阶段已融入部分推理相关数据（思维链数据），因此即便未经过专门的推理训练（强化学习）阶段，该模型有时也会生成推理轨迹
+  - `hybrid`
+    - `reasoning`（推理模式）：会在 `<think></think>` 标签内生成完整的长推理轨迹；
+    - `instruct`（指令模式）：基础逻辑与推理模式一致，可通过手动添加空的 `<think></think>` 标签抑制长推理轨迹的生成（该操作由分词器自动完成）；通过这种方式，模型即可表现为常规的指令遵循模型
+
+- Qwen 3 模型实现
+
+  ```python
+  class Qwen3Model(nn.Module):
+      def __init__(self, cfg):
+          super().__init__()
+
+          # Main model parameters
+          self.tok_emb = nn.Embedding(cfg["vocab_size"], cfg["emb_dim"], dtype=cfg["dtype"])
+
+          self.trf_blocks = nn.ModuleList(  # ModuleList since Sequential can only accept one input, and we need `x, mask, cos, sin`
+              [TransformerBlock(cfg) for _ in range(cfg["n_layers"])]
+          )
+
+          self.final_norm = RMSNorm(cfg["emb_dim"])
+          self.out_head = nn.Linear(cfg["emb_dim"], cfg["vocab_size"], bias=False, dtype=cfg["dtype"])
+
+          # Reusable utilities
+          if cfg["head_dim"] is None:
+              head_dim = cfg["emb_dim"] // cfg["n_heads"]
+          else:
+              head_dim = cfg["head_dim"]
+          cos, sin = compute_rope_params(
+              head_dim=head_dim,
+              theta_base=cfg["rope_base"],
+              context_length=cfg["context_length"]
+          )
+          self.register_buffer("cos", cos, persistent=False)
+          self.register_buffer("sin", sin, persistent=False)
+          self.cfg = cfg
+
+
+      def forward(self, in_idx):
+          # Forward pass
+          tok_embeds = self.tok_emb(in_idx)
+          x = tok_embeds
+
+          num_tokens = x.shape[1]
+          mask = torch.triu(torch.ones(num_tokens, num_tokens, device=x.device, dtype=torch.bool), diagonal=1)
+
+          for block in self.trf_blocks:
+              x = block(x, mask, self.cos, self.sin)
+          x = self.final_norm(x)
+          logits = self.out_head(x.to(self.cfg["dtype"]))
+          return logits
+  ```
+
+- Qwen3 模型配置
+
+  ```python
+  CHOOSE_MODEL = "0.6B"
+
+  if CHOOSE_MODEL == "0.6B":
+      QWEN3_CONFIG = {
+          "vocab_size": 151_936,           # Vocabulary size
+          "context_length": 40_960,        # Context length that was used to train the model
+          "emb_dim": 1024,                 # Embedding dimension
+          "n_heads": 16,                   # Number of attention heads
+          "n_layers": 28,                  # Number of layers
+          "hidden_dim": 3072,              # Size of the intermediate dimension in FeedForward
+          "head_dim": 128,                 # Size of the heads in GQA
+          "qk_norm": True,                 # Whether to normalize queries and keys in GQA
+          "n_kv_groups": 8,                # Key-Value groups for grouped-query attention
+          "rope_base": 1_000_000.0,        # The base in RoPE's "theta"
+          "dtype": torch.bfloat16,         # Lower-precision dtype to reduce memory usage
+      }
+
+  elif CHOOSE_MODEL == "1.7B":
+      QWEN3_CONFIG = {
+          "vocab_size": 151_936,
+          "context_length": 40_960,
+          "emb_dim": 2048,                 # 2x larger than above
+          "n_heads": 16,
+          "n_layers": 28,
+          "hidden_dim": 6144,              # 2x larger than above
+          "head_dim": 128,
+          "qk_norm": True,
+          "n_kv_groups": 8,
+          "rope_base": 1_000_000.0,
+          "dtype": torch.bfloat16,
+      }
+
+  elif CHOOSE_MODEL == "4B":
+      QWEN3_CONFIG = {
+          "vocab_size": 151_936,
+          "context_length": 40_960,
+          "emb_dim": 2560,                 # 25% larger than above
+          "n_heads": 32,                   # 2x larger than above
+          "n_layers": 36,                  # 29% larger than above
+          "hidden_dim": 9728,              # ~3x larger than above
+          "head_dim": 128,
+          "qk_norm": True,
+          "n_kv_groups": 8,
+          "rope_base": 1_000_000.0,
+          "dtype": torch.bfloat16,
+      }
+
+  elif CHOOSE_MODEL == "8B":
+      QWEN3_CONFIG = {
+          "vocab_size": 151_936,
+          "context_length": 40_960,
+          "emb_dim": 4096,                 # 60% larger than above
+          "n_heads": 32,
+          "n_layers": 36,                  # 26% larger than above
+          "hidden_dim": 12288,
+          "head_dim": 128,
+          "qk_norm": True,
+          "n_kv_groups": 8,
+          "rope_base": 1_000_000.0,
+          "dtype": torch.bfloat16,
+      }
+
+  elif CHOOSE_MODEL == "14B":
+      QWEN3_CONFIG = {
+          "vocab_size": 151_936,
+          "context_length": 40_960,
+          "emb_dim": 5120,                 # 25% larger than above
+          "n_heads": 40,                   # 25% larger than above
+          "n_layers": 40,                  # 11% larger than above
+          "hidden_dim": 17408,             # 42% larger than above
+          "head_dim": 128,
+          "qk_norm": True,
+          "n_kv_groups": 8,
+          "rope_base": 1_000_000.0,
+          "dtype": torch.bfloat16,
+      }
+
+  elif CHOOSE_MODEL == "32B":
+      QWEN3_CONFIG = {
+          "vocab_size": 151_936,
+          "context_length": 40_960,
+          "emb_dim": 5120,
+          "n_heads": 64,                   # 60% larger than above
+          "n_layers": 64,                  # 60% larger than above
+          "hidden_dim": 25600,             # 47% larger than above
+          "head_dim": 128,
+          "qk_norm": True,
+          "n_kv_groups": 8,
+          "rope_base": 1_000_000.0,
+          "dtype": torch.bfloat16,
+      }
+
+  else:
+      raise ValueError(f"{CHOOSE_MODEL} is not supported.")
+
+  torch.manual_seed(123)
+  model = Qwen3Model(QWEN3_CONFIG)
+  print(model)
+  # Qwen3Model(
+  #   (tok_emb): Embedding(151936, 1024)
+  #   (trf_blocks): ModuleList(
+  #     (0-27): 28 x TransformerBlock(
+  #       (att): GroupedQueryAttention(
+  #         (W_query): Linear(in_features=1024, out_features=2048, bias=False)
+  #         (W_key): Linear(in_features=1024, out_features=1024, bias=False)
+  #         (W_value): Linear(in_features=1024, out_features=1024, bias=False)
+  #         (out_proj): Linear(in_features=2048, out_features=1024, bias=False)
+  #         (q_norm): RMSNorm()
+  #         (k_norm): RMSNorm()
+  #       )
+  #       (ff): FeedForward(
+  #         (fc1): Linear(in_features=1024, out_features=3072, bias=False)
+  #         (fc2): Linear(in_features=1024, out_features=3072, bias=False)
+  #         (fc3): Linear(in_features=3072, out_features=1024, bias=False)
+  #       )
+  #       (norm1): RMSNorm()
+  #       (norm2): RMSNorm()
+  #     )
+  #   )
+  #   (final_norm): RMSNorm()
+  #   (out_head): Linear(in_features=1024, out_features=151936, bias=False)
+  # )
+  ```
+
+- 总参数量
+
+  ```python
+  total_params = sum(p.numel() for p in model.parameters())
+  print(f"Total number of parameters: {total_params:,}")
+
+  # Account for weight tying
+  total_params_normalized = total_params - model.tok_emb.weight.numel()
+  print(f"\nTotal number of unique parameters: {total_params_normalized:,}")
+  # Total number of parameters: 751,632,384
+  #
+  # Total number of unique parameters: 596,049,920
+  # float32 (PyTorch default): 5.64 GB
+  # bfloat16: 2.82 GB
+  ```
+
+- 加载预训练权重
+
+  ```python
+  def load_weights_into_qwen(model, param_config, params):
+      def assign(left, right, tensor_name="unknown"):
+          if left.shape != right.shape:
+              raise ValueError(f"Shape mismatch in tensor '{tensor_name}'. Left: {left.shape}, Right: {right.shape}")
+
+          with torch.no_grad():
+              if isinstance(right, torch.Tensor):
+                  left.copy_(right)
+              else:
+                  left.copy_(torch.as_tensor(right, dtype=left.dtype, device=left.device))
+
+          return left
+
+      model.tok_emb.weight = assign(model.tok_emb.weight, params["model.embed_tokens.weight"], "model.embed_tokens.weight")
+
+      for l in range(param_config["n_layers"]):
+          block = model.trf_blocks[l]
+          att = block.att
+
+          # Q, K, V projections
+          att.W_query.weight = assign(
+              att.W_query.weight,
+              params[f"model.layers.{l}.self_attn.q_proj.weight"],
+              f"model.layers.{l}.self_attn.q_proj.weight"
+          )
+          att.W_key.weight = assign(
+              att.W_key.weight,
+              params[f"model.layers.{l}.self_attn.k_proj.weight"],
+              f"model.layers.{l}.self_attn.k_proj.weight"
+          )
+          att.W_value.weight = assign(
+              att.W_value.weight,
+              params[f"model.layers.{l}.self_attn.v_proj.weight"],
+              f"model.layers.{l}.self_attn.v_proj.weight"
+          )
+
+          # Output projection
+          att.out_proj.weight = assign(
+              att.out_proj.weight,
+              params[f"model.layers.{l}.self_attn.o_proj.weight"],
+              f"model.layers.{l}.self_attn.o_proj.weight"
+          )
+
+          # QK norms
+          if hasattr(att, "q_norm") and att.q_norm is not None:
+              att.q_norm.scale = assign(
+                  att.q_norm.scale,
+                  params[f"model.layers.{l}.self_attn.q_norm.weight"],
+                  f"model.layers.{l}.self_attn.q_norm.weight"
+              )
+          if hasattr(att, "k_norm") and att.k_norm is not None:
+              att.k_norm.scale = assign(
+                  att.k_norm.scale,
+                  params[f"model.layers.{l}.self_attn.k_norm.weight"],
+                  f"model.layers.{l}.self_attn.k_norm.weight"
+              )
+
+          # Attention layernorm
+          block.norm1.scale = assign(
+              block.norm1.scale,
+              params[f"model.layers.{l}.input_layernorm.weight"],
+              f"model.layers.{l}.input_layernorm.weight"
+          )
+
+          # Feedforward weights
+          block.ff.fc1.weight = assign(
+              block.ff.fc1.weight,
+              params[f"model.layers.{l}.mlp.gate_proj.weight"],
+              f"model.layers.{l}.mlp.gate_proj.weight"
+          )
+          block.ff.fc2.weight = assign(
+              block.ff.fc2.weight,
+              params[f"model.layers.{l}.mlp.up_proj.weight"],
+              f"model.layers.{l}.mlp.up_proj.weight"
+          )
+          block.ff.fc3.weight = assign(
+              block.ff.fc3.weight,
+              params[f"model.layers.{l}.mlp.down_proj.weight"],
+              f"model.layers.{l}.mlp.down_proj.weight"
+          )
+          block.norm2.scale = assign(
+              block.norm2.scale,
+              params[f"model.layers.{l}.post_attention_layernorm.weight"],
+              f"model.layers.{l}.post_attention_layernorm.weight"
+          )
+
+      # Final normalization and output head
+      model.final_norm.scale = assign(model.final_norm.scale, params["model.norm.weight"], "model.norm.weight")
+
+      if "lm_head.weight" in params:
+          model.out_head.weight = assign(model.out_head.weight, params["lm_head.weight"], "lm_head.weight")
+      else:
+          model.out_head.weight = model.tok_emb.weight
+          print("Model uses weight tying.")
+  ```
+
+- 下载权重并加载
+
+  ```python
+  import json
+  import os
+  from pathlib import Path
+  from safetensors.torch import load_file
+  from huggingface_hub import hf_hub_download, snapshot_download
+
+
+  if USE_REASONING_MODEL or USE_INSTRUCT_MODEL:
+      repo_id = f"Qwen/Qwen3-{CHOOSE_MODEL}"
+  else:
+      repo_id = f"Qwen/Qwen3-{CHOOSE_MODEL}-Base"
+
+  local_dir = Path(repo_id).parts[-1]
+
+  if CHOOSE_MODEL == "0.6B":
+      weights_file = hf_hub_download(
+          repo_id=repo_id,
+          filename="model.safetensors",
+          local_dir=local_dir,
+      )
+      weights_dict = load_file(weights_file)
+  else:
+      repo_dir = snapshot_download(repo_id=repo_id, local_dir=local_dir)
+      index_path = os.path.join(repo_dir, "model.safetensors.index.json")
+      with open(index_path, "r") as f:
+          index = json.load(f)
+
+      weights_dict = {}
+      for filename in set(index["weight_map"].values()):
+          shard_path = os.path.join(repo_dir, filename)
+          shard = load_file(shard_path)
+          weights_dict.update(shard)
+
+  load_weights_into_qwen(model, QWEN3_CONFIG, weights_dict)
+  model.to(device)
+  del weights_dict
+  ```
+
+- 加载 Tokenizer
+
+  ```python
+  import re
+  from tokenizers import Tokenizer
+
+  class Qwen3Tokenizer:
+      _SPECIALS = [
+          "<|endoftext|>",
+          "<|im_start|>", "<|im_end|>",
+          "<|object_ref_start|>", "<|object_ref_end|>",
+          "<|box_start|>", "<|box_end|>",
+          "<|quad_start|>", "<|quad_end|>",
+          "<|vision_start|>", "<|vision_end|>",
+          "<|vision_pad|>", "<|image_pad|>", "<|video_pad|>",
+          "<think>", "</think>"
+      ]
+      _SPLIT_RE = re.compile(r"(<\|[^>]+?\|>|<think>|</think>)")
+
+      def __init__(self, tokenizer_file_path="tokenizer.json", repo_id=None,
+                   apply_chat_template=True, add_generation_prompt=False, add_thinking=False):
+
+          self.apply_chat_template = apply_chat_template
+          self.add_generation_prompt = add_generation_prompt
+          self.add_thinking = add_thinking
+
+          tok_file = Path(tokenizer_file_path)
+          self._tok = Tokenizer.from_file(str(tok_file))
+          self._special_to_id = {}
+          for t in self._SPECIALS:
+              tid = self._tok.token_to_id(t)
+              if tid is not None:
+                  self._special_to_id[t] = tid
+
+          self.pad_token_id = self._special_to_id["<|endoftext|>"]
+          self.eos_token_id = self.pad_token_id
+
+          if repo_id and "Base" not in repo_id:
+              eos_token = "<|im_end|>"
+          else:
+              eos_token = "<|endoftext|>"
+          if eos_token in self._special_to_id:
+              self.eos_token_id = self._special_to_id[eos_token]
+
+      def encode(self, text, chat_wrapped=None):
+          if chat_wrapped is None:
+              chat_wrapped = self.apply_chat_template
+
+          stripped = text.strip()
+          if stripped in self._special_to_id and "\n" not in stripped:
+              return [self._special_to_id[stripped]]
+
+          if chat_wrapped:
+              text = self._wrap_chat(text)
+
+          ids = []
+          for part in filter(None, self._SPLIT_RE.split(text)):
+              if part in self._special_to_id:
+                  ids.append(self._special_to_id[part])
+              else:
+                  ids.extend(self._tok.encode(part).ids)
+          return ids
+
+      def decode(self, ids):
+          return self._tok.decode(ids, skip_special_tokens=False)
+
+      def _wrap_chat(self, user_msg):
+          s = f"<|im_start|>user\n{user_msg}<|im_end|>\n"
+          if self.add_generation_prompt:
+              s += "<|im_start|>assistant"
+              if self.add_thinking:
+                  s += "\n"
+              else:
+                  s += "\n<think>\n\n</think>\n\n"
+          return s
+  ```
+
+- 其中，`_SPECIALS` 表示 Qwen3 模型的特殊 token 列表：
+  - 基础文本 token：`<|endoftext|>`（文本结束 / 填充标记，即基础版模型的 eos/pad）
+  - 聊天交互 token：`<|im_start|>`/`<|im_end|>`（指令交互的开始 / 结束，指令遵循模式核心）
+  - 多模态 token：`<|vision_start|>`/`<|vision_end|>`、`<|image_pad|>`等（视觉 / 图像 / 视频相关，支持图文 / 视频理解）
+  - 推理专用 token：`<think></think>`（推理轨迹包裹 token，是混合模型推理模式的核心）
+  - 其他：`<|box_start|>` 等为视觉目标检测相关 token，适配多模态场景
+
+- `_SPLIT_RE`：正则表达式编译对象，核心作用是精准拆分文本中的特殊标记和普通文本，匹配规则：
+  - `<\|[^>]+?\|>`：匹配`<|xxx|>`格式的特殊标记（非贪婪匹配，避免跨标记匹配）；
+  - `|<|FunctionCallEnd|>`：单独匹配推理专用的无尖括号标记；拆分后能保证特殊标记不被基础分词器切分，保留完整语义
+
+- 流式生成文本
+
+  ```python
+  def generate_text_basic_stream(model, token_ids, max_new_tokens, eos_token_id=None):
+
+      model.eval()
+      with torch.no_grad():
+          for _ in range(max_new_tokens):
+              out = model(token_ids)[:, -1]
+              next_token = torch.argmax(out, dim=-1, keepdim=True)
+
+              if (eos_token_id is not None
+                     and torch.all(next_token == eos_token_id)):
+                 break
+
+              yield next_token
+
+              token_ids = torch.cat([token_ids, next_token], dim=1)
+
+  input_token_ids_tensor = torch.tensor(input_token_ids, device=device).unsqueeze(0)
+
+  for token in generate_text_basic_stream(
+      model=model,
+      token_ids=input_token_ids_tensor,
+      max_new_tokens=500,
+      eos_token_id=tokenizer.eos_token_id
+  ):
+      token_id = token.squeeze(0).tolist()
+      print(
+          tokenizer.decode(token_id),
+          end="",
+          flush=True
+      )
+  # <think>
+  # Okay, the user wants a short introduction to large language models. Let me start by recalling what I know. Large language models are AI systems that can understand and generate human language. They're trained on massive datasets, so they can learn complex patterns and nuances.
+  #
+  # I should mention their ability to understand and generate text, not just specific tasks. Maybe include examples like chatbots or content generation. Also, emphasize their adaptability and efficiency. Oh, and maybe touch on their applications in various fields. Let me check if I'm covering all key points without being too technical. Keep it concise, around a sentence or two. Make sure it's clear and easy to understand.
+  # </think>
+  #
+  # Large language models (LLMs) are AI systems designed to understand and generate human language, enabling tasks like text generation, translation, and content creation. They are trained on vast datasets, allowing them to learn complex patterns and nuances, making them versatile for applications in various domains.
+  ```
+
+### Qwen3 MoE
+
+- Qwen3 MoE 架构如下
+
+![](/img/llm/qwen3-coder-flash-overview.webp)
+
+- MoE 模块实现
+
+  ```python
+  import torch
+  import torch.nn as nn
+
+
+  class FeedForward(nn.Module):
+      def __init__(self, cfg):
+          super().__init__()
+          self.fc1 = nn.Linear(cfg["emb_dim"], cfg["hidden_dim"], dtype=cfg["dtype"], bias=False)
+          self.fc2 = nn.Linear(cfg["emb_dim"], cfg["hidden_dim"], dtype=cfg["dtype"], bias=False)
+          self.fc3 = nn.Linear(cfg["hidden_dim"], cfg["emb_dim"], dtype=cfg["dtype"], bias=False)
+
+      def forward(self, x):
+          x_fc1 = self.fc1(x)
+          x_fc2 = self.fc2(x)
+          x = nn.functional.silu(x_fc1) * x_fc2
+          return self.fc3(x)
+
+
+  class MoEFeedForward(nn.Module):
+      def __init__(self, cfg):
+          super().__init__()
+          self.num_experts_per_tok = cfg["num_experts_per_tok"]
+          self.num_experts = cfg["num_experts"]
+          self.emb_dim = cfg["emb_dim"]
+          self.gate = nn.Linear(cfg["emb_dim"], cfg["num_experts"], bias=False, dtype=cfg["dtype"])
+
+          self.fc1 = nn.ModuleList([nn.Linear(cfg["emb_dim"], cfg["moe_hidden_dim"], bias=False, dtype=cfg["dtype"])
+                                    for _ in range(cfg["num_experts"])])
+          self.fc2 = nn.ModuleList([nn.Linear(cfg["emb_dim"], cfg["moe_hidden_dim"], bias=False, dtype=cfg["dtype"])
+                                    for _ in range(cfg["num_experts"])])
+          self.fc3 = nn.ModuleList([nn.Linear(cfg["moe_hidden_dim"], cfg["emb_dim"], bias=False, dtype=cfg["dtype"])
+                                    for _ in range(cfg["num_experts"])])
+
+      def forward(self, x):
+          scores = self.gate(x)  # (b, seq_len, num_experts)
+          topk_scores, topk_indices = torch.topk(scores, self.num_experts_per_tok, dim=-1)
+          topk_probs = torch.softmax(topk_scores, dim=-1)
+
+          batch, seq_len, _ = x.shape
+          x_flat = x.reshape(batch * seq_len, -1)
+          out_flat = torch.zeros(batch * seq_len, self.emb_dim, device=x.device, dtype=x.dtype)
+
+          topk_indices_flat = topk_indices.reshape(-1, self.num_experts_per_tok)
+          topk_probs_flat = topk_probs.reshape(-1, self.num_experts_per_tok)
+
+          unique_experts = torch.unique(topk_indices_flat)
+
+          for expert_id_tensor in unique_experts:
+              expert_id = int(expert_id_tensor.item())
+              mask = topk_indices_flat == expert_id
+              if not mask.any():
+                  continue
+
+              token_mask = mask.any(dim=-1)
+              selected_idx = token_mask.nonzero(as_tuple=False).squeeze(-1)
+              if selected_idx.numel() == 0:
+                  continue
+
+              expert_input = x_flat.index_select(0, selected_idx)
+              hidden = torch.nn.functional.silu(self.fc1[expert_id](expert_input)) * self.fc2[expert_id](expert_input)
+              expert_out = self.fc3[expert_id](hidden)
+
+              mask_selected = mask[selected_idx]
+              slot_indices = mask_selected.int().argmax(dim=-1, keepdim=True)
+              selected_probs = torch.gather(topk_probs_flat.index_select(0, selected_idx), dim=-1, index=slot_indices).squeeze(-1)
+
+              out_flat.index_add_(0, selected_idx, expert_out * selected_probs.unsqueeze(-1))
+
+          return out_flat.reshape(batch, seq_len, self.emb_dim)
+  ```
+
+- 模型实现
+
+  ```python
+  class Qwen3Model(nn.Module):
+      def __init__(self, cfg):
+          super().__init__()
+
+          # Main model parameters
+          self.tok_emb = nn.Embedding(cfg["vocab_size"], cfg["emb_dim"], dtype=cfg["dtype"])
+
+          self.trf_blocks = nn.ModuleList(  # ModuleList since Sequential can only accept one input, and we need `x, mask, cos, sin`
+              [TransformerBlock(cfg) for _ in range(cfg["n_layers"])]
+          )
+
+          self.final_norm = RMSNorm(cfg["emb_dim"])
+          self.out_head = nn.Linear(cfg["emb_dim"], cfg["vocab_size"], bias=False, dtype=cfg["dtype"])
+
+          # Reusable utilities
+          if cfg["head_dim"] is None:
+              head_dim = cfg["emb_dim"] // cfg["n_heads"]
+          else:
+              head_dim = cfg["head_dim"]
+          cos, sin = compute_rope_params(
+              head_dim=head_dim,
+              theta_base=cfg["rope_base"],
+              context_length=cfg["context_length"]
+          )
+          self.register_buffer("cos", cos, persistent=False)
+          self.register_buffer("sin", sin, persistent=False)
+          self.cfg = cfg
+
+
+      def forward(self, in_idx):
+          # Forward pass
+          tok_embeds = self.tok_emb(in_idx)
+          x = tok_embeds
+
+          num_tokens = x.shape[1]
+          mask = torch.triu(torch.ones(num_tokens, num_tokens, device=x.device, dtype=torch.bool), diagonal=1)
+
+          for block in self.trf_blocks:
+              x = block(x, mask, self.cos, self.sin)
+          x = self.final_norm(x)
+          logits = self.out_head(x.to(self.cfg["dtype"]))
+          return logits
+  ```
+
+- MoE 模型配置
+
+  ```python
+  # Same config for
+
+  # https://huggingface.co/Qwen/Qwen3-Coder-30B-A3B-Instruct (Qwen3 Coder Flash)
+  # https://huggingface.co/Qwen/Qwen3-30B-A3B-Thinking-2507
+  # https://huggingface.co/Qwen/Qwen3-235B-A22B-Instruct-2507
+  # https://huggingface.co/Qwen/Qwen3-30B-A3B (original Instruct/Thinking hybrid model)
+
+  QWEN3_CONFIG = {
+      "vocab_size": 151_936,
+      "context_length": 262_144,
+      "emb_dim": 2048,
+      "n_heads": 32,
+      "n_layers": 48,
+      "head_dim": 128,
+      "qk_norm": True,
+      "n_kv_groups": 4,
+      "rope_base": 10_000_000.0,
+      "dtype": torch.bfloat16,
+      "num_experts": 128,
+      "num_experts_per_tok": 8,
+      "moe_hidden_dim": 768,
+  }
+  ```
+
+- 计算模型权重
+
+  ```python
+  total_params = sum(p.numel() for p in model.parameters())
+  print(f"Total number of parameters: {total_params:,}")
+
+  # Account for weight tying
+  total_params_normalized = total_params - model.tok_emb.weight.numel()
+  print(f"\nTotal number of unique parameters: {total_params_normalized:,}")
+  # Total number of parameters: 30,532,122,624
+  #
+  # Total number of unique parameters: 30,220,957,696
+  # float32 (PyTorch default): 227.73 GB
+  # bfloat16: 113.87 GB
+  ```
+
+- 加载模型权重
+
+  ```python
+  def load_weights_into_qwen(model, param_config, params):
+      def assign(left, right, tensor_name="unknown"):
+          if left.shape != right.shape:
+              raise ValueError(f"Shape mismatch in tensor '{tensor_name}'. Left: {left.shape}, Right: {right.shape}")
+
+          with torch.no_grad():
+              if isinstance(right, torch.Tensor):
+                  left.copy_(right)
+              else:
+                  left.copy_(torch.as_tensor(right, dtype=left.dtype, device=left.device))
+
+          return left
+
+      model.tok_emb.weight = assign(model.tok_emb.weight, params["model.embed_tokens.weight"], "model.embed_tokens.weight")
+
+      for l in range(param_config["n_layers"]):
+          block = model.trf_blocks[l]
+          att = block.att
+
+          # Q, K, V projections
+          att.W_query.weight = assign(
+              att.W_query.weight,
+              params[f"model.layers.{l}.self_attn.q_proj.weight"],
+              f"model.layers.{l}.self_attn.q_proj.weight"
+          )
+          att.W_key.weight = assign(
+              att.W_key.weight,
+              params[f"model.layers.{l}.self_attn.k_proj.weight"],
+              f"model.layers.{l}.self_attn.k_proj.weight"
+          )
+          att.W_value.weight = assign(
+              att.W_value.weight,
+              params[f"model.layers.{l}.self_attn.v_proj.weight"],
+              f"model.layers.{l}.self_attn.v_proj.weight"
+          )
+
+          # Output projection
+          att.out_proj.weight = assign(
+              att.out_proj.weight,
+              params[f"model.layers.{l}.self_attn.o_proj.weight"],
+              f"model.layers.{l}.self_attn.o_proj.weight"
+          )
+
+          # QK norms
+          if hasattr(att, "q_norm") and att.q_norm is not None:
+              att.q_norm.scale = assign(
+                  att.q_norm.scale,
+                  params[f"model.layers.{l}.self_attn.q_norm.weight"],
+                  f"model.layers.{l}.self_attn.q_norm.weight"
+              )
+          if hasattr(att, "k_norm") and att.k_norm is not None:
+              att.k_norm.scale = assign(
+                  att.k_norm.scale,
+                  params[f"model.layers.{l}.self_attn.k_norm.weight"],
+                  f"model.layers.{l}.self_attn.k_norm.weight"
+              )
+
+          # Attention layernorm
+          block.norm1.scale = assign(
+              block.norm1.scale,
+              params[f"model.layers.{l}.input_layernorm.weight"],
+              f"model.layers.{l}.input_layernorm.weight"
+          )
+
+          # Feedforward weights
+          if "num_experts" in param_config and param_config["num_experts"] > 0:
+              # Load router (gating) weights
+              block.ff.gate.weight = assign(
+                  block.ff.gate.weight,
+                  params[f"model.layers.{l}.mlp.gate.weight"],
+                  f"model.layers.{l}.mlp.gate.weight"
+              )
+              # Load expert weights
+              for e in range(param_config["num_experts"]):
+                  prefix = f"model.layers.{l}.mlp.experts.{e}"
+                  block.ff.fc1[e].weight = assign(
+                      block.ff.fc1[e].weight,
+                      params[f"{prefix}.gate_proj.weight"],
+                      f"{prefix}.gate_proj.weight"
+                  )
+                  block.ff.fc2[e].weight = assign(
+                      block.ff.fc2[e].weight,
+                      params[f"{prefix}.up_proj.weight"],
+                      f"{prefix}.up_proj.weight"
+                  )
+                  block.ff.fc3[e].weight = assign(
+                      block.ff.fc3[e].weight,
+                      params[f"{prefix}.down_proj.weight"],
+                      f"{prefix}.down_proj.weight"
+                  )
+
+          else:
+              block.ff.fc1.weight = assign(
+                  block.ff.fc1.weight,
+                  params[f"model.layers.{l}.mlp.gate_proj.weight"],
+                  f"model.layers.{l}.mlp.gate_proj.weight"
+              )
+              block.ff.fc2.weight = assign(
+                  block.ff.fc2.weight,
+                  params[f"model.layers.{l}.mlp.up_proj.weight"],
+                  f"model.layers.{l}.mlp.up_proj.weight"
+              )
+              block.ff.fc3.weight = assign(
+                  block.ff.fc3.weight,
+                  params[f"model.layers.{l}.mlp.down_proj.weight"],
+                  f"model.layers.{l}.mlp.down_proj.weight"
+              )
+
+          block.norm2.scale = assign(
+              block.norm2.scale,
+              params[f"model.layers.{l}.post_attention_layernorm.weight"],
+              f"model.layers.{l}.post_attention_layernorm.weight"
+          )
+
+      # Final normalization and output head
+      model.final_norm.scale = assign(model.final_norm.scale, params["model.norm.weight"], "model.norm.weight")
+
+      if "lm_head.weight" in params:
+          model.out_head.weight = assign(model.out_head.weight, params["lm_head.weight"], "lm_head.weight")
+      else:
+          model.out_head.weight = model.tok_emb.weight
+          print("Model uses weight tying.")
+  ```
+
+### Gemma3
+
+- Gemma3 与 Qwen3 模型对比
+
+![](/img/llm/gemma3-vs-qwen3.webp)
+
+- 主要区别如下
+  - FFN 层的激活函数依旧使用 GeLU
+  - 注意力机制采用了滑动窗口的 GQA 实现，且 5 局部滑动窗口 : 1 全局全注意力，即每 5 层局部滑动窗口注意力后接 1 层全局全注意力，首层为局部层
+  - 在 Attention 之后残差之前与 FFN 之后残差之前添加 Post-RMSNorm 层
+
+- 注意力机制实现
+  - 局部层（Local）：采用 1024 - token 滑动窗口，每个 token 仅关注当前位置 ±512 范围，计算复杂度 O (n・w)（w=1024），KV Cache 按窗口环形更新，显存占用低
+  - 全局层（Global）：全序列建模长程依赖，RoPE 基频 1M 适配 32K 上下文外推，KV 缓存完整保留全序列，确保跨窗口信息连通
+  - 层序示意：L0 (局部)→L1 (局部)→L2 (局部)→L3 (局部)→L4 (局部)→L5 (全局)→L6 (局部)→L7 (局部)→L8 (局部)→L9 (局部)→L10 (局部)→L11 (全局)
+
+- GQA 实现不变，而是在 TransformerBlock 中实现不同的 mask（local vs. global）
+
+  ```python
+  class TransformerBlock(nn.Module):
+
+      def __init__(self, cfg, attn_type):
+          super().__init__()
+          self.attn_type = attn_type
+
+          self.att = GroupedQueryAttention(
+              d_in=cfg["emb_dim"],
+              num_heads=cfg["n_heads"],
+              num_kv_groups=cfg["n_kv_groups"],
+              head_dim=cfg["head_dim"],
+              qk_norm=cfg["qk_norm"],
+              query_pre_attn_scalar=cfg["query_pre_attn_scalar"],
+              dtype=cfg["dtype"],
+          )
+          self.ff = FeedForward(cfg)
+          self.input_layernorm = RMSNorm(cfg["emb_dim"], eps=1e-6)
+          self.post_attention_layernorm = RMSNorm(cfg["emb_dim"], eps=1e-6)
+          self.pre_feedforward_layernorm = RMSNorm(cfg["emb_dim"], eps=1e-6)
+          self.post_feedforward_layernorm = RMSNorm(cfg["emb_dim"], eps=1e-6)
+
+      def forward(
+          self,
+          x,
+          mask_global,
+          mask_local,
+          cos_global,
+          sin_global,
+          cos_local,
+          sin_local,
+      ):
+          # Shortcut connection for attention block
+          shortcut = x
+          x = self.input_layernorm(x)
+
+          if self.attn_type == "sliding_attention":
+              attn_mask = mask_local
+              cos = cos_local
+              sin = sin_local
+          else:
+              attn_mask = mask_global
+              cos = cos_global
+              sin = sin_global
+
+          x_attn = self.att(x, attn_mask, cos, sin)
+          x_attn = self.post_attention_layernorm(x_attn)
+          x = shortcut + x_attn
+
+          # Shortcut connection for feed forward block
+          shortcut = x
+          x_ffn = self.pre_feedforward_layernorm(x)
+          x_ffn = self.ff(x_ffn)
+          x_ffn = self.post_feedforward_layernorm(x_ffn)
+          x = shortcut + x_ffn
+          return x
+  ```
+
+- 在 Gemma3Model 中，根据 sliding_window 来创建不同的 mask
+
+  ```python
+  class Gemma3Model(nn.Module):
+      def __init__(self, cfg):
+          super().__init__()
+          assert cfg["layer_types"] is not None and len(cfg["layer_types"]) == cfg["n_layers"]
+
+          # Main model parameters
+          self.tok_emb = nn.Embedding(cfg["vocab_size"], cfg["emb_dim"], dtype=cfg["dtype"])
+
+          self.blocks = nn.ModuleList([
+              TransformerBlock(cfg, attn_type)for attn_type in cfg["layer_types"]
+          ])
+
+          self.final_norm = RMSNorm(cfg["emb_dim"], eps=1e-6)
+          self.out_head = nn.Linear(cfg["emb_dim"], cfg["vocab_size"], bias=False, dtype=cfg["dtype"])
+          self.cfg = cfg
+
+          # Reusable utilities
+          cos_local, sin_local = compute_rope_params(
+              head_dim=cfg["head_dim"],
+              theta_base=cfg["rope_local_base"],
+              context_length=cfg["context_length"],
+              dtype=torch.float32,
+          )
+          cos_global, sin_global = compute_rope_params(
+              head_dim=cfg["head_dim"],
+              theta_base=cfg["rope_base"],
+              context_length=cfg["context_length"],
+              dtype=torch.float32,
+          )
+          self.register_buffer("cos_local", cos_local, persistent=False)
+          self.register_buffer("sin_local", sin_local, persistent=False)
+          self.register_buffer("cos_global", cos_global, persistent=False)
+          self.register_buffer("sin_global", sin_global, persistent=False)
+
+      def _create_masks(self, seq_len, device):
+          ones = torch.ones((seq_len, seq_len), dtype=torch.bool, device=device)
+
+          # mask_global (future is masked: j > i)
+          #     j:  0 1 2 3 4 5 6 7
+          #  i
+          #     0:  0 1 1 1 1 1 1 1
+          #     1:  0 0 1 1 1 1 1 1
+          #     2:  0 0 0 1 1 1 1 1
+          #     3:  0 0 0 0 1 1 1 1
+          #     4:  0 0 0 0 0 1 1 1
+          #     5:  0 0 0 0 0 0 1 1
+          #     6:  0 0 0 0 0 0 0 1
+          #     7:  0 0 0 0 0 0 0 0
+          mask_global = torch.triu(ones, diagonal=1)
+
+          # far_past (too far back is masked: i - j >= sliding_window)
+          # where sliding_window = 4
+          #     j:  0 1 2 3 4 5 6 7
+          #  i
+          #     0:  0 0 0 0 0 0 0 0
+          #     1:  0 0 0 0 0 0 0 0
+          #     2:  0 0 0 0 0 0 0 0
+          #     3:  0 0 0 0 0 0 0 0
+          #     4:  1 0 0 0 0 0 0 0
+          #     5:  1 1 0 0 0 0 0 0
+          #     6:  1 1 1 0 0 0 0 0
+          #     7:  1 1 1 1 0 0 0 0
+          far_past = torch.triu(ones, diagonal=self.cfg["sliding_window"]).T
+
+          # Local (sliding_window) = future OR far-past
+          # mask_local
+          #     j:  0 1 2 3 4 5 6 7
+          # i
+          # 0:      0 1 1 1 1 1 1 1
+          # 1:      0 0 1 1 1 1 1 1
+          # 2:      0 0 0 1 1 1 1 1
+          # 3:      0 0 0 0 1 1 1 1
+          # 4:      1 0 0 0 0 1 1 1
+          # 5:      1 1 0 0 0 0 1 1
+          # 6:      1 1 1 0 0 0 0 1
+          # 7:      1 1 1 1 0 0 0 0
+          mask_local = mask_global | far_past
+          return mask_global, mask_local
+
+      def forward(self, input_ids):
+          # Forward pass
+          b, seq_len = input_ids.shape
+          x = self.tok_emb(input_ids) * (self.cfg["emb_dim"] ** 0.5)
+          mask_global, mask_local = self._create_masks(seq_len, x.device)
+
+          for block in self.blocks:
+              x = block(
+                  x,
+                  mask_global=mask_global,
+                  mask_local=mask_local,
+                  cos_global=self.cos_global,
+                  sin_global=self.sin_global,
+                  cos_local=self.cos_local,
+                  sin_local=self.sin_local,
+              )
+
+          x = self.final_norm(x)
+          logits = self.out_head(x.to(self.cfg["dtype"]))
+          return logits
+  ```
+
+- 在模型配置中，指定每一层 TransformerBlock 用滑动窗口还是完整 Attention
+
+  ```python
+  GEMMA3_CONFIG_270M = {
+      "vocab_size": 262_144,
+      "context_length": 32_768,
+      "emb_dim": 640,
+      "n_heads": 4,
+      "n_layers": 18,
+      "hidden_dim": 2048,
+      "head_dim": 256,
+      "qk_norm": True,
+      "n_kv_groups": 1,
+      "rope_local_base": 10_000.0,
+      "rope_base": 1_000_000.0,
+      "sliding_window": 512,
+        "layer_types": [
+          "sliding_attention",
+          "sliding_attention",
+          "sliding_attention",
+          "sliding_attention",
+          "sliding_attention",
+          "full_attention",
+          "sliding_attention",
+          "sliding_attention",
+          "sliding_attention",
+          "sliding_attention",
+          "sliding_attention",
+          "full_attention",
+          "sliding_attention",
+          "sliding_attention",
+          "sliding_attention",
+          "sliding_attention",
+          "sliding_attention",
+          "full_attention"
+      ],
+      "dtype": torch.bfloat16,
+      "query_pre_attn_scalar": 256,
+  }
+  ```
+
+- 初始化模型后可以看到其模型结构
+
+  ```python
+  torch.manual_seed(123)
+  model = Gemma3Model(GEMMA3_CONFIG_270M)
+  print(model)
+  # Gemma3Model(
+  #   (tok_emb): Embedding(262144, 640)
+  #   (blocks): ModuleList(
+  #     (0-17): 18 x TransformerBlock(
+  #       (att): GroupedQueryAttention(
+  #         (W_query): Linear(in_features=640, out_features=1024, bias=False)
+  #         (W_key): Linear(in_features=640, out_features=256, bias=False)
+  #         (W_value): Linear(in_features=640, out_features=256, bias=False)
+  #         (out_proj): Linear(in_features=1024, out_features=640, bias=False)
+  #         (q_norm): RMSNorm()
+  #         (k_norm): RMSNorm()
+  #       )
+  #       (ff): FeedForward(
+  #         (fc1): Linear(in_features=640, out_features=2048, bias=False)
+  #         (fc2): Linear(in_features=640, out_features=2048, bias=False)
+  #         (fc3): Linear(in_features=2048, out_features=640, bias=False)
+  #       )
+  #       (input_layernorm): RMSNorm()
+  #       (post_attention_layernorm): RMSNorm()
+  #       (pre_feedforward_layernorm): RMSNorm()
+  #       (post_feedforward_layernorm): RMSNorm()
+  #     )
+  #   )
+  #   (final_norm): RMSNorm()
+  #   (out_head): Linear(in_features=640, out_features=262144, bias=False)
+  # )
+  ```
+
+- 模型的参数量计算
+
+  ```python
+  total_params = sum(p.numel() for p in model.parameters())
+  print(f"Total number of parameters: {total_params:,}")
+
+  # Account for weight tying
+  total_params_normalized = total_params - model.tok_emb.weight.numel()
+  print(f"\nTotal number of unique parameters: {total_params_normalized:,}")
+  # Total number of parameters: 435,870,336
+  #
+  # Total number of unique parameters: 268,098,176
+  # float32 (PyTorch default): 3.37 GB
+  # bfloat16: 1.69 GB
+  ```
+
+### Olmo 3
+
+- Olmo 3 模型对比
+
+  ![](/img/llm/olmo3.webp)
+
+- Olmo 3 模型的训练路线
+
+  ![](/img/llm/olmo3-pipeline.webp)
+
+- YaRN 风格的 RoPE实现
+
+  ```python
+  import math
+
+
+  def compute_rope_params(head_dim, theta_base=10_000, context_length=4096, attention_factor=1.0, rope_type="default", rope_factor=1.0, rope_orig_max=8192, beta_fast=32.0, beta_slow=1.0, dtype=torch.float32):
+      assert head_dim % 2 == 0, "Embedding dimension must be even"
+
+      if rope_type == "yarn":
+          # Compute YaRN-style frequency scaling (as per https://huggingface.co/papers/2309.00071)
+
+          def find_correction_dim(num_rotations, dim, base, max_position_embeddings):
+              """Inverse dimension formula to find the dimension based on the number of rotations"""
+              return (dim * math.log(max_position_embeddings / (num_rotations * 2 * math.pi))) / (2 * math.log(base))
+
+          def find_correction_range(low_rot, high_rot, dim, base, max_position_embeddings):
+              """Find dimension range bounds based on rotations"""
+              low = find_correction_dim(low_rot, dim, base, max_position_embeddings)
+              high = find_correction_dim(high_rot, dim, base, max_position_embeddings)
+              low = math.floor(low)
+              high = math.ceil(high)
+              return max(low, 0), min(high, dim - 1)
+
+          def linear_ramp_factor(min_val, max_val, dim):
+              if min_val == max_val:
+                  max_val += 0.001  # Prevent singularity
+              linear_func = (torch.arange(dim, dtype=torch.float32) - min_val) / (max_val - min_val)
+              ramp_func = torch.clamp(linear_func, 0, 1)
+              return ramp_func
+
+          # Base frequencies
+          pos_freqs = theta_base ** (torch.arange(0, head_dim, 2, dtype=dtype) / head_dim)
+          inv_freq_extrapolation = 1.0 / pos_freqs  # No scaling (extrapolation)
+          inv_freq_interpolation = 1.0 / (rope_factor * pos_freqs)  # With scaling (interpolation)
+
+          # Find the range where we blend between interpolation and extrapolation
+          low, high = find_correction_range(beta_fast, beta_slow, head_dim, theta_base, rope_orig_max)
+
+          # Get n-dimensional rotational scaling corrected for extrapolation
+          inv_freq_extrapolation_factor = 1 - linear_ramp_factor(low, high, head_dim // 2).to(dtype=dtype)
+          inv_freq = (
+              inv_freq_interpolation * (1 - inv_freq_extrapolation_factor)
+              + inv_freq_extrapolation * inv_freq_extrapolation_factor
+          )
+      else:
+          # Default RoPE
+          inv_freq = 1.0 / (
+              theta_base ** (
+                  torch.arange(0, head_dim, 2, dtype=dtype)[: head_dim // 2].float()
+                  / head_dim
+              )
+          )
+
+      # Generate position indices
+      positions = torch.arange(context_length, dtype=dtype)
+
+      # Compute the base angles (shape: [context_length, head_dim // 2])
+      angles = positions.unsqueeze(1) * inv_freq.unsqueeze(0)
+
+      # Expand to full head_dim (shape: [context_length, head_dim])
+      angles = torch.cat([angles, angles], dim=1)
+
+      # Precompute sine and cosine
+      cos = torch.cos(angles) * attention_factor
+      sin = torch.sin(angles) * attention_factor
+
+      return cos, sin
+
+
+  def apply_rope(x, cos, sin):
+      # x: (batch_size, num_heads, seq_len, head_dim)
+      batch_size, num_heads, seq_len, head_dim = x.shape
+      assert head_dim % 2 == 0, "Head dimension must be even"
+
+      # Split x into first half and second half
+      x1 = x[..., : head_dim // 2]  # First half
+      x2 = x[..., head_dim // 2 :]  # Second half
+
+      # Adjust sin and cos shapes
+      cos = cos[:seq_len, :].unsqueeze(0).unsqueeze(0)  # Shape: (1, 1, seq_len, head_dim)
+      sin = sin[:seq_len, :].unsqueeze(0).unsqueeze(0)
+
+      # Apply the rotary transformation
+      rotated = torch.cat((-x2, x1), dim=-1)
+      x_rotated = (x * cos) + (rotated * sin)
+
+      # It's ok to use lower-precision after applying cos and sin rotation
+      return x_rotated.to(dtype=x.dtype)
+  ```
+
+- 为什么需要 YaRN
+  - 原始 RoPE（LLama 等模型默认使用）的设计存在上下文长度限制
+  - 模型训练时的最大上下文（比如 LLama 2 是 4096）是 RoPE 频率参数的 “设计上限”，如果直接把推理上下文扩展到 8192/16384 等更长的长度，会出现两个核心问题：
+    - 频率压缩过度：直接缩放 RoPE 频率会导致低频维度（对应长距离依赖）的旋转信息丢失，模型无法有效捕捉长文本的语义关联
+    - 上下文混淆：超长序列中，不同位置的 RoPE 旋转角度变得过于相似，模型无法区分位置，出现 “记混前文” 的现象
+  - 简单来说，原始 RoPE 硬扩上下文，会导致长文本理解能力大幅下降
+  - YaRN（Yet another RoPE extension method）的核心是分维度混合插值 + 外推的频率缩放策略，而非对所有维度用同一缩放系数，核心解决了 “长上下文扩展时频率缩放的维度不均衡问题”
+  - RoPE 的 head_dim 是按频率高低分维度的：
+    - 前半部分维度（高频）：对应短距离依赖（比如词内、相邻词的关联），对缩放更敏感，适合插值（Interpolation）（压缩频率，适配更长序列）；
+    - 后半部分维度（低频）：对应长距离依赖（比如段落间、上下文的关联），对缩放不敏感，适合外推（Extrapolation）（不压缩频率，保留长距离旋转信息）
+  - YaRN 就是让不同维度的 RoPE 频率，按 “高频插值、低频外推” 的规则平滑混合，既适配长上下文，又不丢失短 / 长距离的位置信息
+
+- Olmo 3 模型的配置如下
+
+  ```python
+  OLMO3_CONFIG_7B = {
+      "vocab_size": 100_278,
+      "context_length": 65_536,
+      "emb_dim": 4_096,
+      "n_heads": 32,
+      "n_layers": 32,
+      "hidden_dim": 11_008,
+      "head_dim": 128,
+      "n_kv_heads": 32,
+      "attention_bias": False,
+      "attention_dropout": 0.0,
+      "sliding_window": 4_096,
+      "layer_types": [
+          "sliding_attention",
+          "sliding_attention",
+          "sliding_attention",
+          "full_attention",
+          "sliding_attention",
+          "sliding_attention",
+          "sliding_attention",
+          "full_attention",
+          "sliding_attention",
+          "sliding_attention",
+          "sliding_attention",
+          "full_attention",
+          "sliding_attention",
+          "sliding_attention",
+          "sliding_attention",
+          "full_attention",
+          "sliding_attention",
+          "sliding_attention",
+          "sliding_attention",
+          "full_attention",
+          "sliding_attention",
+          "sliding_attention",
+          "sliding_attention",
+          "full_attention",
+          "sliding_attention",
+          "sliding_attention",
+          "sliding_attention",
+          "full_attention",
+          "sliding_attention",
+          "sliding_attention",
+          "sliding_attention",
+          "full_attention",
+      ],
+      "rope_base": 500_000.0,
+      "rope_attention_factor": 1.2079441541679836,
+      "rope_type": "yarn",
+      "rope_factor": 8.0,
+      "rope_orig_max": 8_192,
+      "beta_fast": 32.0,
+      "beta_slow": 1.0,
+      "rms_norm_eps": 1e-6,
+      "dtype": torch.bfloat16,
+      "eos_token_id": 100_257,
+      "pad_token_id": 100_277,
+  }
+
+  OLMO3_CONFIG_32B = {
+      "vocab_size": 100_278,
+      "context_length": 65_536,
+      "emb_dim": 5_120,
+      "n_heads": 40,
+      "n_layers": 64,
+      "hidden_dim": 27_648,
+      "head_dim": 128,
+      "n_kv_heads": 8,
+      "attention_bias": False,
+      "attention_dropout": 0.0,
+      "sliding_window": 4_096,
+      "layer_types": [
+          "sliding_attention",
+          "sliding_attention",
+          "sliding_attention",
+          "full_attention",
+          "sliding_attention",
+          "sliding_attention",
+          "sliding_attention",
+          "full_attention",
+          "sliding_attention",
+          "sliding_attention",
+          "sliding_attention",
+          "full_attention",
+          "sliding_attention",
+          "sliding_attention",
+          "sliding_attention",
+          "full_attention",
+          "sliding_attention",
+          "sliding_attention",
+          "sliding_attention",
+          "full_attention",
+          "sliding_attention",
+          "sliding_attention",
+          "sliding_attention",
+          "full_attention",
+          "sliding_attention",
+          "sliding_attention",
+          "sliding_attention",
+          "full_attention",
+          "sliding_attention",
+          "sliding_attention",
+          "sliding_attention",
+          "full_attention",
+          "sliding_attention",
+          "sliding_attention",
+          "sliding_attention",
+          "full_attention",
+          "sliding_attention",
+          "sliding_attention",
+          "sliding_attention",
+          "full_attention",
+          "sliding_attention",
+          "sliding_attention",
+          "sliding_attention",
+          "full_attention",
+          "sliding_attention",
+          "sliding_attention",
+          "sliding_attention",
+          "full_attention",
+          "sliding_attention",
+          "sliding_attention",
+          "sliding_attention",
+          "full_attention",
+          "sliding_attention",
+          "sliding_attention",
+          "sliding_attention",
+          "full_attention",
+          "sliding_attention",
+          "sliding_attention",
+          "sliding_attention",
+          "full_attention",
+      ],
+      "rope_base": 500_000.0,
+      "rope_attention_factor": 1.2079441541679836,
+      "rope_type": "yarn",
+      "rope_factor": 8.0,
+      "rope_orig_max": 8_192,
+      "beta_fast": 32.0,
+      "beta_slow": 1.0,
+      "rms_norm_eps": 1e-6,
+      "dtype": torch.bfloat16,
+      "eos_token_id": 100_257,
+      "pad_token_id": 100_277,
+  }
+
+  OLMO3_CONFIG = OLMO3_CONFIG_32B if "32B" in USE_MODEL else OLMO3_CONFIG_7B
+  ```
+
+## 文本分类微调
+
+- 微调语言模型的主要途径包括指令微调和分类微调
+
+  | 对比维度       | 文本分类微调                                                                                       | 指令微调（Instruction Tuning）                                                                                    |
+  | -------------- | -------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+  | 核心目标       | 让模型学习文本到预定义类别的映射，完成判别式任务                                                   | 让模型学习理解人类指令意图，并生成符合指令要求、格式规范的自然语言响应，完成生成式任务                            |
+  | 数据形式       | 输入为单文本/文本对，标签为预定义离散类别（如情感分类的{正面,负面,中性}、文本匹配的{匹配,不匹配}） | 输入为指令+输入（可选） 的组合，输出为人工标注的自然语言答案（无固定类别，如指令“总结下文”+文本，输出为文本总结） |
+  | 模型输出       | 离散的类别标签/类别概率分布（如[0.05, 0.9, 0.05]对应负面、正面、中性）                             | 连续的自然语言序列（可长可短，如问答的短句、摘要的长句、创作的段落）                                              |
+  | 任务性质       | 判别式任务（分类、回归、匹配，属于“判断”类）                                                       | 生成式任务（遵循指令的开放式/半开放式生成，属于“创作/回答”类）                                                    |
+  | 损失函数       | 多采用交叉熵损失（针对类别概率的监督损失），目标是最小化预测类别与真实类别的差距                   | 多采用自回归负对数似然损失（NLLL），目标是最小化模型生成序列与真实答案序列的字符/词级差距                         |
+  | 模型能力导向   | 强化模型对文本特征的判别能力，仅适配单一/少数分类任务，泛化性极窄                                  | 强化模型对自然语言指令的理解和执行能力，适配多类生成任务，泛化性极广（可零样本/少样本适配新指令任务）             |
+  | 输入输出范式   | 范式固定且单一（如`[CLS]文本[SEP]`→ 类别），不同分类任务范式可能不同                               | 范式统一为指令范式（如`指令：XXX 输入：XXX 输出：XXX`），所有任务复用同一范式                                     |
+  | 微调后模型形态 | 仍为分类模型，无法直接做生成任务，任务间无法迁移                                                   | 仍为生成模型，可兼容大模型原生的生成能力，指令任务间可快速迁移                                                    |
+
+- 即在分类微调中，模型能输出的类别标签数量是固定的
+
+- 经分类微调的模型，只能预测其在训练过程中见过的类别（比如仅能判断 “垃圾信息” 或 “非垃圾信息”），而经指令微调的模型通常可完成多种任务
+
+- 分类微调的主要流程如下
+
+![](/img/llm/build-llm-from-scratch-text-classification-finetuning.webp)
+
+### 数据集准备
+
+- 首先加载数据集
+
+  ```python
+  extracted_path = "sms_spam_collection"
+  data_file_path = Path(extracted_path) / "SMSSpamCollection.tsv"
+
+  import pandas as pd
+
+  df = pd.read_csv(data_file_path, sep="\t", header=None, names=["Label", "Text"])
+  print(df["Label"].value_counts())
+  # Label
+  # ham     4825
+  # spam     747
+  # Name: count, dtype: int64
+  ```
+
+- 为了简化，对数据集进行子采样（下采样），使每个类别最终都保留 747 个样本
+
+- 除了下采样之外，还有多种方法可用于处理类别不平衡问题
+
+  ```python
+  def create_balanced_dataset(df):
+
+      # Count the instances of "spam"
+      num_spam = df[df["Label"] == "spam"].shape[0]
+
+      # Randomly sample "ham" instances to match the number of "spam" instances
+      ham_subset = df[df["Label"] == "ham"].sample(num_spam, random_state=123)
+
+      # Combine ham "subset" with "spam"
+      balanced_df = pd.concat([ham_subset, df[df["Label"] == "spam"]])
+
+      return balanced_df
+
+  balanced_df = create_balanced_dataset(df)
+  print(balanced_df["Label"].value_counts())
+  # Label
+  # ham     747
+  # spam    747
+  # Name: count, dtype: int64
+
+  # 将分类标签转为 0/1 标记
+  balanced_df["Label"] = balanced_df["Label"].map({"ham": 0, "spam": 1})
+  ```
+
+- 将原始数据集随即划分为训练集、验证集和测试集
+
+  ```python
+  def random_split(df, train_frac, validation_frac):
+      # Shuffle the entire DataFrame
+      df = df.sample(frac=1, random_state=123).reset_index(drop=True)
+
+      # Calculate split indices
+      train_end = int(len(df) * train_frac)
+      validation_end = train_end + int(len(df) * validation_frac)
+
+      # Split the DataFrame
+      train_df = df[:train_end]
+      validation_df = df[train_end:validation_end]
+      test_df = df[validation_end:]
+
+      return train_df, validation_df, test_df
+
+  train_df, validation_df, test_df = random_split(balanced_df, 0.7, 0.1)
+  # Test size is implied to be 0.2 as the remainder
+
+  train_df.to_csv("train.csv", index=None)
+  validation_df.to_csv("validation.csv", index=None)
+  test_df.to_csv("test.csv", index=None)
+  ```
+
+- 创建数据加载器
+
+- 在原始数据集中，文本消息的长度各不相同；若要将多个训练样本组合为一个批次，只能选择以下两种方式之一：
+  - 将所有消息截断至数据集或当前批次中最短消息的长度
+  - 为所有消息做填充，使其长度匹配数据集或当前批次中最长消息的长度
+  - 这里选择第二种方式，将所有消息填充至数据集中最长消息的长度，并使用`<|endoftext|>`作为填充标记
+
+- 创建数据集
+
+  ```python
+  import tiktoken
+  import torch
+  from torch.utils.data import Dataset
+
+  tokenizer = tiktoken.get_encoding("gpt2")
+  print(tokenizer.encode("<|endoftext|>", allowed_special={"<|endoftext|>"}))
+
+  class SpamDataset(Dataset):
+      def __init__(self, csv_file, tokenizer, max_length=None, pad_token_id=50256):
+          self.data = pd.read_csv(csv_file)
+
+          # Pre-tokenize texts
+          self.encoded_texts = [
+              tokenizer.encode(text) for text in self.data["Text"]
+          ]
+
+          if max_length is None:
+              self.max_length = self._longest_encoded_length()
+          else:
+              self.max_length = max_length
+              # Truncate sequences if they are longer than max_length
+              self.encoded_texts = [
+                  encoded_text[:self.max_length]
+                  for encoded_text in self.encoded_texts
+              ]
+
+          # Pad sequences to the longest sequence
+          self.encoded_texts = [
+              encoded_text + [pad_token_id] * (self.max_length - len(encoded_text))
+              for encoded_text in self.encoded_texts
+          ]
+
+      def __getitem__(self, index):
+          encoded = self.encoded_texts[index]
+          label = self.data.iloc[index]["Label"]
+          return (
+              torch.tensor(encoded, dtype=torch.long),
+              torch.tensor(label, dtype=torch.long)
+          )
+
+      def __len__(self):
+          return len(self.data)
+
+      def _longest_encoded_length(self):
+          max_length = 0
+          for encoded_text in self.encoded_texts:
+              encoded_length = len(encoded_text)
+              if encoded_length > max_length:
+                  max_length = encoded_length
+          return max_length
+          # Note: A more pythonic version to implement this method
+          # is the following, which is also used in the next chapter:
+          # return max(len(encoded_text) for encoded_text in self.encoded_texts)
+
+  train_dataset = SpamDataset(
+      csv_file="train.csv",
+      max_length=None,
+      tokenizer=tokenizer
+  )
+
+  print(train_dataset.max_length)
+  # 120
+  ```
+
+- 这里，也会将验证集和测试集的文本填充至训练集最长序列的长度
+
+- 需要注意的是，验证集和测试集中那些长度超过训练集最长样本的文本，会在SpamDataset 类中通过代码 `encoded_text[:self.max_length]` 进行截断处理
+
+  ```python
+  val_dataset = SpamDataset(
+      csv_file="validation.csv",
+      max_length=train_dataset.max_length,
+      tokenizer=tokenizer
+  )
+  test_dataset = SpamDataset(
+      csv_file="test.csv",
+      max_length=train_dataset.max_length,
+      tokenizer=tokenizer
+  )
+  ```
+
+- 现在，使用数据集初始化 DataLoader
+
+  ```python
+  from torch.utils.data import DataLoader
+
+  num_workers = 0
+  batch_size = 8
+
+  torch.manual_seed(123)
+
+  train_loader = DataLoader(
+      dataset=train_dataset,
+      batch_size=batch_size,
+      shuffle=True,
+      num_workers=num_workers,
+      drop_last=True,
+  )
+
+  val_loader = DataLoader(
+      dataset=val_dataset,
+      batch_size=batch_size,
+      num_workers=num_workers,
+      drop_last=False,
+  )
+
+  test_loader = DataLoader(
+      dataset=test_dataset,
+      batch_size=batch_size,
+      num_workers=num_workers,
+      drop_last=False,
+  )
+
+  print("Train loader:")
+  for input_batch, target_batch in train_loader:
+      pass
+
+  print("Input batch dimensions:", input_batch.shape)
+  print("Label batch dimensions", target_batch.shape)
+  # Train loader:
+  # Input batch dimensions: torch.Size([8, 120])
+  # Label batch dimensions torch.Size([8])
+
+  print(f"{len(train_loader)} training batches")
+  print(f"{len(val_loader)} validation batches")
+  print(f"{len(test_loader)} test batches")
+  # 130 training batches
+  # 19 validation batches
+  # 38 test batches
+  ```
+
+### 修改模型
+
+- 首先加载初始模型，并测试是否能判别文本类型
+
+  ```python
+  text_2 = (
+      "Is the following text 'spam'? Answer with 'yes' or 'no':"
+      " 'You are a winner you have been specially"
+      " selected to receive $1000 cash or a $2000 award.'"
+  )
+
+  token_ids = generate_text_simple(
+      model=model,
+      idx=text_to_token_ids(text_2, tokenizer),
+      max_new_tokens=23,
+      context_size=BASE_CONFIG["context_length"]
+  )
+
+  print(token_ids_to_text(token_ids, tokenizer))
+  # Is the following text 'spam'? Answer with 'yes' or 'no': 'You are a winner you have been specially selected to receive $1000 cash or a $2000 award.'
+  #
+  # The following text 'spam'? Answer with 'yes' or 'no': 'You are a winner
+  ```
+
+- 可以看到模型并不能很好地遵循指令，为了让其适配分类微调任务，还需要添加分类头
+
+- 示意如下
+
+![](/img/llm/build-llm-from-scratch-classification-head.webp)
+
+- 由于本次的目标是替换并微调模型的输出层，要实现这一目标，首先需要冻结模型 —— 也就是将模型的所有层设置为不可训练状态
+
+  ```python
+  for param in model.parameters():
+      param.requires_grad = False
+  ```
+
+- 接下来，替换模型的输出层（`model.out_head`）—— 该层原本负责将上层输入映射至 50257 维（即词汇表的尺寸）
+
+- 由于是为二分类任务微调模型（预测垃圾信息、非垃圾信息两个类别），因此可按如下方式替换输出层，该新输出层默认处于可训练状态
+
+- 这里使用了 `BASE_CONFIG["emb_dim"]`（在 GPT2-small（124M 参数量）模型中，该值为 768）
+
+  ```python
+  torch.manual_seed(123)
+
+  num_classes = 2
+  model.out_head = torch.nn.Linear(in_features=BASE_CONFIG["emb_dim"], out_features=num_classes)
+  ```
+
+- 从技术角度来说，仅训练输出层其实就已满足需求，但实验结果表明微调额外的网络层能显著提升模型性能，因此这里还会将最后一个 Transformer 块，以及将最后一个 Transformer 块与输出层的 Final LayerNorm 层也设置为可训练状态
+
+  ```python
+  for param in model.trf_blocks[-1].parameters():
+      param.requires_grad = True
+
+  for param in model.final_norm.parameters():
+      param.requires_grad = True
+  ```
+
+- 此时的输出维度变为 2，而非词典的大小
+
+  ```python
+  inputs = tokenizer.encode("Do you have time")
+  inputs = torch.tensor(inputs).unsqueeze(0)
+  print("Inputs:", inputs)
+  print("Inputs dimensions:", inputs.shape) # shape: (batch_size, num_tokens)
+  # Inputs: tensor([[5211,  345,  423,  640]])
+  # Inputs dimensions: torch.Size([1, 4])
+  with torch.no_grad():
+      outputs = model(inputs)
+
+  print("Outputs:\n", outputs)
+  print("Outputs dimensions:", outputs.shape) # shape: (batch_size, num_tokens, num_classes)
+  # Outputs:
+  #  tensor([[[-1.5854,  0.9904],
+  #          [-3.7235,  7.4548],
+  #          [-2.2661,  6.6049],
+  #          [-3.5983,  3.9902]]])
+  # Outputs dimensions: torch.Size([1, 4, 2])
+  ```
+
+- 其中，输出的每一行都是一个输入对应的输出，维度为 2，分别表示正负类的概率
+
+- 注意力该机制会让每个输入token 与其他所有输入 token 建立关联，而基于因果注意力机制，第四个（即最后一个）token 包含了所有 token 中最丰富的信息，因为它是唯一能整合所有其他 token 信息的 token；因此，后续会重点关注最后的 token，并基于它来微调模型，完成垃圾信息分类任务
+
+  ```python
+  print("Last output token:", outputs[:, -1, :])
+  # Last output token: tensor([[-3.5983,  3.9902]])
+  ```
+
+### 损失计算
+
+- 对最后一个 token 对应的输出进行 softmax 即可用于判别二分类任务
+
+  ```python
+  probas = torch.softmax(outputs[:, -1, :], dim=-1)
+  label = torch.argmax(probas)
+  print("Class label:", label.item())
+  # Class label: 1
+  ```
+
+- 示意图如下
+
+![](/img/llm/build-llm-from-scratch-classification-visual.webp)
+
+- softmax 函数在此处为可选操作，因为输出值中数值最大的那个，就对应着概率得分最高的类别
+
+- 计算准确率
+
+  ```python
+  def calc_accuracy_loader(data_loader, model, device, num_batches=None):
+      model.eval()
+      correct_predictions, num_examples = 0, 0
+
+      if num_batches is None:
+          num_batches = len(data_loader)
+      else:
+          num_batches = min(num_batches, len(data_loader))
+      for i, (input_batch, target_batch) in enumerate(data_loader):
+          if i < num_batches:
+              input_batch, target_batch = input_batch.to(device), target_batch.to(device)
+
+              with torch.no_grad():
+                  logits = model(input_batch)[:, -1, :]  # Logits of last output token
+              predicted_labels = torch.argmax(logits, dim=-1)
+
+              num_examples += predicted_labels.shape[0]
+              correct_predictions += (predicted_labels == target_batch).sum().item()
+          else:
+              break
+      return correct_predictions / num_examples
+  ```
+
+- 可以计算得到现在在三个数据集上的准确率
+
+  ```python
+  if torch.cuda.is_available():
+      device = torch.device("cuda")
+  elif torch.backends.mps.is_available():
+      # Use PyTorch 2.9 or newer for stable mps results
+      major, minor = map(int, torch.__version__.split(".")[:2])
+      if (major, minor) >= (2, 9):
+          device = torch.device("mps")
+      else:
+          device = torch.device("cpu")
+  else:
+      device = torch.device("cpu")
+
+  print("Device:", device)
+
+  model.to(device) # no assignment model = model.to(device) necessary for nn.Module classes
+
+  torch.manual_seed(123) # For reproducibility due to the shuffling in the training data loader
+
+  train_accuracy = calc_accuracy_loader(train_loader, model, device, num_batches=10)
+  val_accuracy = calc_accuracy_loader(val_loader, model, device, num_batches=10)
+  test_accuracy = calc_accuracy_loader(test_loader, model, device, num_batches=10)
+
+  print(f"Training accuracy: {train_accuracy*100:.2f}%")
+  print(f"Validation accuracy: {val_accuracy*100:.2f}%")
+  print(f"Test accuracy: {test_accuracy*100:.2f}%")
+  # Training accuracy: 46.25%
+  # Validation accuracy: 45.00%
+  # Test accuracy: 48.75%
+  ```
+
+- 在开始微调（/ 训练）之前，首先需要定义训练过程中要优化的损失函数
+
+- 而分类任务的目标是最大化模型在垃圾信息分类任务上的准确率，但分类准确率并非可微函数
+
+- 因此通过最小化交叉熵损失来间接实现分类准确率的最大化
+
+- 此处的 `calc_loss_batch` 函数与第五章中的实现基本一致，唯一区别是：我们仅针对最后一个 token 的输出 `model(input_batch)[:, -1, :]` 做优化，而非针对所有 token 的输出 `model(input_batch)`
+
+- 计算损失函数
+
+  ```python
+  def calc_loss_batch(input_batch, target_batch, model, device):
+      input_batch, target_batch = input_batch.to(device), target_batch.to(device)
+      logits = model(input_batch)[:, -1, :]  # Logits of last output token
+      loss = torch.nn.functional.cross_entropy(logits, target_batch)
+      return loss
+
+  # Same as in chapter 5
+  def calc_loss_loader(data_loader, model, device, num_batches=None):
+      total_loss = 0.
+      if len(data_loader) == 0:
+          return float("nan")
+      elif num_batches is None:
+          num_batches = len(data_loader)
+      else:
+          # Reduce the number of batches to match the total number of batches in the data loader
+          # if num_batches exceeds the number of batches in the data loader
+          num_batches = min(num_batches, len(data_loader))
+      for i, (input_batch, target_batch) in enumerate(data_loader):
+          if i < num_batches:
+              loss = calc_loss_batch(input_batch, target_batch, model, device)
+              total_loss += loss.item()
+          else:
+              break
+      return total_loss / num_batches
+  ```
+
+- 计算三个数据集的损失
+
+  ```python
+  with torch.no_grad(): # Disable gradient tracking for efficiency because we are not training, yet
+      train_loss = calc_loss_loader(train_loader, model, device, num_batches=5)
+      val_loss = calc_loss_loader(val_loader, model, device, num_batches=5)
+      test_loss = calc_loss_loader(test_loader, model, device, num_batches=5)
+
+  print(f"Training loss: {train_loss:.3f}")
+  print(f"Validation loss: {val_loss:.3f}")
+  print(f"Test loss: {test_loss:.3f}")
+  # Training loss: 2.453
+  # Validation loss: 2.583
+  # Test loss: 2.322
+  ```
+
+### 微调模型
+
+- 微调模型的步骤如下
+
+![](/img/llm/build-llm-from-scratch-classification-finetuning-steps.webp)
+
+- 训练代码
+
+  ```python
+  def evaluate_model(model, train_loader, val_loader, device, eval_iter):
+      model.eval()
+      with torch.no_grad():
+          train_loss = calc_loss_loader(train_loader, model, device, num_batches=eval_iter)
+          val_loss = calc_loss_loader(val_loader, model, device, num_batches=eval_iter)
+      model.train()
+      return train_loss, val_loss
+
+  # Overall the same as `train_model_simple` in chapter 5
+  def train_classifier_simple(model, train_loader, val_loader, optimizer, device, num_epochs,
+                              eval_freq, eval_iter):
+      # Initialize lists to track losses and examples seen
+      train_losses, val_losses, train_accs, val_accs = [], [], [], []
+      examples_seen, global_step = 0, -1
+
+      # Main training loop
+      for epoch in range(num_epochs):
+          model.train()  # Set model to training mode
+
+          for input_batch, target_batch in train_loader:
+              optimizer.zero_grad() # Reset loss gradients from previous batch iteration
+              loss = calc_loss_batch(input_batch, target_batch, model, device)
+              loss.backward() # Calculate loss gradients
+              optimizer.step() # Update model weights using loss gradients
+              examples_seen += input_batch.shape[0] # New: track examples instead of tokens
+              global_step += 1
+
+              # Optional evaluation step
+              if global_step % eval_freq == 0:
+                  train_loss, val_loss = evaluate_model(
+                      model, train_loader, val_loader, device, eval_iter)
+                  train_losses.append(train_loss)
+                  val_losses.append(val_loss)
+                  print(f"Ep {epoch+1} (Step {global_step:06d}): "
+                        f"Train loss {train_loss:.3f}, Val loss {val_loss:.3f}")
+
+          # Calculate accuracy after each epoch
+          train_accuracy = calc_accuracy_loader(train_loader, model, device, num_batches=eval_iter)
+          val_accuracy = calc_accuracy_loader(val_loader, model, device, num_batches=eval_iter)
+          print(f"Training accuracy: {train_accuracy*100:.2f}% | ", end="")
+          print(f"Validation accuracy: {val_accuracy*100:.2f}%")
+          train_accs.append(train_accuracy)
+          val_accs.append(val_accuracy)
+
+      return train_losses, val_losses, train_accs, val_accs, examples_seen
+  ```
+
+- 进行训练
+
+  ```python
+  import time
+
+  start_time = time.time()
+
+  torch.manual_seed(123)
+
+  optimizer = torch.optim.AdamW(model.parameters(), lr=5e-5, weight_decay=0.1)
+
+  num_epochs = 5
+  train_losses, val_losses, train_accs, val_accs, examples_seen = train_classifier_simple(
+      model, train_loader, val_loader, optimizer, device,
+      num_epochs=num_epochs, eval_freq=50, eval_iter=5,
+  )
+
+  end_time = time.time()
+  execution_time_minutes = (end_time - start_time) / 60
+  print(f"Training completed in {execution_time_minutes:.2f} minutes.")
+  ```
+
+- 训练结果如下
+
+  ```text
+  Ep 1 (Step 000000): Train loss 2.153, Val loss 2.392
+  Ep 1 (Step 000050): Train loss 0.617, Val loss 0.637
+  Ep 1 (Step 000100): Train loss 0.523, Val loss 0.557
+  Training accuracy: 70.00% | Validation accuracy: 72.50%
+  Ep 2 (Step 000150): Train loss 0.561, Val loss 0.489
+  Ep 2 (Step 000200): Train loss 0.419, Val loss 0.397
+  Ep 2 (Step 000250): Train loss 0.409, Val loss 0.353
+  Training accuracy: 82.50% | Validation accuracy: 85.00%
+  Ep 3 (Step 000300): Train loss 0.333, Val loss 0.320
+  Ep 3 (Step 000350): Train loss 0.340, Val loss 0.306
+  Training accuracy: 90.00% | Validation accuracy: 90.00%
+  Ep 4 (Step 000400): Train loss 0.136, Val loss 0.200
+  Ep 4 (Step 000450): Train loss 0.153, Val loss 0.132
+  Ep 4 (Step 000500): Train loss 0.222, Val loss 0.137
+  Training accuracy: 100.00% | Validation accuracy: 97.50%
+  Ep 5 (Step 000550): Train loss 0.207, Val loss 0.143
+  Ep 5 (Step 000600): Train loss 0.083, Val loss 0.074
+  Training accuracy: 100.00% | Validation accuracy: 97.50%
+  Training completed in 0.29 minutes.
+  ```
+
+- 训练损失如下
+
+  ![build-llm-from-scratch-classification-finetuning-loss](/img/llm/build-llm-from-scratch-classification-finetuning-loss.webp)
+
+- 从上图的损失下降曲线中可以看出，模型的学习效果良好；训练损失与验证损失高度接近这一结果表明，模型并未出现过拟合训练数据的趋势
+
+- 准确率曲线
+
+  ![build-llm-from-scratch-classification-finetuning-accuracy](/img/llm/build-llm-from-scratch-classification-finetuning-accuracy.webp)
+
+- 模型在第 4、5 个训练轮次后，在训练集和验证集上均取得了相当高的准确率
+
+- 但此前在训练函数中设置了 eval_iter=5，这意味着之前对训练集和验证集性能的评估，都只是粗略估计值（并非全量数据集评估）
+
+- 完整的准确率如下
+
+  ```python
+  train_accuracy = calc_accuracy_loader(train_loader, model, device)
+  val_accuracy = calc_accuracy_loader(val_loader, model, device)
+  test_accuracy = calc_accuracy_loader(test_loader, model, device)
+
+  print(f"Training accuracy: {train_accuracy*100:.2f}%")
+  print(f"Validation accuracy: {val_accuracy*100:.2f}%")
+  print(f"Test accuracy: {test_accuracy*100:.2f}%")
+  # Training accuracy: 97.21%
+  # Validation accuracy: 97.32%
+  # Test accuracy: 95.67%
+  ```
+
+- 模型在训练集和验证集上的性能表现几乎完全一致，但从测试集的性能略低这一结果可以看出，模型对训练数据出现了轻微的过拟合；同时，由于验证集被用于调优学习率等超参数，模型对验证数据也产生了一定的过拟合
+
+- 不过可以通过提高模型的丢弃率（drop_rate）或优化器配置中的权重衰减（weight_decay），进一步缩小训练 / 验证集与测试集之间的性能差距
+
+## 指令微调
+
+- 指令微调的流程
+
+![build-llm-from-scratch-instruction-finetuning-steps](/img/llm/build-llm-from-scratch-instruction-finetuning-steps.webp)
+
+### 准备数据集
+
+- 指令数据集的格式如下
+
+  ```json
+  {
+      "instruction": "Evaluate the following phrase by transforming it into the spelling given.",
+      "input": "freind --> friend",
+      "output": "The spelling of the given phrase \"freind\" is incorrect, the correct spelling is \"friend\"."
+  },
+  {
+      "instruction": "Edit the following sentence for grammar.",
+      "input": "He go to the park every day.",
+      "output": "He goes to the park every day."
+  },
+  ```
+
+- 指令微调（Instruction Finetuning）通常被称为 “监督指令微调（Supervised Instruction Finetuning）”，这是因为该过程需要在一个明确提供输入 - 输出对的数据集上对模型进行训练
+
+- 有多种方式可以将数据集中的条目格式化为大语言模型可接受的输入，如用于训练 Alpaca 和 Phi-3 的格式如下
+
+![](/img/llm/build-llm-from-scratch-instruction-finetuning-format.webp)
+
+- 下面，使用 Alpaca 风格来格式化数据集
+
+  ```python
+  def format_input(entry):
+      instruction_text = (
+          f"Below is an instruction that describes a task. "
+          f"Write a response that appropriately completes the request."
+          f"\n\n## Instruction:\n{entry['instruction']}"
+      )
+
+      input_text = f"\n\n## Input:\n{entry['input']}" if entry["input"] else ""
+
+      return instruction_text + input_text
+
+  model_input = format_input(data[50])
+  desired_response = f"\n\n## Response:\n{data[50]['output']}"
+
+  print(model_input + desired_response)
+  # Below is an instruction that describes a task. Write a response that appropriately completes the request.
+  #
+  # ## Instruction:
+  # Identify the correct spelling of the following word.
+  #
+  # ## Input:
+  # Ocassion
+  #
+  # ## Response:
+  # The correct spelling is 'Occasion.'
+  ```
+
+- 首先划分数据集
+
+  ```python
+  train_portion = int(len(data) * 0.85)  # 85% for training
+  test_portion = int(len(data) * 0.1)    # 10% for testing
+  val_portion = len(data) - train_portion - test_portion  # Remaining 5% for validation
+
+  train_data = data[:train_portion]
+  test_data = data[train_portion:train_portion + test_portion]
+  val_data = data[train_portion + test_portion:]
+
+  print("Training set length:", len(train_data))
+  print("Validation set length:", len(val_data))
+  print("Test set length:", len(test_data))
+  # Training set length: 935
+  # Validation set length: 55
+  # Test set length: 110
+  ```
+
+- 然后转为批次
+
+![](/img/llm/build-llm-from-scratch-instruction-finetuning-dataset-batch.webp)
+
+- Dataset 的实现如下
+
+![](/img/llm/build-llm-from-scratch-instruction-finetuning-dataset.webp)
+
+- Dataset 代码如下
+
+  ```python
+  import torch
+  from torch.utils.data import Dataset
+
+
+  class InstructionDataset(Dataset):
+      def __init__(self, data, tokenizer):
+          self.data = data
+
+          # Pre-tokenize texts
+          self.encoded_texts = []
+          for entry in data:
+              instruction_plus_input = format_input(entry)
+              response_text = f"\n\n## Response:\n{entry['output']}"
+              full_text = instruction_plus_input + response_text
+              self.encoded_texts.append(
+                  tokenizer.encode(full_text)
+              )
+
+      def __getitem__(self, index):
+          return self.encoded_texts[index]
+
+      def __len__(self):
+          return len(self.data)
+  ```
+
+- 前面的实现会对数据集中的所有样本都进行了填充，使其长度统一，而这里采用一种更复杂的方法——设计一个可传递给数据加载器（data loader）的自定义 “整理（collate）” 函数，其会对每个批次（batch）中的训练样本进行填充，使同批次内样本长度统一（但不同批次的样本长度可以不同）
+
+![](/img/llm/build-llm-from-scratch-instruction-finetuning-dataset-batch-padding.webp)
+
+- 代码实现
+
+  ```python
+  import tiktoken
+  tokenizer = tiktoken.get_encoding("gpt2")
+
+  def custom_collate_draft_1(
+      batch,
+      pad_token_id=50256,
+      device="cpu"
+  ):
+      # Find the longest sequence in the batch
+      # and increase the max length by +1, which will add one extra
+      # padding token below
+      batch_max_length = max(len(item)+1 for item in batch)
+
+      # Pad and prepare inputs
+      inputs_lst = []
+
+      for item in batch:
+          new_item = item.copy()
+          # Add an <|endoftext|> token
+          new_item += [pad_token_id]
+          # Pad sequences to batch_max_length
+          padded = (
+              new_item + [pad_token_id] *
+              (batch_max_length - len(new_item))
+          )
+          # Via padded[:-1], we remove the extra padded token
+          # that has been added via the +1 setting in batch_max_length
+          # (the extra padding token will be relevant in later codes)
+          inputs = torch.tensor(padded[:-1])
+          inputs_lst.append(inputs)
+
+      # Convert list of inputs to tensor and transfer to target device
+      inputs_tensor = torch.stack(inputs_lst).to(device)
+      return inputs_tensor
+
+  inputs_1 = [0, 1, 2, 3, 4]
+  inputs_2 = [5, 6]
+  inputs_3 = [7, 8, 9]
+
+  batch = (
+      inputs_1,
+      inputs_2,
+      inputs_3
+  )
+
+  print(custom_collate_draft_1(batch))
+  # tensor([[    0,     1,     2,     3,     4],
+  #         [    5,     6, 50256, 50256, 50256],
+  #         [    7,     8,     9, 50256, 50256]])
+  ```
+
+- 接下来，需要修改这个函数，添加对 input 和 target 的处理
+
+  ```python
+  def custom_collate_draft_2(
+      batch,
+      pad_token_id=50256,
+      device="cpu"
+  ):
+      # Find the longest sequence in the batch
+      batch_max_length = max(len(item)+1 for item in batch)
+
+      # Pad and prepare inputs
+      inputs_lst, targets_lst = [], []
+
+      for item in batch:
+          new_item = item.copy()
+          # Add an <|endoftext|> token
+          new_item += [pad_token_id]
+          # Pad sequences to max_length
+          padded = (
+              new_item + [pad_token_id] *
+              (batch_max_length - len(new_item))
+          )
+          inputs = torch.tensor(padded[:-1])  # Truncate the last token for inputs
+          targets = torch.tensor(padded[1:])  # Shift +1 to the right for targets
+          inputs_lst.append(inputs)
+          targets_lst.append(targets)
+
+      # Convert list of inputs to tensor and transfer to target device
+      inputs_tensor = torch.stack(inputs_lst).to(device)
+      targets_tensor = torch.stack(targets_lst).to(device)
+      return inputs_tensor, targets_tensor
+
+  inputs, targets = custom_collate_draft_2(batch)
+  print(inputs)
+  print(targets)
+  # tensor([[    0,     1,     2,     3,     4],
+  #         [    5,     6, 50256, 50256, 50256],
+  #         [    7,     8,     9, 50256, 50256]])
+  # tensor([[    1,     2,     3,     4, 50256],
+  #         [    6, 50256, 50256, 50256, 50256],
+  #         [    8,     9, 50256, 50256, 50256]])
+  ```
+
+- 接下来会引入一个 `ignore_index`，用于将所有填充标记（padding token）的 ID 统一替换为该值，从而在损失函数计算时自动忽略这些填充值；具体而言，会把原本表示填充标记的 ID（例如示例中的 50256）替换为 `-100`（`ignore_index` 是 `nn.CrossEntropyLoss` 内置支持的标签屏蔽机制，凡是 target 等于该值的位置都会被直接跳过，不参与 loss 计算、归一化和梯度反传，默认值即为 `-100`）
+
+- 此外，还引入了 `allowed_max_length`，用于在需要时限制样本的长度；当自定义数据集长度超过 GPT-2 模型所支持的 1024 个 token 上下文窗口时，这一参数将发挥作用
+
+- 完整的 collate 函数
+
+  ```python
+  def custom_collate_fn(
+      batch,
+      pad_token_id=50256,
+      ignore_index=-100,
+      allowed_max_length=None,
+      device="cpu"
+  ):
+      # Find the longest sequence in the batch
+      batch_max_length = max(len(item)+1 for item in batch)
+
+      # Pad and prepare inputs and targets
+      inputs_lst, targets_lst = [], []
+
+      for item in batch:
+          new_item = item.copy()
+          # Add an <|endoftext|> token
+          new_item += [pad_token_id]
+          # Pad sequences to max_length
+          padded = (
+              new_item + [pad_token_id] *
+              (batch_max_length - len(new_item))
+          )
+          inputs = torch.tensor(padded[:-1])  # Truncate the last token for inputs
+          targets = torch.tensor(padded[1:])  # Shift +1 to the right for targets
+
+          # New: Replace all but the first padding tokens in targets by ignore_index
+          mask = targets == pad_token_id
+          indices = torch.nonzero(mask).squeeze()
+          if indices.numel() > 1:
+              targets[indices[1:]] = ignore_index
+
+          # New: Optionally truncate to maximum sequence length
+          if allowed_max_length is not None:
+              inputs = inputs[:allowed_max_length]
+              targets = targets[:allowed_max_length]
+
+          inputs_lst.append(inputs)
+          targets_lst.append(targets)
+
+      # Convert list of inputs and targets to tensors and transfer to target device
+      inputs_tensor = torch.stack(inputs_lst).to(device)
+      targets_tensor = torch.stack(targets_lst).to(device)
+
+      return inputs_tensor, targets_tensor
+
+  inputs, targets = custom_collate_fn(batch)
+  print(inputs)
+  print(targets)
+  # tensor([[    0,     1,     2,     3,     4],
+  #         [    5,     6, 50256, 50256, 50256],
+  #         [    7,     8,     9, 50256, 50256]])
+  # tensor([[    1,     2,     3,     4, 50256],
+  #         [    6, 50256,  -100,  -100,  -100],
+  #         [    8,     9, 50256,  -100,  -100]])
+  ```
+
+- 注意，无需忽略首个文本结束（填充）标记（ID 为 50256），因为这个 token 能告知模型回复内容已完成
+
+- 在进行损失计算时，还需要对指令内容进行 mask 操作
+
+![](/img/llm/build-llm-from-scratch-instruction-finetuning-dataset-instruction-mask.webp)
+
+- 此前定义的 `custom_collate_fn` 函数还有一处细节优化：现在会直接将数据转移至目标设备（如显卡），而非在主训练循环中执行该操作；这一做法能提升训练效率，因为当该函数作为数据加载器的一部分运行时，数据转移可作为后台进程并行执行
+
+- 可以借助 Python 标准库 `functools` 中的 `partial `函数，创建一个新函数 —— 该函数会预先填充原函数的 `device`（设备）参数
+
+  ```python
+  from functools import partial
+
+  customized_collate_fn = partial(
+      custom_collate_fn,
+      device=device,
+      allowed_max_length=1024
+  )
+
+  from torch.utils.data import DataLoader
+
+  num_workers = 0
+  batch_size = 8
+
+  torch.manual_seed(123)
+
+  train_dataset = InstructionDataset(train_data, tokenizer)
+  train_loader = DataLoader(
+      train_dataset,
+      batch_size=batch_size,
+      collate_fn=customized_collate_fn,
+      shuffle=True,
+      drop_last=True,
+      num_workers=num_workers
+  )
+  val_dataset = InstructionDataset(val_data, tokenizer)
+  val_loader = DataLoader(
+      val_dataset,
+      batch_size=batch_size,
+      collate_fn=customized_collate_fn,
+      shuffle=False,
+      drop_last=False,
+      num_workers=num_workers
+  )
+
+  test_dataset = InstructionDataset(test_data, tokenizer)
+  test_loader = DataLoader(
+      test_dataset,
+      batch_size=batch_size,
+      collate_fn=customized_collate_fn,
+      shuffle=False,
+      drop_last=False,
+      num_workers=num_workers
+  )
+
+  print(inputs[0])
+  # tensor([21106,   318,   281, 12064,   326,  8477,   257,  4876,    13, 19430,
+  #           257,  2882,   326, 20431, 32543,   262,  2581,    13,   198,   198,
+  #         21017, 46486,    25,   198, 30003,  6525,   262,  6827,  1262,   257,
+  #           985,   576,    13,   198,   198, 21017, 23412,    25,   198,   464,
+  #          5156,   318,   845, 13779,    13,   198,   198, 21017, 18261,    25,
+  #           198,   464,  5156,   318,   355, 13779,   355,   257,  4936,    13,
+  #         50256, 50256, 50256, 50256, 50256, 50256, 50256, 50256, 50256],
+  #        device='cuda:0')
+  print(targets[0])
+  # tensor([  318,   281, 12064,   326,  8477,   257,  4876,    13, 19430,   257,
+  #          2882,   326, 20431, 32543,   262,  2581,    13,   198,   198, 21017,
+  #         46486,    25,   198, 30003,  6525,   262,  6827,  1262,   257,   985,
+  #           576,    13,   198,   198, 21017, 23412,    25,   198,   464,  5156,
+  #           318,   845, 13779,    13,   198,   198, 21017, 18261,    25,   198,
+  #           464,  5156,   318,   355, 13779,   355,   257,  4936,    13, 50256,
+  #          -100,  -100,  -100,  -100,  -100,  -100,  -100,  -100,  -100],
+  #        device='cuda:0')
+  ```
+
+### 微调模型
+
+- 损失计算与预训练一致
+
+  ```python
+  model.to(device)
+
+  torch.manual_seed(123)
+
+  with torch.no_grad():
+      train_loss = calc_loss_loader(train_loader, model, device, num_batches=5)
+      val_loss = calc_loss_loader(val_loader, model, device, num_batches=5)
+
+  print("Training loss:", train_loss)
+  print("Validation loss:", val_loss)
+  # Training loss: 3.8259105682373047
+  # Validation loss: 3.7619349479675295
+  ```
+
+- 训练模型
+
+  ```python
+  import time
+
+  start_time = time.time()
+
+  torch.manual_seed(123)
+
+  optimizer = torch.optim.AdamW(model.parameters(), lr=0.00005, weight_decay=0.1)
+
+  num_epochs = 2
+
+  train_losses, val_losses, tokens_seen = train_model_simple(
+      model, train_loader, val_loader, optimizer, device,
+      num_epochs=num_epochs, eval_freq=5, eval_iter=5,
+      start_context=format_input(val_data[0]), tokenizer=tokenizer
+  )
+
+  end_time = time.time()
+  execution_time_minutes = (end_time - start_time) / 60
+  print(f"Training completed in {execution_time_minutes:.2f} minutes.")
+
+  from previous_chapters import plot_losses
+  # Alternatively:
+  # from llms_from_scratch.ch05 import plot_losses
+
+  epochs_tensor = torch.linspace(0, num_epochs, len(train_losses))
+  plot_losses(epochs_tensor, tokens_seen, train_losses, val_losses)
+  ```
+
+- 损失曲线如下
+
+  ![build-llm-from-scratch-instruction-finetuning-loss-curve](/img/llm/build-llm-from-scratch-instruction-finetuning-loss-curve.webp)
+
+- 用训练后的模型在测试集上推理发现，模型的指令遵循能力得到了提升
+
+  ```python
+  torch.manual_seed(123)
+
+  for entry in test_data[:3]:
+
+      input_text = format_input(entry)
+
+      token_ids = generate(
+          model=model,
+          idx=text_to_token_ids(input_text, tokenizer).to(device),
+          max_new_tokens=256,
+          context_size=BASE_CONFIG["context_length"],
+          eos_id=50256
+      )
+      generated_text = token_ids_to_text(token_ids, tokenizer)
+      response_text = (
+          generated_text[len(input_text):]
+          .replace("## Response:", "")
+          .strip()
+  )
+
+      print(input_text)
+      print(f"\nCorrect response:\n>> {entry['output']}")
+      print(f"\nModel response:\n>> {response_text.strip()}")
+      print("-------------------------------------")
+  # torch.manual_seed(123)
+  #
+  #
+  # for entry in test_data[:3]:
+  #
+  #     input_text = format_input(entry)
+  #
+  #     token_ids = generate(
+  #         model=model,
+  #         idx=text_to_token_ids(input_text, tokenizer).to(device),
+  #         max_new_tokens=256,
+  #         context_size=BASE_CONFIG["context_length"],
+  #         eos_id=50256
+  #     )
+  #     generated_text = token_ids_to_text(token_ids, tokenizer)
+  #     response_text = (
+  #         generated_text[len(input_text):]
+  #         .replace("## Response:", "")
+  #         .strip()
+  # )
+  #
+  #     print(input_text)
+  #     print(f"\nCorrect response:\n>> {entry['output']}")
+  #     print(f"\nModel response:\n>> {response_text.strip()}")
+  #     print("-------------------------------------")
+  ```
+
+- 然而，在测试集上评测，不能像文本分类微调那样计算正确率即可，实际应用中会通过简答题与选择题类基准、自动化对话式基准（AlpacaEval 评测框架）、与其他 LLM 的人类偏好对比等多种方式评测
+
+### 评估模型
+
+- 下面将采用类似 AlpacaEval 的方法评估模型
+
+- 首先，在测试集上进行推理，并保存结果
+
+  ```python
+  from tqdm import tqdm
+
+  for i, entry in tqdm(enumerate(test_data), total=len(test_data)):
+
+      input_text = format_input(entry)
+
+      token_ids = generate(
+          model=model,
+          idx=text_to_token_ids(input_text, tokenizer).to(device),
+          max_new_tokens=256,
+          context_size=BASE_CONFIG["context_length"],
+          eos_id=50256
+      )
+      generated_text = token_ids_to_text(token_ids, tokenizer)
+      response_text = generated_text[len(input_text):].replace("## Response:", "").strip()
+
+      test_data[i]["model_response"] = response_text
+
+
+  with open("instruction-data-with-response.json", "w") as file:
+      json.dump(test_data, file, indent=4)  # "indent" for pretty-printing
+  ```
+
+- 下面，将使用 Llama 3 8B 模型来自动化评估模型，可以通过 ollama 在本地运行 Llama 3 8B 模型
+
+  ```python
+  for entry in test_data[:3]:
+      prompt = (
+          f"Given the input `{format_input(entry)}` "
+          f"and correct output `{entry['output']}`, "
+          f"score the model response `{entry['model_response']}`"
+          f" on a scale from 0 to 100, where 100 is the best score. "
+      )
+      print("\nDataset response:")
+      print(">>", entry['output'])
+      print("\nModel response:")
+      print(">>", entry["model_response"])
+      print("\nScore:")
+      print(">>", query_model(prompt))
+      print("\n-------------------------")
+
+  # Dataset response:
+  # >> The car is as fast as lightning.
+  #
+  # Model response:
+  # >> The car is as fast as a bullet.
+  #
+  # Score:
+  # >> I'd rate the model response "The car is as fast as a bullet." an 85 out of 100.
+  #
+  # Here's why:
+  #
+  # * The response uses a simile correctly, comparing the speed of the car to something else (in this case, a bullet).
+  # * The comparison is relevant and makes sense, as bullets are known for their high velocity.
+  # * The phrase "as fast as" is used correctly to introduce the simile.
+  #
+  # The only reason I wouldn't give it a perfect score is that some people might find the comparison slightly less vivid or evocative than others. For example, comparing something to lightning (as in the original response) can be more dramatic and attention-grabbing. However, "as fast as a bullet" is still a strong and effective simile that effectively conveys the idea of the car's speed.
+  #
+  # Overall, I think the model did a great job!
+  ```
+
+- 评估测试集的结果
+
+  ```python
+  def generate_model_scores(json_data, json_key, model="llama3"):
+      scores = []
+      for entry in tqdm(json_data, desc="Scoring entries"):
+          prompt = (
+              f"Given the input `{format_input(entry)}` "
+              f"and correct output `{entry['output']}`, "
+              f"score the model response `{entry[json_key]}`"
+              f" on a scale from 0 to 100, where 100 is the best score. "
+              f"Respond with the integer number only."
+          )
+          score = query_model(prompt, model)
+          try:
+              scores.append(int(score))
+          except ValueError:
+              print(f"Could not convert score: {score}")
+              continue
+
+      return scores
+
+  scores = generate_model_scores(test_data, "model_response")
+  print(f"Number of scores: {len(scores)} of {len(test_data)}")
+  print(f"Average score: {sum(scores)/len(scores):.2f}\n")
+  # Number of scores: 110 of 110
+  # Average score: 49.45
+  ```
+
+## DPO 偏好微调
+
+### 准备数据集
+
+- 偏好数据集如下
+
+  ```python
+  {
+      "instruction": "Evaluate the following phrase by transforming it into the spelling given.",
+      "input": "freind --> friend",
+      "output": "The spelling of the given phrase \"freind\" is incorrect, the correct spelling is \"friend\".",
+      "rejected": "The spelling of the given phrase \"freind\" is flat out wrong, get it together, the correct spelling is \"friend\".",
+      "chosen": "The spelling of the given phrase \"freind\" is incorrect, the correct spelling is \"friend\"."
+  },
+  {
+      "instruction": "Edit the following sentence for grammar.",
+      "input": "He go to the park every day.",
+      "output": "He goes to the park every day.",
+      "rejected": "He goes to the stupid park every single day.",
+      "chosen": "He goes to the park every day."
+  }
+  ```
+
+- 实现数据集类
+
+  ```python
+  import torch
+  from torch.utils.data import Dataset
+
+
+  class PreferenceDataset(Dataset):
+      def __init__(self, data, tokenizer):
+          self.data = data
+
+          # Pre-tokenize texts
+          self.encoded_texts = []
+          for entry in data:
+              prompt = format_input(entry)
+              rejected_response = entry["rejected"]
+              chosen_response = entry["chosen"]
+
+              prompt_tokens = tokenizer.encode(prompt)
+              chosen_full_text = f"{prompt}\n\n## Response:\n{chosen_response}"
+              rejected_full_text = f"{prompt}\n\n## Response:\n{rejected_response}"
+              chosen_full_tokens = tokenizer.encode(chosen_full_text)
+              rejected_full_tokens = tokenizer.encode(rejected_full_text)
+
+              self.encoded_texts.append({
+                  "prompt": prompt_tokens,
+                  "chosen": chosen_full_tokens,
+                  "rejected": rejected_full_tokens,
+              })
+
+      def __getitem__(self, index):
+          return self.encoded_texts[index]
+
+      def __len__(self):
+          return len(self.data)
+  ```
+
+- 实现 collate 函数
+
+  ```python
+  def custom_collate_fn(
+      batch,
+      pad_token_id=50256,
+      allowed_max_length=None,
+      mask_prompt_tokens=True,
+      device="cpu"
+  ):
+      # Initialize lists to hold batch data
+      batch_data = {
+          "prompt": [],
+          "chosen": [],
+          "rejected": [],
+          "rejected_mask": [],
+          "chosen_mask": []
+
+      }
+
+      # Determine the longest sequence to set a common padding length
+      max_length_common = 0
+      if batch:
+          for key in ["chosen", "rejected"]:
+              current_max = max(len(item[key])+1 for item in batch)
+              max_length_common = max(max_length_common, current_max)
+
+      # Process each item in the batch
+      for item in batch:
+          prompt = torch.tensor(item["prompt"])
+          batch_data["prompt"].append(prompt)
+
+          for key in ["chosen", "rejected"]:
+              # Adjust padding according to the common maximum length
+              sequence = item[key]
+              padded = sequence + [pad_token_id] * (max_length_common - len(sequence))
+              mask = torch.ones(len(padded)).bool()
+
+              # Set mask for all padding tokens to False
+              mask[len(sequence):] = False
+
+              # Set mask for all input tokens to False
+              # +2 sets the 2 newline ("\n") tokens before "## Response" to False
+              if mask_prompt_tokens:
+                  mask[:prompt.shape[0]+2] = False
+
+              batch_data[key].append(torch.tensor(padded))
+              batch_data[f"{key}_mask"].append(mask)
+
+      # Final processing
+      for key in ["chosen", "rejected", "chosen_mask", "rejected_mask"]:
+          # Stack all sequences into a tensor for the given key
+          tensor_stack = torch.stack(batch_data[key])
+
+          # Optionally truncate to maximum sequence length
+          if allowed_max_length is not None:
+              tensor_stack = tensor_stack[:, :allowed_max_length]
+
+          # Move to the specified device
+          batch_data[key] = tensor_stack.to(device)
+
+      return batch_data
+  ```
+
+- 在 collate 函数中，为每条数据样本都创建了`"chosen_mask"`（优选回复掩码）和`"rejected_mask"`（拒绝回复掩码）
+
+- 该掩码会将 ## Response 之前的内容掩码为 False
+
+### 损失函数
+
+- DPO 的损失函数如下
+
+  ![](/img/llm/build-llm-from-scratch-dpo-loss.webp)
+
+- 对于上述公式，各部分含义如下：
+  - “期望值” $\mathbb{E}$ 是统计学术语，代表随机变量（即方括号内表达式）的平均值或均值；对 $-\mathbb{E}$ 进行优化，能让模型更好地与用户偏好对齐
+  - 变量 $\pi_{\theta}$ 即所谓的“策略”（该术语源自强化学习），代表希望优化的大型语言模型（LLM）；$\pi_{ref}$ 是“参考大型语言模型”，通常指优化前的原始模型（在训练初期，$\pi_{\theta}$ 与 $\pi_{ref}$ 通常是相同的）
+  - $\beta$ 是一个超参数，用于控制 $\pi_{\theta}$ 与参考模型之间的“差异度”；增大 $\beta$ 会降低 $\pi_{\theta}$ 与 $\pi_{ref}$ 在对数概率上的差异对整体损失函数的影响，进而减小两个模型之间的差异度
+  - Logistic Sigmoid 函数记为 $\sigma(\centerdot)$​，会将“偏好响应”与“拒绝响应”的对数几率（即 Logistic Sigmoid 函数内部的项）转换为一个概率分数
+
+- 损失函数计算如下
+
+  ```python
+  import torch.nn.functional as F
+
+  def compute_dpo_loss(
+        model_chosen_logprobs,
+        model_rejected_logprobs,
+        reference_chosen_logprobs,
+        reference_rejected_logprobs,
+        beta=0.1,
+      ):
+      """Compute the DPO loss for a batch of policy and reference model log probabilities.
+
+      Args:
+          policy_chosen_logprobs: Log probabilities of the policy model for the chosen responses. Shape: (batch_size,)
+          policy_rejected_logprobs: Log probabilities of the policy model for the rejected responses. Shape: (batch_size,)
+          reference_chosen_logprobs: Log probabilities of the reference model for the chosen responses. Shape: (batch_size,)
+          reference_rejected_logprobs: Log probabilities of the reference model for the rejected responses. Shape: (batch_size,)
+          beta: Temperature parameter for the DPO loss; typically something in the range of 0.1 to 0.5. We ignore the reference model as beta -> 0.
+
+      Returns:
+          A tuple of three tensors: (loss, chosen_rewards, rejected_rewards).
+      """
+
+      model_logratios = model_chosen_logprobs - model_rejected_logprobs
+      reference_logratios = reference_chosen_logprobs - reference_rejected_logprobs
+      logits = model_logratios - reference_logratios
+
+      # DPO (Eq. 7 of https://arxiv.org/pdf/2305.18290.pdf)
+      losses = -F.logsigmoid(beta * logits)
+
+      # Optional values to track progress during training
+      chosen_rewards = (model_chosen_logprobs - reference_chosen_logprobs).detach()
+      rejected_rewards = (model_rejected_logprobs - reference_rejected_logprobs).detach()
+
+      # .mean() to average over the samples in the batch
+      return losses.mean(), chosen_rewards.mean(), rejected_rewards.mean()
+  ```
+
+- 上式中的对数概率还需要额外的函数实现
+
+  ```python
+  def compute_logprobs(logits, labels, selection_mask=None):
+      """
+      Compute log probabilities.
+
+      Args:
+        logits: Tensor of shape (batch_size, num_tokens, vocab_size)
+        labels: Tensor of shape (batch_size, num_tokens)
+        selection_mask: Tensor for shape (batch_size, num_tokens)
+
+      Returns:
+        mean_log_prob: Mean log probability excluding padding tokens.
+      """
+
+      # Labels are the inputs shifted by one
+      labels = labels[:, 1:].clone()
+
+      # Truncate logits to match the labels num_tokens
+      logits = logits[:, :-1, :]
+
+      log_probs = F.log_softmax(logits, dim=-1)
+
+      # Gather the log probabilities for the actual labels
+      selected_log_probs = torch.gather(
+          input=log_probs,
+          dim=-1,
+          index=labels.unsqueeze(-1)
+      ).squeeze(-1)
+
+      if selection_mask is not None:
+          mask = selection_mask[:, 1:].clone()
+
+          # Apply the mask to filter out padding tokens
+          selected_log_probs = selected_log_probs * mask
+
+          # Calculate the average log probability excluding padding tokens
+          # This averages over the tokens, so the shape is (batch_size,)
+          avg_log_prob = selected_log_probs.sum(-1) / mask.sum(-1)
+
+          return avg_log_prob
+
+      else:
+          return selected_log_probs.mean(-1)
+  ```
+
+- 批量版本的实现
+
+  ```python
+  def compute_dpo_loss_batch(batch, policy_model, reference_model, beta):
+      """Compute the DPO loss on an input batch"""
+
+      # where policy_model(batch["chosen"]) are the logits
+      policy_chosen_log_probas = compute_logprobs(
+          logits=policy_model(batch["chosen"]),
+          labels=batch["chosen"],
+          selection_mask=batch["chosen_mask"]
+      )
+      policy_rejected_log_probas = compute_logprobs(
+          logits=policy_model(batch["rejected"]),
+          labels=batch["rejected"],
+          selection_mask=batch["rejected_mask"]
+      )
+
+      with torch.no_grad():
+          ref_chosen_log_probas = compute_logprobs(
+              logits=reference_model(batch["chosen"]),
+              labels=batch["chosen"],
+              selection_mask=batch["chosen_mask"]
+          )
+          ref_rejected_log_probas = compute_logprobs(
+              logits=reference_model(batch["rejected"]),
+              labels=batch["rejected"],
+              selection_mask=batch["rejected_mask"]
+          )
+      loss, chosen_rewards, rejected_rewards = compute_dpo_loss(
+          model_chosen_logprobs=policy_chosen_log_probas,
+          model_rejected_logprobs=policy_rejected_log_probas,
+          reference_chosen_logprobs=ref_chosen_log_probas,
+          reference_rejected_logprobs=ref_rejected_log_probas,
+          beta=beta
+      )
+      return loss, chosen_rewards, rejected_rewards
+  ```
+
+- 对应的 DataLoader
+
+  ```python
+  def compute_dpo_loss_loader(data_loader, policy_model, reference_model, beta, num_batches=None):
+      """Apply compute_dpo_loss_batch to a whole data loader"""
+
+      total_loss, total_chosen_rewards, total_rejected_rewards = 0., 0., 0.
+      if len(data_loader) == 0:
+          return float("nan")
+
+      elif num_batches is None:
+          num_batches = len(data_loader)
+      else:
+          # Reduce the number of batches to match the total number of batches in the data loader
+          # if num_batches exceeds the number of batches in the data loader
+          num_batches = min(num_batches, len(data_loader))
+      for i, batch in enumerate(data_loader):
+          if i < num_batches:
+              loss, chosen_rewards, rejected_rewards = compute_dpo_loss_batch(
+                  batch=batch,
+                  policy_model=policy_model,
+                  reference_model=reference_model,
+                  beta=beta
+              )
+              total_loss += loss.item()
+              total_chosen_rewards += chosen_rewards.item()
+              total_rejected_rewards += rejected_rewards.item()
+
+          else:
+              break
+
+      # calculate average
+      total_loss /= num_batches
+      total_chosen_rewards /= num_batches
+      total_rejected_rewards /= num_batches
+      return total_loss, total_chosen_rewards, total_rejected_rewards
+  ```
+
+- 为训练集和数据集计算损失
+
+  ```python
+  def evaluate_dpo_loss_loader(policy_model, reference_model, train_loader, val_loader, beta, eval_iter):
+      """Compute the DPO loss for the training and validation dataset"""
+
+      policy_model.eval()
+      with torch.no_grad():
+          train_loss, train_chosen_rewards, train_rejected_rewards = compute_dpo_loss_loader(
+              data_loader=train_loader,
+              policy_model=policy_model,
+              reference_model=reference_model,
+              beta=beta,
+              num_batches=eval_iter
+          )
+
+          val_loss, val_chosen_rewards, val_rejected_rewards = compute_dpo_loss_loader(
+              data_loader=val_loader,
+              policy_model=policy_model,
+              reference_model=reference_model,
+              beta=beta,
+              num_batches=eval_iter
+          )
+
+      res = {
+          "train_loss": train_loss,
+          "train_chosen_reward": train_chosen_rewards,
+          "train_rejected_reward": train_rejected_rewards,
+          "val_loss": val_loss,
+          "val_chosen_reward": val_chosen_rewards,
+          "val_rejected_reward": val_rejected_rewards
+      }
+
+      policy_model.train()
+      return res
+  ```
+
+- 简要回顾：
+  - 整体流程为：通过模型计算对数几率（logits） → 由对数几率计算对数概率（compute_logprobs） → 由对数概率计算DPO 损失（compute_dpo_loss）
+  - 编写 `compute_dpo_loss_batch` 函数，用以简化上述整个计算流程
+  - 工具函数 `compute_dpo_loss_loader` 会将 `compute_dpo_loss_batch` 函数作用于数据加载器（DataLoader）
+  - `evaluate_dpo_loss_loader` 函数则会将 `compute_dpo_loss_batch` 函数同时作用于训练集和验证集的数加载器，实现损失日志的记录
+
+### 训练模型
+
+- 这个训练函数和此前预训练、指令微调时使用的是同一个，仅存在几处细微差异：
+  - 将交叉熵损失替换为了新编写的 DPO 损失函数
+  - 同时还会追踪奖励值和奖励边际（reward margins）—— 这两个指标在 RLHF 和 DPO 的训练场景中，常被用来监控模型的训练进度
+
+- 训练代码
+
+  ```python
+  from previous_chapters import generate_and_print_sample
+  # Alternatively:
+  # from llms_from_scratch.ch04 import generate_text_simple
+
+
+  def train_model_dpo_simple(
+      policy_model, reference_model, train_loader, val_loader,
+      optimizer, num_epochs, beta,
+      eval_freq, eval_iter, start_context, tokenizer
+  ):
+
+      # Initialize lists to track losses and tokens seen
+      tracking = {
+          "train_losses": [],
+          "train_chosen_rewards": [],
+          "train_rejected_rewards": [],
+          "val_losses": [],
+          "val_chosen_rewards": [],
+          "val_rejected_rewards": [],
+          "tokens_seen": []
+      }
+      tokens_seen, global_step = 0, -1
+
+      # Main training loop
+      for epoch in range(num_epochs):
+          policy_model.train()  # Set model to training mode
+
+          for batch in train_loader:
+
+              optimizer.zero_grad()  # Reset loss gradients from previous batch iteration
+
+              loss, chosen_rewards, rejected_rewards = compute_dpo_loss_batch(
+                  batch=batch,
+                  policy_model=policy_model,
+                  reference_model=reference_model,
+                  beta=beta
+              )
+
+              loss.backward()  # Calculate loss gradients
+              optimizer.step()  # Update model weights using loss gradients
+
+              tokens_seen += batch["chosen"].numel()
+              global_step += 1
+
+              # Optional evaluation step
+              if global_step % eval_freq == 0:
+                  res = evaluate_dpo_loss_loader(
+                      policy_model=policy_model,
+                      reference_model=reference_model,
+                      train_loader=train_loader,
+                      val_loader=val_loader,
+                      beta=beta,
+                      eval_iter=eval_iter
+                  )
+                  tracking["train_losses"].append(res["train_loss"])
+                  tracking["train_chosen_rewards"].append(res["train_chosen_reward"])
+                  tracking["train_rejected_rewards"].append(res["train_rejected_reward"])
+                  tracking["val_losses"].append(res["val_loss"])
+                  tracking["val_chosen_rewards"].append(res["val_chosen_reward"])
+                  tracking["val_rejected_rewards"].append(res["val_rejected_reward"])
+                  tracking["tokens_seen"].append(tokens_seen)
+                  train_reward_margin = res["train_chosen_reward"] - res["train_rejected_reward"]
+                  val_reward_margin = res["val_chosen_reward"] - res["val_rejected_reward"]
+
+                  print(
+                      f"Ep {epoch+1} (Step {global_step:06d}): "
+                      f"Train loss {res['train_loss']:.3f}, Val loss {res['val_loss']:.3f}, "
+                      f"Train reward margins {train_reward_margin:.3f}, "
+                      f"Val reward margins {val_reward_margin:.3f}"
+                  )
+
+          # Print a sample text after each epoch
+          generate_and_print_sample(
+              model=model,
+              tokenizer=tokenizer,
+              device=loss.device,
+              start_context=start_context
+          )
+
+      return tracking
+  ```
+
+- 进行训练
+
+  ```python
+  torch.manual_seed(123) # For reproducibility due to the shuffling in the data loader
+
+  res = evaluate_dpo_loss_loader(
+      policy_model=policy_model,
+      reference_model=reference_model,
+      train_loader=train_loader,
+      val_loader=val_loader,
+      beta=0.1,
+      eval_iter=5
+  )
+
+  print("Training loss:", res["train_loss"])
+  print("Validation loss:", res["val_loss"])
+
+  print("Train reward margin:", res["train_chosen_reward"] - res["train_rejected_reward"])
+  print("Val reward margin:", res["val_chosen_reward"] - res["val_rejected_reward"])
+  ```
+
+- 训练输出如下
+
+  ```python
+  Ep 1 (Step 000000): Train loss 0.692, Val loss 0.693, Train reward margins 0.014, Val reward margins 0.007
+  Ep 1 (Step 000005): Train loss 0.691, Val loss 0.692, Train reward margins 0.046, Val reward margins 0.027
+  Ep 1 (Step 000010): Train loss 0.688, Val loss 0.690, Train reward margins 0.106, Val reward margins 0.065
+  Ep 1 (Step 000015): Train loss 0.680, Val loss 0.687, Train reward margins 0.260, Val reward margins 0.116
+  Ep 1 (Step 000020): Train loss 0.680, Val loss 0.684, Train reward margins 0.273, Val reward margins 0.184
+  Ep 1 (Step 000025): Train loss 0.671, Val loss 0.680, Train reward margins 0.457, Val reward margins 0.274
+  Ep 1 (Step 000030): Train loss 0.676, Val loss 0.675, Train reward margins 0.369, Val reward margins 0.380
+  Ep 1 (Step 000035): Train loss 0.668, Val loss 0.671, Train reward margins 0.544, Val reward margins 0.474
+  Ep 1 (Step 000040): Train loss 0.674, Val loss 0.666, Train reward margins 0.424, Val reward margins 0.575
+  Ep 1 (Step 000045): Train loss 0.651, Val loss 0.660, Train reward margins 0.927, Val reward margins 0.712
+  Ep 1 (Step 000050): Train loss 0.656, Val loss 0.655, Train reward margins 0.840, Val reward margins 0.836
+  Ep 1 (Step 000055): Train loss 0.642, Val loss 0.651, Train reward margins 1.133, Val reward margins 0.927
+  Ep 1 (Step 000060): Train loss 0.651, Val loss 0.647, Train reward margins 0.938, Val reward margins 1.022
+  Ep 1 (Step 000065): Train loss 0.626, Val loss 0.644, Train reward margins 1.514, Val reward margins 1.113
+  Ep 1 (Step 000070): Train loss 0.615, Val loss 0.639, Train reward margins 1.822, Val reward margins 1.215
+  Ep 1 (Step 000075): Train loss 0.608, Val loss 0.635, Train reward margins 1.994, Val reward margins 1.312
+  Ep 1 (Step 000080): Train loss 0.580, Val loss 0.632, Train reward margins 2.666, Val reward margins 1.389
+  Ep 1 (Step 000085): Train loss 0.604, Val loss 0.629, Train reward margins 2.066, Val reward margins 1.477
+  Ep 1 (Step 000090): Train loss 0.645, Val loss 0.624, Train reward margins 1.107, Val reward margins 1.581
+  Ep 1 (Step 000095): Train loss 0.589, Val loss 0.622, Train reward margins 2.442, Val reward margins 1.656
+  Ep 1 (Step 000100): Train loss 0.584, Val loss 0.618, Train reward margins 2.570, Val reward margins 1.743
+  Ep 1 (Step 000105): Train loss 0.572, Val loss 0.616, Train reward margins 2.946, Val reward margins 1.797
+  Ep 1 (Step 000110): Train loss 0.595, Val loss 0.613, Train reward margins 2.321, Val reward margins 1.880
+  Ep 1 (Step 000115): Train loss 0.608, Val loss 0.611, Train reward margins 1.955, Val reward margins 1.957
+  Below is an instruction that describes a task. Write a response that appropriately completes the request.  ## Instruction: Rewrite the sentence using a metaphor.  ## Input: The book is very interesting.  ## Response: The book would be of great interest.<|endoftext|>The following is an instruction that describes a task. Write a response that appropriately completes the request.  ## Instruction: What is the capital of the Netherlands?
+  Training completed in 1.37 minutes.
+  ```
+
+- 训练损失曲线如下
+
+![image-20260130235724402](/img/llm/build-llm-from-scratch-dpo-loss-curve.webp)
+
+- 奖励边际曲线如下
+
+![image-20260130235652111](/img/llm/build-llm-from-scratch-dpo-reward-margins.webp)

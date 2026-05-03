@@ -16,6 +16,11 @@ figure {
   margin-bottom: 0.5em;
 }
 
+h5,
+h6 {
+  font-weight: 600;
+}
+
 /* 嵌套列表缩进和样式 */
 article ul {
   list-style-type: disc; /* 第一层：实心圆 */

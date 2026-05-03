@@ -1,0 +1,23 @@
+---
+title: LLM Evaluation
+description: 介绍大规模语言模型（LLM）的评估方法与实践经验
+---
+
+- 参考资料
+  - HuggingFace 评估手册：[Evaluation Guidebook - a Hugging Face Space by OpenEvals](https://huggingface.co/spaces/OpenEvals/evaluation-guidebook)
+  - 越狱攻击：[Jailbreaking LLMs: A Comprehensive Guide (With Examples) | Promptfoo](https://www.promptfoo.dev/blog/how-to-jailbreak-llms/)
+  - 安全十大基准：[Top 10 Open Datasets for LLM Safety, Toxicity & Bias Evaluation | Promptfoo](https://www.promptfoo.dev/blog/top-llm-safety-bias-benchmarks/)
+
+## 什么是 LLM 评估
+
+## LLM 评估的基础知识
+
+## 现有基准 Benchmarks
+
+## 创建新的评估基准
+
+## 评估的主要挑战
+
+## 评估中易被忽视的要点
+
+## 越狱攻击
