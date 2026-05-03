@@ -110,7 +110,7 @@ export function DocPageRenderer({ source, slug }: DocPageRendererProps) {
 
       {/* Document Feedback */}
       <DocFeedback
-        githubEditUrl={`https://github.com/${githubConfig.owner}/${githubConfig.repo}/edit/${githubConfig.branch}/${githubConfig.contentDir}${page.url}.md`}
+        githubEditUrl={`https://github.com/${githubConfig.owner}/${githubConfig.repo}/edit/${githubConfig.branch}/${githubConfig.contentDir}${page.url}.mdx`}
         githubIssueUrl={`https://github.com/${githubConfig.owner}/${githubConfig.repo}/issues/new?title=${encodeURIComponent(`[文档反馈] ${title}`)}&body=${encodeURIComponent(`页面链接: ${page.url}\n\n问题描述:\n`)}`}
       />
 
