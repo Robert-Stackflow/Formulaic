@@ -1836,8 +1836,7 @@ $$
     $$
     \Delta\mathbf{w}=-\alpha\nabla_{\mathbf{w}}J(\mathbf{w})
     $$
-    - \
-      abla\_{\mathbf{w}}J(\mathbf{w})：损失函数对参数的梯度
+    - $\nabla_{\mathbf{w}}J(\mathbf{w})$：损失函数对参数的梯度
     - 负号：沿着下降最快的方向
     - $\alpha$：学习率
 
@@ -2202,8 +2201,7 @@ $$
     \end{align*}
     $$
 
-  - 这里的 \
-    abla*\theta d^{\pi*\theta}(s) 等价于“策略参数变化，未来所有状态分布如何改变”，而这是一个**无限时序、递归依赖、不可显式计算**的对象
+  - 这里的 $\nabla_\theta d^{\pi_\theta}(s)$ 等价于“策略参数变化，未来所有状态分布如何改变”，而这是一个**无限时序、递归依赖、不可显式计算**的对象
   - 因此，**直接对策略目标函数求梯度是行不通的**
 
 - 策略梯度定理（Policy Gradient Theorem）
@@ -2217,8 +2215,7 @@ $$
           \end{align*}
     $$
 
-  - Score 函数即为 \
-    abla*\theta\log\pi*\theta(s,a)
+  - Score 函数即为 $\nabla_\theta\log\pi_\theta(s,a)$
   - 回到刚刚的公式：
 
     $$
@@ -2262,8 +2259,7 @@ $$
 
   - 上式中，初始分布 $\rho$ 不依赖 $\theta$，环境转移概率不依赖 $\theta$，全部消失
   - 其本质在于：改变策略，只能通过“改变动作选择概率”来影响未来
-  - 策略不会直接控制环境，只能控制 $\pi_\theta(a|s)$，所有未来的改变，都会被“压缩”进：\
-    abla*\theta\log\pi*\theta(a_t|s_t)
+  - 策略不会直接控制环境，只能控制 $\pi_\theta(a|s)$，所有未来的改变，都会被“压缩”进：$\nabla_\theta\log\pi_\theta(a_t|s_t)$
 
 - 对于任意可微策略和任意策略目标函数，策略梯度为
 
@@ -2271,8 +2267,7 @@ $$
   \nabla_\theta J(\theta)=\mathbb{E}_{\tau\sim\pi_\theta}\left[R(\tau)\nabla_\theta\log\pi_\theta(a_t|s_t)\right]
   $$
   - $R(\tau)$ 可以选 $Q^{\pi_\theta}(s,a)$
-  - 梯度中没有 \
-    abla*\theta d^{\pi*\theta}(s)​，不需要对状态分布求导，这是策略梯度能成立的关键原因
+  - 梯度中没有 $\nabla_\theta d^{\pi_\theta}(s)$，不需要对状态分布求导，这是策略梯度能成立的关键原因
   - $J(\theta)$ 本身不可直接计算，只能用采样估计
   - 上式子正是 $J(\theta)$ 的蒙特卡洛估计形式
 
@@ -2307,13 +2302,11 @@ $$
 #### 2.7.3 优势函数
 
 - 由于我们不能穷举所有状态/动作，通常用采样估计期望值
-  - \hat{g} = \frac{1}{N} \sum*{i=1}^N\
-    abla*\theta \log \pi\_\theta(a_i|s_i) \cdot R_i
+  - $\hat{g} = \frac{1}{N} \sum_{i=1}^N \nabla_\theta \log \pi_\theta(a_i|s_i) \cdot R_i$
   - 这就是**无基线策略梯度估计**，但它存在**高方差问题**
   - $R_i$​（奖励总回报）可能受未来长序列动作影响，变动范围大
   - 在实际中，使用状态值函数作为采样近似代替 $R$
-  - \
-    abla*\theta \log \pi*\theta(a_i|s_i) 的值乘上一个波动剧烈的 $R_i$​ 会造成不稳定
+  - $\nabla_\theta \log \pi_\theta(a_i|s_i)$ 的值乘上一个波动剧烈的 $R_i$​ 会造成不稳定
   - 当 $R$ 本身变动大，梯度估计的方差也大，会导致训练过程不稳定（更新方向不一致，收敛慢或震荡）
 - REINFORCE 存在高方差问题
   - $R$​ 是从整个轨迹累积下来的，它同时包含了“这个状态下动作的影响”+“后面所有随机性”的噪声
@@ -2721,8 +2714,7 @@ $$
     7. 重复直到达到终止状态
 
 - 误区澄清
-  - 在纯 V-critic Actor-Critic 中，Critic 并不直接为 Actor 提供动作区分信号，而动作区分完全由 \
-    abla*\theta \log \pi*\theta(a|s) 提供
+  - 在纯 V-critic Actor-Critic 中，Critic 并不直接为 Actor 提供动作区分信号，而动作区分完全由 $\nabla_\theta \log \pi_\theta(a|s)$ 提供
   - 状态价值函数 $V_w(s)$​ 仅作为 baseline 使用，而真正驱动策略更新的是 TD 误差
 
     $$
@@ -2801,8 +2793,7 @@ $$
 
   - 关键性质
     - Critic 不显式区分动作，**不显式表示优势**，只是“间接提供一个 noisy 的优势样本”
-    - 动作区分完全由 \
-      abla*\theta \log \pi*\theta(a|s) 提供
+    - 动作区分完全由 $\nabla_\theta \log \pi_\theta(a|s)$ 提供
     - TD 误差决定更新幅度与方向稳定性
     - 不满足兼容函数逼近定理，但实践中稳定高效
 
@@ -3484,8 +3475,7 @@ for each episode:
   - 利用后验概率指导探索
 - 贝叶斯 UCB
 - 概率匹配
-  - 选择动作 $a$ 满足：\pi(a\mid h_t)=\mathbb{P}\left[Q(a)>Q(a^{\prime}),\forall a^{\prime}\
-    eq a\mid h_t\right]
+  - 选择动作 $a$ 满足：$\pi(a\mid h_t)=\mathbb{P}\left[Q(a)>Q(a^{\prime}),\forall a^{\prime}\neq a\mid h_t\right]$
   - 将不确定性表示为概率分布，不确定的动作有更高的概率成为最大
 
 ##### 2.9.3.4 Thompson Sampling 算法

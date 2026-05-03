@@ -725,9 +725,9 @@ $$
 
       %% 向量数据库分片
       subgraph "向量数据库分片（节点/Pod）"
-          Shard1["分片 1<br>(本地索引，数据子集 A)"]:::shard
-          Shard2["分片 2<br>(本地索引，数据子集 B)"]:::shard
-          ShardN["分片 N<br>(本地索引，数据子集 N)"]:::shard
+          Shard1["分片 1<br/>(本地索引，数据子集 A)"]:::shard
+          Shard2["分片 2<br/>(本地索引，数据子集 B)"]:::shard
+          ShardN["分片 N<br/>(本地索引，数据子集 N)"]:::shard
       end
 
       %% 查询流程
@@ -783,7 +783,7 @@ $$
       subgraph 查询路径
           style 查询路径 fill:#e9ecef
           user_query((用户查询)):::userQuery
-          query_router[查询路由器/<br>负载均衡器]:::router
+          query_router[查询路由器/<br/>负载均衡器]:::router
       end
 
       %% 分布式向量索引分片
@@ -792,20 +792,20 @@ $$
 
           subgraph 分片1
               style 分片1 fill:#ffec99
-              s1_leader["分区 1<br>(主节点)"]
-              s1_replica1["索引分区 1<br>(副本)"]
+              s1_leader["分区 1<br/>(主节点)"]
+              s1_replica1["索引分区 1<br/>(副本)"]
           end
 
           subgraph 分片2
               style 分片2 fill:#ffec99
-              s2_leader["索引分区 2<br>(主节点)"]
-              s2_replica1["索引分区 2<br>(副本)"]
+              s2_leader["索引分区 2<br/>(主节点)"]
+              s2_replica1["索引分区 2<br/>(副本)"]
           end
 
           subgraph 分片N
               style 分片N fill:#ffec99
-              sN_leader["索引分区 N<br>(主节点)"]
-              sN_replica1["索引分区 N<br>(副本)"]
+              sN_leader["索引分区 N<br/>(主节点)"]
+              sN_replica1["索引分区 N<br/>(副本)"]
           end
       end
 

@@ -31,8 +31,8 @@ description: 介绍 vLLM 库在 LLM 推理中的应用
   - 浅色块
     - 对应 prefill 阶段 prompt 的 KV Cache，是推理必需的空间，不存在显存浪费
   - 中色块
-    - 对应 decode 阶段的 KV Cache（<eos> 为序列生成终止符）
-    - 这类空间最终会被完全使用，但在 decode 阶段逐 token 生成过程中，无法预知哪些位置会被实际占用（例如生成 prompt2 的 "when" 时，无法确定下一个 token 是 <eos> 还是其他词汇），因此属于「预留碎片（reservation fragment）」，是潜在的显存浪费
+    - 对应 decode 阶段的 KV Cache（\<eos> 为序列生成终止符）
+    - 这类空间最终会被完全使用，但在 decode 阶段逐 token 生成过程中，无法预知哪些位置会被实际占用（例如生成 prompt2 的 "when" 时，无法确定下一个 token 是 \<eos> 还是其他词汇），因此属于「预留碎片（reservation fragment）」，是潜在的显存浪费
   - 深色块
     - 同样属于 decode 阶段的 KV Cache 预留空间，但直到序列生成结束都未被使用，这类未利用的预留空间被称为「内部碎片（internal fragment）」
   - 灰色块

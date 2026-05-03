@@ -363,7 +363,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - 因为它优化的不是 FLOPs，而是 HBM 访问次数、数据复用（SRAM 内循环使用）
   - 本质上是把 attention 从 compute + huge IO 变成 compute + minimal IO
 - FlashAttention 什么时候不明显快？FlashAttention 为什么在短序列不明显？
-  - 短序列（比如 n < 512）时，attention matrix 本来就不大
+  - 短序列（比如 n \< 512）时，attention matrix 本来就不大
     - IO 不是瓶颈
     - kernel launch / 调度开销占比更高
   - 此时 FlashAttention 的优势（减少 IO）体现不出来，甚至可能略慢
@@ -1035,7 +1035,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   | 量化对象 | 权重（W）                                        | 权重（W）                               | 权重 + 激活（W+A）                   |
   | 位宽支持 | INT4/3/2（极致压缩）                             | INT4（主流）                            | INT8（W8A8）                         |
   | 校准需求 | 中（512-2048 样本）                              | 低（128-512 样本，更快）                | 低（轻量统计）                       |
-  | 精度表现 | 4bit 下 PPL 损失最小（~<1%）                     | 4bit 稳定，略逊 GPTQ（~1.5%）           | W8A8 几乎无掉点                      |
+  | 精度表现 | 4bit 下 PPL 损失最小（~\<1%）                     | 4bit 稳定，略逊 GPTQ（~1.5%）           | W8A8 几乎无掉点                      |
   | 推理速度 | 中（反量化开销）                                 | 中（反量化开销，AWQ 略快 GPTQ）         | 最快（INT8 硬件加速，TensorRT 最优） |
   | 部署栈   | AutoGPTQ、llama.cpp、GGUF                        | AutoAWQ、llama.cpp、GGUF                | TensorRT、FasterTransformer、ONNX    |
   | 适用场景 | 极限压缩、长文本、追求极致精度                   | 小样本/跨域、快速量化、稳定部署         | 生产级 INT8、最大化硬件吞吐          |

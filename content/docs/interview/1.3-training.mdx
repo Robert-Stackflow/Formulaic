@@ -285,7 +285,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
 - Ring AllReduce 相比 Tree AllReduce 优势和劣势？什么数据量下自动切换？
   - Ring AllReduce 的每个节点收发负载完全对称，大规模带宽饱和效果好
   - 在大规模场景下，带宽开销主导，Ring 流水线吞吐更高
-  - 小消息（一般 < 256KB ~ 1MB）：切 Tree/Star AllReduce，规避 Ring 线性 hop 延迟，压低 latency
+  - 小消息（一般 \< 256KB ~ 1MB）：切 Tree/Star AllReduce，规避 Ring 线性 hop 延迟，压低 latency
   - 大消息（ > 1MB，梯度大桶）：切 Ring AllReduce，打满带宽、流水线掩盖传输开销
 - Ring AllReduce 的 latency & bandwidth 理论计算公式？
   - 符号定义

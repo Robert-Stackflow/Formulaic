@@ -58,7 +58,7 @@ export function DocPageRenderer({ source, slug }: DocPageRendererProps) {
             <PageInfoCard
               owner={githubConfig.owner}
               repo={githubConfig.repo}
-              filePath={`${githubConfig.contentDir}${page.url}.md`}
+              filePath={`${githubConfig.contentDir}${page.url}.mdx`}
               pageUrl={page.url}
             />
           </div>
