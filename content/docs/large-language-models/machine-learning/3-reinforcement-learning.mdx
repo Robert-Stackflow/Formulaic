@@ -1434,7 +1434,7 @@ $$
   | λ 值      | Forward View              | Backward View               |
   | --------- | ------------------------- | --------------------------- |
   | λ = 0     | TD (0)                     | TD (0)                       |
-  | 0 <λ < 1 | Forward TD (λ)（λ-return） | TD (λ)（eligibility traces） |
+  | 0 \< λ \< 1 | Forward TD (λ)（λ-return） | TD (λ)（eligibility traces） |
   | λ = 1     | Monte Carlo（完整回报）   | TD (1)（累计 TD 误差）       |
 
 - 在线
@@ -1442,7 +1442,7 @@ $$
   | λ 值      | Forward View | Backward View         | 精确在线更新       |
   | --------- | ------------ | --------------------- | ------------------ |
   | λ = 0     | TD (0)        | TD (0)                 | TD (0)              |
-  | 0 <λ < 1 | ≠ TD (λ)      | TD (λ) ≠ Forward TD (λ) | Exact Online TD (λ) |
+  | 0 \< λ \< 1 | ≠ TD (λ)      | TD (λ) ≠ Forward TD (λ) | Exact Online TD (λ) |
   | λ = 1     | = MC         | TD (1) ≠ MC            | Exact Online TD (1) |
 
 - Sutton et al. 2014 提出了 Exact Online TD (λ) ，其目的是在每一步，用一个额外的修正项，抵消 “价值函数变化” 带来的偏差
@@ -1460,7 +1460,7 @@ $$
     $$
 
   - 在 eligibility trace 更新中加入修正项以显式补偿 “$V$ 在在线过程中变化” 带来的二阶误差
-  - 确保每一步的在线更新之和等于假设 $V$​ 冻结时的 forward 更新
+  - 确保每一步的在线更新之和等于假设 $V$ 冻结时的 forward 更新
   - Exact Online TD (λ) 是唯一一个在任意时刻，都严格等价于 forward TD (λ) 的在线算法
 
 - 三种方法的对比
