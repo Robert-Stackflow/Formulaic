@@ -19,7 +19,12 @@ const docSchema = pageSchema.extend({
 
 export const docs = defineDocs({
   dir: "content/docs",
-  docs: { schema: docSchema },
+  docs: {
+    schema: docSchema,
+    postprocess: {
+      includeProcessedMarkdown: true,
+    },
+  },
   meta: { schema: metaSchema },
 });
 

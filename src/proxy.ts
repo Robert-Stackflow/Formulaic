@@ -2,14 +2,15 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { consumeRateLimit } from "@/lib/rate-limit";
 import { getClientIdentifier } from "@/lib/client-identity";
+import { isMarkdownPreferred, rewritePath } from 'fumadocs-core/negotiation';
 
-// Aggressive rate limiting during attack
+const { rewrite: rewriteLLM } = rewritePath('/docs{/*path}', '/llms.mdx/docs{/*path}');
+
 const EDGE_RATE_LIMIT = {
-  limit: 1000, // Reduced from 80 to 30 requests per minute
+  limit: 1000,
   windowMs: 60_000,
 } as const;
 
-// Known malicious bot user-agents
 const BLOCKED_USER_AGENTS = [
   "python-requests",
   "curl",
@@ -49,12 +50,10 @@ function isBlockedUserAgent(userAgent: string | null): boolean {
 const PROTECTED_PATHS = ["/discuss", "/todos", "/settings"];
 
 export async function proxy(request: NextRequest) {
-  // 1. 限流和UA拦截（所有请求都生效）
   if (request.method !== "GET" && request.method !== "HEAD") {
     return NextResponse.next();
   }
 
-  // Block known malicious bots
   const userAgent = request.headers.get("user-agent");
   if (isBlockedUserAgent(userAgent)) {
     return NextResponse.json(BLOCKED_MESSAGE, { status: 403 });
@@ -74,7 +73,6 @@ export async function proxy(request: NextRequest) {
     });
   }
 
-  // 2. 登录保护（仅指定路径）
   const { pathname } = request.nextUrl;
   const isProtected = PROTECTED_PATHS.some(
     (path) => pathname === path || pathname.startsWith(`${path}/`)
@@ -89,11 +87,18 @@ export async function proxy(request: NextRequest) {
     }
   }
 
-  // 限流头部合并到最终响应
   const response = NextResponse.next();
   for (const [key, value] of headers.entries()) {
     response.headers.set(key, value);
   }
+
+  if (isMarkdownPreferred(request)) {
+    const result = rewriteLLM(request.nextUrl.pathname);
+    if (result) {
+      return NextResponse.rewrite(new URL(result, request.nextUrl));
+    }
+  }
+
   return response;
 }
 

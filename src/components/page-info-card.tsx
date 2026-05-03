@@ -9,7 +9,7 @@ import {
   Users,
   MessageSquareIcon,
 } from "lucide-react";
-import { set } from "zod";
+import { pvConfig } from "@/config/pv";
 
 interface PageInfoCardProps {
   owner: string;
@@ -34,6 +34,28 @@ interface PVData {
 
 interface DiscussionData {
   totalCommentCount: number;
+}
+
+/**
+ * 将 UTC 时间字符串转为 本地时区 的 YYYY-MM-DD HH:mm:ss 格式
+ * @param {string|Date} utcDate - GitHub 等返回的 UTC 时间字符串（如 2025-12-25T10:00:00Z）
+ * @returns {string} 本地时间格式化字符串
+ */
+function formatLocalDateTime(utcDate: string | Date): string {
+  const date = new Date(utcDate);
+
+  if (isNaN(date.getTime())) {
+    return "无效日期";
+  }
+
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  const seconds = String(date.getSeconds()).padStart(2, "0");
+
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
 }
 
 export function PageInfoCard({
@@ -65,20 +87,16 @@ export function PageInfoCard({
               sha: commit.sha.substring(0, 7),
               message: commit.commit.message.split("\n")[0],
               author: commit.committer.login,
-              date: new Date(commit.commit.author.date)
-                .toISOString()
-                .replace("T", " ")
-                .substring(0, 19),
+              date: formatLocalDateTime(commit.commit.author.date),
             });
           }
         }
 
         // Fetch PV data
-        const pvResponse = await fetch("https://pv.cloudchewie.com/api", {
+        const pvResponse = await fetch(pvConfig.apiUrl, {
           method: "POST",
           headers: {
-            Authorization:
-              "Bearer e9a61a0ea664a1ddff341165c3643a1a.1ddc26ca6681535bfd2486b9b30147b903dfb6cb",
+            Authorization: `Bearer ${pvConfig.token}`,
           },
         });
 
@@ -88,14 +106,7 @@ export function PageInfoCard({
             setPvData(pvResult.data);
           }
         }
-
-        setPvData({
-          page_pv: 100, // Example data, replace with actual values
-          page_uv: 80,
-          site_pv: 600,
-          site_uv: 500,
-        });
-
+        
         // Fetch discussion data
         const discussionResponse = await fetch(
           `https://giscus.app/api/discussions?repo=${owner}/${repo}&term=${encodeURIComponent(pageUrl)}&category=General&number=0&strict=false&last=15`,

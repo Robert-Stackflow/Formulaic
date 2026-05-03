@@ -4,7 +4,9 @@
       "WebFetch(domain:www.fumadocs.dev)",
       "PowerShell(Get-ChildItem -Path \"src\\\\app\" -Directory | Where-Object { $_.Name -match \"^\\(programming-languages|algorithms|computer-system-basics|large-language-models|backend-development|devops|interview\\)$\" } | Select-Object Name)",
       "PowerShell($dirs = @\\(\"algorithms\", \"backend-development\", \"computer-system-basics\", \"devops\", \"interview\", \"large-language-models\", \"programming-languages\"\\); foreach \\($dir in $dirs\\) { Move-Item -Path \"src\\\\app\\\\$dir\" -Destination \"src\\\\app\\\\\\(docs\\)\\\\\" -Force })",
-      "PowerShell($dirs = @\\(\"algorithms\", \"backend-development\", \"computer-system-basics\", \"devops\", \"interview\", \"large-language-models\", \"programming-languages\"\\); foreach \\($dir in $dirs\\) { Move-Item -Path \".\\\\src\\\\app\\\\$dir\" -Destination \".\\\\src\\\\app\\\\\\(docs\\)\\\\\" -Force })"
+      "PowerShell($dirs = @\\(\"algorithms\", \"backend-development\", \"computer-system-basics\", \"devops\", \"interview\", \"large-language-models\", \"programming-languages\"\\); foreach \\($dir in $dirs\\) { Move-Item -Path \".\\\\src\\\\app\\\\$dir\" -Destination \".\\\\src\\\\app\\\\\\(docs\\)\\\\\" -Force })",
+      "Bash(rm -f \"src/app/docs/[...slug]/route.ts\")",
+      "Bash(mkdir -p \"src/app/llms.mdx/docs/[[...slug]]\")"
     ]
   }
 }

@@ -107,7 +107,7 @@ export default function HomePage() {
           <div>
             <div className="inline-flex items-center gap-2 rounded-full border border-fd-border bg-fd-card px-3 py-1.5 text-xs text-fd-muted-foreground shadow-sm">
               <span className="h-1.5 w-1.5 rounded-full bg-fd-primary animate-pulse" />
-              系统性学习平台
+              Mailstone Version
             </div>
             <h1 className="mt-4 sm:mt-6 text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold tracking-tight text-fd-foreground">
               Formulaic
@@ -138,16 +138,30 @@ export default function HomePage() {
             {/* Stats */}
             <div className="mt-8 sm:mt-10 lg:mt-12 grid grid-cols-3 gap-4 sm:gap-6">
               {[
-                { label: "总访问量", value: "100K+" },
-                { label: "文档字数", value: "50w+" },
-                { label: "持续更新", value: "∞" },
+                {
+                  label: "总访问量",
+                  value: "100K+",
+                  tip: "根据 busuanzi 统计",
+                },
+                {
+                  label: "文档字数",
+                  value: "50w+",
+                  tip: "统计中文字符数和英文单词数",
+                },
+                { label: "持续更新", value: "∞", tip: "内容定期更新维护" },
               ].map((stat) => (
-                <div key={stat.label} className="text-center">
+                <div key={stat.label} className="text-center group relative">
                   <div className="text-2xl sm:text-3xl font-bold text-fd-primary">
                     {stat.value}
                   </div>
                   <div className="mt-1 text-xs sm:text-sm text-fd-muted-foreground">
                     {stat.label}
+                  </div>
+                  {/* Tooltip */}
+                  <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 px-3 py-1.5 bg-fd-popover text-fd-popover-foreground text-xs rounded-lg shadow-lg border border-fd-border opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap pointer-events-none z-10">
+                    {stat.tip}
+                    {/* Arrow */}
+                    <div className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-fd-popover"></div>
                   </div>
                 </div>
               ))}

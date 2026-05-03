@@ -86,11 +86,11 @@ export function DocPageRenderer({ source, slug }: DocPageRendererProps) {
             className="flex flex-row flex-wrap gap-2 items-center"
             id="doc-page-actions"
           >
-            <LLMCopyButton markdownUrl={`${page.url}.md`} />
+            <LLMCopyButton markdownUrl={`${page.url}.mdx`} />
             <ExportPDFButton />
             <ViewOptions
-              markdownUrl={`${page.url}.md`}
-              githubUrl={`https://github.com/${githubConfig.owner}/${githubConfig.repo}/blob/${githubConfig.branch}/${githubConfig.contentDir}${page.url}.md`}
+              markdownUrl={`${page.url}.mdx`}
+              githubUrl={`https://github.com/${githubConfig.owner}/${githubConfig.repo}/blob/${githubConfig.branch}/${githubConfig.contentDir}${page.url}.mdx`}
             />
           </div>
         </div>

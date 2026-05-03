@@ -13,6 +13,14 @@ const config = {
     remotePatterns: [], // Prevent external image loading
     unoptimized: true, // Disable built-in image optimization
   },
+  async rewrites() {
+    return [
+      {
+        source: "/docs/:path*.mdx",
+        destination: "/llms.mdx/docs/:path*",
+      },
+    ];
+  },
   async headers() {
     return [
       {
