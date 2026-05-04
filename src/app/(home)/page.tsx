@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { Footer } from "@/components/footer";
 import { ScrollDownIndicator } from "@/components/scroll-down-indicator";
+import { HomeStats } from "@/components/home-stats";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -136,36 +137,7 @@ export default function HomePage() {
             </div>
 
             {/* Stats */}
-            <div className="mt-8 sm:mt-10 lg:mt-12 grid grid-cols-3 gap-4 sm:gap-6">
-              {[
-                {
-                  label: "总访问量",
-                  value: "100K+",
-                  tip: "根据 busuanzi 统计",
-                },
-                {
-                  label: "文档字数",
-                  value: "70w+",
-                  tip: "统计中文字符数和英文单词数",
-                },
-                { label: "持续更新", value: "∞", tip: "内容定期更新维护" },
-              ].map((stat) => (
-                <div key={stat.label} className="text-center group relative">
-                  <div className="text-2xl sm:text-3xl font-bold text-fd-primary">
-                    {stat.value}
-                  </div>
-                  <div className="mt-1 text-xs sm:text-sm text-fd-muted-foreground">
-                    {stat.label}
-                  </div>
-                  {/* Tooltip */}
-                  <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 px-3 py-1.5 bg-fd-popover text-fd-popover-foreground text-xs rounded-lg shadow-lg border border-fd-border opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap pointer-events-none z-10">
-                    {stat.tip}
-                    {/* Arrow */}
-                    <div className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-fd-popover"></div>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <HomeStats />
           </div>
 
           <div className="rounded-3xl border border-fd-border bg-fd-card p-6 sm:p-8 shadow-xl backdrop-blur-sm">
