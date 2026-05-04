@@ -651,29 +651,29 @@ description: 介绍分布式训练的基本概念与技术
 - 实现这一点后，可以进一步省去 Server，只保留 Worker，这就是 Ring AllReduce 的初衷
 - 假设有 4 块 GPU，每块 GPU 上的梯度也对应被切成 4 份，而 AllReduce 的最终目标，就是让每块 GPU 上的梯度都变成汇总后的结果
 
-![ddp-1](/img/llm\ddp-1.jpg)
+![ddp-1](/img/llm/ddp-1.jpg)
 
 - Ring-ALLReduce 则分两大步骤实现该目标：Reduce-Scatter 和 All-Gather
 - Reduce-Scatter：首先定义网络拓扑关系，使得每个 GPU 只和其相邻的两块 GPU 通讯，每次发送对应位置的数据进行累加
 
-  ![ddp-2](/img/llm\ddp-2.jpg)
+  ![ddp-2](/img/llm/ddp-2.jpg)
 
 - 每一次累加更新都形成一个拓扑环，因此被称为 Ring
 
-  ![ddp-3](/img/llm\ddp-3.jpg)
+  ![ddp-3](/img/llm/ddp-3.jpg)
 
 - 一次累加完毕后，蓝色位置的梯度块被更新，被更新的梯度块将成为下一次更新的起点，继续做累加操作
 
-  ![ddp-4](/img/llm\ddp-4.jpg)
+  ![ddp-4](/img/llm/ddp-4.jpg)
 
-  ![ddp-5](/img/llm\ddp-5.jpg)
+  ![ddp-5](/img/llm/ddp-5.jpg)
 
 - 3 次更新之后，每块 GPU 上都有一块梯度拥有了对应位置完整的聚合
 - 此时，Reduce-Scatter 阶段结束，进入 All-Gather 阶段，其目标是把红色块的梯度广播到其余 GPU 对应的位置上
 - All-Gather 操作依然按照 “相邻 GPU 对应位置进行通讯” 的原则，但对应位置的梯度不再做相加，而是直接替换
 - All-Gather 以红色块作为起点，经过 3 轮迭代后，每块 GPU 上都汇总到了完整的梯度
 
-  ![ddp-6](/img/llm\ddp-6.jpg)
+  ![ddp-6](/img/llm/ddp-6.jpg)
 
 - 设模型参数量为 $\Phi$，GPU 个数为 $N$，梯度总量为 $\Phi$，每个梯度块大小为 $\frac {\Phi}{N}$
 - DP（DataParallel）通讯量分析
@@ -737,7 +737,7 @@ description: 介绍分布式训练的基本概念与技术
   - 训练过程中产生的（Residual States）：激活值、临时缓冲、碎片化空间
   - 虽然总存储空间足够，但如果取不到连续的存储空间，相关的请求也会失败，对这类空间浪费可以通过内存整理来解决
 
-  ![gpu-memory-consumption](/img/llm\gpu-memory-consumption.jpg)
+  ![gpu-memory-consumption](/img/llm/gpu-memory-consumption.jpg)
 
 - 模型显存计算（设参数 W 大小为 $\Phi$）
   - 使用 FP32（单精度浮点数，存储占用 4 字节），或者使用 FP16/BF16（半精度浮点数，存储占用 2 字节）
@@ -747,7 +747,7 @@ description: 介绍分布式训练的基本概念与技术
   - 用 fp16 gradients 更新 fp32 下的 model states
   - 当模型收敛后，fp32 的 parameter 就是最终的参数输出
 
-  ![gpu-memory-amp](/img/llm\gpu-memory-amp.jpg)
+  ![gpu-memory-amp](/img/llm/gpu-memory-amp.jpg)
 
 - 表格计算
 
@@ -772,7 +772,7 @@ description: 介绍分布式训练的基本概念与技术
   - 一份完整梯度（G）：只在 All-Reduce 和更新参数时使用
   - 一份完整 optimizer state（O）：只在更新参数时使用
 
-  ![zero-1](/img/llm\zero-1.jpg)
+  ![zero-1](/img/llm/zero-1.jpg)
 
 - 而 DeepSpeed ZeRO 的核心思想就是，将这些与模型相关的状态分片存储在各个 GPU 上
 - ZeRO 的全称是 Zero Redundancy Optimizer，指的是在数据并行组内，不再冗余存储模型状态，每个 GPU 只保留一部分
@@ -803,7 +803,7 @@ description: 介绍分布式训练的基本概念与技术
   - 灰色部分一直占用的显存：每张 GPU 上都存放完整的 FP16 精度模型，这部分显存是固定占用的，专门负责前向传播和反向传播的计算，不会被释放
   - 橙色部分一直被占用的显存：FP16 模型被按卡 “切块” 后转成 FP32 精度，存到优化器中（`partiton_fp16.copy().float().detach()`），这部分显存只负责权重更新，且脱离计算图（detach）—— 意味着它不参与前 / 反向计算，仅作为优化器更新的 “数据源”
 
-  ![zeo1-1](/img/llm\zero1-1.jpg)
+  ![zeo1-1](/img/llm/zero1-1.jpg)
   - 因此在一次 optimizer step 中，只有 $\frac {1}{N_d}$​​ 的 FP32 参数会在该 rank 上被更新
 
 - 权重更新的触发条件
@@ -813,7 +813,7 @@ description: 介绍分布式训练的基本概念与技术
     - 首先执行 `fp16._copy(fp32)`：把 fp32 优化器中更新后的权重 “原位复制” 到 fp16 模型中（原位复制 = 不需要新分配显存，所以 fp16 的 500MB 显存块始终存在）
     - 然后执行 all-gather：同步各卡的 fp16 权重，保证模型参数一致性 —— 把各个 rank 上更新好的参数切片重新收集，使每个 DP rank 再次拥有完整、同步的模型参数，产生单卡通讯量 $\Phi$
 
-  ![zero1-flow](/img/llm\zero1-flow.jpg)
+  ![zero1-flow](/img/llm/zero1-flow.jpg)
 
 - 经过 ZeRO-1 优化的显存计算
 
@@ -870,7 +870,7 @@ description: 介绍分布式训练的基本概念与技术
   - 在 optimizer step 中，这 $\frac {1}{N_d}$​​​ 的 FP32 梯度仅用于更新本 rank 持有的优化器状态和对应的参数分片
   - 在进行梯度分片后，最终也需要对 W 做一次 all-gather，来保证 W 是完整更新后的
 
-  ![zero2-flow](/img/llm\zero2-flow.jpg)
+  ![zero2-flow](/img/llm/zero2-flow.jpg)
 
 - 显存和通信量分析
 
@@ -1021,7 +1021,7 @@ description: 介绍分布式训练的基本概念与技术
   - 更新结束后，仅按需同步必要的半精度权重回 GPU 用于下一轮迭代
   - 既最大化释放 GPU 宝贵的高速显存，又利用 CPU 大容量内存兜底，规避跨机器集合通信的性能损耗，实现显存占用与训练吞吐的平衡
 
-![zero-offload](/img/llm\zero-offload.jpg)
+![zero-offload](/img/llm/zero-offload.jpg)
 
 ### 相关分析
 
@@ -1246,11 +1246,11 @@ description: 介绍分布式训练的基本概念与技术
   - 将完整的输入矩阵 $X$ 复制到每一个 worker 上 → 这需要一次 broadcast
   - 将权重矩阵 $W$ 按列切分，每个 worker 使用完整的 $X$ 与本地的部分权重 $W_i$​ 相乘
 
-  ![tp-column](/img/llm\tp-column.jpg)
+  ![tp-column](/img/llm/tp-column.jpg)
   - 最后使用 all-gather 将各个 worker 的输出拼接成完整结果
   - 反向传播过程
 
-    ![tp-column-bwd](/img/llm\tp-column-bwd.jpg)
+    ![tp-column-bwd](/img/llm/tp-column-bwd.jpg)
 
   - g 的反向传播：$\frac {\partial L}{\partial W_i} = \frac {\partial L}{\partial Y_i} * \frac {\partial Y_i}{\partial W_i}$
   - f 的反向传播：对于损失 L，X 既参与了 XW1 的计算，也参与了 XW2 的计算，因此有 $\frac {\partial L}{\partial X} = \frac {\partial L}{\partial X} \bigg|\mathbf {1} + \frac {\partial L}{\partial X} \bigg|\mathbf {2}$，其中 $\frac {\partial L}{\partial X} \bigg|\mathbf {i}$ 表示第 i 块 GPU 上计算到 X 时的梯度
@@ -1261,12 +1261,12 @@ description: 介绍分布式训练的基本概念与技术
   - 第二种方式是按行分片（也称 row-linear）
   - 将权重矩阵 $W$​ 按行切分，X 和它的维度无法对齐，因此需要将输入 X 按列切分 → 这里不再使用 broadcast，而是使用 scatter（这是第四种通信原语）
 
-  ![tp-row](/img/llm\tp-row.jpg)
+  ![tp-row](/img/llm/tp-row.jpg)
   - 每个 worker 计算本地部分的结果
   - 各个 worker 的输出形状已经正确，但需要求和得到最终结果 → 使用 all-reduce
   - 那么反向传播如何进行？
 
-    ![tp-row-bwd](/img/llm\tp-row-bwd.jpg)
+    ![tp-row-bwd](/img/llm/tp-row-bwd.jpg)
 
   - 其中，f 和 g 分别表示两个算子，每个算子都包括一组 forward + backward 操作
   - g 的反向传播：假定现在对 $W_i$ 求梯度，可以根据链式法则推出 $\frac {\partial L}{\partial W_i} = \frac {\partial L}{\partial Y} * \frac {\partial Y}{\partial Y_i} * \frac {\partial Y_i}{\partial W_i} = \frac {\partial L}{\partial Y} * \frac {\partial Y_i}{\partial W_i}$，因此只需要把 $\frac {\partial L}{\partial Y}$ 同时广播到两块 GPU 上，两块 GPU 就可以独自计算各自权重的梯度
@@ -1360,7 +1360,7 @@ $$
 
 - Megatron 的拆分方法如下
 
-![mlp-tp](/img/llm\mlp-tp.jpg)
+![mlp-tp](/img/llm/mlp-tp.jpg)
 
 - 第一层（$W_1$）：Column Parallel
   - hidden dim 通常很大（如 4×）
@@ -1379,7 +1379,7 @@ $$
 - 如果用 Row → Column：
   - 由于 GELU 函数的性质
 
-    ![tp-mlp-glu](/img/llm\tp-mlp-glu.jpg)
+    ![tp-mlp-glu](/img/llm/tp-mlp-glu.jpg)
 
   - GELU 的标准计算公式为：
 
@@ -1424,7 +1424,7 @@ $$
 
 - 首先是单头注意力的 QKV 矩阵
 
-  ![tp-attn](/img/llm\tp-attn.jpg)
+  ![tp-attn](/img/llm/tp-attn.jpg)
 
 - `seq_len`, `d_model` 分别为 `s` 和 `h`，也即序列长度和每个 token 的向量维度
 - `W^Q`, `W^K`, `W^V` 即 attention 层需要做训练的三块权重
@@ -1436,11 +1436,11 @@ $$
 
 - 那么对于多头注意力，可以直接沿着 k_dim 的列方向切割 QKV 矩阵，这样三个权重矩阵的维度都变为 [d_model, k_dim//2]，每个 head 上单独做矩阵计算，最后将计算结果 concat 起来即可
 
-  ![tp-mha](/img/llm\tp-mha.jpg)
+  ![tp-mha](/img/llm/tp-mha.jpg)
 
 - 显然，多头注意力机制天然可以沿着 $num\_attention\_heads$​ 维度并行，每个 attention head 彼此独立
 
-  ![tp-mha](/img/llm\tp-mha-2.jpg)
+  ![tp-mha](/img/llm/tp-mha-2.jpg)
 
 - 对于线性层 B，按照行切割，切割方式与 MLP 类似
 - 在实际应用中，并不一定按照一个 head 占用一块 GPU 来切割权重，我们也可以一个多个 head 占用一块 GPU，这依然不会改变单块 GPU 上独立计算的目的
@@ -1450,7 +1450,7 @@ $$
   - 总通讯量为 $4\Phi$，其中 $\Phi=b*s*h$​
 - 将 MLP 和 MHA 放在一起看
 
-  ![tp-mha-mlp](/img/llm\tp-mha-mlp.jpg)
+  ![tp-mha-mlp](/img/llm/tp-mha-mlp.jpg)
 
 - 之所以能够如此高效地在 Attention 和 MLP 模块中应用张量并行，是因为它们都具有天然可独立分解的维度：
   - Attention 模块可以沿着 $num\_attention\_heads$ 维度并行（每个 attention head 彼此独立）
@@ -1462,7 +1462,7 @@ $$
   - 对于位置编码 [max_s, h]，max_s 不会太长，因此每个 GPU 都拷贝一份，对显存压力不会太大
   - 对于词嵌入 [v,h]，则需要进行切分
 
-    ![tp-embedding](/img/llm\tp-embedding.jpg)
+    ![tp-embedding](/img/llm/tp-embedding.jpg)
 
   - 当输入 X 在每块 GPU 上查找时，能够找到的词返回对应的词向量，如果找不到就都置为 0
   - 这样查找完毕后，进行一次 all-reduce，就能够得到最终的输入
@@ -1470,7 +1470,7 @@ $$
 - 输出层
   - 一般来说，输入层和输出层共用一个 word embedding
 
-    ![img](/img/llm\tp-embedding-output.jpg)
+    ![img](/img/llm/tp-embedding-output.jpg)
 
   - 前向过程：输入层用这套权重把 token→向量；输出层用这套权重计算每个 token 的预测概率
   - 反向过程：
@@ -1491,7 +1491,7 @@ $$
 - 在输出嵌入层得到 Y1，Y2 后，可以对其做一次 all-gather 拼接起来后形成 Y，然后对 Y 的每一行进行 softmax，即可得到对于当前位置而言，每个词出现的概率，然后再用词概率和真值计算交叉熵损失
 - 但是进行 all-gather 会引入额外的通讯量 $b*s*v$，当词表很大时，这个通讯量也不容忽视
 
-  ![img](/img/llm\loss-tp.jpg)
+  ![img](/img/llm/loss-tp.jpg)
 
 - 在每块 GPU 上，可以先按行求和，然后进行 all-reduce，得到最终的和，也即 softmax 的分母，此时通讯量为 $b*s$
 - 在每块 GPU 上，即可计算维护各自部分的 softmax 值，然后再与真值计算交叉熵损失，按行加总起来得到 GPU 上的标量损失
@@ -1565,7 +1565,7 @@ $$
 
 - 常见结合模式
 
-  ![img](/img/llm\tp-dp.jpg)
+  ![img](/img/llm/tp-dp.jpg)
 
 - 其中，node 表示一台机器，一般在同一台机器的 GPU 间做张量模型并行，而在不同的机器上做数据并行
 - 通讯量分析（关注每层 Transformer）
@@ -1583,12 +1583,12 @@ $$
 - 反向传播的方式
   - 在 TP 中，从上一层到下一层进行反向传播时，所有 GPU 之间需要进行一次 all-reduce
 
-    ![img](/img/llm\tp-bwd.jpg)
+    ![img](/img/llm/tp-bwd.jpg)
 
   - 而在 DP 中，本层计算完梯度后，既可以将本层的梯度转发出去，和属于同一个 DP 组的 GPU 进行 all-reduce，同时继续进行下一层的反向传播
   - 也即，在 DP 组中，下一层不依赖上一层的梯度聚合结果，因此 DP 对带宽的需求相较来说没有那么高
 
-    ![img](/img/llm\dp-bwd.jpg)
+    ![img](/img/llm/dp-bwd.jpg)
 
 ## 序列并行（Sequence Parallelism）
 
@@ -1619,7 +1619,7 @@ $$
 
 - 示意图如下
 
-  ![mlp-activation](/img/llm\mlp-activation.jpg)
+  ![mlp-activation](/img/llm/mlp-activation.jpg)
 
 - MLP 是 Transformer 中 “全连接层 + 激活函数 + dropout” 的核心模块，其流程为：
   `输入 → 线性层A (h→4h) → GELU → 线性层B (4h→h) → Dropout → 输出`
@@ -1703,7 +1703,7 @@ $$
 
 - 示意图
 
-  ![img](/img/llm\attention-activation.jpg)
+  ![img](/img/llm/attention-activation.jpg)
 
 - 设 `b=batch_size`, `s=seq_len`, `h=hidden_size`, `a = head_num`
 - Input LN：数据进过 `LayerNorm` 前的结果将会被用在 bwd 的计算中，因此会被作为激活值存储下来，其占据的存储大小为 2bsh，单位为 bytes
@@ -1908,7 +1908,7 @@ $$
 
 - Megatron 对 TP 的通信优化示意图如下
 
-  ![img](/img/llm\megatron-tp-overlap.jpg)
+  ![img](/img/llm/megatron-tp-overlap.jpg)
 
 - 图中的红 / 黄框分别展示了计算与通信之间的依赖关系，具体说明如下：
   - 红色框：通信操作与对应的计算操作存在依赖关系，默认需串行执行；但可通过优化手段实现计算与通信的重叠（Overlap）
@@ -1923,7 +1923,7 @@ $$
 - 在输入 attn 或 MLP 层之前，都需要先进行 all-gather
   - 这里，需要等待 A0，A1 进行 all-gather 之后，才能开始计算，没有实现任何的计算通信 overlap
 
-  ![img](/img/llm\all-gather-overlap-1.jpg)
+  ![img](/img/llm/all-gather-overlap-1.jpg)
 
 - 可以使用 all-gather overlap p2p 进行优化（tp_comm_overlap_ag）
   - 在初始阶段，GPU0 上存放着输入块 $A_0$ 和模型权重分块 $B_0$，GPU1 上存放着输入块 $A_1$ 和模型权重分块 $B_1$
@@ -1933,7 +1933,7 @@ $$
     - 待 GPU0 完成 $C_{00}$ 的计算并收到 $A_1$ 后，即可继续执行 $\text {gemm}(A_1, B_0)$ 得到 $C_{10}$；GPU1 同理，在完成 $C_{11}$ 并收到 $A_0$ 后，执行 $\text {gemm}(A_0, B_1)$ 得到 $C_{01}$
   - 在 overlap 模式下，无需等待输入数据完成 All-Gather 后再启动计算，从而有效缩短了整体运行时间
 
-  ![img](/img/llm\all-gather-overlap-2.jpg)
+  ![img](/img/llm/all-gather-overlap-2.jpg)
 
 - 多卡下的 all-gather overlap
   - partition：表示参与并行计算的 GPU 卡；iteration：表示每一轮迭代，每轮迭代内部都包含了计算与通信的 overlap
@@ -1947,7 +1947,7 @@ $$
     - 同时，它会将 $D_3$ 发送给 partition 1，并从 partition 3 接收新的数据 $D_0$
   - 后续迭代以此类推，数据块在环形拓扑中持续轮转，每张卡依次使用不同的数据块完成计算，同时与相邻卡进行数据交换，实现计算与通信的 overlap
 
-  ![img](/img/llm\all-gather-overlap-3.jpg)
+  ![img](/img/llm/all-gather-overlap-3.jpg)
 
 - 接下来，如何进行 reduce-scatter 的通信覆盖？
 - 朴素的 reduce-scatter 如下
@@ -1962,7 +1962,7 @@ $$
   - 朴素 Reduce-Scatter 模式的问题：需等待 GPU0 完整计算出 $[C_{00}, C_{10}]$、GPU1 完整计算出 $[C_{01}, C_{11}]$ 后，才能启动 Reduce-Scatter 通信，计算与通信无法重叠，整体耗时较长
   - 原始图片中输入标注为 $[A_0, A_1]$，此处针对性修改是因为在 TP 并行的 MLP 模块 FC2 层中，不同 GPU 卡上的输入数据块本身存在差异，需贴合该场景的实际数据分布特征
 
-  ![img](/img/llm\reduce-scatter-overlap-1.jpg)
+  ![img](/img/llm/reduce-scatter-overlap-1.jpg)
 
 - reduce-scatter overlap p2p（tp_comm_overlap_rs）
   - 与 All-Gather 重叠优化的思路一致，这里同样采用 P2P Ring Exchange（环形点对点交换） 的通信方式
@@ -1972,7 +1972,7 @@ $$
   - 假设总共有 n 块 GPU，那么经过 n−1 轮 环形交换后，缓冲区 Cᵢ 会重新流转回到 GPUᵢ 手中
   - 此时由 GPUᵢ 完成最后一轮与 Cᵢ 相关的计算，计算结束后，Cᵢ 中就存放了最终的聚合结果
 
-  ![img](/img/llm\reduce-scatter-overlap-2.jpg)
+  ![img](/img/llm/reduce-scatter-overlap-2.jpg)
 
 - 多卡情况如下
   - 在 iteration0 中，受 P2P ring exchange 机制影响：
@@ -1987,7 +1987,7 @@ $$
     - 此时 C0 中已经汇聚了其他所有 partition 上与 partition0 相关的计算结果
     - 只需 partition0 将自身对应的结果再更新到 C0 中，即可得到最终的聚合结果
 
-  ![img](/img/llm\reduce-scatter-overlap-3.jpg)
+  ![img](/img/llm/reduce-scatter-overlap-3.jpg)
 
 - 另一种并行方式：reduce-scatter overlap pipeline chunk
   - 传统流程中，需完成完整的 `gemm(A, B)` 计算后，再对整体结果执行 Reduce-Scatter 操作
@@ -2046,7 +2046,7 @@ $$
 
 - 朴素 Attention 的计算过程
 
-![img](/img/llm\naive-attention.jpg)
+![img](/img/llm/naive-attention.jpg)
 
 - 一个朴素 Attention 的计算过程如上图所示，在此设定 Q、K、V 三个矩阵的维度均为 $(N, d)$，其中 $N$ 代表序列长度（$seq\_len$），$d$ 代表隐藏层维度（$hidden\_size$）
 - 为了便于后续阐述 Ring Attention 的切块计算逻辑，上图将 Q、K、V 均切分为 4 个块，每个分块的维度为 $(c, d)$
@@ -2073,7 +2073,7 @@ $$
 
 - 对于单个 GPU，其基本思路是
 
-  ![img](/img/llm\single-gpu-chunk.jpg)
+  ![img](/img/llm/single-gpu-chunk.jpg)
   - 固定住某个 $\mathbf {Q}_i$，其尺寸为 $(c, d)$
   - 将该 $\mathbf {Q}_i$ 分别传入不同的 $\mathbf {K}_j$、$\mathbf {V}_j$ 数据块，计算对应的 $\mathbf {O}_{ij}$
   - 通过某种方式，每传入一份 $(\mathbf {K}_j, \mathbf {V}_j)$，就更新一次 $\mathbf {O}_{ij}$
@@ -2103,7 +2103,7 @@ $$
 
 - 一个更详细的流程如下
 
-  ![img](/img/llm\ring-atten.jpg)
+  ![img](/img/llm/ring-atten.jpg)
 
 - 假设 4 张 GPU，序列长度 $s = 4$，每张 GPU 上 1 个 token，GPU $i$ 初始持有 $(Q_i, K_i, V_i)$
 - 每一轮（总共 4 轮），每张 GPU 做三件事：
@@ -2162,7 +2162,7 @@ $$
 
 - 4D 并行示意图
 
-  ![img](/img/llm\4d-parallel.jpg)
+  ![img](/img/llm/4d-parallel.jpg)
 
 - 并行维度与 GPU 数量计算
   - 并行维度配置：`tp = 2`, `cp = 2`, `dp = 2`, `pp = 2`
@@ -2217,7 +2217,7 @@ $$
 
 - 在 casual attention 中，Ring Attention 存在严重的负载不均衡
 
-  ![img](/img/llm\cp_attnmask.svg)
+  ![img](/img/llm/cp_attnmask.svg)
   - 因果注意力的 mask 是下三角矩阵，token $i$ 只能看 $[1, i]$
   - 而 softmax 是按行算的，因此一行只要 “所需的 K/V 都到了”，这一行就可以立刻算完，不需要等完整一圈，于是不同 GPU 的 “等待条件” 完全不同
   - 如图中所示：GPU 1 很快空闲，GPU 2 少量工作，GPU 3、4 成为瓶颈，整体吞吐被最慢的 GPU 决定
@@ -2225,7 +2225,7 @@ $$
 - 前面提到过，分块 attention 的计算其实是和计算顺序无关的，核心是只要每次计算时都能拿到当前分块的 output，当前未做 softmax 前 attention score 矩阵的 max 和 sum 相关信息，就能正常更新最终的 output
 - 基于此，可以重新设计 Ring Attention 上每块卡中存放的 seq_chunk
 
-  ![img](/img/llm\ring-attention-improve.jpg)
+  ![img](/img/llm/ring-attention-improve.jpg)
 
 - 假设上下文并行尺寸：`cp_size = 4`（GPU0、GPU1、GPU2、GPU3 组成 CP 组）
   - 首先，原始输入数据 `X` 被切分为 `2*cp_size = 8` 个序列块（记为 0~7）
@@ -2241,7 +2241,7 @@ $$
 
 - Megatron CP 的核心思想
 
-  ![img](/img/llm\cp_zigzagmask.svg)
+  ![img](/img/llm/cp_zigzagmask.svg)
   - Zig-Zag 的目标是在不破坏 Ring Attention 的通信结构，不引入全量 K/V 存储，不牺牲 online softmax 的前提下，让每张 GPU 的计算量接近一致
   - causal attention 的计算量取决于 token 在序列中的 “相对位置”，越靠前的 token，可见的 key 越少，而越靠后的 token，可见的 key 越多
   - Zig-Zag 的做法是不按 token 的自然顺序分配到 GPU，而是 “前后交错” 地分配
@@ -2270,7 +2270,7 @@ $$
   - 计算与通讯并行：`NCCL stream` 与 `Stream0`/`Stream1` 并行执行，用计算时间掩盖通讯开销
   - 计算内部并行：`Stream0`（attn 计算）和 `Stream1`（softmax_lse 更新）可以并行执行，进一步提升了计算效率
 
-  ![img](/img/llm\megatron-cp.jpg)
+  ![img](/img/llm/megatron-cp.jpg)
 
 - Zig-Zag Ring Attention 的通信与计算重叠
   - all-gather
@@ -2307,7 +2307,7 @@ $$
 
 - USP: A Unified Sequence Parallelism Approach for Long Context Generative AI 是一种结合了 Ring Attention 和 Ulysses CP 思想的上下文并行方法
 
-![usp.jpg](/img/llm\usp.png)
+![usp.jpg](/img/llm/usp.png)
 
 - 类似地，Megatron CP 支持三种模式
   - all_gather 是最直接的实现 —— 每张卡在计算前把所有卡的 KV AllGather 到本地，凑出完整序列再跑标准 FA，实现最简单，但每张卡需要在显存里存放完整序列的 KV，显存开销随 cp_size 线性放大，长序列场景下不可接受
@@ -2753,7 +2753,7 @@ $$
 
 - 示例
 
-  ![img](/img/llm\ep+dp.jpg)
+  ![img](/img/llm/ep+dp.jpg)
 
 - 对于非 MoE 部分，其并行分组为
   - tp_size 为 2，16 卡被拆分为 8 个独立的 TP 组（`[g0,g1]`/`[g2,g3]`…`[g14,g15]`），组内 GPU 共同承担单个层 / 算子的张量切分计算
@@ -2764,12 +2764,12 @@ $$
   - ep_dp_world_size 为 4，16 卡被拆分为 4 个独立的 EP-DP 组（`[g0,g4,g8,g12]`/`[g1,g5,g9,g13]`/`[g2,g6,g10,g14]`/`[g3,g7,g11,g15]`），组内 GPU 承载同一专家的不同 batch 数据，因此在反向传播时，需要进行梯度的 all-reduce 通信
 - 输入示例
 
-  ![img](/img/llm\ep+dp-fwd.jpg)
+  ![img](/img/llm/ep+dp-fwd.jpg)
 
 - 图中三角形表示一个 batch 的数据，显然图中一共输入了 8 个 batch，每个 DP 组（如 `[g0,g2,g4,g6,g8,g10,g12,g14]` ）内输入的数据不同；而对于同一个 TP 组（如 `g0,g1`）内输入的数据相同
 - 前向传播过程
 
-  ![img](/img/llm\ep+dp-fwd-1.jpg)
+  ![img](/img/llm/ep+dp-fwd-1.jpg)
 
 - FWD - non-MoE（Attention）层
   - 整个 batch 被 DP 组切分（如 8 卡 DP 组，每卡持有 1/8 batch），数据维度为 `(B/8, S, D)`；
@@ -2799,7 +2799,7 @@ $$
 
 - 图例
 
-  ![img](/img/llm\all2all.jpg)
+  ![img](/img/llm/all2all.jpg)
 
 - 图中的 MP 在 DeepSpeed 语境下等价于 TP（即 MP = TP），对应的分布式通信组如下：
   - tp_group：`[[g0, g1], [g2, g3]]`
@@ -2820,7 +2820,7 @@ $$
 - 例如：同一 TP 组内的 g0、g1 持有完全相同的数据，在 All2All 过程中会被重复发送、重复计算，是否可以对这部分冗余通信与计算进行优化？
 - 改进 All2All
 
-  ![img](/img/llm\all2all-improve-1.jpg)
+  ![img](/img/llm/all2all-improve-1.jpg)
 
 - 为了解决 TP 组内数据重复发送的问题，DeepSpeed 在论文中提出了一种改进版 All2All 算法
 - 需要特别说明的是：DeepSpeed 的实际代码实现并没有完全严格遵循论文中的改进算法，只是在思路上借鉴了其核心思想
@@ -2863,7 +2863,7 @@ $$
 
 - 现在考虑对专家也进行 TP 切分
 
-  ![img](/img/llm\ep+tp+dp.jpg)
+  ![img](/img/llm/ep+tp+dp.jpg)
 
 - 显然，此时的并行分组情况
 

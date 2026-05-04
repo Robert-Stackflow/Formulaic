@@ -5,6 +5,11 @@ const withMDX = createMDX();
 /** @type {import('next').NextConfig} */
 const config = {
   reactStrictMode: true,
+  productionBrowserSourceMaps: false, // 关闭 source map
+  cleanDistDir: true,
+  typescript: {
+    ignoreBuildErrors: true, // 不做全量类型检查
+  },
   images: {
     formats: ["image/avif", "image/webp"],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],

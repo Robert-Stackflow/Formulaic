@@ -455,7 +455,7 @@ description: 介绍 Megatron 框架的设计模式、训练流程以及代码实
 
 - 一个实例如下
 
-  ![initial-megatron](/img/llm\initial-megatron.jpg)
+  ![initial-megatron](/img/llm/initial-megatron.jpg)
 
 - 示例的分组
   - MP：模型并行组（Model Parallism）。假设一个完整的模型需要布在 8 块 GPU 上，则如图所示，我们共布了 2 个 model replica（2 个 MP）。MP 组为：`[[g0, g1, g4, g5, g8, g9, g12, g13], [g2, g3, g6, g7, g10, g11, g14, g15]]`
@@ -768,7 +768,7 @@ description: 介绍 Megatron 框架的设计模式、训练流程以及代码实
     - 左侧方框内的两个 dropout 层在初始化阶段需配置不同的随机种子。这是因为只有采用不同的随机种子，才能等价于先对完整的 dropout 层完成初始化，再按照实际计算需求对其进行切割处理，确保该环节的计算逻辑符合预期
     - 右侧方框对应的 dropout 层（实际存在两个 dropout 层，分别部署在两块 GPU 上）在初始化时则需要使用相同的随机种子。原因在于此时两块 GPU 的输出已通过 AllReduce 操作实现完全一致，而完成 AllReduce 后两块 GPU 会继续独立执行后续计算，因此虽仅绘制一个 dropout 示意，但实际存在的两个 dropout 层需保证初始化种子相同，以维持计算的一致性
 
-    ![img](/img/llm\megatron-1.jpg)
+    ![img](/img/llm/megatron-1.jpg)
 
 - 一般在 TP/PP 组内，需要设定不同的随机种子；而在 DP 组中，设定相同的随机种子
 
@@ -879,7 +879,7 @@ description: 介绍 Megatron 框架的设计模式、训练流程以及代码实
 
 - CodeGeeX 的模型定义
 
-  ![img](/img/llm\codegeex-structure.jpg)
+  ![img](/img/llm/codegeex-structure.jpg)
 
 - 模型结构
   - `CodeGeeX` : 定义一块 GPU 上的模型，它由`TransformerLanguageModel` 和`_VocabParallelCrossEntropy`这两个核心类组成
@@ -893,7 +893,7 @@ description: 介绍 Megatron 框架的设计模式、训练流程以及代码实
 
 - 这里对于模型的每一层输出，都需要在 TP 组间进行 all-reduce，来保证下一层拿到的输入也是完整的
 
-  ![img](/img/llm\codegeex-tp.jpg)
+  ![img](/img/llm/codegeex-tp.jpg)
 
 ### MegatronModule
 
@@ -901,7 +901,7 @@ description: 介绍 Megatron 框架的设计模式、训练流程以及代码实
 
 - 这个类的主要作用，是令 PP 组的第一个进程和最后一个进程满足输入和输出共用一个词嵌入表
 
-  ![img](/img/llm\megatron-module.jpg)
+  ![img](/img/llm/megatron-module.jpg)
 
 - 代码如下
 
@@ -996,7 +996,7 @@ description: 介绍 Megatron 框架的设计模式、训练流程以及代码实
 
 - Embedding 类定义了 word/position/segment embedding，并定义输入 X 经过 embedding 层的计算方法
 
-  ![img](/img/llm\megatron-embedding.jpg)
+  ![img](/img/llm/megatron-embedding.jpg)
 
 - `self.word_embeddings`：来自自定义的 `VocabParallelEmbedding` , 含 “Parallel” 则意味着参数在 TP 组间做了切割，因此 `self.word_embeddings` 是切割后的 WE
 
@@ -1127,7 +1127,7 @@ description: 介绍 Megatron 框架的设计模式、训练流程以及代码实
 
 - VocabParallelEmbedding 用于定义分布式的 word embedding
 
-  ![VocabParallelEmbedding](/img/llm\megatron- VocabParallelEmbedding.jpg)
+  ![VocabParallelEmbedding](/img/llm/megatron- VocabParallelEmbedding.jpg)
 
 - 代码实现
 
@@ -1260,7 +1260,7 @@ description: 介绍 Megatron 框架的设计模式、训练流程以及代码实
 
 ### ColumnParallelLinear
 
-![](/img/llm\tp-column-bwd.jpg)
+![](/img/llm/tp-column-bwd.jpg)
 
 - f 和 g 为一对共轭算子，可对应理解为两个 torch.autograd.Function 类，该类下可按需重写 forward 和 backward 方法：
 
@@ -1446,7 +1446,7 @@ description: 介绍 Megatron 框架的设计模式、训练流程以及代码实
 
 ### RowParallelLinear
 
-![](/img/llm\tp-row-bwd.jpg)
+![](/img/llm/tp-row-bwd.jpg)
 
 - f：
   - forward 方法：按列维度对输入执行 split（切分）操作；
@@ -1639,7 +1639,7 @@ description: 介绍 Megatron 框架的设计模式、训练流程以及代码实
 
 - 线性层后的 dropout 去哪里了？代码里把它定义到了 ParallelTransformerLayer 下（等于 attention + mlp）
 
-  ![img](/img/llm\megatron-ParallelSelfAttention.jpg)
+  ![img](/img/llm/megatron-ParallelSelfAttention.jpg)
 
 ### ParallelMLP
 
@@ -1651,7 +1651,7 @@ description: 介绍 Megatron 框架的设计模式、训练流程以及代码实
 
 - Megatron 中的交叉熵计算流程
 
-  ![img](/img/llm\megatron-cross-entropy.jpg)
+  ![img](/img/llm/megatron-cross-entropy.jpg)
 
 - 在 Transformer 中，输出层会额外训练一个线性矩阵，来计算 logit；而此处，可以用输入层 WE 的转置来代替这个线性矩阵
 
@@ -1908,7 +1908,7 @@ description: 介绍 Megatron 框架的设计模式、训练流程以及代码实
 
 - Megatron 的混合精度训练流程如下
 
-  ![img](/img/llm\megatron-amp.jpg)
+  ![img](/img/llm/megatron-amp.jpg)
 
 - 首先，进行计算准备
   - 首先存储一份 FP32 精度的参数（parameter）、动量（momentum）和方差（variance）
@@ -1956,7 +1956,7 @@ description: 介绍 Megatron 框架的设计模式、训练流程以及代码实
 
 - 舍入误差的存在
 
-  ![img](/img/llm\amp-error.jpg)
+  ![img](/img/llm/amp-error.jpg)
   - 假设在 FP16 条件下，某权重为 $2^{-3}$，对应梯度为 $2^{-14}$，执行梯度更新时（忽略学习率），理论上更新结果应为：
 
     $$
@@ -2188,9 +2188,9 @@ description: 介绍 Megatron 框架的设计模式、训练流程以及代码实
     - 避免显存碎片化导致的存储失败；
     - 提升显存空间的利用率，适配大模型分布式训练的显存紧张场景
 
-  ![img](/img/llm\main-grad-1.jpg)
+  ![img](/img/llm/main-grad-1.jpg)
 
-  ![img](/img/llm\main_grad.jpg)
+  ![img](/img/llm/main_grad.jpg)
 
 - DynamicGradScaler
 

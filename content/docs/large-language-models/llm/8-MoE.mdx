@@ -420,7 +420,7 @@ description: 介绍混合专家（Mixture of Experts，MoE）架构及其在大�
   - 其余非 MoE 层（如注意力层、嵌入层等）则在每个设备上完整复制
   - 这种划分方式在保证模型容量的同时，有效控制了通信与计算开销
 
-  ![img](/img/llm\gshard.jpg)
+  ![img](/img/llm/gshard.jpg)
 
 - 假设输入维度为 [B,S,H]，那么总的 token 数量就是 B×S
 
@@ -669,7 +669,7 @@ description: 介绍混合专家（Mixture of Experts，MoE）架构及其在大�
 
 - DeepSpeed 提出了 PR-MoE 架构，其中的 R 正是该设计的核心
 
-  ![img](/img/llm\pr-moe.jpg)
+  ![img](/img/llm/pr-moe.jpg)
 
 - PR-MoE 的整体结构包含两部分：
   - P（Pyramid）：金字塔式专家结构，允许为每一层灵活配置不同数量的专家
@@ -1349,7 +1349,7 @@ description: 介绍混合专家（Mixture of Experts，MoE）架构及其在大�
 
 - 下面是一个 EP+TP+DP+PP 的例子
 
-  ![img](/img/llm\ep+tp+pp+dp.jpg)
+  ![img](/img/llm/ep+tp+pp+dp.jpg)
 
 - 对应代码
 
@@ -1410,7 +1410,7 @@ description: 介绍混合专家（Mixture of Experts，MoE）架构及其在大�
 
 - SwitchMLP 的流程图
 
-  ![img](/img/llm\switch-mlp.jpg)
+  ![img](/img/llm/switch-mlp.jpg)
 
 - 初始数据处理
   - 非 MoE 层的输出维度为 `(seq_len, batch_size, M)`，首先将其 reshape 为 `(S, M)`（其中 `S = seq_len * batch_size`）

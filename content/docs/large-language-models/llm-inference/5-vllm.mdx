@@ -21,7 +21,7 @@ description: 介绍 vLLM 库在 LLM 推理中的应用
 
 - 这种固定大小的分配方式容易导致 GPU 显存利用率不足，进而降低模型推理的吞吐量
 
-![img](/img/llm\kv-cache-reserve.jpg)
+![img](/img/llm/kv-cache-reserve.jpg)
 
 - 假设预设的最大序列长度 `max_seq_len = 8`，当第一条请求（prompt1）到达时，推理框架会为其分配尺寸为 `(1, 8)` 的连续显存空间
 
@@ -45,7 +45,7 @@ description: 介绍 vLLM 库在 LLM 推理中的应用
 
 - 接下来通过一组实验对比图，直观感受 vLLM 相较于其他推理框架在显存利用率上的优化效果
 
-![img](/img/llm\vllm-compare.jpg)
+![img](/img/llm/vllm-compare.jpg)
 
 #### 操作系统的虚拟内存
 
@@ -70,7 +70,7 @@ description: 介绍 vLLM 库在 LLM 推理中的应用
 
   - 虚拟内存的核心思想可以用下图直观表示：
 
-  ![img](/img/llm\virtual-memory.jpg)
+  ![img](/img/llm/virtual-memory.jpg)
 
 - 虚拟内存的分段管理
   - 在分段式内存管理中，虚拟内存会尽量为每个进程在物理内存中寻找一整块连续的存储空间，用于加载该进程的全部代码和数据
@@ -83,7 +83,7 @@ description: 介绍 vLLM 库在 LLM 推理中的应用
 
   - 如果必须立刻运行进程 4，也有解决方案：可以先把进程 3 从物理内存交换（swap）到磁盘，腾出连续空间，再将进程 4 载入物理内存，之后再把进程 3 从磁盘读回
 
-  ![img](/img/llm\virtual-memory-fragment.jpg)
+  ![img](/img/llm/virtual-memory-fragment.jpg)
   - 通过这种方式可以整合内存碎片，让进程 4 得以运行，但这种方法有明显缺点：如果进程 3 体积很大，且内存与磁盘之间带宽有限，整个交换过程会非常缓慢，导致系统卡顿 —— 这就是分段式内存管理的核心缺陷
 
   - 为什么一定要为每个进程预先分配一整块固定大小的连续空间（段）？以浏览器进程为例，并不会同时使用它的所有功能
@@ -99,7 +99,7 @@ description: 介绍 vLLM 库在 LLM 推理中的应用
 
   - 虚拟内存会自动维护虚拟地址到物理地址的映射，把来自不同进程的页放到物理内存的合适位置
 
-  ![img](/img/llm\virtual-memory-paged.jpg)
+  ![img](/img/llm/virtual-memory-paged.jpg)
   - 虚拟内存分页管理可以总结为：
     - 把物理内存划分为固定大小的块，称为页（page）
     - 从物理内存抽象出来的虚拟内存，也按照同样大小划分页面
@@ -114,7 +114,7 @@ description: 介绍 vLLM 库在 LLM 推理中的应用
 
 - 单个请求的执行流程
 
-  ![img](/img/llm\paged-attn-1.jpg)
+  ![img](/img/llm/paged-attn-1.jpg)
   - 以 prompt `Four score and seven years ago our` 为例，vLLM 会按以下步骤执行：
 
   - Prefill 阶段
@@ -149,7 +149,7 @@ description: 介绍 vLLM 库在 LLM 推理中的应用
 
 - 处理多个请求
 
-![img](/img/llm\paged-attn-2.jpg)
+![img](/img/llm/paged-attn-2.jpg)
 
 #### 在不同解码策略下的效果
 
@@ -174,7 +174,7 @@ description: 介绍 vLLM 库在 LLM 推理中的应用
 
 - Parallel Sampling 场景
 
-  ![img](/img/llm\paged-attn-3.jpg)
+  ![img](/img/llm/paged-attn-3.jpg)
   - 向模型发送 1 个请求（request），该请求包含 2 个完全相同的 prompt（记为 Sample A1、Sample A2），内容均为 `Four score and seven years ago our`，要求模型对两个 prompt 分别续写
 
   - Prefill 阶段：KV Cache 共享分配
@@ -222,7 +222,7 @@ description: 介绍 vLLM 库在 LLM 推理中的应用
 
 - Beam Search 场景（以 beam width = 4 为例）
 
-  ![img](/img/llm\paged-attn-4.jpg)
+  ![img](/img/llm/paged-attn-4.jpg)
   - 从右往左分析这张图，虚线位置代表当前解码时刻，所有块均为逻辑块：
   - 当前解码时刻
     - 根据 Beam Search，生成了概率最高的 4 个候选 token（beam candidate 0/1/2/3），分别存储在逻辑块 `Block5`、`Block6`、`Block7`、`Block8` 中
@@ -276,7 +276,7 @@ description: 介绍 vLLM 库在 LLM 推理中的应用
 
 - 示意图
 
-![img](/img/llm\distributed-vll.jpg)
+![img](/img/llm/distributed-vll.jpg)
 
 - 中央调度器（Scheduler）
   - vLLM 引入了一个中央调度器，它负责统一计算和管理所有 GPU 上的逻辑块到物理块的映射表（block tables），确保全局视角下的 KV Cache 分配和调度

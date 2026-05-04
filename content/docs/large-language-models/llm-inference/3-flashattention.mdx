@@ -69,7 +69,7 @@ description: 介绍 FlashAttention 技术在注意力机制中的优化
 
 - 对于 “两矩阵相乘” 这个操作而言，其运算量 = 乘法运算的次数 + 加法运算的次数
 
-  ![img](/img/llm\matrix_mul.jpg)
+  ![img](/img/llm/matrix_mul.jpg)
 
 - 两矩阵相乘，为了获取图中深橘色部分的元素，一共需要进行 n 次乘法运算和 n-1 次加法运算
 
@@ -134,7 +134,7 @@ description: 介绍 FlashAttention 技术在注意力机制中的优化
 
 - 如何对 Q/K/V 矩阵进行分块？
 
-  ![img](/img/llm\flash-attn-tiling.jpg)
+  ![img](/img/llm/flash-attn-tiling.jpg)
 
 - Q 矩阵分块
   - 将 $Q$ 矩阵切分为 $T_r$ 个块（block），每块长度为 $B_r$
@@ -768,7 +768,7 @@ description: 介绍 FlashAttention 技术在注意力机制中的优化
 
 - V1 存在的问题 —— 外层循环 = KV 块，内层循环 = Q 块
 
-  ![flash_attention_diagram](/img/llm\flash_attention_diagram.png)
+  ![flash_attention_diagram](/img/llm/flash_attention_diagram.png)
   - FlashAttention V1 中，循环顺序是 KV 外循环、Q 内循环，导致：
     - 每个 thread block 内，将 K 和 V 的计算拆分给多个 warp，而所有 warp 共享 Q
     - 每次外循环（j++）处理一个 KV 块，都要更新一次输出 $O_i$
@@ -973,7 +973,7 @@ description: 介绍 FlashAttention 技术在注意力机制中的优化
 
 - 伪代码
 
-![img](/img/llm\flash-attn-v2-bwd.jpg)
+![img](/img/llm/flash-attn-v2-bwd.jpg)
 
 - 在 V2 BWD 中，内外循环的位置又换回来了，即还是 KV 外循环，Q 内循环，这是为什么？
 

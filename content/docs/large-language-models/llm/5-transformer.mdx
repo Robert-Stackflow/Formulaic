@@ -455,7 +455,7 @@ description: 介绍 Transformer 结构，包括 Encoder-Decoder 架构、多头�
 
 - Meta 的 MTP 实现
 
-  ![mtp](/img/llm\mtp.png)
+  ![mtp](/img/llm/mtp.png)
   - 训练阶段：通过预测多步 token，迫使模型学到更长的 token 依赖关系，从而更好理解上下文，避免陷入局部决策的学习模式；同时一次预测多个 token，可大大提高样本的利用效率，相当于一次预估可生成多个 \<predict, label> 样本，来更新模型，有助于模型加速收敛
   - 推理阶段：并行预估多个 token，可提升推理速度
 
@@ -481,11 +481,11 @@ description: 介绍 Transformer 结构，包括 Encoder-Decoder 架构、多头�
 
   - 这种并行的方式存在一个缺点，也就是需存储 n 个预测 head 的 logits，空间复杂度为 $O (nV+d)$，因此还做了一个优化是先执行完一个模块的前向和反向，再执行下一个模块
 
-    ![mtp-optimize](/img/llm\mtp-optimize.png)
+    ![mtp-optimize](/img/llm/mtp-optimize.png)
 
 - DeepSeek 的 MTP
 
-  ![Refer to caption](/img/llm\mtp-deepseek.png)
+  ![Refer to caption](/img/llm/mtp-deepseek.png)
   - DeepSeek 参照 Meta 的 MTP 设计，在实现上保留了序列推理的连接关系（causal chain）
   - 整体架构
     - Main Model：传统 decoder-only 主干网络，负责 next token 预测（第 0 个预测深度）
