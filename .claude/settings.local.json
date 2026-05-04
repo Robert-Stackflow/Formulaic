@@ -8,7 +8,9 @@
       "Bash(rm -f \"src/app/docs/[...slug]/route.ts\")",
       "Bash(mkdir -p \"src/app/llms.mdx/docs/[[...slug]]\")",
       "Bash(npm install *)",
-      "Bash(grep -E \"\\\\.\\(tsx|ts|jsx|js\\)$\")"
+      "Bash(grep -E \"\\\\.\\(tsx|ts|jsx|js\\)$\")",
+      "Bash(Move-Item -Path \".github/workflows/deploy-vercel.yml\" -Destination \".github/workflows/deploy-vercel.yml.disabled\")",
+      "PowerShell(Move-Item -Path \".github/workflows/deploy-vercel.yml\" -Destination \".github/workflows/deploy-vercel.yml.disabled\")"
     ]
   }
 }

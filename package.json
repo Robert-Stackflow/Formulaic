@@ -10,7 +10,8 @@
     "dev": "set NODE_OPTIONS=--max-old-space-size=16384 && next dev",
     "pangu": "npx --yes tsx scripts/pangu-fix.ts",
     "start": "cross-env DEBUG=next:* next start",
-    "start:debug": "cross-env DEBUG=next:* next start"
+    "start:debug": "cross-env DEBUG=next:* next start",
+    "deploy": "vercel --prebuilt"
   },
   "dependencies": {
     "@auth/core": "^0.34.3",

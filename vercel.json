@@ -1,4 +1,5 @@
 {
-  "buildCommand": "echo 'Build already completed in GitHub Actions'",
-  "outputDirectory": ".next"
+  "buildCommand": "npm run build",
+  "outputDirectory": ".next",
+  "framework": "nextjs"
 }
