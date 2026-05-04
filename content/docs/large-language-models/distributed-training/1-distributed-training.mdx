@@ -831,10 +831,8 @@ description: 介绍分布式训练的基本概念与技术
   | 参数同步     | `all-gather` 参数 | $\Phi$  | 保证参数一致                      |
 
 - 优化器状态只在 “参数更新（optimizer step）” 阶段用到，而不是在反向传播阶段
-  - 反向传播（backward）：输入激活值、参数，输出梯度 \
-    abla W，不使用优化器状态
-  - 参数更新（optimizer step）：输入梯度（\
-    abla W，FP16 / FP32）、优化器状态（如 Adam 的 $m, v$）、FP32 主参数，输出更新后的 FP32 参数、更新后的优化器状态
+  - 反向传播（backward）：输入激活值、参数，输出梯度 $\nabla W$，不使用优化器状态
+  - 参数更新（optimizer step）：输入梯度（$\nabla W$，FP16 / FP32）、优化器状态（如 Adam 的 $m, v$）、FP32 主参数，输出更新后的 FP32 参数、更新后的优化器状态
   - 以 AdaW 为例
 
     $$
@@ -903,8 +901,7 @@ description: 介绍分布式训练的基本概念与技术
     W^{(i)} \leftarrow W^{(i)} - \eta \cdot f (\nabla W^{(i)}, \text {opt\_state}^{(i)})
     $$
 
-  - 因此，对于 rank $i$，只更新 $W^{(i)}$，只需要 \
-    abla W^{(i)}，只需要 $\text {opt\_state}^{(i)}$
+  - 因此，对于 rank $i$，只更新 $W^{(i)}$，只需要 $\nabla W^{(i)}$，只需要 $\text {opt\_state}^{(i)}$
 
 - 与 ZeRO Stage 对比：
   - 在通信层面，ZeRO-2 与 ZeRO-1 几乎完全一致，都包含 reduce-scatter（梯度）、all-gather（参数）
@@ -1550,9 +1547,7 @@ $$
       $$
       - 其中 $m$ 是一个随机 mask
 
-    - 如果 TP rank 使用不同的随机种子，即便输入 $x$ 在 TP rank 上是一样的，但是 rank 0 用 mask $m^{(0)}$，rank 1 用 mask $m^{(1)}$，且 m^{(0)}\
-      eq m^{(1)}，那么 y^{(0)}\
-      eq y^{(1)}
+    - 如果 TP rank 使用不同的随机种子，即便输入 $x$ 在 TP rank 上是一样的，但是 rank 0 用 mask $m^{(0)}$，rank 1 用 mask $m^{(1)}$，且 $m^{(0)}\neq m^{(1)}$，那么 $y^{(0)}\neq y^{(1)}$
     - 接下来会发生灾难性的后果 ——backward 梯度不同、LayerNorm 前提被破坏、参数更新不一致、训练数值不再等价于单卡
 
   - 一些系统（如 Megatron-LM、Nanotron）通过以下方式缓解这一问题：
@@ -2576,8 +2571,7 @@ $$
 - 由此，可以同时通过增加 micro-batch 数 $m$，以及增加交错阶段数 $v$，来进一步减小 bubble；同时从量化角度看，通信量也会随 $v$ 成比例增加，因此这本质上是一个 trade-off
   - $m = 1, v = 1$ 对应的是最朴素的流水线并行
   - $v = 1$ 对应 AFAB 或 1F1B
-  - v\
-    eq 1 对应交错流水线
+  - $v \neq 1$ 对应交错流水线
 - 通信 - 计算掩盖
   - Interleaved 1F1B 把每个 GPU 负责的层数拆成了 $v$ 个虚拟块（交错因子），气泡公式变为 $\frac {K-1}{v} t_{fb}$
   - 切分得越细，网络边界就越多，原本 1 个微批次在 GPU 间只需传递 1 次，现在被切成 $v$ 块后，GPU 之间的 P2P 通信次数直接翻了 $v$ 倍

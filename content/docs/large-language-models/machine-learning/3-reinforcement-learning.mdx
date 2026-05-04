@@ -80,7 +80,7 @@ description: 介绍强化学习的基本范式、核心概念及相关技术，�
 | 类别     | On-policy Learning                              | Off-policy Learning                                          |
 | -------- | ----------------------------------------------- | ------------------------------------------------------------ |
 | 学习目标 | 直接学习当前执行的策略 $\pi$ 的价值或改进 $\pi$ | 学习目标策略 $\pi$ 的价值，但经验来自另一个行为策略 $\mu$    |
-| 行为策略 | 行为策略和目标策略一致 $\mu = \pi$              | 行为策略和目标策略可能不同 \mu\ eq \pi，也可能是 $\pi_{old}$ |
+| 行为策略 | 行为策略和目标策略一致 $\mu = \pi$              | 行为策略和目标策略可能不同 $\mu\ neq \pi$，也可能是 $\pi_{old}$ |
 | 数据来源 | 从当前策略 $\pi$ 采样的交互经验（行动和状态）   | 从其他策略 $\mu$ 或环境采样的经验数据                        |
 | 形象描述 | 在岗位上工作时学习技能                          | 通过观察别人工作而学习技能                                   |
 | 优点     | 学习和执行策略一致，简单直观                    | 可以探索最优策略 $\pi^*$，学习灵活                           |
@@ -972,7 +972,7 @@ $$
     Q^\pi (s,a) = \mathbb {E}[G_t \mid s,a]
     $$
 
-  - 不需要知道 $P (s'|s,a)$，所以 MC Control**必然是基于动作值函数**
+  - 不需要知道 $P (s'|s,a)$，所以 MC Control **必然是基于动作值函数**
 
 - On-Policy 蒙特卡洛控制（Monte-Carlo Control）
   - 一边用当前策略采样，一边评估该策略，再用贪婪原则改进策略
@@ -1857,8 +1857,7 @@ $$
       \end {align*}
     $$
 
-  - 其中，\
-    abla\_\mathbf {w}\hat {v}(S,\mathbf {w}) 即表示模型对参数 $\mathbb {w}$​ 的梯度，表示模型参数变化时，预测值的变化量
+  - 其中，$\nabla_{\mathbf {w}}\hat {v}(S,\mathbf {w})$ 即表示模型对参数 $\mathbf {w}$ 的梯度，表示模型参数变化时，预测值的变化量
   - 也可以直观理解为：误差 × 对参数的敏感度 × 学习率
 
 - 随机梯度下降（SGD）
@@ -1978,8 +1977,7 @@ $$
 
 - 如何找到最小二乘解
   - 从经历中采样状态 - 值：$\langle s,v^{\pi}\rangle\sim \mathcal {D}$
-  - 应用随机梯度下降更新：\Delta\mathbf {w}=\alpha (v^\pi-\hat {v}(s,\mathbf {w}))\
-    abla\_\mathbf {w}\hat {v}(s,\mathbf {w})​
+  - 应用随机梯度下降更新：$\Delta\mathbf {w}=\alpha (v^\pi-\hat {v}(s,\mathbf {w}))\nabla_\mathbf {w}\hat {v}(s,\mathbf {w})$
   - 收敛至最小二乘解：$\mathbf {w}^{\pi}=\arg\min_{\mathbf {w}} LS (\mathbf {w})$​
 - 线性最小二乘
   - 给定线性函数逼近 $\hat {v}(S,\mathbf {w})=\mathbf {x}(S)^\top\mathbf {w}$
@@ -2712,7 +2710,7 @@ $$
 | 是否显式区分动作  | 不区分                             | 区分                           | 区分                           |
 | Actor 使用的信号  | TD 误差                            | $Q$ 值                         | 优势值                         |
 |                   | $\delta_t$                         | $Q_w (s_t,a_t)$                 | $A_w (s_t,a_t)$                 |
-| 策略梯度形式      | \ abla\_\theta\log\pi\cdot\delta_t | \ abla\_\theta\log\pi\cdot Q_w | \ abla\_\theta\log\pi\cdot A_w |
+| 策略梯度形式      | $\nabla_\theta\log\pi\cdot\delta_t$ | $\nabla_\theta\log\pi\cdot Q_w$ | $\nabla_\theta\log\pi\cdot A_w$ |
 | 是否天然 baseline | 是                                 | 否                             | 是                             |
 | 方差              | 中                                 | 高                             | 最低                           |
 | 兼容函数逼近      | 不适用                             | 有条件                         | 标准成立                       |
@@ -2886,7 +2884,7 @@ $$
       $$
       \nabla_\theta J (\theta)
       =
-
+      
       \mathbb {E}_{\pi_\theta}
       \left [
       \nabla_\theta
@@ -2964,7 +2962,7 @@ $$
   ```py
   initialize Q(s, a) arbitrarily
   initialize model (state, action, reward, next_state) arbitrarily
-
+  
   for each episode:
       initialize state s
       while s is not terminal:
@@ -2972,7 +2970,7 @@ $$
           take action a, observe reward r, and next state s'
           update Q(s, a) using Q-learning update rule
           update model with (s, a, r, s')
-
+  
           # Perform planning step (simulate interactions)
           for i = 1 to N:
               randomly choose a state-action pair (s, a)
