@@ -15,16 +15,18 @@ import {
 import { useDocsSearch } from "fumadocs-core/search/client";
 import { useI18n } from "fumadocs-ui/contexts/i18n";
 
-const appId = "WU5ZGV3MT7";
-const apiKey = "24fe8b4472409c29ad5986f02ded1243";
+const appId = process.env.NEXT_PUBLIC_ALGOLIA_APP_ID || "Your Algolia App ID";
+const apiKey =
+  process.env.NEXT_PUBLIC_ALGOLIA_SEARCH_API_KEY || "Your Algolia Search API Key";
+const indexName = process.env.ALGOLIA_INDEX_NAME || "document";
 const client = liteClient(appId, apiKey);
 
 export default function CustomSearchDialog(props: SharedProps) {
-  const { locale } = useI18n(); // (optional) for i18n
+  const { locale } = useI18n();
   const { search, setSearch, query } = useDocsSearch({
     type: "algolia",
     client,
-    indexName: "document",
+    indexName,
     locale,
   });
 

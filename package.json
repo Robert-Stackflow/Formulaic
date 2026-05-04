@@ -11,7 +11,8 @@
     "start": "cross-env DEBUG=next:* next start",
     "start:debug": "cross-env DEBUG=next:* next start",
     "deploy": "npx vercel deploy --prebuilt --archive=tgz",
-    "prod": "npx vercel --prod --archive=tgz"
+    "prod": "npx vercel --prod --archive=tgz",
+    "sync:algolia": "bun scripts/sync-algolia.ts"
   },
   "dependencies": {
     "@auth/core": "^0.34.3",

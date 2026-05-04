@@ -4,6 +4,7 @@ import { ToastContainer } from "@/components/toast";
 import type { ReactNode } from "react";
 import type { Metadata } from "next";
 import ClientShell from "@/components/shell/client-shell";
+import CustomSearchDialog from "@/components/search";
 import "katex/dist/katex.css";
 
 export const metadata: Metadata = {
@@ -77,7 +78,11 @@ export default function Layout({ children }: { children: ReactNode }) {
         />
       </head>
       <body className="flex flex-col min-h-screen antialiased">
-        <RootProvider search={{}}>
+        <RootProvider
+          search={{
+            SearchDialog: CustomSearchDialog,
+          }}
+        >
           <ClientShell>{children}</ClientShell>
           <ToastContainer />
         </RootProvider>
