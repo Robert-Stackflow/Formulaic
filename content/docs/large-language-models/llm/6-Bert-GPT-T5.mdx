@@ -72,7 +72,7 @@ description: 介绍 BERT、GPT、T5 等主流模型的结构与推理方法
   - 模型通过这些位置对应的表示 $T_i$​ 预测原 token，将输出通过全连接层映射到词表维度，并使用 softmax 计算每个 token 的概率，最后采用交叉熵计算损失
 
     $$
-    \mathcal {L}_{\text {MLM}} = - \sum_{i \in \mathcal {M}} \log P (x_i \mid x_{\backslash \mathcal {M}})
+    \mathcal {L}_{\text{MLM}} = - \sum_{i \in \mathcal {M}} \log P (x_i \mid x_{\backslash \mathcal {M}})
     $$
 
   - 该策略确保 BERT 对所有 token 都敏感，从而能够学习到每个 token 的表征信息
@@ -89,13 +89,13 @@ description: 介绍 BERT、GPT、T5 等主流模型的结构与推理方法
   - 将训练样例输入 BERT 后，使用 [CLS] 对应的表示进行二分类预测，损失定义如下：
 
     $$
-    \mathcal {L}_{\text {NSP}} = - [y \log P_{\text {next}} + (1-y)\log (1-P_{\text {next}})]
+    \mathcal {L}_{\text{NSP}} = - [y \log P_{\text{next}} + (1-y)\log (1-P_{\text{next}})]
     $$
 
   - 预训练阶段的总体损失为 MLM 损失和 NSP 损失的加权和
 
     $$
-    \mathcal {L} = \mathcal {L}_{\text {MLM}} + \mathcal {L}_{\text {NSP}}
+    \mathcal {L} = \mathcal {L}_{\text{MLM}} + \mathcal {L}_{\text{NSP}}
     $$
 
   - 这两个任务的数据均可从无标签文本构建（自监督），相比计算机视觉中的 ImageNet 标注数据集，构建更为简单
@@ -200,7 +200,7 @@ description: 介绍 BERT、GPT、T5 等主流模型的结构与推理方法
 
   - 目标损失，可以看作 seq2seq 的交叉熵损失：
     $$
-    \mathcal {L}_{\text {T5}} = - \sum_{i=1}^{m} \log P (y_i \mid y_{<i}, x)
+    \mathcal {L}_{\text{T5}} = - \sum_{i=1}^{m} \log P (y_i \mid y_{<i}, x)
     $$
 
 - 下游任务微调 —— 由于所有任务都是 text-to-text 的，因此其微调方式统一，微调时，只需训练 decoder 输出的线性 + softmax
@@ -251,7 +251,7 @@ description: 介绍 BERT、GPT、T5 等主流模型的结构与推理方法
   - Tranformer 模型使用 Post-LN：
 
     $$
-    y = \text {LN}(x + \text {SubLayer}(x))
+    y = \text{LN}(x + \text{SubLayer}(x))
     $$
 
   - 考虑梯度反向传播的公式：
@@ -259,7 +259,7 @@ description: 介绍 BERT、GPT、T5 等主流模型的结构与推理方法
     $$
     \frac {\partial \mathcal {L}}{\partial x}
     = \frac {\partial \mathcal {L}}{\partial y}
-    \cdot \frac {\partial \text {LN}}{\partial (x + f (x))}
+    \cdot \frac {\partial \text{LN}}{\partial (x + f (x))}
     \cdot (1 + f'(x))
     $$
 
@@ -270,7 +270,7 @@ description: 介绍 BERT、GPT、T5 等主流模型的结构与推理方法
   - GPT 模型使用 Pre-LN：
 
     $$
-    x^\prime = x + \text {SubLayer}(\text {LayerNorm}(x))
+    x^\prime = x + \text{SubLayer}(\text{LayerNorm}(x))
     $$
 
   - 反向传播变为：
@@ -278,7 +278,7 @@ description: 介绍 BERT、GPT、T5 等主流模型的结构与推理方法
     $$
     \frac {\partial \mathcal {L}}{\partial x}
     = \frac {\partial \mathcal {L}}{\partial y}
-    \cdot \left (1 + \frac {\partial f (\text {LN}(x))}{\partial x}\right)
+    \cdot \left (1 + \frac {\partial f (\text{LN}(x))}{\partial x}\right)
     $$
 
   - 由此，残差路径是真正的恒等映射，梯度可以完全绕过注意力和 FFN，直接从顶层流回底层
@@ -324,7 +324,7 @@ description: 介绍 BERT、GPT、T5 等主流模型的结构与推理方法
   - 而 KV Cache 的核心思想是历史 token 的 K 和 V 不会再变，因为 decoder-only 和 causal mask 的存在，历史 token 不依赖未来
   - 所以可以缓存 $K_{1:t},; V_{1:t}$，下一步只需要计算 $Q_{t+1},; K_{t+1},; V_{t+1}$
 
-  - 这样，注意力变成：$\text {Attention}(Q_{t+1}, [K_{1:t}; K_{t+1}], [V_{1:t}; V_{t+1}])$，复杂度降低为 $O (T^2)$
+  - 这样，注意力变成：$\text{Attention}(Q_{t+1}, [K_{1:t}; K_{t+1}], [V_{1:t}; V_{t+1}])$，复杂度降低为 $O (T^2)$
   - 为什么 Transformer 结构无法用 KV Cache？因为在 Encoder–decoder 架构中，虽然 encoder 输出固定可以缓存，但 decoder 每一层的 cross-attention 都要重新算；而 GPT 模型只有 self-attention，缓存一次可以用到结束
 
 - 泛化能力的来源

@@ -29,13 +29,13 @@ description: 介绍常见的解码策略，包括贪心解码、束搜索、Top-
 - 序列得分常用对数概率累积：
 
   $$
-  \text {score}(x_{1:t}) = \sum_{i=1}^{t} \log p (x_i \mid x_{<i})
+  \text{score}(x_{1:t}) = \sum_{i=1}^{t} \log p (x_i \mid x_{<i})
   $$
 
 - 可加入长度惩罚：
 
   $$
-  \text {score}' = \frac {1}{(5+t)^\alpha} \text {score}
+  \text{score}' = \frac {1}{(5+t)^\alpha} \text{score}
   $$
 
 - 现代大模型中不推荐使用 Beam Search：
@@ -48,7 +48,7 @@ description: 介绍常见的解码策略，包括贪心解码、束搜索、Top-
 - 仅从概率前 $k$ 的 token 集合 $S_k$ 中采样：
 
   $$
-  S_k = \text {Top-} k (p (x))
+  S_k = \text{Top-} k (p (x))
   $$
 
 - 采样分布：
@@ -116,7 +116,7 @@ description: 介绍常见的解码策略，包括贪心解码、束搜索、Top-
 - 给定一个强模型 $p_s$ 与一个弱模型 $p_w$，得分为：
 
   $$
-  \text {score}(x) = \log p_s (x\mid x_{<t}) - \alpha \log p_w (x\mid x_{<t})
+  \text{score}(x) = \log p_s (x\mid x_{<t}) - \alpha \log p_w (x\mid x_{<t})
   $$
 
 - 选择最大得分的 token

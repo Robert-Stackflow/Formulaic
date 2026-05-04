@@ -87,7 +87,7 @@ description: 介绍基于人类反馈的强化学习（RLHF）技术
 - 为此，可以最小化负对数似然（NLL）损失：
 
   $$
-  L_{\text {LM}}(\theta) = -\mathbb {E}_{x \sim D} \left [\sum_{t=1}^T \log P_\theta (x_t \mid x_{<t}) \right]
+  L_{\text{LM}}(\theta) = -\mathbb {E}_{x \sim D} \left [\sum_{t=1}^T \log P_\theta (x_t \mid x_{<t}) \right]
   $$
 
 - 在实践中，针对每个下一个标记预测使用交叉熵损失，通过将序列中的真实标记与模型预测的标记进行比较来计算
@@ -106,20 +106,20 @@ description: 介绍基于人类反馈的强化学习（RLHF）技术
 
 #### 机器学习定义
 
-- Kullback-Leibler (KL) 散度 ($D_{\text {KL}}(P \parallel Q)$)，也称为 KL 散度，是衡量两个概率分布之间差异的指标
+- Kullback-Leibler (KL) 散度 ($D_{\text{KL}}(P \parallel Q)$)，也称为 KL 散度，是衡量两个概率分布之间差异的指标
 
 - 对于在同一概率空间 $X$ 上定义的离散概率分布 $P$ 和 $Q$，从 $Q$ 到 $P$ 的 KL 距离定义为：
   $$
-  D_{\text {KL}}(P \parallel Q) = \sum_{x \in X} P (x) \log\left (\frac {P (x)}{Q (x)}\right)
+  D_{\text{KL}}(P \parallel Q) = \sum_{x \in X} P (x) \log\left (\frac {P (x)}{Q (x)}\right)
   $$
 
 #### 自然语言处理定义
 
 - 提示 (Prompt, $x$)：提供给语言模型以生成响应或补全的输入文本
 - 补全 (Completion, $y$)：语言模型响应对提示生成的输出文本。通常补全表示为 $y \mid x$。奖励和其他值通常计算为 $r (y \mid x)$ 或 $P (y \mid x)$
-- 被选中的补全 (Chosen Completion, $y_c$)：在其他替代方案中被选择或偏好的补全，通常表示为 $y_{\text {chosen}}$
+- 被选中的补全 (Chosen Completion, $y_c$)：在其他替代方案中被选择或偏好的补全，通常表示为 $y_{\text{chosen}}$
 - 被拒绝的补全 (Rejected Completion, $y_r$)：在成对设置中不受青睐的补全
-- 偏好关系 ($\succ$)：表示一个补全优于另一个补全的符号，例如 $y_{\text {chosen}} \succ y_{\text {rejected}}$。例如，奖励模型预测偏好关系的概率，$P (y_c \succ y_r \mid x)$
+- 偏好关系 ($\succ$)：表示一个补全优于另一个补全的符号，例如 $y_{\text{chosen}} \succ y_{\text{rejected}}$。例如，奖励模型预测偏好关系的概率，$P (y_c \succ y_r \mid x)$
 - 策略 (Policy, $\pi$)：对可能的补全的概率分布，由 $\theta$ 参数化：$\pi_\theta (y \mid x)$
 
 #### 强化学习定义
@@ -174,7 +174,7 @@ description: 介绍基于人类反馈的强化学习（RLHF）技术
 
 #### 仅限 RLHF 的定义
 
-- 参考模型 (Reference Model, $\pi_{\text {ref}}$)：这是 RLHF 中使用的一组保存的参数，其输出用于正则化优化
+- 参考模型 (Reference Model, $\pi_{\text{ref}}$)：这是 RLHF 中使用的一组保存的参数，其输出用于正则化优化
 
 #### 扩展术语表
 
@@ -197,7 +197,7 @@ description: 介绍基于人类反馈的强化学习（RLHF）技术
 
   - 在语言建模设置在，下一个标记损失函数可以修改如下，其中学生模型 $P_\theta$ 从教师分布 $P_\phi$ 中学习：
     $$
-    L_{\text {KD}}(\theta) = -\mathbb {E}_{x \sim D} \left [\sum_{t=1}^T P_\phi (x_t \mid x_{<t}) \right]
+    L_{\text{KD}}(\theta) = -\mathbb {E}_{x \sim D} \left [\sum_{t=1}^T P_\phi (x_t \mid x_{<t}) \right]
     $$
 
 - 上下文学习 (In-context Learning, ICL)
@@ -246,9 +246,9 @@ description: 介绍基于人类反馈的强化学习（RLHF）技术
 - 动力学 / 转移 ($p (s_{t+1} \mid s_t, a_t)$)：在许多环境中，动力学是确定性的（因此 $p$ 是一个点质量），可以通过步长为 $\Delta t$ 的欧拉积分写成 $s_{t+1} = f (s_t, a_t)$。标准的简化 CartPole 更新公式使用以下常量：小车质量 $m_c$、杆质量 $m_p$、杆半长 $l$ 和重力加速度 $g$：
 
   $$
-  \text {temp} = \frac {a_t + m_p l \dot {\theta}_t^2 \sin \theta_t}{m_c + m_p}\\
-  \ddot {\theta}_t = \frac {g \sin \theta_t - \cos \theta_t \cdot \text {temp}}{l \left ( \frac {4}{3} - \frac {m_p \cos^2 \theta_t}{m_c + m_p} \right)}\\
-  \ddot {x}_t = \frac {\text {temp} - m_p l \ddot {\theta}_t \cos \theta_t}{m_c + m_p}\\
+  \text{temp} = \frac {a_t + m_p l \dot {\theta}_t^2 \sin \theta_t}{m_c + m_p}\\
+  \ddot {\theta}_t = \frac {g \sin \theta_t - \cos \theta_t \cdot \text{temp}}{l \left ( \frac {4}{3} - \frac {m_p \cos^2 \theta_t}{m_c + m_p} \right)}\\
+  \ddot {x}_t = \frac {\text{temp} - m_p l \ddot {\theta}_t \cos \theta_t}{m_c + m_p}\\
   x_{t+1} = x_t + \Delta t \dot {x}_t, \quad \dot {x}_{t+1} = \dot {x}_t + \Delta t \ddot {x}_t,\\
   \theta_{t+1} = \theta_t + \Delta t \dot {\theta}_t, \quad \dot {\theta}_{t+1} = \dot {\theta}_t + \Delta t \ddot {\theta}_t.
   $$
@@ -858,7 +858,7 @@ description: 介绍基于人类反馈的强化学习（RLHF）技术
   | 模型类别                     | 输入                                    | 输出                                                                | 推理用途                                                | 聚合方式 / 说明                                    |
   | :--------------------------- | :-------------------------------------- | :------------------------------------------------------------------ | :------------------------------------------------------ | :------------------------------------------------- |
   | 奖励模型 (RM, Bradley–Terry) | 提示 $x$ + 候选补全 $y$                 | EOS 隐藏状态的单个标量 $r_\theta (x, y)$                             | 对候选补全重新排序（best-of-N）、或为 RLHF 提供终端奖励 | 标量输出，无需进一步聚合                           |
-  | 结果奖励模型 (ORM)           | 提示 $x$ + 补全 $y$                     | 每个 token 的正确性概率 $p_t \approx P (\text {correct at token} t)$ | 对候选补全评分                                          | 跨 token 聚合：均值、最小值、尾部平均或阈值标记    |
+  | 结果奖励模型 (ORM)           | 提示 $x$ + 补全 $y$                     | 每个 token 的正确性概率 $p_t \approx P (\text{correct at token} t)$ | 对候选补全评分                                          | 跨 token 聚合：均值、最小值、尾部平均或阈值标记    |
   | 过程奖励模型 (PRM)           | 提示 $x$ + 带步骤边界的推理轨迹         | 每个步骤的分数或类别 logits（正确 / 中性 / 错误）                       | 对思维链评分或指导搜索 / 解码                             | 跨步骤聚合：平均步骤分数、最小值、加权和           |
   | 价值函数 (Value Function)    | 提示 $x$ + 当前前缀 $y_{\le t}$（状态） | 每个 token 位置的期望剩余回报 $V_t$                                 | RL 训练中计算优势 $A_t = \hat {R}_t - V_t$               | 通常取最后生成 token 的 $V$ 作为基线；非正确性概率 |
 
@@ -869,7 +869,7 @@ description: 介绍基于人类反馈的强化学习（RLHF）技术
 - ORM（Outcome Reward Model）
   - 预测每个 token 的即时、局部正确性：
     $$
-    p (\text {correct}_t) \text {或} r_t
+    p (\text{correct}_t) \text{或} r_t
     $$
   - 监督目标来自离线标注（例如数据集或验证器标记 token / 序列为正确或错误）
   - 训练是固定的、离线的，与当前策略无关
@@ -885,7 +885,7 @@ description: 介绍基于人类反馈的强化学习（RLHF）技术
     A_t = \hat {R}_t - V (s_t)
     $$
 
-- 如果定义 token 奖励 $r_t = \mathbb {1}[\text {token is correct}]$ 并令折扣 $\gamma = 1$
+- 如果定义 token 奖励 $r_t = \mathbb {1}[\text{token is correct}]$ 并令折扣 $\gamma = 1$
   - ORM 学习的是每个 token 的即时奖励 $r_t$ 或其概率
   - 价值函数学习的是从当前步骤开始的剩余奖励总和 $\sum_{k \ge t} r_k$
 
@@ -938,22 +938,22 @@ description: 介绍基于人类反馈的强化学习（RLHF）技术
   - 在包含奖励模型 $r_\theta$ 的 RLHF 框架中，正则化的通用公式如下：
 
     $$
-    r = r_\theta - \lambda r_{\text {reg}}
+    r = r_\theta - \lambda r_{\text{reg}}
     $$
 
   - 其标准实现形式为：
 
     $$
-    r = r_\theta - \lambda_{\text {KL}} D_{\text {KL}}(\pi_{\text {RL}}(y|x) \parallel \pi_{\text {ref}}(y|x))
+    r = r_\theta - \lambda_{\text{KL}} D_{\text{KL}}(\pi_{\text{RL}}(y|x) \parallel \pi_{\text{ref}}(y|x))
     $$
 
   - KL 散度用于衡量两个概率分布之间的差异，其定义如下：
     $$
-    D_{\text {KL}}(P||Q) = \sum_{x \in \mathcal {X}} P (x) \log\left (\frac {P (x)}{Q (x)}\right)
+    D_{\text{KL}}(P||Q) = \sum_{x \in \mathcal {X}} P (x) \log\left (\frac {P (x)}{Q (x)}\right)
     $$
 
 - KL 散度
-  - 在 RLHF 中，主要关注两个分布：**新版本模型的分布**（记为 $P (x)$ 或 $\pi_{\text {RL}}$）和**参考策略的分布**（记为 $Q (x)$ 或 $\pi_{\text {ref}}$）
+  - 在 RLHF 中，主要关注两个分布：**新版本模型的分布**（记为 $P (x)$ 或 $\pi_{\text{RL}}$）和**参考策略的分布**（记为 $Q (x)$ 或 $\pi_{\text{ref}}$）
   - 不同优化器可能使用不同方向的 KL 散度，本文中最常用的 “KL 惩罚” 是相对于参考策略的**反向 KL 散度（Reverse KL）**
   - 实际操作中通常通过蒙特卡洛估计实现：从 RL 模型中采样 token，并利用参考模型计算其概率
   - 当新模型 $P$ 在参考模型 $Q$ 认为概率极低的区域分配了较大概率质量时，反向 KL 会施加较大惩罚
@@ -962,12 +962,12 @@ description: 介绍基于人类反馈的强化学习（RLHF）技术
 - 参考模型的选择
   - KL 惩罚通常通过将训练中生成的 token 序列与一个静态参考模型进行对比，实现风格和分布上的约束
   - 参考模型一般为经过指令微调（Instruction Tuned）的 LM，也可选 RLHF 训练过程中的某个历史检查点
-  - 此时公式中的采样分布分别为 $\pi_{\text {RL}}(x)$ 和 $\pi_{\text {ref}}(x)$
+  - 此时公式中的采样分布分别为 $\pi_{\text{RL}}(x)$ 和 $\pi_{\text{ref}}(x)$
 
 - 实现示例
   - KL 散度通常采用近似计算，当直接从分布 $P (x)$ 采样时，可以将 KL 的求和转化为期望形式：
     $$
-    D_{\text {KL}}(P \| Q) = \mathbb {E}_{x \sim P} \big [\log P (x) - \log Q (x) \big]
+    D_{\text{KL}}(P \| Q) = \mathbb {E}_{x \sim P} \big [\log P (x) - \log Q (x) \big]
     $$
   - 这种实现方式便于在语言模型训练中直接使用对数概率进行计算
 
@@ -1009,14 +1009,14 @@ description: 介绍基于人类反馈的强化学习（RLHF）技术
 - 具体实现方式：从 RL 策略模型中采样（即从 RLHF 使用的数据集中抽取提示 $x$ 并生成补全 $y$），将其转化为待优化的目标函数：
 
   $$
-  J (\theta) = \mathbb {E}_{(x,y) \sim \mathcal {D}_{\pi_{\text {RL},\theta}}} \left [r_\theta (y|x) - \lambda r_{\text {reg}} \right]
+  J (\theta) = \mathbb {E}_{(x,y) \sim \mathcal {D}_{\pi_{\text{RL},\theta}}} \left [r_\theta (y|x) - \lambda r_{\text{reg}} \right]
   $$
 
 - 此外，可添加一项基于预训练语料库或其他数据集的奖励，用于保持文本连贯性和自回归预测能力：
 
   $$
-  J (\theta) = \mathbb {E}_{(x,y) \sim \mathcal {D}_{\pi_{\text {RL},\theta}}} \left [r_\theta (y|x) - \lambda r_{\text {reg}} \right]
-  + \gamma \mathbb {E}_{x \sim \mathcal {D}_{\text {pretrain}}} \left [\log \pi_{\text {RL},\theta}(x) \right]
+  J (\theta) = \mathbb {E}_{(x,y) \sim \mathcal {D}_{\pi_{\text{RL},\theta}}} \left [r_\theta (y|x) - \lambda r_{\text{reg}} \right]
+  + \gamma \mathbb {E}_{x \sim \mathcal {D}_{\text{pretrain}}} \left [\log \pi_{\text{RL},\theta}(x) \right]
   $$
 
 - 在直接偏好优化（DPO）中，也可以通过引入**负对数似然（NLL）项**来实现类似的平衡优化
@@ -1024,20 +1024,20 @@ description: 介绍基于人类反馈的强化学习（RLHF）技术
 - 对奖励模型训练的应用形式如下：
 
   $$
-  \mathcal {L}_{\text {DPO+NLL}} = \mathcal {L}_{\text {DPO}}(c_i^w, y_i^w, c_i^l, y_i^l | x_i) + \alpha \mathcal {L}_{\text {NLL}}(c_i^w, y_i^w | x_i)
+  \mathcal {L}_{\text{DPO+NLL}} = \mathcal {L}_{\text{DPO}}(c_i^w, y_i^w, c_i^l, y_i^l | x_i) + \alpha \mathcal {L}_{\text{NLL}}(c_i^w, y_i^w | x_i)
   $$
 
   $$
-  = -\log \sigma \Bigg (\beta \log \frac {P_\theta (c_i^w, y_i^w | x_i)}{P_{\text {ref}}(c_i^w, y_i^w | x_i)}
-  - \beta \log \frac {P_\theta (c_i^l, y_i^l | x_i)}{P_{\text {ref}}(c_i^l, y_i^l | x_i)} \Bigg)
+  = -\log \sigma \Bigg (\beta \log \frac {P_\theta (c_i^w, y_i^w | x_i)}{P_{\text{ref}}(c_i^w, y_i^w | x_i)}
+  - \beta \log \frac {P_\theta (c_i^l, y_i^l | x_i)}{P_{\text{ref}}(c_i^l, y_i^l | x_i)} \Bigg)
   - \alpha \frac {\log P_\theta (c_i^w, y_i^w | x_i)}{|c_i^w| + |y_i^w|}
   $$
 
 - 说明：
   - $P_\theta$：可训练的策略模型
-  - $P_{\text {ref}}$：固定参考模型（通常为 SFT 检查点）
+  - $P_{\text{ref}}$：固定参考模型（通常为 SFT 检查点）
   - $(c_i^w, y_i^w)$ / $(c_i^l, y_i^l)$：提示 $x_i$ 对应的胜出（Winning）和失败（Losing） Completion
-  - 第一项：标准 DPO 逻辑损失，通过对数似然比 $\log \frac {P_\theta}{P_{\text {ref}}}$ 增大胜出者与失败者之间的差距，$\beta$ 控制偏好信号强度
+  - 第一项：标准 DPO 逻辑损失，通过对数似然比 $\log \frac {P_\theta}{P_{\text{ref}}}$ 增大胜出者与失败者之间的差距，$\beta$ 控制偏好信号强度
   - 第二项：对胜出 Completion 的长度归一化负对数似然惩罚，由 $\alpha$ 加权，确保生成文本在绝对语言建模意义上也具有较高似然度，而不仅仅相对于被拒绝样本更好
 
 ## 指令微调
@@ -1268,7 +1268,7 @@ description: 介绍基于人类反馈的强化学习（RLHF）技术
       - 然后定义选择函数 $S_K$：
 
         $$
-        S_K (R_{flat}) = \text {argsort}(R_{flat})[-K:]
+        S_K (R_{flat}) = \text{argsort}(R_{flat})[-K:]
         $$
 
       - 即选取排序后最后 $K$ 个索引（对应最高分）
@@ -1661,23 +1661,23 @@ description: 介绍基于人类反馈的强化学习（RLHF）技术
     - 直接对整个生成序列计算 KL：
 
       $$
-      D_{\text {KL}}(\pi_\theta (\cdot|x) ,||, \pi_{\text {ref}}(\cdot|x)) = \sum_{t=1}^T \log \frac {\pi_\theta (y_t | y_{<t}, x)}{\pi_{\text {ref}}(y_t | y_{<t}, x)}
+      D_{\text{KL}}(\pi_\theta (\cdot|x) ,||, \pi_{\text{ref}}(\cdot|x)) = \sum_{t=1}^T \log \frac {\pi_\theta (y_t | y_{<t}, x)}{\pi_{\text{ref}}(y_t | y_{<t}, x)}
       $$
 
     - 得到一个标量 KL，将它折叠进整个序列的奖励中：
       $$
-      R_{\text {final}} = r_\text {reward} - \lambda D_{\text {KL}}
+      R_{\text{final}} = r_\text{reward} - \lambda D_{\text{KL}}
       $$
     - 这种方式下，所有 token 都共享同一个序列级 KL 惩罚，类似 RLOO
 
   - token 级 KL
     - 保留每个 token 的 KL：
       $$
-      KL_t = \log \frac {\pi_\theta (y_t | y_{<t}, x)}{\pi_{\text {ref}}(y_t | y_{<t}, x)}
+      KL_t = \log \frac {\pi_\theta (y_t | y_{<t}, x)}{\pi_{\text{ref}}(y_t | y_{<t}, x)}
       $$
     - PPO 中通常将 $A_t$ 计算时直接减去 token 的 KL：
       $$
-      A_t^\text {PPO} = (r_t - KL_t) + \gamma V (s_{t+1}) - V (s_t)
+      A_t^\text{PPO} = (r_t - KL_t) + \gamma V (s_{t+1}) - V (s_t)
       $$
     - 这样，每个 token 的奖励都独立考虑 KL，进一步实现 token 级信用分配和约束
 
@@ -1685,10 +1685,10 @@ description: 介绍基于人类反馈的强化学习（RLHF）技术
     - 损失函数
 
       $$
-      \mathcal {L}_\text {GRPO} = - \mathbb {E}\left [\sum_{t=0}^T \log \pi_\theta (a_t|s_t) A_t \right] + \lambda \sum_{t=0}^T KL_t
+      \mathcal {L}_\text{GRPO} = - \mathbb {E}\left [\sum_{t=0}^T \log \pi_\theta (a_t|s_t) A_t \right] + \lambda \sum_{t=0}^T KL_t
       $$
 
-    - $KL_t = D_{\text {KL}}(\pi_\theta (\cdot|s_t) || \pi_\text {ref}(\cdot|s_t))$ 是每个 token 的 KL
+    - $KL_t = D_{\text{KL}}(\pi_\theta (\cdot|s_t) || \pi_\text{ref}(\cdot|s_t))$ 是每个 token 的 KL
 
     - 损失函数中 KL 与策略梯度项是并列的，而不是直接从奖励中减掉
 
@@ -1705,14 +1705,14 @@ description: 介绍基于人类反馈的强化学习（RLHF）技术
 - PPO 的核心思想是：在利用策略梯度进行更新时，同时约束新策略不要偏离旧策略过远，其最大化的裁剪目标可以写为：
 
   $$
-  J (\theta) = \min \left (\frac {\pi_\theta (a \mid s)}{\pi_{\theta_{\text {old}}}(a \mid s)} A,\
-  \text {clip}\!\left (\frac {\pi_\theta (a \mid s)}{\pi_{\theta_{\text {old}}}(a \mid s)},\ 1-\varepsilon,\ 1+\varepsilon
+  J (\theta) = \min \left (\frac {\pi_\theta (a \mid s)}{\pi_{\theta_{\text{old}}}(a \mid s)} A,\
+  \text{clip}\!\left (\frac {\pi_\theta (a \mid s)}{\pi_{\theta_{\text{old}}}(a \mid s)},\ 1-\varepsilon,\ 1+\varepsilon
   \right) A
   \right)
   $$
   - $\pi_\theta (a \mid s)$ 是当前正在优化的策略；
 
-  - $\pi_{\theta_{\text {old}}}(a \mid s)$ 是用于收集训练数据的旧策略（通常是上一次迭代的策略）；
+  - $\pi_{\theta_{\text{old}}}(a \mid s)$ 是用于收集训练数据的旧策略（通常是上一次迭代的策略）；
 
   - $A$ 是优势函数，用于衡量该动作相对于平均行为的好坏
 
@@ -1737,18 +1737,18 @@ description: 介绍基于人类反馈的强化学习（RLHF）技术
   - 然而，直接用旧数据计算梯度会导致偏差（distribution mismatch），为了修正这种分布不匹配，引入重要性权重，用于重新加权样本，使其在当前策略下的贡献与其真实概率一致
 
     $$
-    \mathbb {E}_{a \sim \pi_\theta}[f (a)] = \mathbb {E}_{a \sim \pi_{\theta_\text {old}}}\left [\frac {\pi_\theta (a|s)}{\pi_{\theta_\text {old}}(a|s)} f (a) \right]
+    \mathbb {E}_{a \sim \pi_\theta}[f (a)] = \mathbb {E}_{a \sim \pi_{\theta_\text{old}}}\left [\frac {\pi_\theta (a|s)}{\pi_{\theta_\text{old}}(a|s)} f (a) \right]
     $$
 
-  - 上式中，用权重 $\frac {\pi_\theta}{\pi_{\theta_\text {old}}}$ 对旧样本重新加权，使其在当前策略下的期望梯度估计仍然无偏
+  - 上式中，用权重 $\frac {\pi_\theta}{\pi_{\theta_\text{old}}}$ 对旧样本重新加权，使其在当前策略下的期望梯度估计仍然无偏
 
 - 裁剪
-  - 如果直接使用比率 $\frac {\pi_\theta}{\pi_{\theta_\text {old}}}$，一旦新策略偏离旧策略，这个比率可能远大于 1 或远小于 1，导致梯度过大或更新不稳定
+  - 如果直接使用比率 $\frac {\pi_\theta}{\pi_{\theta_\text{old}}}$，一旦新策略偏离旧策略，这个比率可能远大于 1 或远小于 1，导致梯度过大或更新不稳定
 
   - PPO 通过将该比率裁剪到区间 $[1-\varepsilon,\ 1+\varepsilon]$​ 来缓解这一问题，从而确保单次更新中策略变化是 “近端” 的
 
     $$
-    \text {clip}\left (\frac {\pi_\theta}{\pi_{\theta_\text {old}}}, 1-\varepsilon, 1+\varepsilon \right)
+    \text{clip}\left (\frac {\pi_\theta}{\pi_{\theta_\text{old}}}, 1-\varepsilon, 1+\varepsilon \right)
     $$
 
   - 保证梯度贡献被限制在合理范围，防止策略更新过大
@@ -1765,19 +1765,19 @@ description: 介绍基于人类反馈的强化学习（RLHF）技术
   - 重要性采样权重：
 
     $$
-    r_t (\theta) = \frac {\pi_\theta (x_t \mid x_{<t}, x)}{\pi_{\theta_{\text {old}}}(x_t \mid x_{<t}, x)}
+    r_t (\theta) = \frac {\pi_\theta (x_t \mid x_{<t}, x)}{\pi_{\theta_{\text{old}}}(x_t \mid x_{<t}, x)}
     $$
 
   - 将其代入序列级优势策略梯度：
 
     $$
-    \nabla_\theta J (\theta) = \mathbb {E}_{y \sim \pi_{\theta_{\text {old}}}} \left [\sum_{t=1}^{T} r_t (\theta) \nabla_\theta \log \pi_\theta (x_t \mid x_{<t}, x) A (y, x) \right]
+    \nabla_\theta J (\theta) = \mathbb {E}_{y \sim \pi_{\theta_{\text{old}}}} \left [\sum_{t=1}^{T} r_t (\theta) \nabla_\theta \log \pi_\theta (x_t \mid x_{<t}, x) A (y, x) \right]
     $$
 
   - 为了避免策略更新过大，PPO 引入裁剪：
 
     $$
-    L_t (\theta) = \min\Big (r_t (\theta) A_t,\text {clip}(r_t (\theta), 1-\varepsilon, 1+\varepsilon) A_t \Big)
+    L_t (\theta) = \min\Big (r_t (\theta) A_t,\text{clip}(r_t (\theta), 1-\varepsilon, 1+\varepsilon) A_t \Big)
     $$
 
   - 公式中 $A_t$ 通常是序列级优势 $A (y,x)$ 广播到每个 token
@@ -1793,8 +1793,8 @@ description: 介绍基于人类反馈的强化学习（RLHF）技术
     J (\theta) =
     \frac {1}{|a|}
     \sum_{t=1}^{|a|}
-    \min \Big (\frac {\pi_\theta (a_t \mid s_t)}{\pi_{\theta_{\text {old}}}(a_t \mid s_t)} A_t,\
-    \text {clip}\Big (\frac {\pi_\theta (a_t \mid s_t)}{\pi_{\theta_{\text {old}}}(a_t \mid s_t)}, 1-\varepsilon, 1+\varepsilon
+    \min \Big (\frac {\pi_\theta (a_t \mid s_t)}{\pi_{\theta_{\text{old}}}(a_t \mid s_t)} A_t,\
+    \text{clip}\Big (\frac {\pi_\theta (a_t \mid s_t)}{\pi_{\theta_{\text{old}}}(a_t \mid s_t)}, 1-\varepsilon, 1+\varepsilon
     \Big) A_t
     \Big)
     $$
@@ -1821,7 +1821,7 @@ description: 介绍基于人类反馈的强化学习（RLHF）技术
 - 定义概率比率与优势函数
 
   $$
-  r_t (\theta) = \frac {\pi_\theta (a_t|s_t)}{\pi_{\text {old}}(a_t|s_t)},\quad L^{\text {CLIP}}=\mathbb {E}\left [\min\left (r_t A_t,\ \operatorname {clip}(r_t,1-\epsilon,1+\epsilon) A_t\right)\right]
+  r_t (\theta) = \frac {\pi_\theta (a_t|s_t)}{\pi_{\text{old}}(a_t|s_t)},\quad L^{\text{CLIP}}=\mathbb {E}\left [\min\left (r_t A_t,\ \operatorname {clip}(r_t,1-\epsilon,1+\epsilon) A_t\right)\right]
   $$
 
 - 策略比率 $r (\theta)$ 与优势 $A_t$ 的组合形成两类情况：正优势和负优势
@@ -1943,7 +1943,7 @@ description: 介绍基于人类反馈的强化学习（RLHF）技术
   - 对于第 $i$ 个 Completion，优势计算为标准化形式
 
     $$
-    A_i = \frac {r_i - \text {mean}(r_1, r_2, \cdots, r_G)}{\text {std}(r_1, r_2, \cdots, r_G)}
+    A_i = \frac {r_i - \text{mean}(r_1, r_2, \cdots, r_G)}{\text{std}(r_1, r_2, \cdots, r_G)}
     $$
 
   - 直观上，GRPO 是通过批次内比较学习哪个答案更好，相比平均水平提升正样本概率，降低负样本概率
@@ -1958,15 +1958,15 @@ description: 介绍基于人类反馈的强化学习（RLHF）技术
   - 序列级形式：
 
     $$
-    J (\theta) = \frac {1}{G} \sum_{i=1}^{G} \left (\min \left ( \frac {\pi_\theta (a_i | s)}{\pi_{\theta_{\text {old}}}(a_i | s)} A_i, \ \text {clip} \left (\frac {\pi_\theta (a_i | s)}{\pi_{\theta_{\text {old}}}(a_i | s)}, 1-\varepsilon, 1+\varepsilon \right) A_i \right) - \beta D_{KL}(\pi_\theta || \pi_{\text {ref}}) \right)
+    J (\theta) = \frac {1}{G} \sum_{i=1}^{G} \left (\min \left ( \frac {\pi_\theta (a_i | s)}{\pi_{\theta_{\text{old}}}(a_i | s)} A_i, \ \text{clip} \left (\frac {\pi_\theta (a_i | s)}{\pi_{\theta_{\text{old}}}(a_i | s)}, 1-\varepsilon, 1+\varepsilon \right) A_i \right) - \beta D_{KL}(\pi_\theta || \pi_{\text{ref}}) \right)
     $$
 
   - token 级形式：
 
     $$
     \begin {align*}
-    J (\theta) = \frac {1}{G} \sum_{i=1}^{G} \frac {1}{|a_i|} \sum_{t=1}^{|a_i|} \Bigg (& \min \left ( \frac {\pi_\theta (a_{i,t} | s_i)}{\pi_{\theta_{\text {old}}}(a_{i,t} | s_i)} A_{i,t}, \ \text {clip} \left (\frac {\pi_\theta (a_{i,t} | s_i)}{\pi_{\theta_{\text {old}}}(a_{i,t} | s_i)}, 1-\varepsilon, 1+\varepsilon \right) A_{i,t} \right) \\
-    & - \beta D_{KL}(\pi_\theta (\cdot | s_i) || \pi_{\text {ref}}(\cdot | s_i)) \Bigg)
+    J (\theta) = \frac {1}{G} \sum_{i=1}^{G} \frac {1}{|a_i|} \sum_{t=1}^{|a_i|} \Bigg (& \min \left ( \frac {\pi_\theta (a_{i,t} | s_i)}{\pi_{\theta_{\text{old}}}(a_{i,t} | s_i)} A_{i,t}, \ \text{clip} \left (\frac {\pi_\theta (a_{i,t} | s_i)}{\pi_{\theta_{\text{old}}}(a_{i,t} | s_i)}, 1-\varepsilon, 1+\varepsilon \right) A_{i,t} \right) \\
+    & - \beta D_{KL}(\pi_\theta (\cdot | s_i) || \pi_{\text{ref}}(\cdot | s_i)) \Bigg)
     \end {align*}
     $$
 
@@ -1984,7 +1984,7 @@ description: 介绍基于人类反馈的强化学习（RLHF）技术
     - 只减去了平均值，没有考虑奖励分布的 “离散程度” 或方差
     - 不同批次奖励尺度不同，如果奖励本身分布很宽，优势的数值差异可能很大，梯度方差也可能偏高
     - 单位不统一，仅靠偏移（offset）来减少方差
-  - 而 GRPO 中，每条序列的基线是标准化：$A_i = \frac {r_i - \text {mean}(r_1,\dots,r_G)}{\text {std}(r_1,\dots,r_G)}$​
+  - 而 GRPO 中，每条序列的基线是标准化：$A_i = \frac {r_i - \text{mean}(r_1,\dots,r_G)}{\text{std}(r_1,\dots,r_G)}$​
     - 不仅减去了均值，还除以了标准差，使优势值在批次内部有统一的尺度（通常均值≈0，方差≈1）
     - 对梯度更新更稳定，尤其在奖励分布跨度大或不均匀时，标准化可以防止单个极端奖励主导梯度
     - 可以看作是在做批次归一化（batch normalization） 的思想在策略梯度中的应用
@@ -2011,13 +2011,13 @@ description: 介绍基于人类反馈的强化学习（RLHF）技术
   - 在一个大小为 $G$ 的 group 中，针对某个 completion $i$，Dr. GRPO 的 advantage 定义为：
 
     $$
-    \tilde {A}_i = r_i - \text {mean}(r_1, r_2, \cdots, r_G) = r_i - \frac {1}{G} \sum_{j=1}^{G} r_j
+    \tilde {A}_i = r_i - \text{mean}(r_1, r_2, \cdots, r_G) = r_i - \frac {1}{G} \sum_{j=1}^{G} r_j
     $$
 
   - 而 RLOO 优势估计为：
 
     $$
-    A_i^{\text {RLOO}} = r_i - \frac {1}{G-1} \sum_{j=1, i \neq j}^{G} r_j
+    A_i^{\text{RLOO}} = r_i - \frac {1}{G-1} \sum_{j=1, i \neq j}^{G} r_j
     $$
 
   - 如果将 Dr. GRPO 优势定义乘以 $\frac {G}{G-1}$，可以得到缩放后的等价性：
@@ -2028,7 +2028,7 @@ description: 介绍基于人类反馈的强化学习（RLHF）技术
     &= \frac {G}{G-1} r_i - \frac {1}{G-1} \sum_{j=1, j \neq i}^{G} r_j - \frac {1}{G-1} r_i \\
     &= r_i \left (\frac {G}{G-1} - \frac {1}{G-1} \right) - \frac {1}{G-1} \sum_{j=1, j \neq i}^{G} r_j \\
     &= r_i - \frac {1}{G-1} \sum_{j=1, j \neq i}^{G} r_j \\
-    &= A_i^{\text {RLOO}}
+    &= A_i^{\text{RLOO}}
     \end {align*}
     $$
 
@@ -2041,7 +2041,7 @@ description: 介绍基于人类反馈的强化学习（RLHF）技术
 - 如前文所述，当对由旧策略采样得到的一批数据进行多个梯度更新步骤时，就会出现一个经典问题：
   - 用于收集数据的策略，与当前正在优化的策略，其分布并不匹配
   - 这种分布不匹配在实践中主要出现在两类场景：
-    - 第一，对同一批数据执行多个梯度更新。随着每一次更新，当前策略 $\pi_\theta$ 会逐渐偏离生成数据时的策略 $\pi_{\theta_{\text {old}}}$
+    - 第一，对同一批数据执行多个梯度更新。随着每一次更新，当前策略 $\pi_\theta$ 会逐渐偏离生成数据时的策略 $\pi_{\theta_{\text{old}}}$
     - 第二，在异步训练系统中，推理后端（如 vLLM）与训练后端（如 FSDP）由于参数同步延迟，可能在任意时刻持有不同版本的模型权重。这种情况在 RLHF 中存在，且在 RLVR 中尤为常见
 
   - 为纠正这种分布不匹配，引入了重要性采样
@@ -2076,11 +2076,11 @@ description: 介绍基于人类反馈的强化学习（RLHF）技术
   $$
   \begin {align*}
   \rho_i (\theta)
-  &= \left (\frac {\pi_\theta (a_i \mid s)}{\pi_{\theta_{\text {old}}}(a_i \mid s)} \right)^{\frac {1}{|a_i|}} \\
+  &= \left (\frac {\pi_\theta (a_i \mid s)}{\pi_{\theta_{\text{old}}}(a_i \mid s)} \right)^{\frac {1}{|a_i|}} \\
   &= \exp \left (\frac {1}{|a_i|}
   \sum_{t=1}^{|a_i|}
   \log \frac {\pi_\theta (a_{i,t} \mid s, a_{i,<t})
-  }{\pi_{\theta_{\text {old}}}(a_{i,t} \mid s, a_{i,<t})
+  }{\pi_{\theta_{\text{old}}}(a_{i,t} \mid s, a_{i,<t})
   }
   \right)
   \end {align*}
@@ -2091,14 +2091,14 @@ description: 介绍基于人类反馈的强化学习（RLHF）技术
 - 在目标函数层面，GSPO 与 GRPO 形式高度一致，只是将 token 级重要性权重替换为上述序列级重要性权重：
 
   $$
-  J_{\text {GSPO}}(\theta)
+  J_{\text{GSPO}}(\theta)
   =
-  \mathbb {E}_{s \sim D,\ {a_i}_{i=1}^G \sim \pi_{\theta_{\text {old}}}(\cdot \mid s)}
+  \mathbb {E}_{s \sim D,\ {a_i}_{i=1}^G \sim \pi_{\theta_{\text{old}}}(\cdot \mid s)}
   \left [\frac {1}{G}
   \sum_{i=1}^{G}
   \min
   \left (\rho_i (\theta) A_i,\
-  \text {clip}(\rho_i (\theta), 1-\varepsilon, 1+\varepsilon) A_i
+  \text{clip}(\rho_i (\theta), 1-\varepsilon, 1+\varepsilon) A_i
   \right)
   \right]
   $$
@@ -2126,16 +2126,16 @@ description: 介绍基于人类反馈的强化学习（RLHF）技术
   \hat {\rho}_{i,t}(\theta)
   =
 
-  \text {clip}\big (\rho_{i,t}(\theta),
-  1-\varepsilon_{\text {low}},
-  1+\varepsilon_{\text {high}}
+  \text{clip}\big (\rho_{i,t}(\theta),
+  1-\varepsilon_{\text{low}},
+  1+\varepsilon_{\text{high}}
   \big),
   \quad
   \rho_{i,t}(\theta)
   =
 
   \frac {\pi_\theta (a_{i,t} \mid s, a_{i,<t})
-  }{\pi_{\theta_{\text {old}}}(a_{i,t} \mid s, a_{i,<t})
+  }{\pi_{\theta_{\text{old}}}(a_{i,t} \mid s, a_{i,<t})
   }
   $$
 
@@ -2143,25 +2143,25 @@ description: 介绍基于人类反馈的强化学习（RLHF）技术
 
   $$
   \begin {align*}
-  J_{\text {CISPO}}(\theta)
+  J_{\text{CISPO}}(\theta)
   =
-  \mathbb {E}_{s \sim D,\ {a_i}_{i=1}^K \sim \pi_{\theta_{\text {old}}}(\cdot \mid s)}
+  \mathbb {E}_{s \sim D,\ {a_i}_{i=1}^K \sim \pi_{\theta_{\text{old}}}(\cdot \mid s)}
   \Bigg [\frac {1}{\sum_{i=1}^K |a_i|}
   \sum_{i=1}^{K}
   \sum_{t=1}^{|a_i|}
   &
-  \text {sg}(\hat {\rho}_{i,t}(\theta)) \cdot
+  \text{sg}(\hat {\rho}_{i,t}(\theta)) \cdot
   A_{i,t}
   \log \pi_\theta (a_{i,t} \mid s, a_{i,<t})
   \Bigg]
   \end {align*}
   $$
-  - $\text {sg}(\cdot)$ 表示停止梯度（stop-gradient）：前向计算时使用这个值，但在反向传播时不计算它的梯度，从而保证每个 token 都保留梯度信号，重要性权重裁剪只起 “限制梯度幅度” 的作用，而不会影响优化器的梯度计算
+  - $\text{sg}(\cdot)$ 表示停止梯度（stop-gradient）：前向计算时使用这个值，但在反向传播时不计算它的梯度，从而保证每个 token 都保留梯度信号，重要性权重裁剪只起 “限制梯度幅度” 的作用，而不会影响优化器的梯度计算
   - $\hat {\rho}_{i,t}(\theta)$ 是裁剪后的 token 级重要性权重
 
 - CISPO 裁剪的是重要性权重本身，这是一种明确的偏差–方差权衡 —— 裁剪权重不可避免地引入偏差，但显著降低了重要性采样带来的方差
 
-- CISPO 支持不对称裁剪边界 $\varepsilon_{\text {low}} \neq \varepsilon_{\text {high}}$，这一设计类似于 DAPO 中的 “clip-higher” 思路：允许模型在增加某些 token 概率时执行更大幅度的更新以鼓励探索，同时对降低概率的更新保持更严格的约束
+- CISPO 支持不对称裁剪边界 $\varepsilon_{\text{low}} \neq \varepsilon_{\text{high}}$，这一设计类似于 DAPO 中的 “clip-higher” 思路：允许模型在增加某些 token 概率时执行更大幅度的更新以鼓励探索，同时对降低概率的更新保持更严格的约束
 
 - CISPO 与 GSPO
   - CISPO 与 GSPO 都源自将强化学习扩展到超大规模模型（尤其是 MoE 模型）的研究实践，这类模型通常存在显著的数值不稳定性
@@ -2446,19 +2446,19 @@ description: 介绍基于人类反馈的强化学习（RLHF）技术
 - 因此，如果对每个样本只进行一次梯度更新 $\pi_\theta=\pi_{\theta_{old}}$，则更新规则可以简化为如下形式（其中符号 $[]_\nabla$​表示停止梯度）：
 
   $$
-  J (\theta) = \frac {1}{G} \sum_{i=1}^{G} \left (\frac {\pi_\theta (a_i|s)}{\pi_\theta (a_i|s)_\nabla} A_i - \beta \mathcal {D}_{\text {KL}}(\pi_\theta \|\pi_{\text {ref}}) \right)
+  J (\theta) = \frac {1}{G} \sum_{i=1}^{G} \left (\frac {\pi_\theta (a_i|s)}{\pi_\theta (a_i|s)_\nabla} A_i - \beta \mathcal {D}_{\text{KL}}(\pi_\theta \|\pi_{\text{ref}}) \right)
   $$
 
 - 这导致在 PPO 或 GRPO 的实现中，可以省略第二个策略梯度和裁剪逻辑，从而使优化器更接近标准的策略梯度
 
 #### GRPO
 
-- 对于 RLHF，KL 惩罚的标准应用形式为 $r=r_\theta-\beta  D_{\text {KL}}$
+- 对于 RLHF，KL 惩罚的标准应用形式为 $r=r_\theta-\beta  D_{\text{KL}}$
 
 - 而在 GRPO 中，KL 惩罚项是在损失更新阶段直接施加的，而不是作用在奖励函数上：
 
   $$
-  L = L_{\text {policy gradient}} + \beta  D_{\text {KL}}
+  L = L_{\text{policy gradient}} + \beta  D_{\text{KL}}
   $$
 
 - 传统上，KL 距离是针对某个提示对应的补全序列中的每一个 token 来计算的
@@ -2541,10 +2541,10 @@ description: 介绍基于人类反馈的强化学习（RLHF）技术
 | REINFORCE | On-policy  | Yes      | No       | No       | $-\frac {1}{T}\sum_{t=1}^{T}\log\pi_\theta (a_t \mid s_t)\,(G_t - b (s_t))$                                                                                                                                                                                                        |
 | RLOO      | On-policy  | Yes      | No       | No       | $-\frac {1}{K}\sum_{i=1}^{K}\sum_t \log\pi_\theta (a_{i,t} \mid s_{i,t})\left (R_i - \frac {1}{K-1}\sum_{j\neq i} R_j\right)$                                                                                                                                                       |
 | CISPO     | On-policy  | Yes      | No       | Yes      | $-\sum_{i,t}\operatorname {sg}(\hat\rho_{i,t})\,A_{i,t}\log\pi_\theta (a_{i,t} \mid s_{i,t}),\ \hat\rho_{i,t}=\operatorname {clip}(\rho_{i,t},1-\varepsilon,1+\varepsilon)$                                                                                                        |
-| PPO       | On-policy  | Yes      | Yes      | Yes      | $-\frac {1}{T}\sum_{t=1}^{T}\min\!\left (\rho_t A_t,\ \operatorname {clip}(\rho_t,1-\varepsilon,1+\varepsilon) A_t\right),\ \rho_t=\frac {\pi_\theta (a_t \mid s_t)}{\pi_{\theta_{\text {old}}}(a_t \mid s_t)}$                                                                        |
-| GRPO      | On-policy  | Yes      | No       | Yes      | $-\frac {1}{G}\sum_{i=1}^{G}\min\!\left (\rho_i A_i,\ \operatorname {clip}(\rho_i,1-\varepsilon,1+\varepsilon) A_i\right),\ \rho_i=\frac {\pi_\theta (a_i \mid s)}{\pi_{\theta_{\text {old}}}(a_i \mid s)},\ A_i=\frac {r_i-\operatorname {mean}(r_{1:G})}{\operatorname {std}(r_{1:G})}$ |
-| GSPO      | On-policy  | Yes      | No       | Yes      | $-\frac {1}{G}\sum_{i=1}^{G}\min\!\left (\rho_i A_i,\ \operatorname {clip}(\rho_i,1-\varepsilon,1+\varepsilon) A_i\right),\ \rho_i=\left (\frac {\pi_\theta (a_i \mid s)}{\pi_{\theta_{\text {old}}}(a_i \mid s)}\right)^{1/\mid a_i\mid}$                                              |
-| DPO       | Off-policy | No       | No       | Yes      | $-\mathbb {E}_{(x,y^w,y^l)}\!\left [\log\sigma\!\left (\beta\bigl [\Delta\log\pi_\theta (x)-\Delta\log\pi_{\text {ref}}(x)\bigr]\right)\right]$                                                                                                                                       |
+| PPO       | On-policy  | Yes      | Yes      | Yes      | $-\frac {1}{T}\sum_{t=1}^{T}\min\!\left (\rho_t A_t,\ \operatorname {clip}(\rho_t,1-\varepsilon,1+\varepsilon) A_t\right),\ \rho_t=\frac {\pi_\theta (a_t \mid s_t)}{\pi_{\theta_{\text{old}}}(a_t \mid s_t)}$                                                                        |
+| GRPO      | On-policy  | Yes      | No       | Yes      | $-\frac {1}{G}\sum_{i=1}^{G}\min\!\left (\rho_i A_i,\ \operatorname {clip}(\rho_i,1-\varepsilon,1+\varepsilon) A_i\right),\ \rho_i=\frac {\pi_\theta (a_i \mid s)}{\pi_{\theta_{\text{old}}}(a_i \mid s)},\ A_i=\frac {r_i-\operatorname {mean}(r_{1:G})}{\operatorname {std}(r_{1:G})}$ |
+| GSPO      | On-policy  | Yes      | No       | Yes      | $-\frac {1}{G}\sum_{i=1}^{G}\min\!\left (\rho_i A_i,\ \operatorname {clip}(\rho_i,1-\varepsilon,1+\varepsilon) A_i\right),\ \rho_i=\left (\frac {\pi_\theta (a_i \mid s)}{\pi_{\theta_{\text{old}}}(a_i \mid s)}\right)^{1/\mid a_i\mid}$                                              |
+| DPO       | Off-policy | No       | No       | Yes      | $-\mathbb {E}_{(x,y^w,y^l)}\!\left [\log\sigma\!\left (\beta\bigl [\Delta\log\pi_\theta (x)-\Delta\log\pi_{\text{ref}}(x)\bigr]\right)\right]$                                                                                                                                       |
 
 ### 双重正则化
 
@@ -2571,7 +2571,7 @@ description: 介绍基于人类反馈的强化学习（RLHF）技术
 - 最具代表性的 DAA 是直接偏好优化（Direct Preference Optimization, DPO），其核心思想是利用梯度上升法求解带约束的 RLHF 目标：
 
   $$
-  \max_{\pi} \mathbb {E}_{x \sim D} \mathbb {E}_{y \sim \pi (y|x)} [r_{\theta}(x,y)] - \beta D_{KL} (\pi (y|x) \parallel \pi_{\text {ref}}(y|x))
+  \max_{\pi} \mathbb {E}_{x \sim D} \mathbb {E}_{y \sim \pi (y|x)} [r_{\theta}(x,y)] - \beta D_{KL} (\pi (y|x) \parallel \pi_{\text{ref}}(y|x))
   $$
 
 - 技术上讲，序列似然校准（SLiC-HF）是第一个现代直接对齐算法，但由于多种因素未能流行起来
@@ -2592,25 +2592,25 @@ description: 介绍基于人类反馈的强化学习（RLHF）技术
 - 表面上看，DPO 是直接优化策略以实现 RLHF 目标，其损失函数形式如下：
 
   $$
-  L_{\text {DPO}}(\pi_{\theta}; \pi_{\text {ref}}) = -\mathbb {E}_{(x, y_c, y_r) \sim D} \left [\log \sigma \left ( \beta \log \frac {\pi_{\theta}(y_c \mid x)}{\pi_{\text {ref}}(y_c \mid x)} - \beta \log \frac {\pi_{\theta}(y_r \mid x)}{\pi_{\text {ref}}(y_r \mid x)} \right) \right]
+  L_{\text{DPO}}(\pi_{\theta}; \pi_{\text{ref}}) = -\mathbb {E}_{(x, y_c, y_r) \sim D} \left [\log \sigma \left ( \beta \log \frac {\pi_{\theta}(y_c \mid x)}{\pi_{\text{ref}}(y_c \mid x)} - \beta \log \frac {\pi_{\theta}(y_r \mid x)}{\pi_{\text{ref}}(y_r \mid x)} \right) \right]
   $$
   - $x$：输入提示（prompt）
   - $y_c$：被选中的响应（chosen response）
   - $y_r$：被拒绝的响应（rejected response）
   - $\pi_\theta$：我们正在训练的模型策略
-  - $\pi_{\text {ref}}$：参考策略（通常是原始语言模型）
+  - $\pi_{\text{ref}}$：参考策略（通常是原始语言模型）
   - $\beta$：超参数，控制平衡奖励优化和 KL 约束
 
 - 直观理解：
   - 对每一对偏好数据 $(y_c \succ y_r)$，DPO 想让模型生成 $y_c$ 的概率尽量比 $y_r$ 高
-  - $\log \frac {\pi_\theta (y \mid x)}{\pi_{\text {ref}}(y \mid x)}$ 是对数比率，衡量当前模型相对参考模型对一个输出的偏好程度
+  - $\log \frac {\pi_\theta (y \mid x)}{\pi_{\text{ref}}(y \mid x)}$ 是对数比率，衡量当前模型相对参考模型对一个输出的偏好程度
   - Sigmoid 函数 $\sigma (\cdot)$ 将这个差值映射到 $0\sim1$，用作概率
   - 损失函数整体的作用就是让被选中输出的对数比率尽可能大于被拒绝输出的对数比率
 
 - DPO 定义了一个隐式奖励，它取代了外部奖励模型，定义为对数概率比：
 
   $$
-  r (x, y) = \beta \log \frac {\pi_r (y \mid x)}{\pi_{\text {ref}}(y \mid x)}
+  r (x, y) = \beta \log \frac {\pi_r (y \mid x)}{\pi_{\text{ref}}(y \mid x)}
   $$
   - 这里的 $\pi_r$ 可以理解为 “最优策略”—— 如果知道最优策略，它能直接告诉我们每个输出的好坏
 
@@ -2621,7 +2621,7 @@ description: 介绍基于人类反馈的强化学习（RLHF）技术
 - 损失的梯度可以写为：
 
   $$
-  \nabla_{\theta} L_{\text {DPO}}(\pi_{\theta}; \pi_{\text {ref}}) = -\beta \mathbb {E}_{(x, y_c, y_r) \sim D} \left [\sigma (r_{\theta}(x, y_r) - r_{\theta}(x, y_c)) \left (\nabla_{\theta} \log \pi (y_c \mid x) - \nabla_{\theta} \log \pi (y_r \mid x) \right) \right]
+  \nabla_{\theta} L_{\text{DPO}}(\pi_{\theta}; \pi_{\text{ref}}) = -\beta \mathbb {E}_{(x, y_c, y_r) \sim D} \left [\sigma (r_{\theta}(x, y_r) - r_{\theta}(x, y_c)) \left (\nabla_{\theta} \log \pi (y_c \mid x) - \nabla_{\theta} \log \pi (y_r \mid x) \right) \right]
   $$
   - $\sigma (r_\theta (y_r) - r_\theta (y_c))$：
     - 如果模型把 $y_r$ 的概率估计得比 $y_c$ 高，这个值接近 1，梯度更新更大（因为要纠正错误排序）
@@ -2662,11 +2662,11 @@ description: 介绍基于人类反馈的强化学习（RLHF）技术
   - 考虑 RLHF 的优化目标，希望最大化以下公式：
 
     $$
-    \max_{\pi} \mathbb {E}_{x \sim D} \mathbb {E}_{y \sim \pi (y|x)} [r_{\theta}(x,y)] - \beta D_{KL} (\pi (y|x) \parallel \pi_{\text {ref}}(y|x))
+    \max_{\pi} \mathbb {E}_{x \sim D} \mathbb {E}_{y \sim \pi (y|x)} [r_{\theta}(x,y)] - \beta D_{KL} (\pi (y|x) \parallel \pi_{\text{ref}}(y|x))
     $$
     - 第一个期望项 $\mathbb {E}[r (x,y)]$ 表示策略生成的输出尽可能获得高奖励（最好符合人类偏好）
 
-    - 第二项 KL 散度 $D_{KL}(\pi \parallel \pi_{\text {ref}})$ 用于约束策略不要偏离原始模型太远（防止过拟合）
+    - 第二项 KL 散度 $D_{KL}(\pi \parallel \pi_{\text{ref}})$ 用于约束策略不要偏离原始模型太远（防止过拟合）
 
     - 超参数 $\beta$ 控制两者的权衡
 
@@ -2677,31 +2677,31 @@ description: 介绍基于人类反馈的强化学习（RLHF）技术
   - 首先，展开 KL 散度的定义，根据定义
 
     $$
-    D_{KL}(\pi \parallel \pi_{\text {ref}}) = \mathbb {E}_{y \sim \pi} [\log \frac {\pi (y|x)}{\pi_{\text {ref}}(y|x)}]
+    D_{KL}(\pi \parallel \pi_{\text{ref}}) = \mathbb {E}_{y \sim \pi} [\log \frac {\pi (y|x)}{\pi_{\text{ref}}(y|x)}]
     $$
 
   - 其中求和中的 $\pi (y|x)$ 权重变为采样分布，由于两项现在共享相同的对 $y \sim \pi (y|x)$ 的期望，可以将它们合并：
 
     $$
-    \max_{\pi} \mathbb {E}_{x \sim D} \mathbb {E}_{y \sim \pi (y|x)} \left [r (x,y) - \beta \log \frac {\pi (y|x)}{\pi_{\text {ref}}(y|x)} \right]
+    \max_{\pi} \mathbb {E}_{x \sim D} \mathbb {E}_{y \sim \pi (y|x)} \left [r (x,y) - \beta \log \frac {\pi (y|x)}{\pi_{\text{ref}}(y|x)} \right]
     $$
 
   - 将其拆分为两项：
 
     $$
-    = \max_{\pi} \left (\mathbb {E}_{x \sim D} \mathbb {E}_{y \sim \pi (y|x)} [r (x,y)] - \beta \mathbb {E}_{x \sim D} \mathbb {E}_{y \sim \pi (y|x)} \left [\log \frac {\pi (y|x)}{\pi_{\text {ref}}(y|x)} \right] \right)
+    = \max_{\pi} \left (\mathbb {E}_{x \sim D} \mathbb {E}_{y \sim \pi (y|x)} [r (x,y)] - \beta \mathbb {E}_{x \sim D} \mathbb {E}_{y \sim \pi (y|x)} \left [\log \frac {\pi (y|x)}{\pi_{\text{ref}}(y|x)} \right] \right)
     $$
 
   - 引入负号：
 
     $$
-    = \min_{\pi} \left (-\mathbb {E}_{x \sim D} \mathbb {E}_{y \sim \pi (y|x)} [r (x,y)] + \beta \mathbb {E}_{x \sim D} \mathbb {E}_{y \sim \pi (y|x)} \left [\log \frac {\pi (y|x)}{\pi_{\text {ref}}(y|x)} \right] \right)
+    = \min_{\pi} \left (-\mathbb {E}_{x \sim D} \mathbb {E}_{y \sim \pi (y|x)} [r (x,y)] + \beta \mathbb {E}_{x \sim D} \mathbb {E}_{y \sim \pi (y|x)} \left [\log \frac {\pi (y|x)}{\pi_{\text{ref}}(y|x)} \right] \right)
     $$
 
   - 除以 $\beta$，重新组合：
 
     $$
-    = \min_{\pi} \left (\mathbb {E}_{x \sim D} \mathbb {E}_{y \sim \pi (y|x)} \left [\log \frac {\pi (y|x)}{\pi_{\text {ref}}(y|x)} - \frac {1}{\beta} r (x,y) \right] \right)
+    = \min_{\pi} \left (\mathbb {E}_{x \sim D} \mathbb {E}_{y \sim \pi (y|x)} \left [\log \frac {\pi (y|x)}{\pi_{\text{ref}}(y|x)} - \frac {1}{\beta} r (x,y) \right] \right)
     $$
 
   - 现在损失的形式类似 KL 散度 + 奖励修正项，便于后续分析
@@ -2709,18 +2709,18 @@ description: 介绍基于人类反馈的强化学习（RLHF）技术
   - 为了把优化问题转化为标准概率分布形式，引入配分函数 $Z (x)$（归一化因子）：
 
     $$
-    Z (x) = \sum_y \pi_{\text {ref}}(y|x) \exp\left (\frac {1}{\beta} r (x,y)\right)
+    Z (x) = \sum_y \pi_{\text{ref}}(y|x) \exp\left (\frac {1}{\beta} r (x,y)\right)
     $$
     - 意图：构造一个有效的概率分布
 
       $$
-      \pi^*(y|x) \propto \pi_{\text {ref}}(y|x) \exp\left (\frac {1}{\beta} r (x,y)\right)
+      \pi^*(y|x) \propto \pi_{\text{ref}}(y|x) \exp\left (\frac {1}{\beta} r (x,y)\right)
       $$
 
     - $\pi^*$ 归一化后就成为合法概率分布：
 
       $$
-      \pi^*(y|x) = \frac {1}{Z (x)} \pi_{\text {ref}}(y|x) \exp\left (\frac {1}{\beta} r (x,y)\right)
+      \pi^*(y|x) = \frac {1}{Z (x)} \pi_{\text{ref}}(y|x) \exp\left (\frac {1}{\beta} r (x,y)\right)
       $$
 
     - 这里的直觉是对原始模型概率加权奖励，奖励越高，最终策略分布越倾向于选择它
@@ -2728,43 +2728,43 @@ description: 介绍基于人类反馈的强化学习（RLHF）技术
   - 考虑以下部分：
 
     $$
-    \log \frac {\pi (y|x)}{\pi_{\text {ref}}(y|x)} - \frac {1}{\beta} r (x,y)
+    \log \frac {\pi (y|x)}{\pi_{\text{ref}}(y|x)} - \frac {1}{\beta} r (x,y)
     $$
 
   - 加上 $\log Z (x) - \log Z (x)$：
 
     $$
-    = \log \frac {\pi (y|x)}{\pi_{\text {ref}}(y|x)} - \frac {1}{\beta} r (x,y) + \log Z (x) - \log Z (x)
+    = \log \frac {\pi (y|x)}{\pi_{\text{ref}}(y|x)} - \frac {1}{\beta} r (x,y) + \log Z (x) - \log Z (x)
     $$
 
   - 根据结合律：
 
     $$
-    = \left (\log \frac {\pi (y|x)}{\pi_{\text {ref}}(y|x)} + \log Z (x) \right) - \log Z (x) - \frac {1}{\beta} r (x,y) \quad (14)
+    = \left (\log \frac {\pi (y|x)}{\pi_{\text{ref}}(y|x)} + \log Z (x) \right) - \log Z (x) - \frac {1}{\beta} r (x,y) \quad (14)
     $$
 
   - 利用 $\log (x) + \log (y) = \log (x \cdot y)$（并将 $Z$ 移至分母），得到：
 
     $$
-    = \log \frac {\pi (y|x)}{\frac {1}{Z (x)} \pi_{\text {ref}}(y|x)} - \log Z (x) - \frac {1}{\beta} r (x,y)
+    = \log \frac {\pi (y|x)}{\frac {1}{Z (x)} \pi_{\text{ref}}(y|x)} - \log Z (x) - \frac {1}{\beta} r (x,y)
     $$
 
   - 将 $\frac {1}{\beta} r (x,y)$ 展开为 $\log \exp \frac {1}{\beta} r (x,y)$ 并执行相同的操作，得到：
 
     $$
-    \min_{\pi} \mathbb {E}_{x \sim D} \left [\mathbb {E}_{y \sim \pi (y|x)} \left [\log \frac {\pi (y|x)}{\frac {1}{Z (x)} \pi_{\text {ref}}(y|x) \exp\left (\frac {1}{\beta} r (x,y)\right)} \right] - \log Z (x) \right]
+    \min_{\pi} \mathbb {E}_{x \sim D} \left [\mathbb {E}_{y \sim \pi (y|x)} \left [\log \frac {\pi (y|x)}{\frac {1}{Z (x)} \pi_{\text{ref}}(y|x) \exp\left (\frac {1}{\beta} r (x,y)\right)} \right] - \log Z (x) \right]
     $$
 
   - 有了这种优化形式，需要实际求解最优策略 $\pi^*$，由于引入了配分函数 $Z (x)$，从而使下列项成为关于 $y$ 的有效概率分布
 
     $$
-    \frac {1}{Z (x)} \pi_{\text {ref}}(y|x) \exp (\frac {1}{\beta} r (x,y))
+    \frac {1}{Z (x)} \pi_{\text{ref}}(y|x) \exp (\frac {1}{\beta} r (x,y))
     $$
 
   - 这实际上是一个 KL 散度，因此得到
 
     $$
-    \min_{\pi} \mathbb {E}_{x \sim D} \left [D_{KL} \left (\pi (y|x) \bigg\| \frac {1}{Z (x)} \pi_{\text {ref}}(y|x) \exp\left (\frac {1}{\beta} r (x,y)\right) \right) - \log Z (x) \right]
+    \min_{\pi} \mathbb {E}_{x \sim D} \left [D_{KL} \left (\pi (y|x) \bigg\| \frac {1}{Z (x)} \pi_{\text{ref}}(y|x) \exp\left (\frac {1}{\beta} r (x,y)\right) \right) - \log Z (x) \right]
     $$
     - KL 散度的最小值为 0，当且仅当两个分布相等
     - 因为 $\log Z (x)$ 与 $\pi$ 无关，可以忽略它
@@ -2772,7 +2772,7 @@ description: 介绍基于人类反馈的强化学习（RLHF）技术
   - 根据吉布斯不等式（Gibbs inequality），当且仅当两个量相等时，该距离最小化为 0 ，因此得到最优策略：
 
     $$
-    \pi^*(y|x) = \pi (y|x) = \frac {1}{Z (x)} \pi_{\text {ref}}(y|x) \exp\left (\frac {1}{\beta} r (x,y)\right)
+    \pi^*(y|x) = \pi (y|x) = \frac {1}{Z (x)} \pi_{\text{ref}}(y|x) \exp\left (\frac {1}{\beta} r (x,y)\right)
     $$
 
   - 由此得出，最优策略就是对参考策略进行加权，权重由奖励决定
@@ -2794,7 +2794,7 @@ description: 介绍基于人类反馈的强化学习（RLHF）技术
   - 上一步我们已经得到 RLHF 的最优策略：
 
     $$
-    \pi^*(y|x) = \frac {1}{Z (x)} \pi_{\text {ref}}(y|x)\exp\left (\frac {1}{\beta} r^*(x,y)\right)
+    \pi^*(y|x) = \frac {1}{Z (x)} \pi_{\text{ref}}(y|x)\exp\left (\frac {1}{\beta} r^*(x,y)\right)
     $$
 
   - 如果 $\pi^*$ 是最优策略，那么一定存在一个 $r^*$，使它满足这个指数加权形式，所以可以反过来解出 $r^*$
@@ -2802,25 +2802,25 @@ description: 介绍基于人类反馈的强化学习（RLHF）技术
   - 首先对两边取对数：
 
     $$
-    \log \pi^*(y|x) = \log \left (\frac {1}{Z (x)} \pi_{\text {ref}}(y|x) \exp\left (\frac {1}{\beta} r^*(x,y)\right) \right)
+    \log \pi^*(y|x) = \log \left (\frac {1}{Z (x)} \pi_{\text{ref}}(y|x) \exp\left (\frac {1}{\beta} r^*(x,y)\right) \right)
     $$
 
   - 利用 $\log (abc) = \log a + \log b + \log c$，展开右侧：
 
     $$
-    \log \pi^*(y|x) = -\log Z (x) + \log \pi_{\text {ref}}(y|x) + \frac {1}{\beta} r^*(x,y)
+    \log \pi^*(y|x) = -\log Z (x) + \log \pi_{\text{ref}}(y|x) + \frac {1}{\beta} r^*(x,y)
     $$
 
   - 把 $r^*$ 单独放在一边：
 
     $$
-    \frac {1}{\beta} r^*(x,y) = \log \pi^*(y|x) - \log \pi_{\text {ref}}(y|x) + \log Z (x)
+    \frac {1}{\beta} r^*(x,y) = \log \pi^*(y|x) - \log \pi_{\text{ref}}(y|x) + \log Z (x)
     $$
 
   - 两边乘以 $\beta$：
 
     $$
-    r^*(x,y) = \beta \log \frac {\pi^*(y \mid x)}{\pi_{\text {ref}}(y \mid x)} + \beta \log Z (x)
+    r^*(x,y) = \beta \log \frac {\pi^*(y \mid x)}{\pi_{\text{ref}}(y \mid x)} + \beta \log Z (x)
     $$
 
   - 此时可以看到一个极其重要的事实：奖励 = 相对于参考模型的对数概率比 + 一个 与 $y$ 无关的常数项 $\beta \log Z (x)$，而 Bradley–Terry 只关心 奖励差，所以这个常数项马上会消失
@@ -2828,27 +2828,27 @@ description: 介绍基于人类反馈的强化学习（RLHF）技术
   - 将 $r^*$ 代入偏好概率：
 
     $$
-    p^*(y_1 \succ y_2 \mid x) = \frac {\exp\left ( \beta \log \frac {\pi^*(y_1 \mid x)}{\pi_{\text {ref}}(y_1 \mid x)} + \beta \log Z (x) \right)}{\exp\left ( \beta \log \frac {\pi^*(y_1 \mid x)}{\pi_{\text {ref}}(y_1 \mid x)} + \beta \log Z (x) \right) + \exp\left (\beta \log \frac {\pi^*(y_2 \mid x)}{\pi_{\text {ref}}(y_2 \mid x)} + \beta \log Z (x) \right)}
+    p^*(y_1 \succ y_2 \mid x) = \frac {\exp\left ( \beta \log \frac {\pi^*(y_1 \mid x)}{\pi_{\text{ref}}(y_1 \mid x)} + \beta \log Z (x) \right)}{\exp\left ( \beta \log \frac {\pi^*(y_1 \mid x)}{\pi_{\text{ref}}(y_1 \mid x)} + \beta \log Z (x) \right) + \exp\left (\beta \log \frac {\pi^*(y_2 \mid x)}{\pi_{\text{ref}}(y_2 \mid x)} + \beta \log Z (x) \right)}
     $$
 
   - 利用 $e^{a+b}=e^a e^b$，分子、分母都含有 $e^{\beta \log Z (x)}$，完全抵消，因此简化为：
 
     $$
-    p^*(y_1 \succ y_2 \mid x) = \frac {\exp\left ( \beta \log \frac {\pi^*(y_1 \mid x)}{\pi_{\text {ref}}(y_1 \mid x)} \right)}{\exp\left ( \beta \log \frac {\pi^*(y_1 \mid x)}{\pi_{\text {ref}}(y_1 \mid x)} \right) + \exp\left (\beta \log \frac {\pi^*(y_2 \mid x)}{\pi_{\text {ref}}(y_2 \mid x)} \right)}
+    p^*(y_1 \succ y_2 \mid x) = \frac {\exp\left ( \beta \log \frac {\pi^*(y_1 \mid x)}{\pi_{\text{ref}}(y_1 \mid x)} \right)}{\exp\left ( \beta \log \frac {\pi^*(y_1 \mid x)}{\pi_{\text{ref}}(y_1 \mid x)} \right) + \exp\left (\beta \log \frac {\pi^*(y_2 \mid x)}{\pi_{\text{ref}}(y_2 \mid x)} \right)}
     $$
 
   - 这一步揭示了 DPO 的核心：人类偏好概率只取决于两个 “对数概率比” 的差
 
-  - 为了得到标准形式，把分子分母同时除以第一项的指数，即将分子和分母乘以 $\exp\left (-\beta \log \frac {\pi^*(y_1 \mid x)}{\pi_{\text {ref}}(y_1 \mid x)} \right)$，得到：
+  - 为了得到标准形式，把分子分母同时除以第一项的指数，即将分子和分母乘以 $\exp\left (-\beta \log \frac {\pi^*(y_1 \mid x)}{\pi_{\text{ref}}(y_1 \mid x)} \right)$，得到：
 
     $$
-    p^*(y_1 \succ y_2 \mid x) = \frac {1}{1 + \exp\left ( \beta \log \frac {\pi^*(y_2 \mid x)}{\pi_{\text {ref}}(y_2 \mid x)} - \beta \log \frac {\pi^*(y_1 \mid x)}{\pi_{\text {ref}}(y_1 \mid x)} \right)}
+    p^*(y_1 \succ y_2 \mid x) = \frac {1}{1 + \exp\left ( \beta \log \frac {\pi^*(y_2 \mid x)}{\pi_{\text{ref}}(y_2 \mid x)} - \beta \log \frac {\pi^*(y_1 \mid x)}{\pi_{\text{ref}}(y_1 \mid x)} \right)}
     $$
 
   - 最后，根据 sigmoid 函数的定义 $\sigma (x) = \frac {1}{1+e^{-x}}$，得到：
 
     $$
-    p^*(y_1 \succ y_2 \mid x) = \sigma \left (\beta \log \frac {\pi^*(y_1 \mid x)}{\pi_{\text {ref}}(y_1 \mid x)} - \beta \log \frac {\pi^*(y_2 \mid x)}{\pi_{\text {ref}}(y_2 \mid x)} \right)
+    p^*(y_1 \succ y_2 \mid x) = \sigma \left (\beta \log \frac {\pi^*(y_1 \mid x)}{\pi_{\text{ref}}(y_1 \mid x)} - \beta \log \frac {\pi^*(y_2 \mid x)}{\pi_{\text{ref}}(y_2 \mid x)} \right)
     $$
 
   - 这就是在最优策略 $\pi^*$ 下，Bradley-Terry 模型下偏好数据的似然
@@ -2860,7 +2860,7 @@ description: 介绍基于人类反馈的强化学习（RLHF）技术
   - 而 Bradley–Terry 的学习目标是最大化偏好数据的对数似然，等价于最小化负对数似然，得到损失：
 
     $$
-    L_{\text {DPO}}(\pi_{\theta}; \pi_{\text {ref}}) = -\mathbb {E}_{(x, y_c, y_r) \sim D} [\log p (y_c \succ y_r \mid x) ] = -\mathbb {E}_{(x, y_c, y_r) \sim D} \left [\log \sigma \left ( \beta \log \frac {\pi_{\theta}(y_c | x)}{\pi_{\text {ref}}(y_c | x)} - \beta \log \frac {\pi_{\theta}(y_r | x)}{\pi_{\text {ref}}(y_r | x)} \right) \right]
+    L_{\text{DPO}}(\pi_{\theta}; \pi_{\text{ref}}) = -\mathbb {E}_{(x, y_c, y_r) \sim D} [\log p (y_c \succ y_r \mid x) ] = -\mathbb {E}_{(x, y_c, y_r) \sim D} \left [\log \sigma \left ( \beta \log \frac {\pi_{\theta}(y_c | x)}{\pi_{\text{ref}}(y_c | x)} - \beta \log \frac {\pi_{\theta}(y_r | x)}{\pi_{\text{ref}}(y_r | x)} \right) \right]
     $$
 
   - 这就是 DPO 的损失函数！
@@ -2871,31 +2871,31 @@ description: 介绍基于人类反馈的强化学习（RLHF）技术
   - 对 DPO 的损失函数求导
 
     $$
-    \nabla_{\theta} L_{\text {DPO}}(\pi_{\theta}; \pi_{\text {ref}}) = -\nabla_{\theta} \mathbb {E}_{(x, y_c, y_r) \sim D} \left [\log \sigma \left ( \beta \log \frac {\pi_{\theta}(y_c | x)}{\pi_{\text {ref}}(y_c | x)} - \beta \log \frac {\pi_{\theta}(y_r | x)}{\pi_{\text {ref}}(y_r | x)} \right) \right]
+    \nabla_{\theta} L_{\text{DPO}}(\pi_{\theta}; \pi_{\text{ref}}) = -\nabla_{\theta} \mathbb {E}_{(x, y_c, y_r) \sim D} \left [\log \sigma \left ( \beta \log \frac {\pi_{\theta}(y_c | x)}{\pi_{\text{ref}}(y_c | x)} - \beta \log \frac {\pi_{\theta}(y_r | x)}{\pi_{\text{ref}}(y_r | x)} \right) \right]
     $$
 
   - 简写为：
 
     $$
-    \nabla_{\theta} L_{\text {DPO}}=-\nabla_{\theta}\mathbb {E}_{(x, y_c, y_r) \sim D}\left [\log \sigma (\cdot)\right]
+    \nabla_{\theta} L_{\text{DPO}}=-\nabla_{\theta}\mathbb {E}_{(x, y_c, y_r) \sim D}\left [\log \sigma (\cdot)\right]
     $$
 
   - 由于数据分布与 $\theta$ 无关，把梯度作用到期望内部：
 
     $$
-    \nabla_{\theta} L_{\text {DPO}}= -\mathbb {E}_{(x, y_c, y_r) \sim D}\left [\nabla_{\theta}\log \sigma (\cdot)\right]
+    \nabla_{\theta} L_{\text{DPO}}= -\mathbb {E}_{(x, y_c, y_r) \sim D}\left [\nabla_{\theta}\log \sigma (\cdot)\right]
     $$
 
   - 令 sigmoid 内部的 logit 为：
 
     $$
-    u=\beta \log \frac {\pi_{\theta}(y_c | x)}{\pi_{\text {ref}}(y_c | x)}-\beta \log \frac {\pi_{\theta}(y_r | x)}{\pi_{\text {ref}}(y_r | x)}
+    u=\beta \log \frac {\pi_{\theta}(y_c | x)}{\pi_{\text{ref}}(y_c | x)}-\beta \log \frac {\pi_{\theta}(y_r | x)}{\pi_{\text{ref}}(y_r | x)}
     $$
 
   - 则损失梯度变为：
 
     $$
-    \nabla_{\theta} L_{\text {DPO}}=-\mathbb {E}\left [\nabla_{\theta} \log \sigma (u)\right]
+    \nabla_{\theta} L_{\text{DPO}}=-\mathbb {E}\left [\nabla_{\theta} \log \sigma (u)\right]
     $$
 
   - 利用链式法则：
@@ -2924,15 +2924,15 @@ description: 介绍基于人类反馈的强化学习（RLHF）技术
 
   - 于是梯度变成：
     $$
-    \nabla_{\theta} L_{\text {DPO}}=-\mathbb {E}\left [\sigma (-u)\nabla_{\theta} u\right]
+    \nabla_{\theta} L_{\text{DPO}}=-\mathbb {E}\left [\sigma (-u)\nabla_{\theta} u\right]
     $$
   - 回忆 $u$ 的定义：
 
     $$
-    u=\beta \log \pi_{\theta}(y_c | x)-\beta \log \pi_{\theta}(y_r | x) + \text {(reference terms)}
+    u=\beta \log \pi_{\theta}(y_c | x)-\beta \log \pi_{\theta}(y_r | x) + \text{(reference terms)}
     $$
 
-  - 由于 $\pi_{\text {ref}}$ 与 $\theta$ 无关，其梯度为 0，因此：
+  - 由于 $\pi_{\text{ref}}$ 与 $\theta$ 无关，其梯度为 0，因此：
 
     $$
     \nabla_{\theta} u = \beta \left (\nabla_{\theta} \log \pi_{\theta}(y_c | x)-\nabla_{\theta} \log \pi_{\theta}(y_r | x)\right)
@@ -2941,7 +2941,7 @@ description: 介绍基于人类反馈的强化学习（RLHF）技术
   - 将 $\nabla_{\theta} u$ 代回：
 
     $$
-    \nabla_{\theta} L_{\text {DPO}}(\pi_{\theta}; \pi_{\text {ref}})
+    \nabla_{\theta} L_{\text{DPO}}(\pi_{\theta}; \pi_{\text{ref}})
     =
 
     -\mathbb {E}_{(x, y_c, y_r) \sim D}
@@ -2960,15 +2960,15 @@ description: 介绍基于人类反馈的强化学习（RLHF）技术
     $$
     \sigma (-u)
     =
-    \sigma\left (\beta \log \frac {\pi_{\theta}(y_r | x)}{\pi_{\text {ref}}(y_r | x)}
+    \sigma\left (\beta \log \frac {\pi_{\theta}(y_r | x)}{\pi_{\text{ref}}(y_r | x)}
     -
-    \beta \log \frac {\pi_{\theta}(y_c | x)}{\pi_{\text {ref}}(y_c | x)}
+    \beta \log \frac {\pi_{\theta}(y_c | x)}{\pi_{\text{ref}}(y_c | x)}
     \right)
     $$
 
   - 最终得到标准 DPO 梯度表达式：
     $$
-    \nabla_{\theta} L_{\text {DPO}}(\pi_{\theta}; \pi_{\text {ref}}) =-\mathbb {E}_{(x, y_c, y_r) \sim D}\left [\beta\sigma \left (\beta \log \frac {\pi_{\theta}(y_r | x)}{\pi_{\text {ref}}(y_r | x)}-\beta \log \frac {\pi_{\theta}(y_c | x)}{\pi_{\text {ref}}(y_c | x)}\right)\left (\nabla_{\theta} \log \pi (y_c | x)-\nabla_{\theta} \log \pi (y_r | x)\right)\right]
+    \nabla_{\theta} L_{\text{DPO}}(\pi_{\theta}; \pi_{\text{ref}}) =-\mathbb {E}_{(x, y_c, y_r) \sim D}\left [\beta\sigma \left (\beta \log \frac {\pi_{\theta}(y_r | x)}{\pi_{\text{ref}}(y_r | x)}-\beta \log \frac {\pi_{\theta}(y_c | x)}{\pi_{\text{ref}}(y_c | x)}\right)\left (\nabla_{\theta} \log \pi (y_c | x)-\nabla_{\theta} \log \pi (y_r | x)\right)\right]
     $$
 
 - DPO 让模型在 preferred 和 rejected 之间的 log-prob 差距变大，同时减去 reference model 的差距，从而只学习 “超出原模型的偏好信息”
@@ -3014,7 +3014,7 @@ description: 介绍基于人类反馈的强化学习（RLHF）技术
   - cDPO 和 IPO：假设偏好数据是脏的
     - 这两者针对的是同一个现实问题：人类偏好数据一定有噪声
 
-    - cDPO（Conservative DPO）：假设偏好标签中有 $N%$​ 是错误的，因此在优化时刻意收敛得更保守，等价于对损失进行缩放或截断，避免 “相信每一条标签”
+    - cDPO（Conservative DPO）：假设偏好标签中有 $N\%$​ 是错误的，因此在优化时刻意收敛得更保守，等价于对损失进行缩放或截断，避免 “相信每一条标签”
 
     - IPO（Identity Preference Optimization）更激进：直接修改偏好概率函数，不再使用 Bradley–Terry 的 sigmoid 形式，改用非线性映射：
 
@@ -3027,7 +3027,7 @@ description: 介绍基于人类反馈的强化学习（RLHF）技术
   - ODPO（DPO with an offset）的思想非常直观：不只是 “选中比拒绝好”，而是 “至少好 $\delta$ 这么多”
 
 - 修改损失形式，而不是优化目标
-  - ORPO（Odds Ratio Policy Optimization）不再使用 $\pi_{\text {ref}}$​，损失更接近指令微调（SFT），但对选中响应施加一个轻微惩罚，防止崩坏
+  - ORPO（Odds Ratio Policy Optimization）不再使用 $\pi_{\text{ref}}$​，损失更接近指令微调（SFT），但对选中响应施加一个轻微惩罚，防止崩坏
   - SimPO（Simple Preference Optimization）发现一个非常现实的问题：DPO 用的是 token log-prob 的求和，长回复天然吃亏 / 占优（取决于设置），于是提出：用平均 log-prob 或显式做长度归一化
 
 - 一些 DPO 变体试图通过对损失进行微小更改来改善学习信号，或者通过减少内存使用来提高应用效率
@@ -3038,8 +3038,8 @@ description: 介绍基于人类反馈的强化学习（RLHF）技术
 - DPO 存在一个重要的结构性问题：其优化目标仅关注拉开选中响应 $y_c$ 与拒绝响应 $y_r$ 之间的概率 margin，而不直接约束生成分布的绝对形态
   - 从损失函数
     $$
-    L_{\text {DPO}} = - \log \sigma\!\left (\beta \log \frac {\pi_\theta (y_c \mid x)}{\pi_{\text {ref}}(y_c \mid x)}
-    - \beta \log \frac {\pi_\theta (y_r \mid x)}{\pi_{\text {ref}}(y_r \mid x)}
+    L_{\text{DPO}} = - \log \sigma\!\left (\beta \log \frac {\pi_\theta (y_c \mid x)}{\pi_{\text{ref}}(y_c \mid x)}
+    - \beta \log \frac {\pi_\theta (y_r \mid x)}{\pi_{\text{ref}}(y_r \mid x)}
     \right)
     $$
   - 可以看出，优化仅要求相对差值变大，而并未要求 $\pi_\theta (y_c \mid x)$ 本身必须增大
@@ -3047,7 +3047,7 @@ description: 介绍基于人类反馈的强化学习（RLHF）技术
   - 因此，DPO 的梯度并非 “奖励选中响应”，而是 “惩罚拒绝响应更强”
   - 从梯度形式
     $$
-    \nabla_\theta L_{\text {DPO}}
+    \nabla_\theta L_{\text{DPO}}
     \propto
     \sigma (r_\theta (x,y_r)-r_\theta (x,y_c))
     \left (\nabla_\theta \log \pi_\theta (y_c \mid x)

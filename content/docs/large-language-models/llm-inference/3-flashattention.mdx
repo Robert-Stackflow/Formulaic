@@ -40,7 +40,7 @@ description: 介绍 FlashAttention 技术在注意力机制中的优化
   - 共享内存 SRAM
     - 虽然容量极小，但具备极高的带宽
     - 以 A100 GPU 为例，其芯片包含 108 个流式多处理器（SM），每个 SM 配备约 192 KB 的片上 SRAM
-    - 因此总体 SRAM 容量约为 $192\ \text {KB} \times 108 \approx 20\ \text {MB}$
+    - 因此总体 SRAM 容量约为 $192\ \text{KB} \times 108 \approx 20\ \text{MB}$
     - 尽管容量有限，SRAM 的带宽却可高达约 19 TB/s，远超 GPU 其他层级的存储
   - 普通显存
     - A100 的 HBM（High Bandwidth Memory，即通常所说的 GPU 显存）容量在 40–80 GB 范围内，显著大于 SRAM，但其带宽仅约 1.5 TB/s
@@ -53,10 +53,10 @@ description: 介绍 FlashAttention 技术在注意力机制中的优化
   - 增量计算 Softmax 缩减
     - 为避免一次性访问整个输入序列以计算 Softmax，FlashAttention 将输入划分为若干块（block），并在每个输入块上多次迭代计算，从而以增量方式完成 Softmax 缩减
 
-    - 设输入矩阵为 $X \in \mathbb {R}^{L \times d}$，注意力权重为 $A = \text {Softmax}\left (\frac {QK^\top}{\sqrt {d}}\right) V$，则 FlashAttention 对每个块 $X_i$ 分别计算局部最大值和归一化因子，再在全局范围内进行累积，从而高效获得最终 Softmax 输出，而无需同时存储完整的 $QK^\top$
+    - 设输入矩阵为 $X \in \mathbb {R}^{L \times d}$，注意力权重为 $A = \text{Softmax}\left (\frac {QK^\top}{\sqrt {d}}\right) V$，则 FlashAttention 对每个块 $X_i$ 分别计算局部最大值和归一化因子，再在全局范围内进行累积，从而高效获得最终 Softmax 输出，而无需同时存储完整的 $QK^\top$
 
   - 后向传播中减少中间矩阵存储
-    - 在标准 Attention 实现中，反向传播通常需要保存中间矩阵 $S$ 和 $P$（例如 $\text {Softmax}(QK^\top)$，这也就是 Softmax 中间缓存），其尺寸与序列长度 $L$ 呈二次关系，导致 HBM 占用量巨大
+    - 在标准 Attention 实现中，反向传播通常需要保存中间矩阵 $S$ 和 $P$（例如 $\text{Softmax}(QK^\top)$，这也就是 Softmax 中间缓存），其尺寸与序列长度 $L$ 呈二次关系，导致 HBM 占用量巨大
     - FlashAttention 则通过仅保存归一化因子来避免存储完整的中间注意力矩阵，从而显著降低内存消耗
 
 - kernel 融合和尽可能利用 SRAM，以减少数据读取时间，都是 flash attention 的重要优化点，例如分块之后 flash attention 将矩阵乘法、mask、softmax、dropout 操作合并成一个 kernel，做到了只读一次和只写回一次，节省了数据读取时间
@@ -90,7 +90,7 @@ description: 介绍 FlashAttention 技术在注意力机制中的优化
 - 对于 A100-40GB SXM 芯片，采用混合精度训练（FP16，每个参数占用 2 字节），其算力与带宽比值为
 
   $$
-  \frac {\pi}{\beta} = \frac {312 \times 10^{12}}{1555 \times 10^9} = 201 \ \text {FLOPs/Bytes}
+  \frac {\pi}{\beta} = \frac {312 \times 10^{12}}{1555 \times 10^9} = 201 \ \text{FLOPs/Bytes}
   $$
 
 - 典型的取值如下
@@ -116,7 +116,7 @@ description: 介绍 FlashAttention 技术在注意力机制中的优化
 - 前向计算过程
   - 输入： 位于高带宽内存（HBM）中的矩阵 $Q, K, V \in \mathbb {R}^{N \times d}$
   - 从 HBM 中按块加载 $Q$ 和 $K$，计算 $S = QK^\top$，并将 $S$ 写回 HBM
-  - 从 HBM 中读取 $S$，计算 $P = \text {softmax}(S)$，并将 $P$ 写回 HBM
+  - 从 HBM 中读取 $S$，计算 $P = \text{softmax}(S)$，并将 $P$ 写回 HBM
   - 从 HBM 中按块加载 $P$ 和 $V$，计算 $O = PV$，并将 $O$ 写回 HBM
   - 返回 $O$​
 - 标准实现需要在 HBM 中存储中间结果 $S$ 和 $P$，并且需要在 SRAM 和 HBM 中读写，带宽开销很大
@@ -293,7 +293,7 @@ description: 介绍 FlashAttention 技术在注意力机制中的优化
   - 第二行：softmax 展开
 
     $$
-    O_i^{(j+1)} = \text {softmax}(S_{i,:j+1}) V_{:j+1}
+    O_i^{(j+1)} = \text{softmax}(S_{i,:j+1}) V_{:j+1}
     $$
     - 将 attention 权重 $P $ 显式写成对 score $S $ 做 softmax 的形式
     - 注意，这里的 $S_{i,:j+1}$ 包含了所有独立分块的 score，在计算 softmax 时，会用最新的 `rowmax` 和 `rowsum` 来更新 $P $
@@ -301,60 +301,60 @@ description: 介绍 FlashAttention 技术在注意力机制中的优化
   - 第三行：分块展开
 
     $$
-    O_i^{(j+1)} = \text {diag}(l^{(j+1)})^{-1} \left [\exp\left ([S_{i,:j}, S_{i (j+1)}] - m^{(j+1)}\right) \right] \begin {bmatrix} V_{:j} \\ V_{j+1} \end {bmatrix}
+    O_i^{(j+1)} = \text{diag}(l^{(j+1)})^{-1} \left [\exp\left ([S_{i,:j}, S_{i (j+1)}] - m^{(j+1)}\right) \right] \begin {bmatrix} V_{:j} \\ V_{j+1} \end {bmatrix}
     $$
     - 为了实现分块计算，把前 $j+1 $ 个分块拆成「前 $j $ 个分块」和「当前第 $j+1 $ 个分块」两部分：
       - $S_{i,:j+1} \to [S_{i,:j}, S_{i (j+1)}]$
       - $V_{:j+1} \to \begin {bmatrix} V_{:j} \\ V_{j+1} \end {bmatrix}$
-      - 同时，用 $\text {diag}(l^{(j+1)})^{-1}$ 来实现归一化，用 $m^{(j+1)}$ 做数值稳定
+      - 同时，用 $\text{diag}(l^{(j+1)})^{-1}$ 来实现归一化，用 $m^{(j+1)}$ 做数值稳定
 
   - 第四行：矩阵乘法分配律
 
     $$
-    O_i^{(j+1)} = \text {diag}(l^{(j+1)})^{-1} \left [\exp (S_{i,:j} - m^{(j+1)}) V_{:j} + \exp (S_{i (j+1)} - m^{(j+1)}) V_{j+1} \right]
+    O_i^{(j+1)} = \text{diag}(l^{(j+1)})^{-1} \left [\exp (S_{i,:j} - m^{(j+1)}) V_{:j} + \exp (S_{i (j+1)} - m^{(j+1)}) V_{j+1} \right]
     $$
     - 这是简单的代数变形，将矩阵乘法分配到两个分块上，把求和拆成了两部分
 
   - 第五行：指数项分离常数
 
     $$
-    O_i^{(j+1)} = \text {diag}(l^{(j+1)})^{-1} \left [e^{-m^{(j+1)}} \exp (S_{i,:j}) V_{:j} + e^{-m^{(j+1)}} \exp (S_{i (j+1)}) V_{j+1} \right]
+    O_i^{(j+1)} = \text{diag}(l^{(j+1)})^{-1} \left [e^{-m^{(j+1)}} \exp (S_{i,:j}) V_{:j} + e^{-m^{(j+1)}} \exp (S_{i (j+1)}) V_{j+1} \right]
     $$
     - 利用指数性质 $\exp (a - b) = e^{-b} \exp (a) $，把 $-m^{(j+1)}$ 从指数里提出来，作为公因子 $e^{-m^{(j+1)}}$
 
   - 第六行：引入前一轮输出 $O_i^{(j)}$
 
     $$
-    O_i^{(j+1)} = \text {diag}(l^{(j+1)})^{-1} \left [\text {diag}(l^{(j)}) e^{m^{(j)} - m^{(j+1)}} \underbrace {\text {diag}(l^{(j)})^{-1} \exp (S_{i,:j} - m^{(j)}) V_{:j}}_{O_i^{(j)}} + e^{-m^{(j+1)}} \exp (S_{i (j+1)}) V_{j+1} \right]
+    O_i^{(j+1)} = \text{diag}(l^{(j+1)})^{-1} \left [\text{diag}(l^{(j)}) e^{m^{(j)} - m^{(j+1)}} \underbrace {\text{diag}(l^{(j)})^{-1} \exp (S_{i,:j} - m^{(j)}) V_{:j}}_{O_i^{(j)}} + e^{-m^{(j+1)}} \exp (S_{i (j+1)}) V_{j+1} \right]
     $$
     - 这是最关键的一步，目的是把前一轮的输出 $O_i^{(j)}$ 代入进来，实现增量更新：
-      - 我们知道 $O_i^{(j)} = \text {softmax}(S_{i,:j}) V_{:j} = \text {diag}(l^{(j)})^{-1} \exp (S_{i,:j} - m^{(j)}) V_{:j}$
-      - 所以 $\exp (S_{i,:j}) V_{:j} = \text {diag}(l^{(j)}) e^{m^{(j)}} O_i^{(j)}$
+      - 我们知道 $O_i^{(j)} = \text{softmax}(S_{i,:j}) V_{:j} = \text{diag}(l^{(j)})^{-1} \exp (S_{i,:j} - m^{(j)}) V_{:j}$
+      - 所以 $\exp (S_{i,:j}) V_{:j} = \text{diag}(l^{(j)}) e^{m^{(j)}} O_i^{(j)}$
       - 代入后，就得到了用 $O_i^{(j)}$ 表示的前半部分，同时用 $e^{m^{(j)} - m^{(j+1)}}$ 抵消了前后两次 `rowmax` 引入的差异
 
   - 第七行：显式写出 $O_i^{(j)}$
 
     $$
-    O_i^{(j+1)} = \text {diag}(l^{(j+1)})^{-1} \left [\text {diag}(l^{(j)}) e^{m^{(j)} - m^{(j+1)}} O_i^{(j)} + e^{-m^{(j+1)}} \exp (S_{i (j+1)}) V_{j+1} \right]
+    O_i^{(j+1)} = \text{diag}(l^{(j+1)})^{-1} \left [\text{diag}(l^{(j)}) e^{m^{(j)} - m^{(j+1)}} O_i^{(j)} + e^{-m^{(j+1)}} \exp (S_{i (j+1)}) V_{j+1} \right]
     $$
     - 把上一步中代表 $O_i^{(j)}$ 的部分直接写出来，公式的结构就清晰了：前半部分是对历史信息的复用，后半部分是当前分块的新信息
 
   - 第八行：引入局部归一化 $\widetilde {P}$
 
     $$
-    O_i^{(j+1)} = \text {diag}(l^{(j+1)})^{-1} \left [\text {diag}(l^{(j)}) e^{m^{(j)} - m^{(j+1)}} O_i^{(j)} + e^{\widetilde {m} - m^{(j+1)}} \underbrace {\exp (S_{i (j+1)} - \widetilde {m}) V_{j+1}}_{\widetilde {P}_{i (j+1)} V_{j+1}} \right]
+    O_i^{(j+1)} = \text{diag}(l^{(j+1)})^{-1} \left [\text{diag}(l^{(j)}) e^{m^{(j)} - m^{(j+1)}} O_i^{(j)} + e^{\widetilde {m} - m^{(j+1)}} \underbrace {\exp (S_{i (j+1)} - \widetilde {m}) V_{j+1}}_{\widetilde {P}_{i (j+1)} V_{j+1}} \right]
     $$
     - 为了让表达更统一，也为了在计算 `rowsum` 时避免直接操作大矩阵 $S $，引入当前分块的局部 `rowmax` $\widetilde {m}$，将当前分块的项重写为局部归一化的 $\widetilde {P}_{i (j+1)}$
 
   - 第九行：最终增量更新公式
 
     $$
-    O_i^{(j+1)} = \text {diag}(l^{(j+1)})^{-1} \left [\text {diag}(l^{(j)}) e^{m^{(j)} - m^{(j+1)}} O_i^{(j)} + e^{\widetilde {m} - m^{(j+1)}} \widetilde {P}_{i (j+1)} V_{j+1} \right]
+    O_i^{(j+1)} = \text{diag}(l^{(j+1)})^{-1} \left [\text{diag}(l^{(j)}) e^{m^{(j)} - m^{(j+1)}} O_i^{(j)} + e^{\widetilde {m} - m^{(j+1)}} \widetilde {P}_{i (j+1)} V_{j+1} \right]
     $$
 
   - 这就是最终的增量更新公式，它清晰地表明：
     - 新的输出 $O_i^{(j+1)}$ 是在旧输出 $O_i^{(j)}$ 的基础上，加上当前分块的贡献 $\widetilde {P}_{i (j+1)} V_{j+1}$
-    - 所有的系数 $e^{m^{(j)} - m^{(j+1)}}$、$e^{\widetilde {m} - m^{(j+1)}}$ 和 $\text {diag}(l^{(j+1)})^{-1}$​​ 都是为了保证数值稳定性和正确的归一化
+    - 所有的系数 $e^{m^{(j)} - m^{(j+1)}}$、$e^{\widetilde {m} - m^{(j+1)}}$ 和 $\text{diag}(l^{(j+1)})^{-1}$​​ 都是为了保证数值稳定性和正确的归一化
 
   - 总结来看
     - 保留历史结果：不丢弃上一轮算好的 $O_i^{(j)}$，只乘以一个缩放系数 $e^{m^{(j)}-m^{(j+1)}}$（因为最大值更新了，要对齐数值尺度）
@@ -363,10 +363,10 @@ description: 介绍 FlashAttention 技术在注意力机制中的优化
     - 合并得到新输出
 
       $$
-      O_i^{(j+1)} = \frac {\underbrace {\text {缩放} \times 旧 O}_{\text {历史贡献}}
+      O_i^{(j+1)} = \frac {\underbrace {\text{缩放} \times 旧 O}_{\text{历史贡献}}
          +
-         \underbrace {\text {缩放} \times 新块计算值}_{\text {新增贡献}}
-      }{\text {新归一化项} l^{(j+1)}}
+         \underbrace {\text{缩放} \times 新块计算值}_{\text{新增贡献}}
+      }{\text{新归一化项} l^{(j+1)}}
       $$
 
     - 写回 HBM，循环继续：只用很小的空间存 $O, m, l$，全程不生成 $N×N$ 矩阵
@@ -391,15 +391,15 @@ description: 介绍 FlashAttention 技术在注意力机制中的优化
       - 从 HBM 加载 $Q_i, O_i, \ell_i, m_i$ 到片上 SRAM
       - 片上计算注意力分数：$S_{ij} = Q_i K_j^\top \in \mathbb {R}^{B_r \times B_c}$
       - 片上计算 Softmax 中间值：
-        - $\tilde {m}_{ij} = \text {rowmax}(S_{ij}) \in \mathbb {R}^{B_r}$
+        - $\tilde {m}_{ij} = \text{rowmax}(S_{ij}) \in \mathbb {R}^{B_r}$
         - $\tilde {P}_{ij} = \exp (S_{ij} - \tilde {m}_{ij}) \in \mathbb {R}^{B_r \times B_c}$（逐元素计算）
-        - $\tilde {\ell}_{ij} = \text {rowsum}(\tilde {P}_{ij}) \in \mathbb {R}^{B_r}$
+        - $\tilde {\ell}_{ij} = \text{rowsum}(\tilde {P}_{ij}) \in \mathbb {R}^{B_r}$
       - 片上更新 Softmax 统计量：
-        - $m_i^{\text {new}} = \max (m_i, \tilde {m}_{ij}) \in \mathbb {R}^{B_r}$
-        - $\ell_i^{\text {new}} = e^{m_i - m_i^{\text {new}}} \ell_i + e^{\tilde {m}_{ij} - m_i^{\text {new}}} \tilde {\ell}_{ij} \in \mathbb {R}^{B_r}$
+        - $m_i^{\text{new}} = \max (m_i, \tilde {m}_{ij}) \in \mathbb {R}^{B_r}$
+        - $\ell_i^{\text{new}} = e^{m_i - m_i^{\text{new}}} \ell_i + e^{\tilde {m}_{ij} - m_i^{\text{new}}} \tilde {\ell}_{ij} \in \mathbb {R}^{B_r}$
       - 更新输出并写回 HBM：
-        - $O_i \leftarrow \text {diag}(\ell_i^{\text {new}})^{-1} \left (\text {diag}(\ell_i) e^{m_i - m_i^{\text {new}}} O_i + e^{\tilde {m}_{ij} - m_i^{\text {new}}} \tilde {P}_{ij} V_j \right)$
-      - 将更新后的 $\ell_i^{\text {new}}、m_i^{\text {new}}$ 写回 HBM
+        - $O_i \leftarrow \text{diag}(\ell_i^{\text{new}})^{-1} \left (\text{diag}(\ell_i) e^{m_i - m_i^{\text{new}}} O_i + e^{\tilde {m}_{ij} - m_i^{\text{new}}} \tilde {P}_{ij} V_j \right)$
+      - 将更新后的 $\ell_i^{\text{new}}、m_i^{\text{new}}$ 写回 HBM
       - end for
     - end for
   - 返回最终输出 $O$
@@ -423,8 +423,8 @@ description: 介绍 FlashAttention 技术在注意力机制中的优化
 
   $$
   \begin {cases}
-  \frac {\partial y_i}{\partial z_j} = y_i (1 - y_i), & \text {当} i = j \\
-  \frac {\partial y_i}{\partial z_j} = -y_i y_j, & \text {当} i \neq j
+  \frac {\partial y_i}{\partial z_j} = y_i (1 - y_i), & \text{当} i = j \\
+  \frac {\partial y_i}{\partial z_j} = -y_i y_j, & \text{当} i \neq j
   \end {cases}
   $$
 
@@ -577,7 +577,7 @@ description: 介绍 FlashAttention 技术在注意力机制中的优化
 
     - 掩码函数 `MASK`
 
-    - Dropout 概率 $p_{\text {drop}}$
+    - Dropout 概率 $p_{\text{drop}}$
 
     - 前向传播时的伪随机数生成器状态 $\mathcal {R}$
 
@@ -601,16 +601,16 @@ description: 介绍 FlashAttention 技术在注意力机制中的优化
     - 内层循环（遍历 Q 块）：for $1 \leq i \leq T_r$do
       - 从 HBM 加载 $Q_i, O_i, dO_i, dQ_i, \ell_i, m_i$ 到片上 SRAM
       - 在片上计算：$S_{ij} = \tau Q_i K_j^\top \in \mathbb {R}^{B_r \times B_c}$
-      - 在片上应用掩码：$S_{ij}^{\text {masked}} = \text {MASK}(S_{ij})$
-      - 在片上计算注意力概率：$P_{ij} = \text {diag}(\ell_i)^{-1} \exp (S_{ij}^{\text {masked}} - m_i) \in \mathbb {R}^{B_r \times B_c}$
+      - 在片上应用掩码：$S_{ij}^{\text{masked}} = \text{MASK}(S_{ij})$
+      - 在片上计算注意力概率：$P_{ij} = \text{diag}(\ell_i)^{-1} \exp (S_{ij}^{\text{masked}} - m_i) \in \mathbb {R}^{B_r \times B_c}$
       - 在片上计算 Dropout 掩码 $Z_{ij} \in \mathbb {R}^{B_r \times B_c}$：
-        - 每个元素以 $1-p_{\text {drop}}$ 的概率取 $\frac {1}{1-p_{\text {drop}}}$
-        - 以 $p_{\text {drop}}$ 的概率取 $0$
-      - 在片上应用 Dropout：$P_{ij}^{\text {dropped}} = P_{ij} \circ Z_{ij}$（逐元素乘法）
-      - 在片上累加 $dV$ 梯度：$\tilde {dV}_j \leftarrow \tilde {dV}_j + (P_{ij}^{\text {dropped}})^\top dO_i \in \mathbb {R}^{B_c \times d}$
-      - 在片上计算 $dP$ 梯度：$dP_{ij}^{\text {dropped}} = dO_i V_j^\top \in \mathbb {R}^{B_r \times B_c}$
-      - 在片上应用 Dropout 反向：$dP_{ij} = dP_{ij}^{\text {dropped}} \circ Z_{ij}$（逐元素乘法）
-      - 在片上计算行和：$D_i = \text {rowsum}(dO_i \circ O_i) \in \mathbb {R}^{B_r}$
+        - 每个元素以 $1-p_{\text{drop}}$ 的概率取 $\frac {1}{1-p_{\text{drop}}}$
+        - 以 $p_{\text{drop}}$ 的概率取 $0$
+      - 在片上应用 Dropout：$P_{ij}^{\text{dropped}} = P_{ij} \circ Z_{ij}$（逐元素乘法）
+      - 在片上累加 $dV$ 梯度：$\tilde {dV}_j \leftarrow \tilde {dV}_j + (P_{ij}^{\text{dropped}})^\top dO_i \in \mathbb {R}^{B_c \times d}$
+      - 在片上计算 $dP$ 梯度：$dP_{ij}^{\text{dropped}} = dO_i V_j^\top \in \mathbb {R}^{B_r \times B_c}$
+      - 在片上应用 Dropout 反向：$dP_{ij} = dP_{ij}^{\text{dropped}} \circ Z_{ij}$（逐元素乘法）
+      - 在片上计算行和：$D_i = \text{rowsum}(dO_i \circ O_i) \in \mathbb {R}^{B_r}$
       - 在片上计算 $dS$ 梯度：$dS_{ij} = P_{ij} \circ (dP_{ij} - D_i) \in \mathbb {R}^{B_r \times B_c}$
       - 更新 $dQ$ 并写回 HBM：$dQ_i \leftarrow dQ_i + \tau dS_{ij} K_j \in \mathbb {R}^{B_r \times d}$
       - 在片上累加 $dK$ 梯度：$\tilde {dK}_j \leftarrow \tilde {dK}_j + \tau dS_{ij}^\top Q_i \in \mathbb {R}^{B_c \times d}$
@@ -818,7 +818,7 @@ description: 介绍 FlashAttention 技术在注意力机制中的优化
 - Softmax 的数值稳定实现：
 
   $$
-  \text {softmax}(x_i) = \frac {e^{x_i}}{\sum_j e^{x_j}} = \frac {e^{x_i - x_{\text {max}}}}{\sum_j e^{x_j - x_{\text {max}}}}
+  \text{softmax}(x_i) = \frac {e^{x_i}}{\sum_j e^{x_j}} = \frac {e^{x_i - x_{\text{max}}}}{\sum_j e^{x_j - x_{\text{max}}}}
   $$
 
 - 传统实现需要对 $x$​ 做 3 次遍历（求 max、指数、求和），引入了较多非矩阵运算
@@ -830,9 +830,9 @@ description: 介绍 FlashAttention 技术在注意力机制中的优化
 
     $$
     \begin {align*}
-    m^{(1)} &= \text {rowmax}(S^{(1)}) \\
-    \ell^{(1)} &= \text {rowsum}(e^{S^{(1)}-m^{(1)}}) \\
-    O^{(1)} &= \underbrace {\text {diag}(\ell^{(1)})^{-1}}_{\text {非矩阵运算}} e^{S^{(1)}-m^{(1)}} V^{(1)}
+    m^{(1)} &= \text{rowmax}(S^{(1)}) \\
+    \ell^{(1)} &= \text{rowsum}(e^{S^{(1)}-m^{(1)}}) \\
+    O^{(1)} &= \underbrace {\text{diag}(\ell^{(1)})^{-1}}_{\text{非矩阵运算}} e^{S^{(1)}-m^{(1)}} V^{(1)}
     \end {align*}
     $$
 
@@ -842,9 +842,9 @@ description: 介绍 FlashAttention 技术在注意力机制中的优化
 
     $$
     \begin {align*}
-    m^{(2)} &= \max (m^{(1)}, \text {rowmax}(S^{(2)})) = m \\
-    \ell^{(2)} &= e^{m^{(1)}-m^{(2)}} \ell^{(1)} + \text {rowsum}(e^{S^{(2)}-m^{(2)}}) \\
-    O^{(2)} &= \underbrace {\text {diag}(\ell^{(1)}/\ell^{(2)})^{-1}}_{\text {非矩阵运算}} O^{(1)} + \underbrace {\text {diag}(\ell^{(2)})^{-1}}_{\text {非矩阵运算}} e^{S^{(2)}-m^{(2)}} V^{(2)}
+    m^{(2)} &= \max (m^{(1)}, \text{rowmax}(S^{(2)})) = m \\
+    \ell^{(2)} &= e^{m^{(1)}-m^{(2)}} \ell^{(1)} + \text{rowsum}(e^{S^{(2)}-m^{(2)}}) \\
+    O^{(2)} &= \underbrace {\text{diag}(\ell^{(1)}/\ell^{(2)})^{-1}}_{\text{非矩阵运算}} O^{(1)} + \underbrace {\text{diag}(\ell^{(2)})^{-1}}_{\text{非矩阵运算}} e^{S^{(2)}-m^{(2)}} V^{(2)}
     \end {align*}
     $$
 
@@ -855,9 +855,9 @@ description: 介绍 FlashAttention 技术在注意力机制中的优化
 
     $$
     \begin {align*}
-    m^{(1)} &= \text {rowmax}(S^{(1)}) \\
-    \ell^{(1)} &= \text {rowsum}(e^{S^{(1)}-m^{(1)}}) \\
-    \tilde {O}^{(1)} &= e^{S^{(1)}-m^{(1)}} V^{(1)} \quad (\text {去除了} \text {diag}(\ell^{(1)})^{-1})
+    m^{(1)} &= \text{rowmax}(S^{(1)}) \\
+    \ell^{(1)} &= \text{rowsum}(e^{S^{(1)}-m^{(1)}}) \\
+    \tilde {O}^{(1)} &= e^{S^{(1)}-m^{(1)}} V^{(1)} \quad (\text{去除了} \text{diag}(\ell^{(1)})^{-1})
     \end {align*}
     $$
 
@@ -867,9 +867,9 @@ description: 介绍 FlashAttention 技术在注意力机制中的优化
 
     $$
     \begin {align*}
-    m^{(2)} &= \max (m^{(1)}, \text {rowmax}(S^{(2)})) = m \\
-    \ell^{(2)} &= e^{m^{(1)}-m^{(2)}} \ell^{(1)} + \text {rowsum}(e^{S^{(2)}-m^{(2)}}) \\
-    \tilde {O}^{(2)} &= \underbrace {\text {diag}(e^{m^{(1)}-m^{(2)}})}_{\text {仅指数缩放，无ℓ参与}} \tilde {O}^{(1)} + e^{S^{(2)}-m^{(2)}} V^{(2)}
+    m^{(2)} &= \max (m^{(1)}, \text{rowmax}(S^{(2)})) = m \\
+    \ell^{(2)} &= e^{m^{(1)}-m^{(2)}} \ell^{(1)} + \text{rowsum}(e^{S^{(2)}-m^{(2)}}) \\
+    \tilde {O}^{(2)} &= \underbrace {\text{diag}(e^{m^{(1)}-m^{(2)}})}_{\text{仅指数缩放，无ℓ参与}} \tilde {O}^{(1)} + e^{S^{(2)}-m^{(2)}} V^{(2)}
     \end {align*}
     $$
 
@@ -878,7 +878,7 @@ description: 介绍 FlashAttention 技术在注意力机制中的优化
   - 最后一步统一归一化（仅 1 次）：
 
     $$
-    O^{(2)} = \text {diag}(\ell^{(2)})^{-1} \tilde {O}^{(2)}
+    O^{(2)} = \text{diag}(\ell^{(2)})^{-1} \tilde {O}^{(2)}
     $$
 
   - 遍历完所有 KV 块后，只做一次归一化，得到最终结果
@@ -892,11 +892,11 @@ description: 介绍 FlashAttention 技术在注意力机制中的优化
   - 简化旧输出的更新公式
     - V1 更新公式：
       $$
-      O^{(j+1)} = \text {diag}(\ell^{(j)}/\ell^{(j+1)})^{-1} O^{(j)} + \text {diag}(\ell^{(j+1)})^{-1} e^{S^{(j+1)}-m^{(j+1)}} V^{(j+1)}
+      O^{(j+1)} = \text{diag}(\ell^{(j)}/\ell^{(j+1)})^{-1} O^{(j)} + \text{diag}(\ell^{(j+1)})^{-1} e^{S^{(j+1)}-m^{(j+1)}} V^{(j+1)}
       $$
     - V2 更新公式：
       $$
-      \tilde {O}^{(j+1)} = \text {diag}(e^{m^{(j)}-m^{(j+1)}}) \tilde {O}^{(j)} + e^{S^{(j+1)}-m^{(j+1)}} V^{(j+1)}
+      \tilde {O}^{(j+1)} = \text{diag}(e^{m^{(j)}-m^{(j+1)}}) \tilde {O}^{(j)} + e^{S^{(j+1)}-m^{(j+1)}} V^{(j+1)}
       $$
     - 不再需要处理 `ℓ` 的比值，仅基于 `m` 做指数缩放，运算更简单高效
 
@@ -937,12 +937,12 @@ description: 介绍 FlashAttention 技术在注意力机制中的优化
       - 从 HBM 加载 $K_j, V_j$ 到片上 SRAM
       - 在片上计算注意力分数：$S_i^{(j)} = Q_i K_j^\top \in \mathbb {R}^{B_r \times B_c}$
       - 在片上更新 Softmax 统计量：
-        - $m_i^{(j)} = \max\left (m_i^{(j-1)}, \text {rowmax}(S_i^{(j)})\right) \in \mathbb {R}^{B_r}$
+        - $m_i^{(j)} = \max\left (m_i^{(j-1)}, \text{rowmax}(S_i^{(j)})\right) \in \mathbb {R}^{B_r}$
         - $\tilde {P}_i^{(j)} = \exp\left (S_i^{(j)} - m_i^{(j)}\right) \in \mathbb {R}^{B_r \times B_c}$（逐元素计算）
-        - $\ell_i^{(j)} = e^{m_i^{(j-1)} - m_i^{(j)}} \ell_i^{(j-1)} + \text {rowsum}\left (\tilde {P}_i^{(j)}\right) \in \mathbb {R}^{B_r}$
-      - 在片上更新输出：$O_i^{(j)} = \text {diag}\left (e^{m_i^{(j-1)} - m_i^{(j)}}\right)^{-1} O_i^{(j-1)} + \tilde {P}_i^{(j)} V_j$
+        - $\ell_i^{(j)} = e^{m_i^{(j-1)} - m_i^{(j)}} \ell_i^{(j-1)} + \text{rowsum}\left (\tilde {P}_i^{(j)}\right) \in \mathbb {R}^{B_r}$
+      - 在片上更新输出：$O_i^{(j)} = \text{diag}\left (e^{m_i^{(j-1)} - m_i^{(j)}}\right)^{-1} O_i^{(j-1)} + \tilde {P}_i^{(j)} V_j$
       - 结束内层循环
-    - 在片上计算最终输出块：$O_i = \text {diag}\left (\ell_i^{(T_c)}\right)^{-1} O_i^{(T_c)}$
+    - 在片上计算最终输出块：$O_i = \text{diag}\left (\ell_i^{(T_c)}\right)^{-1} O_i^{(T_c)}$
     - 在片上计算 log-sumexp 块：$L_i = m_i^{(T_c)} + \log\left (\ell_i^{(T_c)}\right)$
     - 将 $O_i$ 写回 HBM，作为 $O$ 的第 $i$ 个块
     - 将 $L_i$ 写回 HBM，作为 $L$ 的第 $i$ 个块
@@ -956,7 +956,7 @@ description: 介绍 FlashAttention 技术在注意力机制中的优化
     - $\tilde {P}_i^{(j)}$：基于当前行最大值计算的未归一化概率矩阵，即 $\tilde {P}_i^{(j)} = \exp (S_i^{(j)} - m_i^{(j)})$
     - $\ell_i^{(j)}$：截止到当前分块 $S_i^{(j)}$（含当前分块）的行和（rowsum），递推关系为：
       $$
-      \ell_i^{(j)} = e^{m_i^{(j-1)} - m_i^{(j)}} \ell_i^{(j-1)} + \text {rowsum}(\tilde {P}_i^{(j)})
+      \ell_i^{(j)} = e^{m_i^{(j-1)} - m_i^{(j)}} \ell_i^{(j-1)} + \text{rowsum}(\tilde {P}_i^{(j)})
       $$
   - 第 10 行：$O_i^{(j)}$：截止到当前分块 $S_i^{(j)}$（含当前分块）的累积输出
   - 核心逻辑：在固定 Q 分块、循环 KV 分块时，每一步均使用最新的 rowmax 和 rowsum 计算；遍历完所有 KV 分块后，$O_i^{(j)}$ 即收敛为全局最终结果

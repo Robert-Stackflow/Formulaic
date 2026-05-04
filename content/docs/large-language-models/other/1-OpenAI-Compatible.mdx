@@ -11,7 +11,7 @@ description: 介绍 OpenAI-Compatible API 的参数与技术含义
 | temperature                  | float               | 1.0              | 采样控制           | 使用温度缩放调整概率分布：$p_T (x) \propto \exp (\log p (x)/T)$ 升高 T → 输出更随机        |
 | top_p                        | float               | 1.0              | 采样控制           | Nucleus Sampling 仅从累计概率达到 $p$ 的 token 子集中采样，控制长尾噪声                  |
 | top_k                        | int                 | 无（不限）       | 采样控制           | 从概率最高的前 k 个 token 中采样 $k=1$ 为贪心解码                                        |
-| frequency_penalty            | float               | 0                | 采样控制           | 按 token 出现频率惩罚重复：$\text {logit}^{\prime} = \text {logit} - \beta f (x)$ 减少啰嗦 |
+| frequency_penalty            | float               | 0                | 采样控制           | 按 token 出现频率惩罚重复：$\text{logit}^{\prime} = \text{logit} - \beta f (x)$ 减少啰嗦 |
 | presence_penalty             | float               | 0                | 采样控制           | 对已出现 token 添加惩罚，鼓励话题多样性                                                 |
 | max_tokens                   | int                 | 由模型决定       | 输出控制           | 限制输出 token 的最大值总 token = 输入 + 输出                                           |
 | stop /stop_sequences        | string/string []     | None             | 输出控制           | 当生成序列命中指定字符串时立即终止推理                                                  |
@@ -51,7 +51,7 @@ description: 介绍 OpenAI-Compatible API 的参数与技术含义
 - 限制采样在累计概率前 $p$ 的 token 子集内：
 
   $$
-  \sum\_{x \in S} p (x) \ge p,\quad S \text {为最小的 token 集}
+  \sum\_{x \in S} p (x) \ge p,\quad S \text{为最小的 token 集}
   $$
 
 - 用于防止尾部 token 噪声，提高稳定性
@@ -73,7 +73,7 @@ description: 介绍 OpenAI-Compatible API 的参数与技术含义
 - 按出现频次惩罚 token，维持重复度抑制：
 
   $$
-  \text {logit}^{\prime}(x) = \text {logit}(x) - \beta \cdot f (x)
+  \text{logit}^{\prime}(x) = \text{logit}(x) - \beta \cdot f (x)
   $$
 
 - 用于减少模型 “啰嗦” 与重复句式问题

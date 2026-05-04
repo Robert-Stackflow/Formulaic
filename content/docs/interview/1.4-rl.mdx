@@ -60,12 +60,12 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
     $$
 
   - 在 RL/PPO 中：
-    - p：旧策略 $\pi_{\text {old}}$（采样轨迹）
+    - p：旧策略 $\pi_{\text{old}}$（采样轨迹）
     - q：新策略 $\pi_\theta$（待优化）
     - 比率：
 
       $$
-      \rho_t = \frac {\pi_\theta (a_t|s_t)}{\pi_\text {old}(a_t|s_t)}
+      \rho_t = \frac {\pi_\theta (a_t|s_t)}{\pi_\text{old}(a_t|s_t)}
       $$
 
 - 偏差和方差在强化学习中 trade-off 怎么理解？GAE 的 $\lambda$ 如何权衡？
@@ -92,7 +92,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - Reward Scaling：全局线性缩放奖励，压缩 / 放大值域
   - Reward Normalization：逐 batch / 全局做奖励归零、方差标准化
     $$
-    r_{\text {norm}} = \frac {r-\mu}{\sigma+\epsilon}
+    r_{\text{norm}} = \frac {r-\mu}{\sigma+\epsilon}
     $$
   - 消除不同 Prompt、不同任务、不同难度的奖励尺度不一致，稳定优势分布
 - 什么是探索与利用？
@@ -223,7 +223,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - 优先级指标 —— 用 TD 误差 $\vert\delta\vert$ 衡量经验重要性：
 
     $$
-    \delta = r + \gamma\max_{a'} Q_{\text {target}}(s',a') - Q_{\text {online}}(s,a)
+    \delta = r + \gamma\max_{a'} Q_{\text{target}}(s',a') - Q_{\text{online}}(s,a)
     $$
     - $\vert\delta\vert$ 越大 → 预测越不准 → 优先级越高
     - $\vert\delta\vert$ 越小 → 已经学得差不多 → 优先级越低
@@ -277,7 +277,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - 目标就是
 
     $$
-    \nabla_\theta J (\theta) \to \text {求这个梯度，然后上升更新}
+    \nabla_\theta J (\theta) \to \text{求这个梯度，然后上升更新}
     $$
 
   - 策略目标函数不能直接求梯度
@@ -454,7 +454,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
 - 参考资料
   - [REINFORCE: Easy Online RL for LLMs](https://cameronrwolfe.substack.com/p/reinforce)
 
-<img src="C:/Users/ruida/OneDrive/Workspace/Obsidian/ 技能 / 6. 大语言模型 /img/reinforce_tikz.png" alt="Figure 2：Basic REINFORCE architecture for language models. The shaped reward combines the reward model score with a KL penalty from the reference model. We build on this structure throughout the chapter." style="zoom: 50%;" />
+![Figure 2：Basic REINFORCE architecture for language models. The shaped reward combines the reward model score with a KL penalty from the reference model. We build on this structure throughout the chapter.](/img/llm/reinforce_tikz.png)
 
 - REINFORCE 算法名称来源于短语 “REward Increment = Nonnegative Factor × Offset Reinforcement × Characteristic Eligibility”，即 “奖励增量 = 非负因子 × 偏移强化 × 特征资格迹” 的首字母缩写
 - 这三个组成部分描述了单次策略梯度更新的构成方式：
@@ -536,13 +536,13 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
     - 直接对整个生成序列计算 KL：
 
       $$
-      D_{\text {KL}}(\pi_\theta (\cdot|x) ,||, \pi_{\text {ref}}(\cdot|x)) = \sum_{t=1}^T \log \frac {\pi_\theta (y_t | y_{<t}, x)}{\pi_{\text {ref}}(y_t | y_{<t}, x)}
+      D_{\text{KL}}(\pi_\theta (\cdot|x) ,||, \pi_{\text{ref}}(\cdot|x)) = \sum_{t=1}^T \log \frac {\pi_\theta (y_t | y_{<t}, x)}{\pi_{\text{ref}}(y_t | y_{<t}, x)}
       $$
 
     - 得到一个标量 KL，将它折叠进整个序列的奖励中：
 
       $$
-      R_{\text {final}} = r_\text {reward} - \lambda D_{\text {KL}}
+      R_{\text{final}} = r_\text{reward} - \lambda D_{\text{KL}}
       $$
 
     - 这种方式下，所有 token 都共享同一个序列级 KL 惩罚，类似 RLOO
@@ -551,13 +551,13 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
     - 保留每个 token 的 KL：
 
       $$
-      KL_t = \log \frac {\pi_\theta (y_t | y_{<t}, x)}{\pi_{\text {ref}}(y_t | y_{<t}, x)}
+      KL_t = \log \frac {\pi_\theta (y_t | y_{<t}, x)}{\pi_{\text{ref}}(y_t | y_{<t}, x)}
       $$
 
     - PPO 中通常将 $A_t$ 计算时直接减去 token 的 KL：
 
       $$
-      A_t^\text {PPO} = (r_t - KL_t) + \gamma V (s_{t+1}) - V (s_t)
+      A_t^\text{PPO} = (r_t - KL_t) + \gamma V (s_{t+1}) - V (s_t)
       $$
 
     - 这样，每个 token 的奖励都独立考虑 KL，进一步实现 token 级信用分配和约束
@@ -566,10 +566,10 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
     - 损失函数
 
       $$
-      \mathcal {L}_\text {GRPO} = - \mathbb {E}\left [\sum_{t=0}^T \log \pi_\theta (a_t|s_t) A_t \right] + \lambda \sum_{t=0}^T KL_t
+      \mathcal {L}_\text{GRPO} = - \mathbb {E}\left [\sum_{t=0}^T \log \pi_\theta (a_t|s_t) A_t \right] + \lambda \sum_{t=0}^T KL_t
       $$
 
-    - $KL_t = D_{\text {KL}}(\pi_\theta (\cdot|s_t) \parallel \pi_{\text {ref}}(\cdot|s_t))$ 是每个 token 的 KL
+    - $KL_t = D_{\text{KL}}(\pi_\theta (\cdot|s_t) \parallel \pi_{\text{ref}}(\cdot|s_t))$ 是每个 token 的 KL
     - 损失函数中 KL 与策略梯度项是并列的，而不是直接从奖励中减掉
 
 - 奖励分配策略：
@@ -582,10 +582,10 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - 在新旧策略差异不超限（KL 散度约束）的前提下，最大化策略性能提升，实现单调非递减优化：
 
     $$
-    \max_{\theta} \quad \mathbb {E}_t \left [\frac {\pi_\theta (a_t|s_t)}{\pi_{\theta_{\text {old}}}(a_t|s_t)} A_{\text {old}}(s_t,a_t) \right] \quad \text {s.t.} \quad \bar {D}_{\text {KL}}(\pi_{\text {old}} \parallel \pi_\theta) \le \delta
+    \max_{\theta} \quad \mathbb {E}_t \left [\frac {\pi_\theta (a_t|s_t)}{\pi_{\theta_{\text{old}}}(a_t|s_t)} A_{\text{old}}(s_t,a_t) \right] \quad \text{s.t.} \quad \bar {D}_{\text{KL}}(\pi_{\text{old}} \parallel \pi_\theta) \le \delta
     $$
     - 目标：替代损失（Surrogate Loss），用重要性采样比 πθπold 加权优势函数 A
-    - 约束：平均 KL 散度 $\bar {D}_{\text {KL}} \leq \delta$，限制策略更新幅度
+    - 约束：平均 KL 散度 $\bar {D}_{\text{KL}} \leq \delta$，限制策略更新幅度
     - 优势函数 $A (s,a) = Q (s,a) - V (s)$，用 GAE（广义优势估计）计算以降低方差
 
   - 算法流程（On-Policy）
@@ -593,7 +593,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
     - 优势计算：用 Critic 网络估计价值 V (s)，通过 GAE 计算优势 $A_t$
     - 构建目标：计算替代损失与策略梯度
       $$
-      g=\nabla_\theta L (\theta)|_{\theta_{\text {old}}}
+      g=\nabla_\theta L (\theta)|_{\theta_{\text{old}}}
       $$
     - 约束求解：用共轭梯度法（CG） 求解自然梯度方向 $H^{-1} g$（H 为 Fisher 信息矩阵）
     - 线搜索：沿自然梯度方向回溯搜索，满足 KL 约束后更新参数
@@ -602,7 +602,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - TRPO 最终转化为求解自然梯度：
 
     $$
-    \theta_{\text {new}} = \theta_{\text {old}} + \sqrt {\frac {2\delta}{g^T H^{-1} g}} H^{-1} g
+    \theta_{\text{new}} = \theta_{\text{old}} + \sqrt {\frac {2\delta}{g^T H^{-1} g}} H^{-1} g
     $$
     - H：Fisher 信息矩阵（Hessian 近似），刻画策略空间曲率
     - $H^{-1} g$：自然梯度方向（黎曼流形上的最优方向）
@@ -641,18 +641,18 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - PPO 在 RLHF 里通常是：
 
     $$
-    \mathcal {L} =\underbrace {\mathcal {L}_{policy}}_{\text {核心}}+c_1 \mathcal {L}_{value}+c_2 \mathcal {L}_{entropy}
+    \mathcal {L} =\underbrace {\mathcal {L}_{policy}}_{\text{核心}}+c_1 \mathcal {L}_{value}+c_2 \mathcal {L}_{entropy}
     $$
 
   - Policy Loss
 
     $$
-    r_t (\theta) = \frac {\pi_\theta (a_t|s_t)}{\pi_{\text {old}}(a_t|s_t)}\
+    r_t (\theta) = \frac {\pi_\theta (a_t|s_t)}{\pi_{\text{old}}(a_t|s_t)}\
     \mathcal {L}_{policy} =
     -\mathbb {E} \left [
     \min (
     r_t A_t,
-    \text {clip}(r_t, 1-\epsilon, 1+\epsilon) A_t
+    \text{clip}(r_t, 1-\epsilon, 1+\epsilon) A_t
     )
     \right]
     $$
@@ -674,7 +674,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - Value Loss 通常也会进行裁剪，通常会取
 
     $$
-      \text {value\_loss} = \max\left ((V_{\theta}(s) - R)^2, (\text {clip}(V_{\theta}(s), V_{\text {old}}-\epsilon, V_{\text {old}}+\epsilon) - R)^2 \right)
+      \text{value\_loss} = \max\left ((V_{\theta}(s) - R)^2, (\text{clip}(V_{\theta}(s), V_{\text{old}}-\epsilon, V_{\text{old}}+\epsilon) - R)^2 \right)
     $$
 
   - 这里取最大值，是因为价值网络本身要最小化预测误差，但是需要限制更新幅度；
@@ -686,7 +686,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - 当 A < 0（这个动作是坏的），希望降低这个动作的概率，此时原始项为 rA，r 越小，loss 越大，更新策略会越快，容易训练不稳定，因此需要 clip 限制在 1-ϵ 中
   - 通过 min 取更保守的更新，PPO 能够在不需要复杂二阶优化的前提下，近似实现 TRPO 的单调提升效果
 - KL 惩罚的作用？为什么不是 L2 正则，而是 KL 散度？
-  - 限制更新后 Actor 策略 $\pi_\theta$ 与基准参考策略 $\pi_{\text {ref}}$ 的分布偏移，防止大步更新模型坍塌、生成无意义文本、偏离人类语言分布
+  - 限制更新后 Actor 策略 $\pi_\theta$ 与基准参考策略 $\pi_{\text{ref}}$ 的分布偏移，防止大步更新模型坍塌、生成无意义文本、偏离人类语言分布
   - 实现隐式约束，保证策略优化单调提升，稳定训练
   - PPO 中把 KL 惩罚加入到奖励中，来压制奖励过拟合问题
   - KL 与 L2 的不同
@@ -713,19 +713,19 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - 直觉是：如果新模型在某些 token 上给了远高于 reference 的概率，那么这个比值就会变大，从而产生惩罚，从而使得模型不要过度自信地偏离原来的语言习惯
 
 - PPO 里用的是哪种 KL 散度？forward KL vs reverse KL 有什么区别？
-  - forward KL（$D_{\text {KL}}(\pi_\theta \parallel \pi_{\text {ref}})$）：约束当前策略贴近基线 SFT 模型，防止生成异常 token，RLHF 默认正向 KL
-  - reverse KL（$D_{\text {KL}}(\pi_{\text {ref}} \parallel \pi_\theta)$）：P 会 “压缩” 匹配 Q，倾向模态坍缩、单一输出，容易 collapse 到高概率的区域
+  - forward KL（$D_{\text{KL}}(\pi_\theta \parallel \pi_{\text{ref}})$）：约束当前策略贴近基线 SFT 模型，防止生成异常 token，RLHF 默认正向 KL
+  - reverse KL（$D_{\text{KL}}(\pi_{\text{ref}} \parallel \pi_\theta)$）：P 会 “压缩” 匹配 Q，倾向模态坍缩、单一输出，容易 collapse 到高概率的区域
   - RLHF 中通常使用 forward KL，因为我们更希望模型 “不要漏掉合理表达”，而不是 “只输出一种最安全答案”
 - KL 散度的系数 β 太大 / 太小会发生什么？
   - KL 权重太大意味着模型几乎不更新，reward 提升非常有限，相当于 RL 没起作用
   - 而 KL 权重太小则意味着模型严重偏离 reference，这通常表现为生成质量下降、语言变得奇怪甚至出现 reward hacking，本质是模型在 “钻 reward 的漏洞”
   - 这是一个 exploration 和 stability 的平衡问题：KL 权重太大限制探索，KL 权重太小破坏稳定
 - 自适应 KL 惩罚（动态调整 β）的原理是什么？
-  - 让真实平均 KL 维持在目标值 $KL_{\text {tar}}$（LLM 常用 0.01~0.05），避免固定 β 太僵
+  - 让真实平均 KL 维持在目标值 $KL_{\text{tar}}$（LLM 常用 0.01~0.05），避免固定 β 太僵
   - 控制逻辑：
-    - 每迭代统计当前真实 $KL¯$，与目标 $KL_{\text {tar}}$ 比较
-    - 若 $KL¯>KL_{\text {tar}}$：说明偏移过大，增大 β，加强 KL 惩罚，限制更新
-    - 若 $KL¯<KL_{\text {tar}}$：说明约束过强更新不足，减小 β，放松限制，让模型继续学奖励
+    - 每迭代统计当前真实 $KL¯$，与目标 $KL_{\text{tar}}$ 比较
+    - 若 $KL¯>KL_{\text{tar}}$：说明偏移过大，增大 β，加强 KL 惩罚，限制更新
+    - 若 $KL¯<KL_{\text{tar}}$：说明约束过强更新不足，减小 β，放松限制，让模型继续学奖励
   - 通常乘系数（如 1.5）、除系数（如 0.8）阶梯式平滑调节，防止 β 剧烈抖动
   - 作用：兼顾训练稳定性与对齐收益，解决固定 KL 权重一刀切问题
 - PPO 的两种实现方式（PPO-Clip vs PPO-Penalty）的原理、区别、适用场景？
@@ -767,7 +767,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - 类似 policy clipping，value 也会 clip：
 
     $$
-    V^{clip} = V_{old} + \text {clip}(V_\phi - V_{old}, -\epsilon, \epsilon)
+    V^{clip} = V_{old} + \text{clip}(V_\phi - V_{old}, -\epsilon, \epsilon)
     $$
 
   - 最终 loss：
@@ -785,10 +785,10 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
 - 相比 TRPO，PPO 为什么能用一批 rollout 重复更新多次？
   - TRPO 依赖全局约束整个策略分布（KL），必须保证整体分布变化很小，所以不能多次更新
   - PPO 不依赖严格的重要性采样理论，而是用 clip 暴力裁剪
-  - 虽然同一批数据反复用几轮，$\pi_\theta$ 慢慢偏离 $\pi_{\text {old}}$，但是通过 clip 能够避免危险的梯度，能够用安全的小步长更新策略
+  - 虽然同一批数据反复用几轮，$\pi_\theta$ 慢慢偏离 $\pi_{\text{old}}$，但是通过 clip 能够避免危险的梯度，能够用安全的小步长更新策略
 - PPO 为什么不能像 DQN 一样无限复用历史数据？
   - DQN 学的是 动作价值 $Q (s,a)$，只要是 $(s,a,r,s^{\prime})$ 经验，不管来自哪个策略，都能用来拟合 Bellman 方程，它不关心动作是谁选的，只关心这个动作的价值
-  - PPO 的核心是重要性采样比，成立的前提是旧策略 $\pi_{\text {old}}$ 与新策略 $\pi_\theta$ 不能差太远，否则这个概率比会很大 / 很小，从而使得梯度方差很大，训练不稳定
+  - PPO 的核心是重要性采样比，成立的前提是旧策略 $\pi_{\text{old}}$ 与新策略 $\pi_\theta$ 不能差太远，否则这个概率比会很大 / 很小，从而使得梯度方差很大，训练不稳定
   - 同时，PPO 的整个优化目标建立在新旧策略分布近似上，一旦偏移过大，clip 也无法有效约束，梯度不稳定
 - 为什么 PPO 要用新旧策略重要性采样？离线策略和在线策略 PPO 区别？
   - 原始策略梯度：
@@ -798,14 +798,14 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
     $$
 
   - on-policy 要求样本必须来自当前最新 $\pi_\theta$，用完即弃，样本效率极低
-  - 用旧策略 $\pi_{\text {old}}$ 采轨迹，通过重要性比率修正分布差异：
+  - 用旧策略 $\pi_{\text{old}}$ 采轨迹，通过重要性比率修正分布差异：
 
     $$
-    \rho_t = \frac {\pi_\theta (a_t|s_t)}{\pi_{\text {old}}(a_t|s_t)}
+    \rho_t = \frac {\pi_\theta (a_t|s_t)}{\pi_{\text{old}}(a_t|s_t)}
     $$
 
   - 用旧轨迹训练新策略，复用样本、提升效率，是 PPO 的核心基石
-  - On-policy：每轮用当前 policy 采样 rollout，采样后固定 $\pi_{\text {old}}$，多 epoch 更新，更新完毕丢弃轨迹
+  - On-policy：每轮用当前 policy 采样 rollout，采样后固定 $\pi_{\text{old}}$，多 epoch 更新，更新完毕丢弃轨迹
   - Off-policy：引入 replay buffer，混合旧批次历史轨迹训练，样本利用率高，但是分布偏移严重，训练不稳定
 
 - 在线 PPO 为什么一个 batch 要迭代多次 epoch？会不会引入偏差？
@@ -814,8 +814,8 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
     - 用小 batch mini-batch 迭代，降低单次显存开销、平滑梯度
     - 最大化优势函数拟合，充分优化 actor/critic
   - 会不会引入偏差
-    - 会引入轻微偏差，但是可控的，因为多次迭代后，$\pi_\theta$ 不断变化，和采样时的 $\pi_{\text {old}}$ 分布差距变大，重要性比率偏离真实分布，产生分布漂移偏差
-    - PPO 通过两项约束压制：clip 截断限制比率范围、固定 $\pi_{\text {old}}$ 不参与梯度更新
+    - 会引入轻微偏差，但是可控的，因为多次迭代后，$\pi_\theta$ 不断变化，和采样时的 $\pi_{\text{old}}$ 分布差距变大，重要性比率偏离真实分布，产生分布漂移偏差
+    - PPO 通过两项约束压制：clip 截断限制比率范围、固定 $\pi_{\text{old}}$ 不参与梯度更新
     - 工程上一般 epoch 取 3~10，平衡效率与偏差
 - PPO 里优势函数 Advantage 如何计算？为什么不用原始 Q 值？
   - 标准 GAE 计算
@@ -828,7 +828,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
     - GAE 加权累积：
 
       $$
-      \hat A_t^\text {GAE} = \sum_{l=0}^{T-t} (\gamma\lambda)^l \delta_{t+l}
+      \hat A_t^\text{GAE} = \sum_{l=0}^{T-t} (\gamma\lambda)^l \delta_{t+l}
       $$
 
   - 为什么不用原始 Q 值
@@ -931,24 +931,24 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
 
 - DPO 的算法原理和推导过程
   - DPO（Direct Preference Optimization，直接偏好优化）是单阶段、无强化学习、无显式奖励模型的大模型对齐算法
-  - 核心是：将 RLHF 带 KL 约束的奖励最大化目标，通过数学变换，转化为直接在偏好数据 $(x, y_w, y_l)$ 上优化策略概率比的分类问题，全程仅需策略模型 $\pi_\theta$ 与参考模型 $\pi_{\text {ref}}$，无需训练 Value Model、Reward Model，也无需在线 Rollout
+  - 核心是：将 RLHF 带 KL 约束的奖励最大化目标，通过数学变换，转化为直接在偏好数据 $(x, y_w, y_l)$ 上优化策略概率比的分类问题，全程仅需策略模型 $\pi_\theta$ 与参考模型 $\pi_{\text{ref}}$，无需训练 Value Model、Reward Model，也无需在线 Rollout
   - 原始的 RLHF 目标
 
     $$
-    \max_\pi \mathbb {E}_{x\sim\mathcal {D}, y\sim\pi}[r (x,y)] - \beta \cdot D_{\text {KL}}(\pi \parallel \pi_{\text {ref}})
+    \max_\pi \mathbb {E}_{x\sim\mathcal {D}, y\sim\pi}[r (x,y)] - \beta \cdot D_{\text{KL}}(\pi \parallel \pi_{\text{ref}})
     $$
 
   - 其闭式最优策略为
 
     $$
-    \pi^*(y|x) = \frac {1}{Z (x)} \pi_{\text {ref}}(y\vert x) \exp\left (\frac {1}{\beta} r (x,y)\right)
+    \pi^*(y|x) = \frac {1}{Z (x)} \pi_{\text{ref}}(y\vert x) \exp\left (\frac {1}{\beta} r (x,y)\right)
     $$
 
   - $Z (x)$：配分函数，保证概率和为 1
   - 对最优策略取对数并整理，奖励 $r (x,y)$ 可由策略与参考模型的对数比表示
 
     $$
-    r (x,y) = \beta \log\frac {\pi^*(y\vert x)}{\pi_{\text {ref}}(y\vert x)} + \beta \log Z (x)
+    r (x,y) = \beta \log\frac {\pi^*(y\vert x)}{\pi_{\text{ref}}(y\vert x)} + \beta \log Z (x)
     $$
 
   - 奖励被隐式编码在策略相对参考模型的概率偏移中，无需独立训练 Reward Model
@@ -958,10 +958,10 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
     P (y_w \succ y_l \vert x) = \sigma\left (r (x,y_w) - r (x,y_l)\right)
     $$
 
-  - 将奖励模型的公式代入，并消去配分函数，得到仅含 $\pi_\theta$ 与 $\pi_{\text {ref}}$ 的损失
+  - 将奖励模型的公式代入，并消去配分函数，得到仅含 $\pi_\theta$ 与 $\pi_{\text{ref}}$ 的损失
 
     $$
-    L_{\text {DPO}}(\theta) = -\mathbb {E}_{(x,y_w,y_l)\sim\mathcal {D}} \left [\log\sigma\left ( \beta \cdot \left ( \log\frac {\pi_\theta (y_w\vert x)}{\pi_{\text {ref}}(y_w\vert x)} - \log\frac {\pi_\theta (y_l\vert x)}{\pi_{\text {ref}}(y_l\vert x)} \right) \right) \right]
+    L_{\text{DPO}}(\theta) = -\mathbb {E}_{(x,y_w,y_l)\sim\mathcal {D}} \left [\log\sigma\left ( \beta \cdot \left ( \log\frac {\pi_\theta (y_w\vert x)}{\pi_{\text{ref}}(y_w\vert x)} - \log\frac {\pi_\theta (y_l\vert x)}{\pi_{\text{ref}}(y_l\vert x)} \right) \right) \right]
     $$
 
   - 本质是二元交叉熵损失，目标是让优选响应的 “策略 / 参考” 对数比，显著大于非优选响应
@@ -976,10 +976,10 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
     - PPO 需在线 Rollout 生成轨迹、计算奖励与优势；DPO 直接用已标注的优选 / 非优选对作为训练样本，无需模型生成新数据
   - 为什么不需要 reward model
     - DPO 通过数学变换，将奖励函数隐式嵌入策略与参考模型的概率比中
-    - RLHF 需先训练 Reward Model 拟合人类偏好，再用 PPO 最大化奖励；DPO 直接用偏好数据的相对概率作为优化目标，奖励由 $\pi_\theta/\pi_{\text {ref}}$ 隐式给出
+    - RLHF 需先训练 Reward Model 拟合人类偏好，再用 PPO 最大化奖励；DPO 直接用偏好数据的相对概率作为优化目标，奖励由 $\pi_\theta/\pi_{\text{ref}}$ 隐式给出
 - DPO 的参考模型（Ref Model）为什么必须冻结？解冻会发生什么？
-  - DPO 所有推导依赖：$\pi_{\text {ref}}$ 是固定基准分布，用来定义相对对数比、隐式 KL、隐式奖励
-  - 一旦 $\pi_{\text {ref}}$ 更新，基准漂移，前述等价数学关系全部失效
+  - DPO 所有推导依赖：$\pi_{\text{ref}}$ 是固定基准分布，用来定义相对对数比、隐式 KL、隐式奖励
+  - 一旦 $\pi_{\text{ref}}$ 更新，基准漂移，前述等价数学关系全部失效
   - DPO 的正则来自固定 ref 的相对熵；ref 解冻一起训练，无法稳定约束更新幅度，出现分布塌缩
 - DPO 的温度系数 $\beta$ 作用是什么？$\beta$ 过大 / 过小的影响？
   - $\beta$ 等价原生 RLHF 里 KL 正则强度倒数，控制策略偏离参考模型的最大幅度
@@ -1005,7 +1005,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - 长度偏见：DPO 用序列级 KL 对数比优化，长序列天然有更高的对数和，模型倾向生成更长文本以提升概率比，导致冗余、啰嗦
   - 偏好数据过拟合：DPO 直接拟合偏好对，无奖励模型的泛化能力，对标注噪声、错误偏好极度敏感，模型可能只会记住偏好数据的表面模式
   - 优选响应退化（DCR 问题）：降低非优选响应 $y_l$ 的概率，比提升优选响应 $y_w$ 的概率更容易（只需抑制任意 token），模型倾向打压 $y_l$ 而非提升 $y_w$，从而导致 $y_w$ 的生成质量不升反降，模型更关注避免坏输出，而非生成好输出
-  - 对参考模型强依赖：DPO 损失完全依赖 $\pi_\theta/\pi_{\text {ref}}$ 的比值，参考模型质量差、初始化不当，会导致优化方向错误
+  - 对参考模型强依赖：DPO 损失完全依赖 $\pi_\theta/\pi_{\text{ref}}$ 的比值，参考模型质量差、初始化不当，会导致优化方向错误
   - 无法处理复杂偏好与多目标：仅支持二元成对偏好，无法建模偏好强度、列表式排序、多维度奖励
   - exploration 能力弱，因为完全是 offline learning，不会生成新策略再学习
 - DPO 的损失函数中存在什么潜在问题？
@@ -1034,7 +1034,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - 给估计奖励加上 Gumbel 噪声，得到带噪声的奖励：
 
     $$
-    \tilde {r}_w \sim \text {Gumbel}(\hat {r}_\theta (x,y_w), 1),\quad \tilde {r}_l \sim \text {Gumbel}(\hat {r}_\theta (x,y_l), 1)
+    \tilde {r}_w \sim \text{Gumbel}(\hat {r}_\theta (x,y_w), 1),\quad \tilde {r}_l \sim \text{Gumbel}(\hat {r}_\theta (x,y_l), 1)
     $$
 
   - 论文证明了：
@@ -1049,7 +1049,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - 基于上述结论，ODPO 的损失为：
 
     $$
-    \mathcal {L}^{\text {ODPO}}(\theta) = -\mathbb {E}_{(x,y_w,y_l)\sim\mathcal {D}_{\text {HF}}}\left [\log \sigma\left (\hat {r}_\theta (x,y_w) - \hat {r}_\theta (x,y_l) - \Delta_r\right)\right]
+    \mathcal {L}^{\text{ODPO}}(\theta) = -\mathbb {E}_{(x,y_w,y_l)\sim\mathcal {D}_{\text{HF}}}\left [\log \sigma\left (\hat {r}_\theta (x,y_w) - \hat {r}_\theta (x,y_l) - \Delta_r\right)\right]
     $$
 
   - 当 $\Delta_r=0$ 时，ODPO 损失等价于 DPO 损失，因此 DPO 是 ODPO 的特例
@@ -1059,11 +1059,11 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - 偏移量 $\Delta_r$ 是两个回答真实奖励差的递增缩放函数：
 
     $$
-    \Delta_r = \alpha f\left (\text {score}(x,y_w) - \text {score}(x,y_l)\right)
+    \Delta_r = \alpha f\left (\text{score}(x,y_w) - \text{score}(x,y_l)\right)
     $$
     - $\alpha$：超参，控制偏移的整体强度
     - $f (\cdot)$：单调递增函数（如恒等函数、sigmoid 等）
-    - $\text {score}(x,y)$​：人类标注的真实分数（如 RLHF 中的奖励模型分数、人工评分）
+    - $\text{score}(x,y)$​：人类标注的真实分数（如 RLHF 中的奖励模型分数、人工评分）
 
 - 优势
   - 充分利用偏好数据：挖掘了「偏好程度」的信息，而非仅用排序，提升数据利用率
@@ -1100,7 +1100,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
 - SimPO 奖励函数
 
   $$
-  r_{\text {SimPO}}(x,y) = \frac {\beta}{\vert y\vert}\log \pi_\theta (y\vert x) = \frac {\beta}{\vert y\vert}\sum_{i=1}^{\vert y\vert}\log \pi_\theta (y_i\vert x,y_{<i})
+  r_{\text{SimPO}}(x,y) = \frac {\beta}{\vert y\vert}\log \pi_\theta (y\vert x) = \frac {\beta}{\vert y\vert}\sum_{i=1}^{\vert y\vert}\log \pi_\theta (y_i\vert x,y_{<i})
   $$
   - $\frac {1}{\vert y\vert}$：长度归一化项，避免模型倾向于生成更长但质量低的回答
   - $\beta$：温度超参，控制优化强度
@@ -1108,7 +1108,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
 - SimPO 损失函数
 
   $$
-  \mathcal {L}_{\text {SimPO}}(\pi_\theta) = -\mathbb {E}_{(x,y_w,y_l)\sim\mathcal {D}}\left [\log \sigma\left (\frac {\beta}{\vert y_w\vert}\log \pi_\theta (y_w\vert x) - \frac {\beta}{\vert y_l\vert}\log \pi_\theta (y_l\vert x) - \gamma\right)\right]
+  \mathcal {L}_{\text{SimPO}}(\pi_\theta) = -\mathbb {E}_{(x,y_w,y_l)\sim\mathcal {D}}\left [\log \sigma\left (\frac {\beta}{\vert y_w\vert}\log \pi_\theta (y_w\vert x) - \frac {\beta}{\vert y_l\vert}\log \pi_\theta (y_l\vert x) - \gamma\right)\right]
   $$
   - $\gamma$：奖励 Margin 超参，要求 $y_w$ 的奖励比 $y_l$ 大至少 $\gamma$，提升模型区分度
   - 当 $\gamma=0$ 且移除长度归一化时，SimPO 退化为无参考模型的 DPO 变体
@@ -1117,13 +1117,13 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
 - SimPO 梯度：
 
   $$
-  \nabla_\theta \mathcal {L}_{\text {SimPO}}(\pi_\theta) = -\beta \mathbb {E}_{(x,y_w,y_l)\sim\mathcal {D}}\left [s_\theta \cdot \left (\frac {1}{|y_w|}\nabla_\theta \log \pi_\theta (y_w|x) - \frac {1}{|y_l|}\nabla_\theta \log \pi_\theta (y_l|x)\right)\right]
+  \nabla_\theta \mathcal {L}_{\text{SimPO}}(\pi_\theta) = -\beta \mathbb {E}_{(x,y_w,y_l)\sim\mathcal {D}}\left [s_\theta \cdot \left (\frac {1}{|y_w|}\nabla_\theta \log \pi_\theta (y_w|x) - \frac {1}{|y_l|}\nabla_\theta \log \pi_\theta (y_l|x)\right)\right]
   $$
 
 - DPO 梯度：
 
   $$
-  \nabla_\theta \mathcal {L}_{\text {DPO}}(\pi_\theta) = -\beta \mathbb {E}_{(x,y_w,y_l)\sim\mathcal {D}}\left [d_\theta \cdot \left (\nabla_\theta \log \pi_\theta (y_w|x) - \nabla_\theta \log \pi_\theta (y_l|x)\right)\right]
+  \nabla_\theta \mathcal {L}_{\text{DPO}}(\pi_\theta) = -\beta \mathbb {E}_{(x,y_w,y_l)\sim\mathcal {D}}\left [d_\theta \cdot \left (\nabla_\theta \log \pi_\theta (y_w|x) - \nabla_\theta \log \pi_\theta (y_l|x)\right)\right]
   $$
 
 - 其中：
@@ -1131,7 +1131,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   $$
   \begin {align*}
   s_\theta &= \sigma\left (\frac {\beta}{\vert y_l\vert}\log \pi_\theta (y_l\vert x) - \frac {\beta}{\vert y_w\vert}\log \pi_\theta (y_w\vert x) + \delta\right)\\
-  d_\theta &= \sigma\left (\beta \log \frac {\pi_\theta (y_l|x)}{\pi_{\text {ref}}(y_l|x)} - \beta \log \frac {\pi_\theta (y_w|x)}{\pi_{\text {ref}}(y_w|x)}\right)
+  d_\theta &= \sigma\left (\beta \log \frac {\pi_\theta (y_l|x)}{\pi_{\text{ref}}(y_l|x)} - \beta \log \frac {\pi_\theta (y_w|x)}{\pi_{\text{ref}}(y_w|x)}\right)
   \end {align*}
   $$
 
@@ -1157,11 +1157,11 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - 设 $\Psi: [0,1] \to \mathbb {R}$ 为任意非递减函数，ΨPO 的优化目标为：
 
     $$
-    \max_{\pi} \underset {\substack {x \sim \mathcal {D} \ y_w \sim \pi, y_l \sim \pi_{\text {ref}}}}{\mathbb {E}} \left [\Psi\left (p (y_w \succ y_l \vert x)\right) \right] - \beta \text {KL}\left [\pi (y\vert x; \theta) \parallel \pi (y\vert x; \theta_{\text {ref}})\right]
+    \max_{\pi} \underset {\substack {x \sim \mathcal {D} \ y_w \sim \pi, y_l \sim \pi_{\text{ref}}}}{\mathbb {E}} \left [\Psi\left (p (y_w \succ y_l \vert x)\right) \right] - \beta \text{KL}\left [\pi (y\vert x; \theta) \parallel \pi (y\vert x; \theta_{\text{ref}})\right]
     $$
     - $y_w$：人类偏好的「优胜」回答，$y_l$：被淘汰的「劣势」回答
     - $p (y_w \succ y_l)$：模型认为 $y_w$ 优于 $y_l$ 的概率
-    - $\pi_{\text {ref}}$：参考策略（通常是 SFT 后的初始模型）
+    - $\pi_{\text{ref}}$：参考策略（通常是 SFT 后的初始模型）
     - $\beta$：KL 散度正则项系数，控制与参考模型的偏离程度
 
 - 与 RLHF、DPO 的等价性
@@ -1169,9 +1169,9 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
 
     $$
     \begin {align*}
-    \max_{\pi} \underset {\substack {y_w \sim \pi \ y_l \sim \pi_{\text {ref}}}}{\mathbb {E}} \left [\Psi\left (p (y_w \succ y_l)\right) \right]
-    &= \max_{\pi} \underset {\substack {y_w \sim \pi \ y_l \sim \pi_{\text {ref}}}}{\mathbb {E}} \left [\log\left (\frac {e^{r (y_w)}}{e^{r (y_l)}}\right) \right] \\
-    &= \max_{\pi} \underset {y_w \sim \pi}{\mathbb {E}} [r (y_w)] - \underset {y_l \sim \pi_{\text {ref}}}{\mathbb {E}} [r (y_l)]
+    \max_{\pi} \underset {\substack {y_w \sim \pi \ y_l \sim \pi_{\text{ref}}}}{\mathbb {E}} \left [\Psi\left (p (y_w \succ y_l)\right) \right]
+    &= \max_{\pi} \underset {\substack {y_w \sim \pi \ y_l \sim \pi_{\text{ref}}}}{\mathbb {E}} \left [\log\left (\frac {e^{r (y_w)}}{e^{r (y_l)}}\right) \right] \\
+    &= \max_{\pi} \underset {y_w \sim \pi}{\mathbb {E}} [r (y_w)] - \underset {y_l \sim \pi_{\text{ref}}}{\mathbb {E}} [r (y_l)]
     \end {align*}
     $$
 
@@ -1179,7 +1179,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
     ΨPO 最优策略的解析解为：
 
     $$
-    \pi^*(y) \propto \pi_{\text {ref}}(y) \exp\left (\beta^{-1} \sum_{y'} \Psi (p (y, y')) \right)
+    \pi^*(y) \propto \pi_{\text{ref}}(y) \exp\left (\beta^{-1} \sum_{y'} \Psi (p (y, y')) \right)
     $$
 
 - DPO 的核心缺陷：弱正则化与过拟合
@@ -1188,7 +1188,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - 将该条件代入最优策略，可得：
 
     $$
-    \frac {\pi^*(y_l)}{\pi^*(y_w)} = \frac {\pi_{\text {ref}}(y_l)}{\pi_{\text {ref}}(y_w)} \exp\left (\beta^{-1} \sum_{y'} [r (y_l) - r (y_w)] \right) = 0
+    \frac {\pi^*(y_l)}{\pi^*(y_w)} = \frac {\pi_{\text{ref}}(y_l)}{\pi_{\text{ref}}(y_w)} \exp\left (\beta^{-1} \sum_{y'} [r (y_l) - r (y_w)] \right) = 0
     $$
 
   - 即无论 $\beta$ 取何值，$\pi^*(y_l)=0$，模型会完全禁止 $y_l$ 生成
@@ -1200,23 +1200,23 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
     - 此时 ΨPO 目标简化为：
 
       $$
-      \max_{\pi} \underset {\substack {y_w \sim \pi, y_l \sim \pi_{\text {ref}}}}{\mathbb {E}} \left [p (y_w \succ y_l) \right] - \beta \text {KL}[\pi \parallel \pi_{\text {ref}}]
+      \max_{\pi} \underset {\substack {y_w \sim \pi, y_l \sim \pi_{\text{ref}}}}{\mathbb {E}} \left [p (y_w \succ y_l) \right] - \beta \text{KL}[\pi \parallel \pi_{\text{ref}}]
       $$
 
   - 最优策略与损失函数推导
     - 令 $g (y) = \sum_{y'} \Psi (p (y \succ y')) = \sum_{y'} p (y \succ y')$（恒等映射下），最优策略仍满足：
 
       $$
-      \pi^*(y) \propto \pi_{\text {ref}}(y) \exp\left (\beta^{-1} g (y) \right)
+      \pi^*(y) \propto \pi_{\text{ref}}(y) \exp\left (\beta^{-1} g (y) \right)
       $$
 
     - 对任意 $y_w, y_l$，有：
 
       $$
-      \log\left (\frac {\pi^*(y_w) \pi_{\text {ref}}(y_l)}{\pi^*(y_l) \pi_{\text {ref}}(y_w)} \right) = \beta^{-1} \left (g (y_w) - g (y_l) \right)
+      \log\left (\frac {\pi^*(y_w) \pi_{\text{ref}}(y_l)}{\pi^*(y_l) \pi_{\text{ref}}(y_w)} \right) = \beta^{-1} \left (g (y_w) - g (y_l) \right)
       $$
 
-    - 定义 $h_\pi (y_w, y_l) = \log\left (\frac {\pi (y_w) \pi_{\text {ref}}(y_l)}{\pi (y_l) \pi_{\text {ref}}(y_w)} \right)$，则目标等价于最小化损失：
+    - 定义 $h_\pi (y_w, y_l) = \log\left (\frac {\pi (y_w) \pi_{\text{ref}}(y_l)}{\pi (y_l) \pi_{\text{ref}}(y_w)} \right)$，则目标等价于最小化损失：
 
       $$
       L (\pi) = \underset {y_w, y_l}{\mathbb {E}} \left [\left ( h_\pi (y_w, y_l) - \beta^{-1} I (y_w, y_l) \right)^2 \right]
@@ -1225,14 +1225,14 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
     - 其中 $I (y_w, y_l)$ 为指示函数：$y_w$ 优于 $y_l$ 时取 1，否则取 0
 
   - 完整 IPO 算法流程
-    - 给定偏好数据集 $\mathcal {D} = (y_{w,i}, y_{l,i})_{i=1}^N$（满足 $y_{w,i} \succ y_{l,i}$）和参考策略 $\pi_{\text {ref}}$
+    - 给定偏好数据集 $\mathcal {D} = (y_{w,i}, y_{l,i})_{i=1}^N$（满足 $y_{w,i} \succ y_{l,i}$）和参考策略 $\pi_{\text{ref}}$
     - 定义偏好对数比：
 
       $$
-      h_\pi (y_w, y_l, x) = \log\left (\frac {\pi (y_w|x) \pi_{\text {ref}}(y_l|x)}{\pi (y_l|x) \pi_{\text {ref}}(y_w|x)} \right)
+      h_\pi (y_w, y_l, x) = \log\left (\frac {\pi (y_w|x) \pi_{\text{ref}}(y_l|x)}{\pi (y_l|x) \pi_{\text{ref}}(y_w|x)} \right)
       $$
 
-    - 初始化与优化，从 $\pi = \pi_{\text {ref}}$ 开始，最小化损失函数：
+    - 初始化与优化，从 $\pi = \pi_{\text{ref}}$ 开始，最小化损失函数：
 
       $$
       \underset {y_w, y_l, x \sim \mathcal {D}}{\mathbb {E}} \left (h_\pi (y_w, y_l, x) - \frac {\beta^{-1}}{2} \right)^2
@@ -1247,13 +1247,13 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
 - 目标函数：
 
   $$
-  \mathcal {L}_{\text {ORPO}} = \mathcal {L}_{\text {SFT}}(\theta; x, y_w) + \lambda \cdot \mathcal {L}_{\text {OR}}(\theta; x, y_w, y_l)
+  \mathcal {L}_{\text{ORPO}} = \mathcal {L}_{\text{SFT}}(\theta; x, y_w) + \lambda \cdot \mathcal {L}_{\text{OR}}(\theta; x, y_w, y_l)
   $$
-  - $\mathcal {L}_{\text {SFT}}$：标准监督微调损失（最大化好回答 $y_w$ 的似然）
-  - $\mathcal {L}_{\text {OR}}$：优势比损失，对比好 / 坏回答的对数几率比
+  - $\mathcal {L}_{\text{SFT}}$：标准监督微调损失（最大化好回答 $y_w$ 的似然）
+  - $\mathcal {L}_{\text{OR}}$：优势比损失，对比好 / 坏回答的对数几率比
 
     $$
-    \mathcal {L}_{\text {OR}} = -\log\left (\frac {\pi_\theta (y_w|x)}{\pi_\theta (y_l|x)}\right)
+    \mathcal {L}_{\text{OR}} = -\log\left (\frac {\pi_\theta (y_w|x)}{\pi_\theta (y_l|x)}\right)
     $$
 
   - $\lambda$：偏好对齐强度超参
@@ -1271,43 +1271,43 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
 ### 总结
 
 - 统一符号约定
-  - $\Delta = \log\frac {\pi_\theta (y_w)}{\pi_{\text {ref}}(y_w)} - \log\frac {\pi_\theta (y_l)}{\pi_{\text {ref}}(y_l)}$（策略相对参考模型，chosen 与 rejected 的对数概率差）
-  - $y_w = \text {chosen}$（好回答），$y_l = \text {rejected}$（差回答）
-  - $\beta = \text {温度 / 强度系数}$
+  - $\Delta = \log\frac {\pi_\theta (y_w)}{\pi_{\text{ref}}(y_w)} - \log\frac {\pi_\theta (y_l)}{\pi_{\text{ref}}(y_l)}$（策略相对参考模型，chosen 与 rejected 的对数概率差）
+  - $y_w = \text{chosen}$（好回答），$y_l = \text{rejected}$（差回答）
+  - $\beta = \text{温度 / 强度系数}$
   - $\sigma (x) = \frac {1}{1 + e^{-x}}$
 - DPO（Direct Preference Optimization）
 
   $$
-  \mathcal {L}_{\text {DPO}} = -\log\sigma (\beta \cdot \Delta)
+  \mathcal {L}_{\text{DPO}} = -\log\sigma (\beta \cdot \Delta)
   $$
 
 - IPO（Identity Preference Optimization）
 
   $$
-  \mathcal {L}_{\text {IPO}} = \left (\Delta - \frac {1}{2\beta}\right)^2
+  \mathcal {L}_{\text{IPO}} = \left (\Delta - \frac {1}{2\beta}\right)^2
   $$
 
 - KTO（Kahneman-Tversky Optimization / Odds Ratio Preference Optimization）
 
   $$
-  \mathcal {L}_{\text {KTO}} = -\log\sigma (\beta \cdot \Delta_{\text {KTO}}),\quad \Delta_{\text {KTO}} = \log\frac {\pi_\theta (y_w)}{\pi_\theta (y_l)}
+  \mathcal {L}_{\text{KTO}} = -\log\sigma (\beta \cdot \Delta_{\text{KTO}}),\quad \Delta_{\text{KTO}} = \log\frac {\pi_\theta (y_w)}{\pi_\theta (y_l)}
   $$
 
 - SimPO（Simple Preference Optimization）
 
   $$
-  \mathcal {L}_{\text {SimPO}}(\pi_\theta) = -\mathbb {E}_{(x,y_w,y_l)\sim\mathcal {D}}\left [\log \sigma\left (\frac {\beta}{|y_w|}\log \pi_\theta (y_w|x) - \frac {\beta}{|y_l|}\log \pi_\theta (y_l|x) - \gamma\right)\right]
+  \mathcal {L}_{\text{SimPO}}(\pi_\theta) = -\mathbb {E}_{(x,y_w,y_l)\sim\mathcal {D}}\left [\log \sigma\left (\frac {\beta}{|y_w|}\log \pi_\theta (y_w|x) - \frac {\beta}{|y_l|}\log \pi_\theta (y_l|x) - \gamma\right)\right]
   $$
 
 - ODPO (Direct Preference Optimization with an Offset)
 
   $$
-  \mathcal {L}_{\text {ODPO}}(\theta) = -\mathbb {E}_{(x,y_w,y_l)}\left [\log\sigma\bigl (\beta \cdot \Delta - \Delta r\bigr)\right]\
-  \Delta r = \alpha \cdot f\bigl (\text {score}(x,y_w)-\text {score}(x,y_l)\bigr)
+  \mathcal {L}_{\text{ODPO}}(\theta) = -\mathbb {E}_{(x,y_w,y_l)}\left [\log\sigma\bigl (\beta \cdot \Delta - \Delta r\bigr)\right]\
+  \Delta r = \alpha \cdot f\bigl (\text{score}(x,y_w)-\text{score}(x,y_l)\bigr)
   $$
 
 - Reference-Free Alignment（无参考模型对齐）
-  - 完全去掉 $\pi_{\text {ref}}$，只用当前模型 $\pi_\theta$ 做对齐，不再和 “参考模型” 比，只在 自身输出之间比偏好
+  - 完全去掉 $\pi_{\text{ref}}$，只用当前模型 $\pi_\theta$ 做对齐，不再和 “参考模型” 比，只在 自身输出之间比偏好
   - 代表：SimPO、ORPO、KTO（变种）、IPO、REFA
   - 核心思想：偏好学习本质是相对排序 $y_w$ 比 $y_l$ 好，不需要知道 “标准答案 / 参考”，只要模型自己更偏好 $y_w$ 即可
 - 去掉 Reference Model 会有什么问题？
@@ -1321,12 +1321,12 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - 摒弃 PPO 的价值模型（Critic），对同一 prompt 采样一组输出（Group，通常 4–32 个）
   - 用组内奖励的相对统计量（均值 / 标准差） 直接构造优势函数，结合 PPO-Clip 与 KL 约束更新策略，全程仅需策略模型（Actor）+ 冻结参考模型（Ref）
 - GRPO 的算法流程
-  - 群组采样：对每个 prompt $x$，用旧策略 $\pi_{\text {old}}$ 采样 G 个输出序列 ${o_1, o_2, ..., o_G}$
+  - 群组采样：对每个 prompt $x$，用旧策略 $\pi_{\text{old}}$ 采样 G 个输出序列 ${o_1, o_2, ..., o_G}$
   - 奖励打分：用奖励模型（RM）或自动规则计算每个序列的标量奖励 $r_1, r_2, ..., r_G$
   - 组内归一化（优势计算）：
 
     $$
-    \hat {A}_i = \frac {r_i - \bar {r}}{\sigma_r}, \quad \bar {r} = \frac {1}{G}\sum_{j=1}^G r_j, \quad \sigma_r = \text {std}(r_1,...,r_G)
+    \hat {A}_i = \frac {r_i - \bar {r}}{\sigma_r}, \quad \bar {r} = \frac {1}{G}\sum_{j=1}^G r_j, \quad \sigma_r = \text{std}(r_1,...,r_G)
     $$
 
   - 用组均值替代价值模型的基线 $V (s)$，组标准差做归一化，消除奖励尺度影响
@@ -1447,31 +1447,31 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
 - KL 散度定义：
 
   $$
-  D_{\mathrm {KL}}(\pi_{\text {new}} \parallel \pi_{\text {ref}})
-  = \sum_{y} \pi_{\text {new}}(y\mid x)
-  \log\frac {\pi_{\text {new}}(y\mid x)}{\pi_{\text {ref}}(y\mid x)}
+  D_{\mathrm {KL}}(\pi_{\text{new}} \parallel \pi_{\text{ref}})
+  = \sum_{y} \pi_{\text{new}}(y\mid x)
+  \log\frac {\pi_{\text{new}}(y\mid x)}{\pi_{\text{ref}}(y\mid x)}
   $$
 
 - 这里的 y​ 是整个词表上所有可能 token，所以理论上必须遍历全部词汇，但是对 LLM 来说词表通常 3w～30w+，直接全量计算极其昂贵
 - 实际训练中采用 MC 估计
-  - 从当前策略 $π_{\text {new}}$ 采样一批 token 序列 $y_1, y_2, ..., y_N$，然后只在这些采样到的 token 上计算 KL 散度
+  - 从当前策略 $π_{\text{new}}$ 采样一批 token 序列 $y_1, y_2, ..., y_N$，然后只在这些采样到的 token 上计算 KL 散度
   - 只在这些采样到的 token 上计算
 
     $$
     \hat {D}_{\mathrm {KL}}
     \approx \frac1N \sum_{i=1}^N
-    \log\frac {\pi_{\text {new}}(y_i\mid x)}{\pi_{\text {ref}}(y_i\mid x)}
+    \log\frac {\pi_{\text{new}}(y_i\mid x)}{\pi_{\text{ref}}(y_i\mid x)}
     $$
 
-  - 只有采样到的 token 有 $\pi_{\text {new}}$ 权重，没采样到的 token 贡献近似为 0
+  - 只有采样到的 token 有 $\pi_{\text{new}}$ 权重，没采样到的 token 贡献近似为 0
   - 计算量从 O (V) 降到 O (B)，B 是 batch 大小
 
 - 人类反馈强化学习（RLHF）可以建模为如下优化问题：
 
   $$
   \begin {align*}
-  \arg\max_{\theta} \mathcal {J}_{\text {RLHF}}(\theta) &= \underbrace {\mathbb {E}_{x \sim D, y \sim \pi_{\theta}(\cdot|x)} \left [r (x, y) \right]}_{\text {奖励最大化项}} - \beta \underbrace {\left [ \mathbb {D}_{\text {KL}} \left (\pi_{\theta}(\cdot|x) \parallel \pi_{\text {ref}}(\cdot|x) \right) \right]}_{\text {KL 约束项}} \\
-  &= \mathcal {J}_{\text {Reward}}(\theta) - \beta \mathcal {J}_{\text {KL}}(\theta)
+  \arg\max_{\theta} \mathcal {J}_{\text{RLHF}}(\theta) &= \underbrace {\mathbb {E}_{x \sim D, y \sim \pi_{\theta}(\cdot|x)} \left [r (x, y) \right]}_{\text{奖励最大化项}} - \beta \underbrace {\left [ \mathbb {D}_{\text{KL}} \left (\pi_{\theta}(\cdot|x) \parallel \pi_{\text{ref}}(\cdot|x) \right) \right]}_{\text{KL 约束项}} \\
+  &= \mathcal {J}_{\text{Reward}}(\theta) - \beta \mathcal {J}_{\text{KL}}(\theta)
   \tag {4}
   \end {align*}
   $$
@@ -1491,15 +1491,15 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
 - Dr.GRPO (Distributionally Robust GRPO) 的主要改进是移除组内标准差除法与长度归一化，改用全局批次均值做基线
 
   $$
-  \hat {A}_i=r_i-\bar {r}_{\text {batch}},\quad\bar {r}_{\text {batch}}=\frac {1}{N}\sum_{j=1}^N r_j
+  \hat {A}_i=r_i-\bar {r}_{\text{batch}},\quad\bar {r}_{\text{batch}}=\frac {1}{N}\sum_{j=1}^N r_j
   $$
 
 - 损失函数
 
   $$
-  \mathcal {J}_{\text {Dr. GRPO}}(\pi_\theta) = \mathbb {E}_{\mathbf {q}\sim p_{\mathcal {Q}},\{\mathbf {o}_i\}_{i=1}^G \sim \pi_{\theta_{\text {old}}}(\cdot|\mathbf {q})}\left [\frac {1}{G}\sum_{i=1}^G \sum_{t=1}^{|\mathbf {o}_i|}\left\{
-  \min\left (\frac {\pi_\theta (o_{i,t}|\mathbf {q},\mathbf {o}_{i,<t})}{\pi_{\theta_{\text {old}}}(o_{i,t}|\mathbf {q},\mathbf {o}_{i,<t})}\hat {A}_{i,t},
-  \mathrm {clip}\left (\frac {\pi_\theta (o_{i,t}|\mathbf {q},\mathbf {o}_{i,<t})}{\pi_{\theta_{\text {old}}}(o_{i,t}|\mathbf {q},\mathbf {o}_{i,<t})},1-\varepsilon,1+\varepsilon
+  \mathcal {J}_{\text{Dr. GRPO}}(\pi_\theta) = \mathbb {E}_{\mathbf {q}\sim p_{\mathcal {Q}},\{\mathbf {o}_i\}_{i=1}^G \sim \pi_{\theta_{\text{old}}}(\cdot|\mathbf {q})}\left [\frac {1}{G}\sum_{i=1}^G \sum_{t=1}^{|\mathbf {o}_i|}\left\{
+  \min\left (\frac {\pi_\theta (o_{i,t}|\mathbf {q},\mathbf {o}_{i,<t})}{\pi_{\theta_{\text{old}}}(o_{i,t}|\mathbf {q},\mathbf {o}_{i,<t})}\hat {A}_{i,t},
+  \mathrm {clip}\left (\frac {\pi_\theta (o_{i,t}|\mathbf {q},\mathbf {o}_{i,<t})}{\pi_{\theta_{\text{old}}}(o_{i,t}|\mathbf {q},\mathbf {o}_{i,<t})},1-\varepsilon,1+\varepsilon
   \right)\hat {A}_{i,t}
   \right)
   \right\}
@@ -1526,7 +1526,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
 
   $$
   \begin {aligned}
-  \mathcal {J}_{DAPO}(\theta) &= \mathbb {E}_{(q,a) \sim P (Q),\ \{o_i\}_{i=1}^G \sim \pi_{\theta_{\text {old}}}(O|q)} \Bigg [\frac {1}{\sum_{i=1}^G |o_i|} \sum_{i=1}^G \sum_{t=1}^{|o_i|} \\
+  \mathcal {J}_{DAPO}(\theta) &= \mathbb {E}_{(q,a) \sim P (Q),\ \{o_i\}_{i=1}^G \sim \pi_{\theta_{\text{old}}}(O|q)} \Bigg [\frac {1}{\sum_{i=1}^G |o_i|} \sum_{i=1}^G \sum_{t=1}^{|o_i|} \\
   &\quad \min\left (r_{i,t}(\theta) A_i,\ \mathrm {clip}\left (r_{i,t}(\theta), 1 - \varepsilon_{\mathrm {low}}, 1 + \varepsilon_{\mathrm {high}}\right) A_i
   \right)
   \Bigg] \\
@@ -1537,8 +1537,8 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
 - 熵坍缩
   - 随着训练推进，策略的熵会快速下降：模型生成的回答逐渐同质化，某些群体的样本几乎完全一致；探索能力严重受限，策略过早进入确定性状态，阻碍模型规模扩展与性能提升
   - 传统 PPO-Clip 采用对称裁剪，而上界裁剪会严重限制策略的探索性
-  - 高概率的 “利用型 token”（如 $π_{\text {old}}=0.9$）：很容易被进一步放大（上限 0.9×1.2=1.08，甚至能到 0.999）
-  - 低概率的 “探索型 token”（如 $π_{\text {old}}=0.01$）：概率提升空间被严格限制（上限仅 0.01×1.2=0.012），难以实现有效提升
+  - 高概率的 “利用型 token”（如 $π_{\text{old}}=0.9$）：很容易被进一步放大（上限 0.9×1.2=1.08，甚至能到 0.999）
+  - 低概率的 “探索型 token”（如 $π_{\text{old}}=0.01$）：概率提升空间被严格限制（上限仅 0.01×1.2=0.012），难以实现有效提升
   - 实验验证：被裁剪的 token 平均概率极低（$π_θ(oi∣q)<0.2$），上界裁剪直接限制了低概率探索 token 的概率增长，最终导致熵坍缩
   - 对称 clip 天然打压低概率探索、偏袒高概率利用 → 策略越来越集中 → 熵崩溃
 - 非对称裁剪 Clip-Higher 设计
@@ -1569,7 +1569,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - 成本控制：虽然增加了采样量，但如果系统未流水线化（Generation 阶段串行），生成时间主要被长尾样本（Long-tail samples）消耗，因此该策略不一定会降低训练效率
 
     $$
-    \text {s.t.},\ 0 <\left|\{o_i \mid \text {is\_equivalent}(a, o_i)\}\right| < G
+    \text{s.t.},\ 0 <\left|\{o_i \mid \text{is\_equivalent}(a, o_i)\}\right| < G
     $$
 
   - 以上约束条件确保每个 Prompt 采样的回答集合 $\{o_i\}$ 中，既要有与参考答案 a 等价的（有效正样本），也不能全是等价的（避免单一同质化），保证梯度的多样性
@@ -1587,23 +1587,23 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - `Overlong Filtering` 是硬过滤（直接屏蔽截断样本），但在实际场景中，我们既不想惩罚合理的长推理，又想避免模型无限生成超长回答，因此 DAPO 还提出了软惩罚方案，实现长度感知的梯度引导
 
     $$
-    R_{\text {length}}(y) =
+    R_{\text{length}}(y) =
     \begin {cases}
-    0, & |y| \leq L_{\max} - L_{\text {cache}} \\
-    \frac {(L_{\max} - L_{\text {cache}}) - |y|}{L_{\text {cache}}}, & L_{\max} - L_{\text {cache}} <|y| \leq L_{\max} \\
+    0, & |y| \leq L_{\max} - L_{\text{cache}} \\
+    \frac {(L_{\max} - L_{\text{cache}}) - |y|}{L_{\text{cache}}}, & L_{\max} - L_{\text{cache}} <|y| \leq L_{\max} \\
     -1, & L_{\max} < |y|
     \end {cases}
     $$
     - $|y|$：回答 y 的长度（token 数）
     - $L_{\max}$：预设的最大生成长度
-    - $L_{\text {cache}}$：缓冲区间长度（可配置超参）
+    - $L_{\text{cache}}$：缓冲区间长度（可配置超参）
 
   - 公式含义
 
     | 长度区间                                                   | 惩罚值             | 含义                         |
     | ---------------------------------------------------------- | ------------------ | ---------------------------- |
-    | $\vert y\vert \leq L_{\max} - L_{\text {cache}}$            | 0                  | 正常长度，无惩罚             |
-    | $L_{\max} - L_{\text {cache}} <\vert y\vert \leq L_{\max}$ | 线性递减（0 → -1） | 缓冲区间，长度越长，惩罚越大 |
+    | $\vert y\vert \leq L_{\max} - L_{\text{cache}}$            | 0                  | 正常长度，无惩罚             |
+    | $L_{\max} - L_{\text{cache}} <\vert y\vert \leq L_{\max}$ | 线性递减（0 → -1） | 缓冲区间，长度越长，惩罚越大 |
     | $\vert y\vert > L_{\max}$                                  | −1                 | 超长截断，最大惩罚           |
 
 - DAPO 的完整步骤
@@ -1611,7 +1611,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   | 步骤  | 操作                                                             | 对应改进                                            | 作用                            |
   | ----- | ---------------------------------------------------------------- | --------------------------------------------------- | ------------------------------- |
   | 1-2   | 从数据集 D 采样一个批次 $D_b$                                    | -                                                   | 初始化训练批次                  |
-  | 3     | 更新旧策略模型 $\pi_{\theta}\leftarrow\pi_{\theta_{\text {old}}}$ | -                                                   | 固定旧策略，用于重要性采样      |
+  | 3     | 更新旧策略模型 $\pi_{\theta}\leftarrow\pi_{\theta_{\text{old}}}$ | -                                                   | 固定旧策略，用于重要性采样      |
   | 4     | 对每个问题 q，用旧策略采样 G 个输出 $\{o_i\}_{i=1}^G$            | -                                                   | 生成候选回答                    |
   | 5     | 用奖励模型 R 计算每个输出的奖励 $\{r_i\}_{i=1}^G$                | -                                                   | 评估回答质量                    |
   | 6     | 过滤 $o_i$，将剩余样本加入动态采样 buffer                        | Dynamic Sampling                                    | 过滤全对 / 全错样本，保证有效梯度 |
@@ -1629,30 +1629,30 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - 为提升样本效率，标准做法是将大的 rollout 数据批次划分为多个小批次进行梯度更新
   - 这一过程不可避免地引入了 off-policy 学习场景：响应 y 由旧策略 πθold 采样生成，而非当前正在优化的策略 $\pi_\theta$，这也解释了 PPO 和 GRPO 中裁剪机制的必要性 —— 其作用是防止过度 “离策略” 的样本参与梯度估计
   - 尽管裁剪等机制旨在管理这种离策略偏差，但作者在 GRPO 中发现了一个更根本的问题：其优化目标本身是病态的，在大模型长响应任务的训练中，该问题会变得尤为尖锐，最终导致灾难性的模型坍缩 ——GRPO 目标的病态性源于对重要性采样权重的错误应用
-  - 重要性采样的核心原理是：通过对从行为分布 $\pi_{\text {beh}}$ 中抽取的样本重新加权，来估计目标分布 $\pi_{\text {tar}}$ 下函数 f 的期望：
+  - 重要性采样的核心原理是：通过对从行为分布 $\pi_{\text{beh}}$ 中抽取的样本重新加权，来估计目标分布 $\pi_{\text{tar}}$ 下函数 f 的期望：
 
     $$
-    \mathbb {E}_{z \sim \pi_{\text {tar}}}[f (z)] = \mathbb {E}_{z \sim \pi_{\text {beh}}}\left [\frac {\pi_{\text {tar}}(z)}{\pi_{\text {beh}}(z)} f (z) \right]
+    \mathbb {E}_{z \sim \pi_{\text{tar}}}[f (z)] = \mathbb {E}_{z \sim \pi_{\text{beh}}}\left [\frac {\pi_{\text{tar}}(z)}{\pi_{\text{beh}}(z)} f (z) \right]
     $$
 
-  - 关键在于，该公式依赖于从行为分布 $\pi_{\text {beh}}$ 中采集大量样本（N≫1），才能让重要性权重 $\pi_{\text {tar}}(z)$ 和 $\pi_{\text {beh}}(z)$ 有效校正分布不匹配
-  - 相比之下，GRPO 在每个 token 位置 t 都应用了重要性权重 $\pi_\theta (y_i,t|x,y_i,<t)$ 和 $\pi_{\theta_{\text {old}}}(y_i,t|x,y_i,<t)$，由于该权重仅基于 next-token 分布 $\pi_{\theta_{\text {old}}}(⋅|x,y_i,<t)$ 中的单个样本 $y_{i,t}$，完全无法实现预期的分布校正功能
+  - 关键在于，该公式依赖于从行为分布 $\pi_{\text{beh}}$ 中采集大量样本（N≫1），才能让重要性权重 $\pi_{\text{tar}}(z)$ 和 $\pi_{\text{beh}}(z)$ 有效校正分布不匹配
+  - 相比之下，GRPO 在每个 token 位置 t 都应用了重要性权重 $\pi_\theta (y_i,t|x,y_i,<t)$ 和 $\pi_{\theta_{\text{old}}}(y_i,t|x,y_i,<t)$，由于该权重仅基于 next-token 分布 $\pi_{\theta_{\text{old}}}(⋅|x,y_i,<t)$ 中的单个样本 $y_{i,t}$，完全无法实现预期的分布校正功能
   - 相反，它会向训练梯度中引入高方差噪声，这种噪声会在长序列中不断累积，并被裁剪机制进一步放大
   - 作者通过实验观察到，这会导致不可逆的模型坍缩；一旦坍缩发生，即使回退到之前的 checkpoint、精细调优超参数（如裁剪范围）、延长生成长度或更换 RL 查询，也无法恢复训练
   - 上述观察揭示了 GRPO 设计中的根本性缺陷，token 级重要性权重的失效，印证了一个核心原则：优化目标的单位必须与奖励的单位相匹配
   - 由于奖励是针对整个序列授予的，在 token 级别进行离策略校正是存在本质问题的，这促使作者放弃 token 级目标，转而探索直接在序列级别应用重要性权重并执行优化
 
-- 针对 GRPO token 级重要性权重的原理性缺陷，GSPO 采用序列级重要性权重 $\pi_\theta (y|x)$ 和 $\pi_{\theta_{\text {old}}}(y|x)$，其物理意义是衡量旧策略 $\pi_{\theta_{\text {old}}}$ 生成的响应 y 与当前策略 $\pi_\theta$ 的偏离程度，天然匹配序列级奖励，同时为裁剪机制提供合理依据
+- 针对 GRPO token 级重要性权重的原理性缺陷，GSPO 采用序列级重要性权重 $\pi_\theta (y|x)$ 和 $\pi_{\theta_{\text{old}}}(y|x)$，其物理意义是衡量旧策略 $\pi_{\theta_{\text{old}}}$ 生成的响应 y 与当前策略 $\pi_\theta$ 的偏离程度，天然匹配序列级奖励，同时为裁剪机制提供合理依据
 - GSPO 序列级优化目标
 
   $$
-  \mathcal {J}_{\text {GSPO}}(\theta) = \mathbb {E}_{x \sim \mathcal {D}, \{y_i\}_{i=1}^G \sim \pi_{\theta_{\text {old}}}(\cdot \mid x)} \left [\frac {1}{G} \sum_{i=1}^G \min\left (s_i (\theta)\hat {A}_i, \text {clip}\left (s_i (\theta), 1-\varepsilon, 1+\varepsilon \right)\hat {A}_i \right) \right]
+  \mathcal {J}_{\text{GSPO}}(\theta) = \mathbb {E}_{x \sim \mathcal {D}, \{y_i\}_{i=1}^G \sim \pi_{\theta_{\text{old}}}(\cdot \mid x)} \left [\frac {1}{G} \sum_{i=1}^G \min\left (s_i (\theta)\hat {A}_i, \text{clip}\left (s_i (\theta), 1-\varepsilon, 1+\varepsilon \right)\hat {A}_i \right) \right]
   $$
   - 输入：输入 prompt x，旧策略生成的 G 个响应 $\{y_i\}$
   - $s_i (\theta)$：序列级重要性比
 
     $$
-    s_i (\theta) = \left (\frac {\pi_\theta (y_i \mid x)}{\pi_{\theta_{\text {old}}}(y_i \mid x)} \right)^{\frac {1}{|y_i|}} = \exp\left (\frac {1}{|y_i|} \sum_{t=1}^{|y_i|} \log \frac {\pi_\theta (y_{i,t} \mid x, y_{i,<t})}{\pi_{\theta_{\text {old}}}(y_{i,t} \mid x, y_{i,<t})} \right)
+    s_i (\theta) = \left (\frac {\pi_\theta (y_i \mid x)}{\pi_{\theta_{\text{old}}}(y_i \mid x)} \right)^{\frac {1}{|y_i|}} = \exp\left (\frac {1}{|y_i|} \sum_{t=1}^{|y_i|} \log \frac {\pi_\theta (y_{i,t} \mid x, y_{i,<t})}{\pi_{\theta_{\text{old}}}(y_{i,t} \mid x, y_{i,<t})} \right)
     $$
     - 通过几何平均，把连乘的结果压缩到单个 token 比率的平均水平，防止长序列连乘变得很小，使得其重要性比直接归零 → 梯度消失 → 训练崩溃
     - 长度归一化：对序列似然开 $|y_i|$ 次方根，将不同长度响应的重要性比统一到相同数值范围，避免少数 token 似然变化导致比值剧烈波动
@@ -1674,12 +1674,12 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - $\hat {A}_i$：组相对优势估计
 
     $$
-    \hat {A}_i = \frac {r (x,y_i) - \text {mean}\left (\{r (x,y_i)\}_{i=1}^G \right)}{\text {std}\left (\{r (x,y_i)\}_{i=1}^G \right)}
+    \hat {A}_i = \frac {r (x,y_i) - \text{mean}\left (\{r (x,y_i)\}_{i=1}^G \right)}{\text{std}\left (\{r (x,y_i)\}_{i=1}^G \right)}
     $$
     - 对同一 prompt 生成的 G 个响应做归一化，消除不同任务奖励尺度差异，保证训练稳定性
     - 与 GRPO 优势计算逻辑一致，但作用于序列级奖励，而非 token 级
 
-  - $\text {clip}(\cdot)$：序列级裁剪，限制新旧策略差异，过滤过度离策略样本
+  - $\text{clip}(\cdot)$：序列级裁剪，限制新旧策略差异，过滤过度离策略样本
 
 - GRPO 中的 token 级重要性采样是有偏的
   - 优化目标是最大化序列级奖励：
@@ -1688,17 +1688,17 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
     J (\theta) = \mathbb {E}_{y \sim \pi_\theta (\cdot|x)}[R (y)]
     $$
 
-  - 用旧策略 $\pi_{\theta_{\text {old}}}$ 采样时，严格无偏的重要性采样权重必须是完整序列的概率比：
+  - 用旧策略 $\pi_{\theta_{\text{old}}}$ 采样时，严格无偏的重要性采样权重必须是完整序列的概率比：
 
     $$
-    w (y) = \frac {\pi_\theta (y|x)}{\pi_{\theta_{\text {old}}}(y|x)} = \prod_{t=1}^T r_t, \quad r_t = \frac {\pi_\theta (y_t|y_{<t},x)}{\pi_{\theta_{\text {old}}}(y_t|y_{<t},x)}
+    w (y) = \frac {\pi_\theta (y|x)}{\pi_{\theta_{\text{old}}}(y|x)} = \prod_{t=1}^T r_t, \quad r_t = \frac {\pi_\theta (y_t|y_{<t},x)}{\pi_{\theta_{\text{old}}}(y_t|y_{<t},x)}
     $$
 
   - 这是唯一满足「无偏估计」的权重形式，数学上没有任何替代方案
   - GRPO 为了避免连乘导致的数值极端问题（长序列乘积趋近于 0，梯度消失；短序列乘积爆炸，梯度震荡），做了一个致命妥协 —— 用 token 级比率的算术平均替代完整序列比：
 
     $$
-    a_{\text {AM}}(y) = \frac {1}{T}\sum_{t=1}^T r_t
+    a_{\text{AM}}(y) = \frac {1}{T}\sum_{t=1}^T r_t
     $$
     - 本质问题：算术平均 $\neq$ 序列连乘，根据均值不等式 $\frac {1}{T}\sum_{t=1}^T r_t \geq \left (\prod_{t=1}^T r_t \right)^{1/T} \geq \prod_{t=1}^T r_t$，这个估计是系统性有偏的，偏差会随序列长度放大
     - 为了抵消偏差，GRPO 只能用极严格的 token 级裁剪（0.13%），导致样本利用率极低，长序列训练极易坍缩
@@ -1727,7 +1727,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
       s_i (\theta) = \left (\prod_{t=1}^T r_t \right)^{1/T} = \exp\left (\frac {1}{T} \sum_{t=1}^T \log r_t \right)
       $$
 
-    - 我们要求的是梯度 $g$ 的方差，而 $g \propto s_i (\theta) \cdot \hat {A}_i$（$\hat {A}_i$ 是优势，视作常数），所以计算方差 $\text {Var}(g)$ 等价于计算 $\text {Var}(e^X)$，其中 $X = \frac {1}{T} \sum_{t=1}^T \log r_t$
+    - 我们要求的是梯度 $g$ 的方差，而 $g \propto s_i (\theta) \cdot \hat {A}_i$（$\hat {A}_i$ 是优势，视作常数），所以计算方差 $\text{Var}(g)$ 等价于计算 $\text{Var}(e^X)$，其中 $X = \frac {1}{T} \sum_{t=1}^T \log r_t$
     - 计算 $X$ 的分布
 
       $$
@@ -1749,13 +1749,13 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
     - 计算对数正态分布的方差。若 $X \sim \mathcal {N}(\mu, \sigma_X^2)$，则 $Y = e^X$ 服从对数正态分布，其方差公式为：
 
       $$
-      \text {Var}(e^X) = e^{2\mu + \sigma^2_X} \left (e^{\sigma^2_X} - 1 \right)
+      \text{Var}(e^X) = e^{2\mu + \sigma^2_X} \left (e^{\sigma^2_X} - 1 \right)
       $$
 
     - 代入 GSPO 的 $\sigma_X^2 = \frac {\sigma^2}{T}$：
 
       $$
-      \text {Var}(g) \propto \text {Var}(s_i) = e^{2\mu + \sigma^2/T} \left (e^{\sigma^2/T} - 1 \right)
+      \text{Var}(g) \propto \text{Var}(s_i) = e^{2\mu + \sigma^2/T} \left (e^{\sigma^2/T} - 1 \right)
       $$
 
     - 泰勒展开近似 —— 对于长序列 T，$\sigma^2/T$ 是一个很小的数，利用泰勒展开 $e^x \approx 1 + x$（当 $x \to 0$）：
@@ -1767,7 +1767,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
     - 因此：
 
       $$
-      \text {Var}(g) \approx e^{2\mu} \cdot \frac {\sigma^2}{T}
+      \text{Var}(g) \approx e^{2\mu} \cdot \frac {\sigma^2}{T}
       $$
 
     - 结论：GSPO 的方差与序列长度 T 成反比，序列越长，方差越小，训练越稳定
@@ -1776,25 +1776,25 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
     - GRPO 用的是 算术平均：
 
       $$
-      a_{\text {AM}} = \frac {1}{T}\sum_{t=1}^T r_t
+      a_{\text{AM}} = \frac {1}{T}\sum_{t=1}^T r_t
       $$
 
     - 在对数空间，GRPO 直接对 $r_t$ 求平均，而不是对 $\log r_t$ 求平均，它的方差计算是：
 
       $$
-      \text {Var}(a_{\text {AM}}) = \text {Var}\left (\frac {1}{T}\sum r_t \right) = \frac {1}{T^2} \sum \text {Var}(r_t)
+      \text{Var}(a_{\text{AM}}) = \text{Var}\left (\frac {1}{T}\sum r_t \right) = \frac {1}{T^2} \sum \text{Var}(r_t)
       $$
 
     - $r_t = e^{\log r_t}$，直接对比率求方差，会得到一个包含 $e^{\sigma^2}$ 的指数项：
 
       $$
-      \text {Var}(r_t) = e^{2\mu + \sigma^2} (e^{\sigma^2} - 1)
+      \text{Var}(r_t) = e^{2\mu + \sigma^2} (e^{\sigma^2} - 1)
       $$
 
     - 代入 GRPO 的方差公式:
 
       $$
-      \text {Var}(a_{\text {AM}}) = \frac {1}{T} e^{2\mu + \sigma^2} (e^{\sigma^2} - 1)
+      \text{Var}(a_{\text{AM}}) = \frac {1}{T} e^{2\mu + \sigma^2} (e^{\sigma^2} - 1)
       $$
 
   - 对比
@@ -1808,9 +1808,9 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
 
   $$
   \begin {align*}
-  \nabla_\theta \mathcal {J}_{\text {GSPO}}(\theta) &= \nabla_\theta \mathbb {E}_{x \sim \mathcal {D}, \{y_i\}_{i=1}^G \sim \pi_{\theta_{\text {old}}}(\cdot \mid x)} \left [\frac {1}{G} \sum_{i=1}^G s_i (\theta)\hat {A}_i \right]\\
-  &= \mathbb {E}_{x \sim \mathcal {D}, \{y_i\}_{i=1}^G \sim \pi_{\theta_{\text {old}}}(\cdot \mid x)} \left [\frac {1}{G} \sum_{i=1}^G s_i (\theta)\hat {A}_i \cdot \nabla_\theta \log s_i (\theta) \right]\\
-  &= \mathbb {E}_{x \sim \mathcal {D}, \{y_i\}_{i=1}^G \sim \pi_{\theta_{\text {old}}}(\cdot \mid x)} \left [\frac {1}{G} \sum_{i=1}^G \left (\frac {\pi_\theta (y_i \mid x)}{\pi_{\theta_{\text {old}}}(y_i \mid x)} \right)^{\frac {1}{|y_i|}} \hat {A}_i \cdot \frac {1}{|y_i|} \sum_{t=1}^{|y_i|} \nabla_\theta \log \pi_\theta (y_{i,t} \mid x, y_{i,<t}) \right]
+  \nabla_\theta \mathcal {J}_{\text{GSPO}}(\theta) &= \nabla_\theta \mathbb {E}_{x \sim \mathcal {D}, \{y_i\}_{i=1}^G \sim \pi_{\theta_{\text{old}}}(\cdot \mid x)} \left [\frac {1}{G} \sum_{i=1}^G s_i (\theta)\hat {A}_i \right]\\
+  &= \mathbb {E}_{x \sim \mathcal {D}, \{y_i\}_{i=1}^G \sim \pi_{\theta_{\text{old}}}(\cdot \mid x)} \left [\frac {1}{G} \sum_{i=1}^G s_i (\theta)\hat {A}_i \cdot \nabla_\theta \log s_i (\theta) \right]\\
+  &= \mathbb {E}_{x \sim \mathcal {D}, \{y_i\}_{i=1}^G \sim \pi_{\theta_{\text{old}}}(\cdot \mid x)} \left [\frac {1}{G} \sum_{i=1}^G \left (\frac {\pi_\theta (y_i \mid x)}{\pi_{\theta_{\text{old}}}(y_i \mid x)} \right)^{\frac {1}{|y_i|}} \hat {A}_i \cdot \frac {1}{|y_i|} \sum_{t=1}^{|y_i|} \nabla_\theta \log \pi_\theta (y_{i,t} \mid x, y_{i,<t}) \right]
   \end {align*}
   $$
   - GSPO 对响应中所有 token 的对数似然梯度做等权加权，权重仅由序列级重要性比 $s_i (\theta)$ 和优势 $\hat {A}_i$ 决定，同一响应内所有 token 权重完全一致
@@ -1819,34 +1819,34 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
 
   $$
   \begin {align*}
-  \nabla_\theta \mathcal {J}_{\text {GRPO}}(\theta) &= \nabla_\theta \mathbb {E}_{x \sim \mathcal {D}, \{y_i\}_{i=1}^G \sim \pi_{\theta_{\text {old}}}(\cdot \mid x)} \left [\frac {1}{G} \sum_{i=1}^G \frac {1}{|y_i|} \sum_{t=1}^{|y_i|} w_{i,t}(\theta)\hat {A}_{i,t} \right] \\
-  &= \mathbb {E}_{x \sim \mathcal {D}, \{y_i\}_{i=1}^G \sim \pi_{\theta_{\text {old}}}(\cdot \mid x)} \left [\frac {1}{G} \sum_{i=1}^G \hat {A}_i \cdot \frac {1}{|y_i|} \sum_{t=1}^{|y_i|} \frac {\pi_\theta (y_{i,t} \mid x, y_{i,<t})}{\pi_{\theta_{\text {old}}}(y_{i,t} \mid x, y_{i,<t})} \nabla_\theta \log \pi_\theta (y_{i,t} \mid x, y_{i,<t}) \right]
+  \nabla_\theta \mathcal {J}_{\text{GRPO}}(\theta) &= \nabla_\theta \mathbb {E}_{x \sim \mathcal {D}, \{y_i\}_{i=1}^G \sim \pi_{\theta_{\text{old}}}(\cdot \mid x)} \left [\frac {1}{G} \sum_{i=1}^G \frac {1}{|y_i|} \sum_{t=1}^{|y_i|} w_{i,t}(\theta)\hat {A}_{i,t} \right] \\
+  &= \mathbb {E}_{x \sim \mathcal {D}, \{y_i\}_{i=1}^G \sim \pi_{\theta_{\text{old}}}(\cdot \mid x)} \left [\frac {1}{G} \sum_{i=1}^G \hat {A}_i \cdot \frac {1}{|y_i|} \sum_{t=1}^{|y_i|} \frac {\pi_\theta (y_{i,t} \mid x, y_{i,<t})}{\pi_{\theta_{\text{old}}}(y_{i,t} \mid x, y_{i,<t})} \nabla_\theta \log \pi_\theta (y_{i,t} \mid x, y_{i,<t}) \right]
   \end {align*}
   $$
-  - GRPO 对每个 token 应用独立的 token 级重要性权重 $\frac {\pi_\theta (y_{i,t} \mid x, y_{i,<t})}{\pi_{\theta_{\text {old}}}(y_{i,t} \mid x, y_{i,<t})}$，同一响应内不同 token 权重差异极大
+  - GRPO 对每个 token 应用独立的 token 级重要性权重 $\frac {\pi_\theta (y_{i,t} \mid x, y_{i,<t})}{\pi_{\theta_{\text{old}}}(y_{i,t} \mid x, y_{i,<t})}$，同一响应内不同 token 权重差异极大
   - 权重随序列长度累积，被裁剪机制放大，最终导致不可逆模型坍缩
 
 - GSPO-token
   - 在多轮 RL 等场景中，需要细粒度的 token 级优势调整，因此提出 GSPO-token 变体，在保留 GSPO 稳定性的同时，支持 token 级优势自定义
   - GSPO-token 优化目标，支持 token 级优势 $\hat {A}_{i,t}$ 自定义，适配多轮 RL、细粒度奖励等场景
     $$
-    \mathcal {J}_{\text {GSPO-token}}(\theta) = \mathbb {E}_{x \sim \mathcal {D}, \{y_i\}_{i=1}^G \sim \pi_{\theta_{\text {old}}}(\cdot \mid x)} \left [\frac {1}{G} \sum_{i=1}^G \frac {1}{|y_i|} \sum_{t=1}^{|y_i|} \min\left (s_{i,t}(\theta)\hat {A}_{i,t}, \text {clip}\left (s_{i,t}(\theta), 1-\varepsilon, 1+\varepsilon \right)\hat {A}_{i,t} \right) \right]
+    \mathcal {J}_{\text{GSPO-token}}(\theta) = \mathbb {E}_{x \sim \mathcal {D}, \{y_i\}_{i=1}^G \sim \pi_{\theta_{\text{old}}}(\cdot \mid x)} \left [\frac {1}{G} \sum_{i=1}^G \frac {1}{|y_i|} \sum_{t=1}^{|y_i|} \min\left (s_{i,t}(\theta)\hat {A}_{i,t}, \text{clip}\left (s_{i,t}(\theta), 1-\varepsilon, 1+\varepsilon \right)\hat {A}_{i,t} \right) \right]
     $$
   - token 级重要性比定义
 
     $$
-    s_{i,t}(\theta) = \text {sg}\left [s_i (\theta) \right] \cdot \frac {\pi_\theta (y_{i,t} \mid x, y_{i,<t})}{\text {sg}\left [\pi_\theta (y_{i,t} \mid x, y_{i,<t}) \right]}
+    s_{i,t}(\theta) = \text{sg}\left [s_i (\theta) \right] \cdot \frac {\pi_\theta (y_{i,t} \mid x, y_{i,<t})}{\text{sg}\left [\pi_\theta (y_{i,t} \mid x, y_{i,<t}) \right]}
     $$
     - $sg [\cdot]$：停止梯度算子（PyTorch 中 `detach()`），仅保留数值，不参与梯度传播
-    - $\pi_\theta (y_{i,t} \mid x, y_{i,<t}) / \text {sg}[\pi_\theta (y_{i,t} \mid x, y_{i,<t})] = 1$，因此 $s_{i,t}(\theta)$ 数值上完全等于序列级重要性比 $s_i (\theta)$
+    - $\pi_\theta (y_{i,t} \mid x, y_{i,<t}) / \text{sg}[\pi_\theta (y_{i,t} \mid x, y_{i,<t})] = 1$，因此 $s_{i,t}(\theta)$ 数值上完全等于序列级重要性比 $s_i (\theta)$
 
   - GSPO-token 梯度推导
 
     $$
     \begin {align*}
-    \nabla_\theta \mathcal {J}_{\text {GSPO-token}}(\theta) &= \nabla_\theta \mathbb {E}_{x \sim \mathcal {D}, \{y_i\}_{i=1}^G \sim \pi_{\theta_{\text {old}}}(\cdot \mid x)} \left [\frac {1}{G} \sum_{i=1}^G \frac {1}{|y_i|} \sum_{t=1}^{|y_i|} s_{i,t}(\theta)\hat {A}_{i,t} \right] \\
-    &= \mathbb {E}_{x \sim \mathcal {D}, \{y_i\}_{i=1}^G \sim \pi_{\theta_{\text {old}}}(\cdot \mid x)} \left [\frac {1}{G} \sum_{i=1}^G s_i (\theta) \cdot \frac {1}{|y_i|} \sum_{t=1}^{|y_i|} \hat {A}_{i,t} \frac {\nabla_\theta \pi_\theta (y_{i,t} \mid x, y_{i,<t})}{\pi_\theta (y_{i,t} \mid x, y_{i,<t})} \right]\\
-    &= \mathbb {E}_{x \sim \mathcal {D}, \{y_i\}_{i=1}^G \sim \pi_{\theta_{\text {old}}}(\cdot \mid x)} \left [\frac {1}{G} \sum_{i=1}^G \left (\frac {\pi_\theta (y_i \mid x)}{\pi_{\theta_{\text {old}}}(y_i \mid x)} \right)^{\frac {1}{|y_i|}} \cdot \frac {1}{|y_i|} \sum_{t=1}^{|y_i|} \hat {A}_{i,t} \nabla_\theta \log \pi_\theta (y_{i,t} \mid x, y_{i,<t}) \right]
+    \nabla_\theta \mathcal {J}_{\text{GSPO-token}}(\theta) &= \nabla_\theta \mathbb {E}_{x \sim \mathcal {D}, \{y_i\}_{i=1}^G \sim \pi_{\theta_{\text{old}}}(\cdot \mid x)} \left [\frac {1}{G} \sum_{i=1}^G \frac {1}{|y_i|} \sum_{t=1}^{|y_i|} s_{i,t}(\theta)\hat {A}_{i,t} \right] \\
+    &= \mathbb {E}_{x \sim \mathcal {D}, \{y_i\}_{i=1}^G \sim \pi_{\theta_{\text{old}}}(\cdot \mid x)} \left [\frac {1}{G} \sum_{i=1}^G s_i (\theta) \cdot \frac {1}{|y_i|} \sum_{t=1}^{|y_i|} \hat {A}_{i,t} \frac {\nabla_\theta \pi_\theta (y_{i,t} \mid x, y_{i,<t})}{\pi_\theta (y_{i,t} \mid x, y_{i,<t})} \right]\\
+    &= \mathbb {E}_{x \sim \mathcal {D}, \{y_i\}_{i=1}^G \sim \pi_{\theta_{\text{old}}}(\cdot \mid x)} \left [\frac {1}{G} \sum_{i=1}^G \left (\frac {\pi_\theta (y_i \mid x)}{\pi_{\theta_{\text{old}}}(y_i \mid x)} \right)^{\frac {1}{|y_i|}} \cdot \frac {1}{|y_i|} \sum_{t=1}^{|y_i|} \hat {A}_{i,t} \nabla_\theta \log \pi_\theta (y_{i,t} \mid x, y_{i,<t}) \right]
     \end {align*}
     $$
 
@@ -1857,21 +1857,21 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - 算法设计的核心是 “信号质量”，而非 “样本数量”：大模型 RL 训练中，1 个高质量梯度信号 > 100 个带噪声的无效信号
 - GRPO 在训练 MoE 模型的时候，出现 rollout 和训练的专家路由不一样的原因是什么？这个问题有什么解决方案？
   - MoE 只激活 Top-K 专家（如 8 选 2），路由概率微小偏移 → 选中专家集合完全不同
-  - Rollout（旧策略 $\pi_{\text {old}}$）选专家 A/C，训练（新策略 $\pi_{\text {new}}$）选专家 B/D → 两个前向是不同子网络在计算，概率比 $\pi_{\text {new}}/\pi_{\text {old}}$ 混入结构差异，重要性权重剧烈波动、方差爆炸
+  - Rollout（旧策略 $\pi_{\text{old}}$）选专家 A/C，训练（新策略 $\pi_{\text{new}}$）选专家 B/D → 两个前向是不同子网络在计算，概率比 $\pi_{\text{new}}/\pi_{\text{old}}$ 混入结构差异，重要性权重剧烈波动、方差爆炸
   - 解决方法是 Rollout Routing Replay：rollout 时缓存每一层路由掩码（选中专家），训练强制重放，保证路径完全一致
 - GSPO 在 MoE 架构上的改进
   - 在 MoE 架构上应用 GRPO 算法时，MoE 模型的专家激活波动性会阻碍训练正常收敛
-  - 例如，对于 48 层的 Qwen3-30B-A3B-Base 模型，在每次 RL 梯度更新后，对于相同的样本采样，新策略 $\pi_\theta$ 下激活的专家与旧策略 $\pi_{\theta_{\text {old}}}$ 下激活的专家存在显著差异，平均而言，约有 10% 的专家在新旧策略下被激活的模式是不同的
-  - 这种现象在更深层的 MoE 模型中更为突出，它使得 token 级重要性比率 $w_{i,t}(\theta) = \frac {\pi_\theta (y_{i,t} \mid x, y_{i,<t})}{\pi_{\theta_{\text {old}}}(y_{i,t} \mid x, y_{i,<t})}$ 发生剧烈波动，这种波动会使重要性比率失效，从而导致 RL 训练无法正常收敛
-  - 为了应对这一挑战，需要采用 Routing Replay（路由重放） 训练策略，也就是在旧策略 $\pi_{\theta_{\text {old}}}$ 下缓存激活的专家路径，并在计算重要性比率 $w_{i,t}(\theta) = \frac {\pi_\theta (y_{i,t} \mid x, y_{i,<t})}{\pi_{\theta_{\text {old}}}(y_{i,t} \mid x, y_{i,<t})}$ 时，将这些路由路径 “重放” 到当前策略 $\pi_\theta$ 中
-  - 这样，对于每个 token yi,t，$\pi_\theta (y_{i,t} \mid x, y_{i,<t})$ 和 $\pi_{\theta_{\text {old}}}(y_{i,t} \mid x, y_{i,<t})$ 共享相同的激活网络模式，由此可以恢复 token 级重要性比率的稳定性，并确保梯度更新过程中激活网络的一致性，实验证明 Routing Replay 策略是 GRPO 训练 MoE 模型正常收敛的关键技术
+  - 例如，对于 48 层的 Qwen3-30B-A3B-Base 模型，在每次 RL 梯度更新后，对于相同的样本采样，新策略 $\pi_\theta$ 下激活的专家与旧策略 $\pi_{\theta_{\text{old}}}$ 下激活的专家存在显著差异，平均而言，约有 10% 的专家在新旧策略下被激活的模式是不同的
+  - 这种现象在更深层的 MoE 模型中更为突出，它使得 token 级重要性比率 $w_{i,t}(\theta) = \frac {\pi_\theta (y_{i,t} \mid x, y_{i,<t})}{\pi_{\theta_{\text{old}}}(y_{i,t} \mid x, y_{i,<t})}$ 发生剧烈波动，这种波动会使重要性比率失效，从而导致 RL 训练无法正常收敛
+  - 为了应对这一挑战，需要采用 Routing Replay（路由重放） 训练策略，也就是在旧策略 $\pi_{\theta_{\text{old}}}$ 下缓存激活的专家路径，并在计算重要性比率 $w_{i,t}(\theta) = \frac {\pi_\theta (y_{i,t} \mid x, y_{i,<t})}{\pi_{\theta_{\text{old}}}(y_{i,t} \mid x, y_{i,<t})}$ 时，将这些路由路径 “重放” 到当前策略 $\pi_\theta$ 中
+  - 这样，对于每个 token yi,t，$\pi_\theta (y_{i,t} \mid x, y_{i,<t})$ 和 $\pi_{\theta_{\text{old}}}(y_{i,t} \mid x, y_{i,<t})$ 共享相同的激活网络模式，由此可以恢复 token 级重要性比率的稳定性，并确保梯度更新过程中激活网络的一致性，实验证明 Routing Replay 策略是 GRPO 训练 MoE 模型正常收敛的关键技术
   - 尽管 Routing Replay 策略能让 GRPO 训练的 MoE 模型正常收敛，但它重用路由路径的做法会带来额外的内存和通信开销，同时也可能限制 MoE 模型的实际容量
   - 先比之下，GSPO 完全消除了对 Routing Replay 策略的依赖，且具备全容量的计算能力
   - GSPO 的关键在于：它仅关注序列似然（sequence likelihood, 即 $\pi_\theta (y \mid x)$），而对单个 token 的似然（即 $\pi_\theta (y_{i,t} \mid x, y_{i,<t})$）不敏感
   - 因此，MoE 模型始终保持其语言建模能力，序列似然不会发生剧烈波动
   - 总而言之，GSPO 从根本上解决了 MoE 模型中的专家激活波动性问题，无需依赖 Routing Replay 等复杂的变通方案，这不仅简化并稳定了训练过程，还允许模型在无人工约束的情况下充分利用其全部容量
 - GSPO 对 RL Infra 的益处
-  - 在实际工程中，由于训练引擎（如 Megatron）与推理引擎（如 SGLang、vLLM）之间存在精度差异（precision discrepancies），通常需要借助训练引擎，在旧策略 $\pi_{\theta_{\text {old}}}$ 下重新计算采样响应的似然值，以确保梯度计算的准确性
+  - 在实际工程中，由于训练引擎（如 Megatron）与推理引擎（如 SGLang、vLLM）之间存在精度差异（precision discrepancies），通常需要借助训练引擎，在旧策略 $\pi_{\theta_{\text{old}}}$ 下重新计算采样响应的似然值，以确保梯度计算的准确性
   - 然而，GSPO 仅使用序列级（sequence-level）而非 token 级的似然值进行优化，从直觉上看序列级似然对精度差异具有更高的容忍度。
   - 因此，GSPO 支持直接使用推理引擎返回的似然值进行优化，从而避免了在训练引擎中重新计算的需求
   - 这一特性在以下场景中尤为有益：部分 rollout（部分滚动）、多轮 RL，以及在训推分离（disaggregated）的框架架构中
@@ -1896,8 +1896,8 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
 
   $$
   \begin {align*}
-  A_{q,o_t}&=r (o_{1:T},q)-\beta\cdot\sum_{i=t}^{T}\text {KL}(i)\\
-  A_{q,o_t}^{\text {norm}}&=\frac {A_{q,o_t}-\text {mean}(A\vert A\in \mathcal {D}_{\text {batch}})}{\text {std}(A\vert A\in \mathcal {D}_{\text {batch}})+\epsilon}
+  A_{q,o_t}&=r (o_{1:T},q)-\beta\cdot\sum_{i=t}^{T}\text{KL}(i)\\
+  A_{q,o_t}^{\text{norm}}&=\frac {A_{q,o_t}-\text{mean}(A\vert A\in \mathcal {D}_{\text{batch}})}{\text{std}(A\vert A\in \mathcal {D}_{\text{batch}})+\epsilon}
   \end {align*}
   $$
 
@@ -1905,10 +1905,10 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
 
   $$
   \begin {align*}
-  A_{q,o_t}^{\prime}&=R_{q,o_t}-\text {mean}_{\text {group}}(R_{q,o_t})\\
-  A_{q,o_t}^{\text {norm}}&=\frac {A_{q,o_t}^{\prime}-\text {mean}(A\vert A\in \mathcal {D}_{\text {batch}})}{\text {std}(A\vert A\in \mathcal {D}_{\text {batch}})+\epsilon}\\
-  \mathcal {L}&=\mathcal {L}_{\text {PPO}}(A^{\text {norm}})-\lambda\cdot\mathcal {J}_{k_2\,\text {as}\,\text {loss}}(\theta)\\
-  \mathcal {J}_{k_2\,\text {as}\,\text {loss}}(\theta)&=\mathbb {E}[\frac {1}{2}(\log\frac {\pi_\theta}{\pi_{ref}})^2]
+  A_{q,o_t}^{\prime}&=R_{q,o_t}-\text{mean}_{\text{group}}(R_{q,o_t})\\
+  A_{q,o_t}^{\text{norm}}&=\frac {A_{q,o_t}^{\prime}-\text{mean}(A\vert A\in \mathcal {D}_{\text{batch}})}{\text{std}(A\vert A\in \mathcal {D}_{\text{batch}})+\epsilon}\\
+  \mathcal {L}&=\mathcal {L}_{\text{PPO}}(A^{\text{norm}})-\lambda\cdot\mathcal {J}_{k_2\,\text{as}\,\text{loss}}(\theta)\\
+  \mathcal {J}_{k_2\,\text{as}\,\text{loss}}(\theta)&=\mathbb {E}[\frac {1}{2}(\log\frac {\pi_\theta}{\pi_{ref}})^2]
   \end {align*}
   $$
 
@@ -1942,8 +1942,8 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - `Aligned` 模型已经具备了较强的基础能力，其瓶颈在于如何跳出已有的高质量模式去探索更优的解，`Clip-Higher` 为其提供了更大的探索空间
   - 而 `Base` 模型本身能力较弱，策略尚不稳定，过大的更新步长反而容易破坏其初步建立的认知结构
 - `Clip-Higher` 在微观层面是如何影响模型生成文本的？
-  - 在标准裁剪（$\epsilon_{\text {high}}$ 较小）下，被裁剪（即更新被抑制）最频繁的是逻辑连接词，如「therefore」、「if」、「but」等；这些词往往是开启新推理步骤或转换论证角度的关键，限制它们可能会固化模型的推理模式
-  - 在 `Clip-Higher`（$\epsilon_{\text {high}}$ 较大）下，裁剪的压力从逻辑连接词转移到高频功能词上，如「is」、「the」和逗号等；这些词对句子结构至关重要，但对逻辑流的影响较小
+  - 在标准裁剪（$\epsilon_{\text{high}}$ 较小）下，被裁剪（即更新被抑制）最频繁的是逻辑连接词，如「therefore」、「if」、「but」等；这些词往往是开启新推理步骤或转换论证角度的关键，限制它们可能会固化模型的推理模式
+  - 在 `Clip-Higher`（$\epsilon_{\text{high}}$ 较大）下，裁剪的压力从逻辑连接词转移到高频功能词上，如「is」、「the」和逗号等；这些词对句子结构至关重要，但对逻辑流的影响较小
   - `Clip-Higher` 通过选择性地「放手」，允许模型更自由地探索不同的话语和推理结构，同时通过对核心功能词的隐性约束来维持句法稳定性，从而促进了生成内容的多样性和创新性
 - 损失聚合粒度
   - 序列级别聚合：先计算每个序列（回答）的平均损失，再对所有序列的平均损失求平均；这种方法给予每个序列相同的权重，但可能会导致长序列中每个 token 的梯度贡献被稀释，即存在长度偏见
@@ -1974,17 +1974,17 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
 
   $$
   \begin {align*}
-  \hat {\rho}_{i,t}(\theta)  &=  \text {clip}\big (\rho_{i,t}(\theta),  1-\varepsilon_{\text {low}},  1+\varepsilon_{\text {high}}  \big)\\
-  \rho_{i,t}(\theta)  &=  \frac {\pi_\theta (a_{i,t} \mid s, a_{i,<t})  }{\pi_{\theta_{\text {old}}}(a_{i,t} \mid s, a_{i,<t})  }
+  \hat {\rho}_{i,t}(\theta)  &=  \text{clip}\big (\rho_{i,t}(\theta),  1-\varepsilon_{\text{low}},  1+\varepsilon_{\text{high}}  \big)\\
+  \rho_{i,t}(\theta)  &=  \frac {\pi_\theta (a_{i,t} \mid s, a_{i,<t})  }{\pi_{\theta_{\text{old}}}(a_{i,t} \mid s, a_{i,<t})  }
   \end {align*}
   $$
 
 - 在目标形式上，CISPO 放弃了 PPO 式的双边裁剪代理目标，而更接近 REINFORCE 风格：
 
   $$
-  \begin {align*}  J_{\text {CISPO}}(\theta)  =  \mathbb {E}_{s \sim D,\ {a_i}_{i=1}^K \sim \pi_{\theta_{\text {old}}}(\cdot \mid s)}  \Bigg [\frac {1}{\sum_{i=1}^K |a_i|}  \sum_{i=1}^{K}  \sum_{t=1}^{|a_i|}  &  \text {sg}(\hat {\rho}_{i,t}(\theta)) \cdot  A_{i,t}  \log \pi_\theta (a_{i,t} \mid s, a_{i,<t})  \Bigg]  \end {align*}
+  \begin {align*}  J_{\text{CISPO}}(\theta)  =  \mathbb {E}_{s \sim D,\ {a_i}_{i=1}^K \sim \pi_{\theta_{\text{old}}}(\cdot \mid s)}  \Bigg [\frac {1}{\sum_{i=1}^K |a_i|}  \sum_{i=1}^{K}  \sum_{t=1}^{|a_i|}  &  \text{sg}(\hat {\rho}_{i,t}(\theta)) \cdot  A_{i,t}  \log \pi_\theta (a_{i,t} \mid s, a_{i,<t})  \Bigg]  \end {align*}
   $$
-  - $\text {sg}(⋅)​$ 表示停止梯度（stop-gradient）
+  - $\text{sg}(⋅)​$ 表示停止梯度（stop-gradient）
     - 前向计算时使用这个值，但在反向传播时不计算它的梯度，从而保证每个 token 都保留梯度信号，重要性权重裁剪只起 “限制梯度幅度” 的作用，而不会影响优化器的梯度计算
     - $r$ 不参与求导，仅作为固定的权重，只对 $\log \pi_\theta$ 求导，从而回归标准策略梯度
     - 即使 $r$ 被裁剪，梯度方向依然保留，不会归零，模型仍能朝优势方向更新，仅幅度被保守约束
@@ -1993,7 +1993,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - 为保证在非裁剪区（r≈1）与原始 GRPO/PPO 梯度一致，CISPO 加入配平项，确保数学等价，不改变正常样本的更新方向
 
 - CISPO 裁剪的是重要性权重本身，这是一种明确的偏差–方差权衡 —— 裁剪权重不可避免地引入偏差，但显著降低了重要性采样带来的方差
-- CISPO 支持不对称裁剪边界 $\varepsilon_{\text {low}}$ 和 $\varepsilon_{\text {high}}$，这一设计类似于 DAPO 中的 “clip-higher” 思路：允许模型在增加某些 token 概率时执行更大幅度的更新以鼓励探索，同时对降低概率的更新保持更严格的约束
+- CISPO 支持不对称裁剪边界 $\varepsilon_{\text{low}}$ 和 $\varepsilon_{\text{high}}$，这一设计类似于 DAPO 中的 “clip-higher” 思路：允许模型在增加某些 token 概率时执行更大幅度的更新以鼓励探索，同时对降低概率的更新保持更严格的约束
 - CISPO 与 GSPO
   - CISPO 与 GSPO 都源自将强化学习扩展到超大规模模型（尤其是 MoE 模型）的研究实践，这类模型通常存在显著的数值不稳定性
   - 研究发现，token 级重要性采样比率容易出现极端值，既可能导致梯度过度放大，也会引入大量方差，严重阻碍学习
@@ -2020,31 +2020,31 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - PPO (Standard)
 
     $$
-    \mathcal {J}^{\text {PPO}}(\pi_\theta) = \mathbb {E}_{\tau \sim \pi_{\text {old}}} \left [\min \left ( R (\tau) \frac {\pi_\theta (\tau)}{\pi_{\text {old}}(\tau)}, R (\tau) \left (\frac {\pi_\theta (\tau)}{\pi_{\text {old}}(\tau)} \right)_{1-\epsilon}^{1+\epsilon} \right) \right]
+    \mathcal {J}^{\text{PPO}}(\pi_\theta) = \mathbb {E}_{\tau \sim \pi_{\text{old}}} \left [\min \left ( R (\tau) \frac {\pi_\theta (\tau)}{\pi_{\text{old}}(\tau)}, R (\tau) \left (\frac {\pi_\theta (\tau)}{\pi_{\text{old}}(\tau)} \right)_{1-\epsilon}^{1+\epsilon} \right) \right]
     $$
 
   - Decoupled PPO
 
     $$
-    \mathcal {J}^{\text {DPPO}}(\pi_\theta) = \mathbb {E}_{\tau \sim \pi_{\text {old}}} \left [\min \left ( R (\tau) \frac {\pi_\theta (\tau)}{\pi_{\text {old}}(\tau)}, R (\tau) \frac {\pi_{\text {prox}}(\tau)}{\pi_{\text {old}}(\tau)} \left (\frac {\pi_\theta (\tau)}{\pi_{\text {prox}}(\tau)} \right)_{1-\epsilon}^{1+\epsilon} \right) \right]
+    \mathcal {J}^{\text{DPPO}}(\pi_\theta) = \mathbb {E}_{\tau \sim \pi_{\text{old}}} \left [\min \left ( R (\tau) \frac {\pi_\theta (\tau)}{\pi_{\text{old}}(\tau)}, R (\tau) \frac {\pi_{\text{prox}}(\tau)}{\pi_{\text{old}}(\tau)} \left (\frac {\pi_\theta (\tau)}{\pi_{\text{prox}}(\tau)} \right)_{1-\epsilon}^{1+\epsilon} \right) \right]
     $$
 
   - Truncated IS
 
     $$
-    \mathcal {J}^{\text {TIS}}(\pi_\theta) = \mathbb {E}_{\tau \sim \pi_{\text {old}}} \left [\text {sg} \left (\frac {\pi_\theta (\tau)}{\pi_{\text {old}}(\tau)} \right)_0^c R (\tau) \log \pi_\theta (\tau) \right]
+    \mathcal {J}^{\text{TIS}}(\pi_\theta) = \mathbb {E}_{\tau \sim \pi_{\text{old}}} \left [\text{sg} \left (\frac {\pi_\theta (\tau)}{\pi_{\text{old}}(\tau)} \right)_0^c R (\tau) \log \pi_\theta (\tau) \right]
     $$
 
   - CISPO
 
     $$
-    \mathcal {J}^{\text {CISPO}}(\pi_\theta) = \mathbb {E}_{\tau \sim \pi_{\text {old}}} \left [\text {sg} \left (\frac {\pi_\theta (\tau)}{\pi_{\text {old}}(\tau)} \right)_{1-\epsilon_{\text {low}}^{\text {IS}}}^{1+\epsilon_{\text {high}}^{\text {IS}}} R (\tau) \log \pi_\theta (\tau) \right]
+    \mathcal {J}^{\text{CISPO}}(\pi_\theta) = \mathbb {E}_{\tau \sim \pi_{\text{old}}} \left [\text{sg} \left (\frac {\pi_\theta (\tau)}{\pi_{\text{old}}(\tau)} \right)_{1-\epsilon_{\text{low}}^{\text{IS}}}^{1+\epsilon_{\text{high}}^{\text{IS}}} R (\tau) \log \pi_\theta (\tau) \right]
     $$
 
   - TOPR
 
     $$
-    \mathcal {J}^{\text {TOPR}}(\pi_\theta) = \mathbb {E}_{\tau \sim \pi_{\text {old}}} \left [\left ( \mathbf {1}_{\{\tau \in T^+\}} + \mathbf {1}_{\{\tau \in T^-\}} \text {sg} \left (\frac {\pi_\theta (\tau)}{\pi_{\text {old}}(\tau)} \right)_0^c \right) R (\tau) \log \pi_\theta (\tau) \right]
+    \mathcal {J}^{\text{TOPR}}(\pi_\theta) = \mathbb {E}_{\tau \sim \pi_{\text{old}}} \left [\left ( \mathbf {1}_{\{\tau \in T^+\}} + \mathbf {1}_{\{\tau \in T^-\}} \text{sg} \left (\frac {\pi_\theta (\tau)}{\pi_{\text{old}}(\tau)} \right)_0^c \right) R (\tau) \log \pi_\theta (\tau) \right]
     $$
 
 ## Agentic RL
@@ -2056,7 +2056,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
     - 下一个词预测损失（Next Token Prediction, NTP）
 
       $$
-      \mathcal {L}_{\text {PT}} = -\mathbb {E}_{x \sim D_{\text {corpus}}} \log p_\theta (x_t \mid x_{<t})
+      \mathcal {L}_{\text{PT}} = -\mathbb {E}_{x \sim D_{\text{corpus}}} \log p_\theta (x_t \mid x_{<t})
       $$
 
     - 无标注数据，目标是自回归
@@ -2066,7 +2066,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
     - 本质上就是极大似然估计（MLE,Maximum Likelihood Estimation），逐 token 独立优化，只关心每个位置预测的 token 是否与标准答案一致
 
       $$
-      \mathcal {L}_{\text {SFT}} = -\mathbb {E}_{(q,a) \sim D_{\text {SFT}}} \log p_\theta (a \mid q)
+      \mathcal {L}_{\text{SFT}} = -\mathbb {E}_{(q,a) \sim D_{\text{SFT}}} \log p_\theta (a \mid q)
       $$
 
     - 有监督，目的是让模型学会遵循指令，模仿人类示范回答
@@ -2075,7 +2075,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
     - 最大化同一 prompt 下，模型生成的多个回答中，“相对更优” 回答的概率，并通过 KL 散度约束策略更新幅度
 
       $$
-      \mathcal {L}_{\text {GRPO}} = -\frac {1}{N}\sum_{i=1}^N \left (r_i - \bar {r}\right)\log\frac {\pi_\theta (y_i|x)}{\pi_{\text {ref}}(y_i|x)} + \beta \cdot D_{\text {KL}}(\pi_\theta \parallel \pi_{\text {ref}})
+      \mathcal {L}_{\text{GRPO}} = -\frac {1}{N}\sum_{i=1}^N \left (r_i - \bar {r}\right)\log\frac {\pi_\theta (y_i|x)}{\pi_{\text{ref}}(y_i|x)} + \beta \cdot D_{\text{KL}}(\pi_\theta \parallel \pi_{\text{ref}})
       $$
 
     - 让模型回答更简洁、有用、安全、逻辑性强，更符合人类偏好
@@ -2123,18 +2123,18 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
 
 - 本文使用以下记号:
   - 行为策略 $\mu$： 实际负责生成 rollout 的策略，即 "数据是在什么分布下采样的"。在现代 LLM-RL 系统中，它对应推理引擎的实现（vLLM / SGLang 等）；在异步框架下，它往往还可以近似看作多个 worker 策略诱导分布的混合
-  - 近端 / 参考策略 $\pi_{\theta_{\text {old}}}$： 训练目标中用于重要性采样、clipping 或 trust-region 约束的策略，典型的就是 PPO / GRPO 里的 "旧策略"（old policy）；为了避免和固定 KL 参考模型混淆，把它称为近端策略或参考策略；而固定的 SFT 参考模型单独写成 $\pi_{ref}$
+  - 近端 / 参考策略 $\pi_{\theta_{\text{old}}}$： 训练目标中用于重要性采样、clipping 或 trust-region 约束的策略，典型的就是 PPO / GRPO 里的 "旧策略"（old policy）；为了避免和固定 KL 参考模型混淆，把它称为近端策略或参考策略；而固定的 SFT 参考模型单独写成 $\pi_{ref}$
   - 目标策略 $\pi_\theta$： 训练目标中要优化的策略，即 "希望模型变成什么样"，典型的就是 PPO / GRPO 里的 "新策略"（new policy）
 - 具体对比
 
   | 理论对象                    | 在分析中的角色                                | 常见工程量                                                        |
   | :-------------------------- | :-------------------------------------------- | :---------------------------------------------------------------- |
   | $\mu$                       | 真实采样分布，决定数据来自哪里                | behavior log-prob、policy version、sampling config、routing trace |
-  | $\pi_{\theta_{\text {old}}}$ | 近端锚点，决定 ratio 分母与 trust region 参照 | old log-prob、clip anchor、proximal checkpoint                    |
+  | $\pi_{\theta_{\text{old}}}$ | 近端锚点，决定 ratio 分母与 trust region 参照 | old log-prob、clip anchor、proximal checkpoint                    |
   | $\pi_\theta$                | 被优化的目标策略，决定更新方向                | new log-prob、当前 actor、当前 router                             |
   | $\pi_{ref}$                 | 若存在固定 KL 参考模型，只负责 KL 正则        | ref log-prob、SFT/reference checkpoint                            |
 
-- 在最理想化的设定里，通常默认 $\mu=\pi_{\theta_{\text {old}}}$ 但在真实系统里，由于异步更新、推理和训练后端不同、MoE 路由由波动甚至硬件件差异，二者往往会偏离，程度视系统而定
+- 在最理想化的设定里，通常默认 $\mu=\pi_{\theta_{\text{old}}}$ 但在真实系统里，由于异步更新、推理和训练后端不同、MoE 路由由波动甚至硬件件差异，二者往往会偏离，程度视系统而定
 - 算法层：如何写 trust region 目标、如何在样本层面处理” 行为 vs 参考” 偏移
   - Decoupled PPO 较早明确指出在信赖域策略优化（TRPO/PPO）方法中，"旧策略"（old policy）实际上同时承担两种角色
     - 其一，作为行为策略（behavior policy），用于重要性采样的异策略修正，代表数据采样所服从的分布；
@@ -2144,7 +2144,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
     - 针对 GRPO 在长序列与 MoE 模型上的训练稳定性问题展开研究，指出 token-level 的 PPO/GRPO 会因新旧策略间专家路由的剧烈波动，引入极高方差与训练不稳定
     - 为此，GSPO 提出在序列级别（sequence-level）定义 PPO 式目标与比率约束，以整条序列的比率约束策略更新，显著缓解了 MoE 场景下路由不一致导致的训练崩溃问题
   - Your Efficient RL Framework Secretly Brings You Off-Policy RL Training 聚焦现有大模型 RL 训练框架（如 VeRL）中推理与训练实现不一致的问题
-    - 推理框架（如 vLLM）与训练框架（如 FSDP/Megatron）的算子差异，会导致行为策略 $\mu$ 与参考策略 $\pi_{\theta_{\text {old}}}$ 分布偏移，使原本的同策略（on-policy）训练退化为带有显著偏差的异策略（off-policy）训练
+    - 推理框架（如 vLLM）与训练框架（如 FSDP/Megatron）的算子差异，会导致行为策略 $\mu$ 与参考策略 $\pi_{\theta_{\text{old}}}$ 分布偏移，使原本的同策略（on-policy）训练退化为带有显著偏差的异策略（off-policy）训练
     - 文章梳理了 PPO-IS、vanilla-IS 两种现有解决方案，并提出 token-level 截断重要性采样（truncated IS, TIS），通过限制高偏差样本的权重，降低训推不一致对训练的负面影响
   - Small Leak Can Sink a Great Ship–Boost RL Training on MoE with IcePop! 进一步指出，训推不一致问题在 MoE 模型上会被放大
     - MoE 路由对微小扰动高度敏感，叠加推理 / 训练实现差异与异步采样后，偏差极易失控
@@ -2153,7 +2153,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
     - 系统性剖析了训推不一致的成因，包括智能体工作流引入的分布外 / 低概率 token、硬件与 kernel 实现带来的计算不确定性等，并深入分析了 token-level 重要性采样在长序列任务中引入严重偏差的根本原因
     - 文章进一步提出序列级别重要性采样掩码（sequence-level masked IS, sequence-level MIS），仅丢弃重要性比率异常的完整序列，在控制偏差的同时，显著抑制了极端样本引发的训练崩溃，且提供了完整的理论推导与实验验证
   - verl Rollout Importance Sampling 在其 rollout correction 模块中引入 “Token Veto（一票否决）” 机制：
-    - 在 token-level 计算重要性比率 $\rho_t (\text {ref} \leftarrow \text {beh})$，若轨迹中任意 token 的比率低于阈值 $\tau_{\text {veto}}$，则直接剔除整条序列
+    - 在 token-level 计算重要性比率 $\rho_t (\text{ref} \leftarrow \text{beh})$，若轨迹中任意 token 的比率低于阈值 $\tau_{\text{veto}}$，则直接剔除整条序列
     - 该 “token 粒度检测、序列粒度否决” 的设计，体现了保守的风险控制策略
   - INTELLECT-3 Technical Report 提出的异步分布式 RL 训练框架，采用了类似的拒绝采样策略：对每条 rollout 计算 token-level 重要性比率，若任意 token 的比率低于设定阈值（文中取 $10^{-5}$），则对整条轨迹进行掩码（masking）处理
 - 系统层：如何在算法外部让行为策略与参考策略保持接近
@@ -2163,7 +2163,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
 - 模型层：MoE 路由带来的特殊问题
   - Stabilizing MoE Reinforcement Learning by Aligning Training and Inference Routers 聚焦 MoE 架构特有的路由不一致（Routing Inconsistency）问题
     - 研究发现，即便输入完全相同，推理端与训练端也可能因算子实现、并行策略的微小差异，导致 Router 选择不同的专家
-    - 这种 “物理路径” 上的不一致，会使行为策略 $\mu$ 与参考策略 $\pi_{\theta_{\text {old}}}$ 的差异远超预期，极易触发训练崩溃
+    - 这种 “物理路径” 上的不一致，会使行为策略 $\mu$ 与参考策略 $\pi_{\theta_{\text{old}}}$ 的差异远超预期，极易触发训练崩溃
     - 为此，文章提出 Rollout Routing Replay (R3)：在推理阶段记录每个 token 实际命中的专家索引，训练阶段强制回放这些路由决策，不再重新计算
     - R3 通过这种方式，在 MoE 拓扑上强制对齐了训推两端的计算路径
 - 序列级比率与 “误差放大效应”
@@ -2223,13 +2223,13 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
     - 定义状态 s 下策略间的总变差距离（Total Variation）：
 
       $$
-      D_{\text {TV}}(p,q) := \frac {1}{2}\|p - q\|_1
+      D_{\text{TV}}(p,q) := \frac {1}{2}\|p - q\|_1
       $$
 
     - 假设对所有 s，行为策略和目标策略的 TV 被 $\beta$ 上界：
 
       $$
-      D_{\text {TV}}(\mu (\cdot|s), \pi_\theta (\cdot|s)) \leq \beta
+      D_{\text{TV}}(\mu (\cdot|s), \pi_\theta (\cdot|s)) \leq \beta
       $$
 
     - 则有经典传播界：
@@ -2258,14 +2258,14 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
     - 偏差源 A（参考 vs 目标）：
 
       $$
-      \alpha_0 := \max_s D_{\text {TV}}(\pi_{\theta_{\text {old}}}(\cdot|s), \pi_\theta (\cdot|s))
+      \alpha_0 := \max_s D_{\text{TV}}(\pi_{\theta_{\text{old}}}(\cdot|s), \pi_\theta (\cdot|s))
       $$
 
     - 含义：新策略和参考策略的动作分布差异，对应 PPO 的 clip/trust-region 控制
     - 偏差源 B（行为 vs 参考）：
 
       $$
-      \alpha_1 := \max_s D_{\text {TV}}(\mu (\cdot|s), \pi_{\theta_{\text {old}}}(\cdot|s))
+      \alpha_1 := \max_s D_{\text{TV}}(\mu (\cdot|s), \pi_{\theta_{\text{old}}}(\cdot|s))
       $$
 
     - 含义：行为策略和参考策略的动作分布差异，对应训推不一致 / 异步采样偏差
@@ -2274,13 +2274,13 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
     - 利用 TV 距离的三角不等式：
 
       $$
-      D_{\text {TV}}(\mu (\cdot|s), \pi_\theta (\cdot|s)) \leq D_{\text {TV}}(\mu (\cdot|s), \pi_{\theta_{\text {old}}}(\cdot|s)) + D_{\text {TV}}(\pi_{\theta_{\text {old}}}(\cdot|s), \pi_\theta (\cdot|s))
+      D_{\text{TV}}(\mu (\cdot|s), \pi_\theta (\cdot|s)) \leq D_{\text{TV}}(\mu (\cdot|s), \pi_{\theta_{\text{old}}}(\cdot|s)) + D_{\text{TV}}(\pi_{\theta_{\text{old}}}(\cdot|s), \pi_\theta (\cdot|s))
       $$
 
     - 对所有状态取上界，得到：
 
       $$
-      \beta = \max_s D_{\text {TV}}(\mu (\cdot|s), \pi_\theta (\cdot|s)) \leq \alpha_0 + \alpha_1
+      \beta = \max_s D_{\text{TV}}(\mu (\cdot|s), \pi_\theta (\cdot|s)) \leq \alpha_0 + \alpha_1
       $$
 
   - 三策略 TRPO 的最终定理
@@ -2299,35 +2299,35 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
 - 为什么训推不一致会导致训练不稳定？
   - 当 $\alpha_1$ 很大时，即使你把 $\alpha_0$ 压得很小，Gap 上界 $C (\alpha_0+\alpha_1)$ 依然会很大，代理目标 $L_\mu$ 和真实目标 $\mathcal {J}(\pi_\theta)$ 严重脱节，导致 “优化了代理目标，真实回报却下降”，即训练崩溃
 - 综上，现在主要有两个偏差的主要来源
-  - $\alpha_0$（参考 vs 目标）：目标策略 $\pi_\theta$ 与参考策略 $\pi_{\theta_{\text {old}}}$ 的分布偏移，是 PPO/GRPO 的传统信任域问题，一般通过 clip / KL penalty / GSPO 的序列级约束来控制
-  - $\alpha_1$（行为 vs 参考）：行为策略 $\mu$ 与参考策略 $\pi_{\theta_{\text {old}}}$ 的分布偏移，是训推不一致 / 异步采样 / 系统差异带来的工程问题，也是真实场景中训练崩溃的更主要诱因
+  - $\alpha_0$（参考 vs 目标）：目标策略 $\pi_\theta$ 与参考策略 $\pi_{\theta_{\text{old}}}$ 的分布偏移，是 PPO/GRPO 的传统信任域问题，一般通过 clip / KL penalty / GSPO 的序列级约束来控制
+  - $\alpha_1$（行为 vs 参考）：行为策略 $\mu$ 与参考策略 $\pi_{\theta_{\text{old}}}$ 的分布偏移，是训推不一致 / 异步采样 / 系统差异带来的工程问题，也是真实场景中训练崩溃的更主要诱因
 
 #### 控制训推不一致的方法
 
 - $\alpha_1$（行为 vs 参考）的控制方法
   - 系统层面：直接压低 $\alpha_1$
-    - 从算法外部让行为策略 $\mu$ 与参考策略 $\pi_{\theta_{\text {old}}}$ 尽量接近，直接降低原始的行为 - 参考分布偏移
+    - 从算法外部让行为策略 $\mu$ 与参考策略 $\pi_{\theta_{\text{old}}}$ 尽量接近，直接降低原始的行为 - 参考分布偏移
     - 异步框架版本控制：给每个 rollout 样本打上策略版本号，只使用与当前参考策略版本相差不大的数据，避免使用过旧版本生成的数据
     - 训推对齐：让训练框架（如 Megatron/FSDP）和推理框架（如 vLLM/SGLang）在精度、算子、内核实现上保持一致，减少因实现差异导致的策略分布偏移
   - 算法层面：样本修正，不直接压低 $\alpha_1$
-    - 这类方法不改变原始行为分布 $\mu_{\text {raw}}$，而是通过样本筛选 / 重加权，改变实际参与训练的有效分布 $\mu_{\text {eff}}$，让训练过程更少受极端偏移样本的影响
+    - 这类方法不改变原始行为分布 $\mu_{\text{raw}}$，而是通过样本筛选 / 重加权，改变实际参与训练的有效分布 $\mu_{\text{eff}}$，让训练过程更少受极端偏移样本的影响
 - TIS：Token-Level 截断重要性采样：对 token 级的参考 - 行为比率做单向截断，削弱极端大比率样本的权重
   - 权重定义：
 
     $$
-    w_t = \min\left (\rho_t^{(\text {ref}\leftarrow\text {beh})}, C_{\text {IS}}\right)
+    w_t = \min\left (\rho_t^{(\text{ref}\leftarrow\text{beh})}, C_{\text{IS}}\right)
     $$
 
   - 损失形式：
 
     $$
-    L_{\text {TIS}}(\theta) = -\mathbb {E}_{(s_t,a_t)\sim\mu}\left [w_t \cdot g_\theta (t) \right]
+    L_{\text{TIS}}(\theta) = -\mathbb {E}_{(s_t,a_t)\sim\mu}\left [w_t \cdot g_\theta (t) \right]
     $$
 
   - 完整损失
 
     $$
-    \mathbb {E}_{a \sim \pi_{\text {sampler}}(\theta_{\text {old}})} \Bigg [\underbrace {\min\left (\frac {\pi_{\text {learner}}(a, \theta_{\text {old}})}{\pi_{\text {sampler}}(a, \theta_{\text {old}})}, C\right)}_{\text {truncated importance ratio}}\cdot\nabla_\theta \min\left (\frac {\pi_{\text {learner}}(a, \theta)}{\pi_{\text {learner}}(a, \theta_{\text {old}})} \hat {A},\text {clip}\left (\frac {\pi_{\text {learner}}(a, \theta)}{\pi_{\text {learner}}(a, \theta_{\text {old}})},1-\epsilon, 1+\epsilon\right) \hat {A}\right)\Bigg]
+    \mathbb {E}_{a \sim \pi_{\text{sampler}}(\theta_{\text{old}})} \Bigg [\underbrace {\min\left (\frac {\pi_{\text{learner}}(a, \theta_{\text{old}})}{\pi_{\text{sampler}}(a, \theta_{\text{old}})}, C\right)}_{\text{truncated importance ratio}}\cdot\nabla_\theta \min\left (\frac {\pi_{\text{learner}}(a, \theta)}{\pi_{\text{learner}}(a, \theta_{\text{old}})} \hat {A},\text{clip}\left (\frac {\pi_{\text{learner}}(a, \theta)}{\pi_{\text{learner}}(a, \theta_{\text{old}})},1-\epsilon, 1+\epsilon\right) \hat {A}\right)\Bigg]
     $$
 
   - 特点：
@@ -2337,24 +2337,24 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - PPO-IS 变体
 
     $$
-    \mathbb {E}_{a \sim \pi_{\text {sampler}}(\theta_{\text {old}})} \left [\nabla_\theta \min\left (\frac {\pi_{\text {learner}}(a, \theta)}{\pi_{\text {sampler}}(a, \theta_{\text {old}})} \hat {A},\text {clip}\left (\frac {\pi_{\text {learner}}(a, \theta)}{\pi_{\text {sampler}}(a, \theta_{\text {old}})},1-\epsilon, 1+\epsilon\right) \hat {A}\right)\right]
+    \mathbb {E}_{a \sim \pi_{\text{sampler}}(\theta_{\text{old}})} \left [\nabla_\theta \min\left (\frac {\pi_{\text{learner}}(a, \theta)}{\pi_{\text{sampler}}(a, \theta_{\text{old}})} \hat {A},\text{clip}\left (\frac {\pi_{\text{learner}}(a, \theta)}{\pi_{\text{sampler}}(a, \theta_{\text{old}})},1-\epsilon, 1+\epsilon\right) \hat {A}\right)\right]
     $$
 
   - Vanilla IS 变体
 
     $$
-    \mathbb {E}_{\pi_{\text {sampler}}(\theta_{\text {old}})} \Bigg [\underbrace {\frac {\pi_{\text {learner}}(a, \theta_{\text {old}})}{\pi_{\text {sampler}}(a, \theta_{\text {old}})}}_{\text {importance ratio}}\cdot\nabla_\theta \min\left (\frac {\pi_{\text {learner}}(a, \theta)}{\pi_{\text {learner}}(a, \theta_{\text {old}})} \hat {A},\text {clip}\left (\frac {\pi_{\text {learner}}(a, \theta)}{\pi_{\text {learner}}(a, \theta_{\text {old}})},1-\epsilon, 1+\epsilon\right) \hat {A}\right)\Bigg]
+    \mathbb {E}_{\pi_{\text{sampler}}(\theta_{\text{old}})} \Bigg [\underbrace {\frac {\pi_{\text{learner}}(a, \theta_{\text{old}})}{\pi_{\text{sampler}}(a, \theta_{\text{old}})}}_{\text{importance ratio}}\cdot\nabla_\theta \min\left (\frac {\pi_{\text{learner}}(a, \theta)}{\pi_{\text{learner}}(a, \theta_{\text{old}})} \hat {A},\text{clip}\left (\frac {\pi_{\text{learner}}(a, \theta)}{\pi_{\text{learner}}(a, \theta_{\text{old}})},1-\epsilon, 1+\epsilon\right) \hat {A}\right)\Bigg]
     $$
 
   - 在 Vanilla-IS 中，当 IS 比率过大时，它会被直接乘进梯度中，导致方差被平方级放大；高方差的梯度会让训练极不稳定，步长震荡、loss 波动剧烈，甚至难以收敛
   - 在 PPO-IS 中，破坏了 PPO 的设计前提，引入了系统偏差
-    - 标准 PPO 中，clip 机制的前提是：新旧策略都是 learner 策略，当 $\theta=\theta_{\text {old}}$ 时，clip 的输入比率为 1，保证了 clip 的正确性，梯度可以真实反映策略更新方向
-    - 而在 PPO-IS 中，clip 机制的前提被破坏了：当 $\theta=\theta_{\text {old}}$ 时，clip 的输入比率不再是 1，而是 $\frac {\pi_{\text {learner}}(a, \theta_{\text {old}})}{\pi_{\text {sampler}}(a, \theta_{\text {old}})}$，这个值可能远离 1，导致 clip 的行为异常，梯度不再正确反映策略更新方向，从而引入了系统偏差
+    - 标准 PPO 中，clip 机制的前提是：新旧策略都是 learner 策略，当 $\theta=\theta_{\text{old}}$ 时，clip 的输入比率为 1，保证了 clip 的正确性，梯度可以真实反映策略更新方向
+    - 而在 PPO-IS 中，clip 机制的前提被破坏了：当 $\theta=\theta_{\text{old}}$ 时，clip 的输入比率不再是 1，而是 $\frac {\pi_{\text{learner}}(a, \theta_{\text{old}})}{\pi_{\text{sampler}}(a, \theta_{\text{old}})}$，这个值可能远离 1，导致 clip 的行为异常，梯度不再正确反映策略更新方向，从而引入了系统偏差
     - 这会导致，系统噪声让 clip 提前触发，梯度还没来得及反映 “真实策略更新方向”，就被错误地 clip 掉了，最终 policy 更新被抑制，优化效率低下，效果变差
   - TIS 的因式分解把 off-policy 修正和 trust region 分开
 
     $$
-    \underbrace {\frac {\pi_{\text {learner}}(a|\theta)}{\pi_{\text {sampler}}(a|\theta_{\text {old}})}}_{\text {整体比率}}=\underbrace {\frac {\pi_{\text {learner}}(a|\theta_{\text {old}})}{\pi_{\text {sampler}}(a|\theta_{\text {old}})}}_{\text {off-policy correction（系统偏差项）}}\times\underbrace {\frac {\pi_{\text {learner}}(a|\theta)}{\pi_{\text {learner}}(a|\theta_{\text {old}})}}_{\text {trust region（策略更新项）}}
+    \underbrace {\frac {\pi_{\text{learner}}(a|\theta)}{\pi_{\text{sampler}}(a|\theta_{\text{old}})}}_{\text{整体比率}}=\underbrace {\frac {\pi_{\text{learner}}(a|\theta_{\text{old}})}{\pi_{\text{sampler}}(a|\theta_{\text{old}})}}_{\text{off-policy correction（系统偏差项）}}\times\underbrace {\frac {\pi_{\text{learner}}(a|\theta)}{\pi_{\text{learner}}(a|\theta_{\text{old}})}}_{\text{trust region（策略更新项）}}
     $$
     - off-policy correction（系统偏差项）：修正 learner 和 sampler 之间的系统分布偏差，同时对它进行截断，控制训推不一致引入的高方差样本对训练的负面影响
     - trust region（策略更新项）：保持 PPO 的 clip 机制的正确性，确保在新旧 learner 策略之间正确地约束更新幅度，维持 PPO 的优化稳定性
@@ -2363,25 +2363,25 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - 掩码定义：
 
     $$
-    m_t = \mathbb {1}\left [C_{\text {low}} \le \rho_t^{(\text {ref}\leftarrow\text {beh})} \le C_{\text {high}} \right]
+    m_t = \mathbb {1}\left [C_{\text{low}} \le \rho_t^{(\text{ref}\leftarrow\text{beh})} \le C_{\text{high}} \right]
     $$
 
   - 损失形式：
 
     $$
-    L_{\text {IcePop}}(\theta) = -\mathbb {E}_{(s_t,a_t)\sim\mu}\left [m_t \cdot g_\theta (t) \right]
+    L_{\text{IcePop}}(\theta) = -\mathbb {E}_{(s_t,a_t)\sim\mu}\left [m_t \cdot g_\theta (t) \right]
     $$
 
   - 完整损失：
 
     $$
-    \mathcal {J}_{\text {IcePop}}(\theta) = \mathbb {E}_{x \sim \mathcal {D}, \{y_i\}_{i=1}^G \sim \pi_{\text {infer}}(\cdot | x; \theta_{\text {old}})} \left [\frac {1}{G} \sum_{i=1}^G \frac {1}{|y_i|} \sum_{t=1}^{|y_i|} \left [\mathcal {M}\left (\frac {\pi_{\text {train}}(y_{i,t} \mid x, y_{i,<t}; \theta_{\text {old}})}{\pi_{\text {infer}}(y_{i,t} \mid x, y_{i,<t}; \theta_{\text {old}})}; \alpha, \beta \right) \right. \right. \\\left. \left. \cdot \min\left (r_{i,t} \hat {A}_{i,t}, \text {clip}\left (r_{i,t}, 1-\epsilon, 1+\epsilon \right) \hat {A}_{i,t} \right) \right] \right]
+    \mathcal {J}_{\text{IcePop}}(\theta) = \mathbb {E}_{x \sim \mathcal {D}, \{y_i\}_{i=1}^G \sim \pi_{\text{infer}}(\cdot | x; \theta_{\text{old}})} \left [\frac {1}{G} \sum_{i=1}^G \frac {1}{|y_i|} \sum_{t=1}^{|y_i|} \left [\mathcal {M}\left (\frac {\pi_{\text{train}}(y_{i,t} \mid x, y_{i,<t}; \theta_{\text{old}})}{\pi_{\text{infer}}(y_{i,t} \mid x, y_{i,<t}; \theta_{\text{old}})}; \alpha, \beta \right) \right. \right. \\\left. \left. \cdot \min\left (r_{i,t} \hat {A}_{i,t}, \text{clip}\left (r_{i,t}, 1-\epsilon, 1+\epsilon \right) \hat {A}_{i,t} \right) \right] \right]
     $$
 
-  - 其中，$r_{i,t} = \frac {\pi_{\text {train}}(y_{i,t} \mid x, y_{i,<t}; \theta)}{\pi_{\text {train}}(y_{i,t} \mid x, y_{i,<t}; \theta_{\text {old}})}$，并且 mask 函数如下
+  - 其中，$r_{i,t} = \frac {\pi_{\text{train}}(y_{i,t} \mid x, y_{i,<t}; \theta)}{\pi_{\text{train}}(y_{i,t} \mid x, y_{i,<t}; \theta_{\text{old}})}$，并且 mask 函数如下
 
     $$
-    \mathcal {M}(k) =\begin {cases} k & \text {if} k \in [\alpha, \beta] \\0 & \text {otherwise}\end {cases}
+    \mathcal {M}(k) =\begin {cases} k & \text{if} k \in [\alpha, \beta] \\0 & \text{otherwise}\end {cases}
     $$
 
   - 特点：
@@ -2389,7 +2389,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
     - 只在比率适中的区域优化，从样本层面更强地压缩有效不一致；
     - 特别针对 MoE 模型中路由不一致导致的极端偏移
   - IcePop 和 TIS 的对比
-    - 当 IS \<α 时，$\pi_{\text {train}}$ 倾向于给 action 较小的 value，$\pi_{\text {infer}}$ 输出较高的概率。如果比率足够小，意味着训推引擎存在巨大差异，TIS 引入一个小的系数来缓解梯度更新中的噪声；但 IcePop 发现，随着训练进行，这种微小扰动会逐渐放大，最终导致平台期
+    - 当 IS \<α 时，$\pi_{\text{train}}$ 倾向于给 action 较小的 value，$\pi_{\text{infer}}$ 输出较高的概率。如果比率足够小，意味着训推引擎存在巨大差异，TIS 引入一个小的系数来缓解梯度更新中的噪声；但 IcePop 发现，随着训练进行，这种微小扰动会逐渐放大，最终导致平台期
     - 当 IS > β 时，TIS 会乘以一个适中的系数持续更新 policy；而 IcePop 梯度为零，这意味着放弃所有噪声更新，只保留那些健康的策略梯度
 
 - MIS：Sequence-Level 掩码重要性采样，直接在序列级过滤，只保留序列级比率不超过阈值的轨迹，同时保留序列级 IS 修正
@@ -2402,7 +2402,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - 损失形式：
 
     $$
-    L_{\text {MIS}}(\theta) = -\mathbb {E}_{(x,y)\sim\mu}\left [\rho (y|x)\cdot\mathbb {1}\left\{\rho (y|x)\le C \right\} \cdot \sum_{t=1}^{|y|} g_\theta (t) \right]
+    L_{\text{MIS}}(\theta) = -\mathbb {E}_{(x,y)\sim\mu}\left [\rho (y|x)\cdot\mathbb {1}\left\{\rho (y|x)\le C \right\} \cdot \sum_{t=1}^{|y|} g_\theta (t) \right]
     $$
 
   - 特点：
@@ -2414,13 +2414,13 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - 掩码定义：
 
     $$
-    m (y|x) = \mathbb {1}\left\{\min_{t=1}^{|y|} \rho_t^{(\text {ref}\leftarrow\text {beh})} \ge \tau \right\}
+    m (y|x) = \mathbb {1}\left\{\min_{t=1}^{|y|} \rho_t^{(\text{ref}\leftarrow\text{beh})} \ge \tau \right\}
     $$
 
   - 损失形式：
 
     $$
-    L_{\text {WTRS}}(\theta) = -\mathbb {E}_{(x,y)\sim\mu}\left [m (y|x) \cdot \sum_{t=1}^{|y|} g_\theta (t) \right]
+    L_{\text{WTRS}}(\theta) = -\mathbb {E}_{(x,y)\sim\mu}\left [m (y|x) \cdot \sum_{t=1}^{|y|} g_\theta (t) \right]
     $$
 
   - 特点：
@@ -2465,16 +2465,16 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - R3 的做法是：rollout 时记录推理端实际命中的专家集合 $M_\mu (s)$，训练时强制当前策略只在该集合内路由，可以把它写成对路由分布的 “条件化投影”：
 
     $$
-    \omega_\theta^{\text {R3}}(z \mid s) := \frac {\omega_\theta (z \mid s) \, \mathbf {1}\{z \in M_\mu (s)\}}{\sum_{z' \in M_\mu (s)} \omega_\theta (z' \mid s)}
+    \omega_\theta^{\text{R3}}(z \mid s) := \frac {\omega_\theta (z \mid s) \, \mathbf {1}\{z \in M_\mu (s)\}}{\sum_{z' \in M_\mu (s)} \omega_\theta (z' \mid s)}
     $$
 
   - 从而训练时实际优化的 surrogate objective 变为
 
     $$
-    L_\mu^{\text {R3}}(\pi_\theta) = \mathcal {J}(\mu) + \frac {1}{1-\gamma} \mathbb {E}_{s \sim d_\mu}\left [\sum_{z \in M_\mu (s)} \omega_\theta^{\text {R3}}(z \mid s) \, F_\theta (s, z) \right]
+    L_\mu^{\text{R3}}(\pi_\theta) = \mathcal {J}(\mu) + \frac {1}{1-\gamma} \mathbb {E}_{s \sim d_\mu}\left [\sum_{z \in M_\mu (s)} \omega_\theta^{\text{R3}}(z \mid s) \, F_\theta (s, z) \right]
     $$
 
-  - 和原始 $L_\mu (\pi_\theta)$ 对比可以看到，R3 并没有让 $\omega_\theta$ 逼近 $\omega_{\text {old}}$ 或 $\omega_\mu$；它做的是：
+  - 和原始 $L_\mu (\pi_\theta)$ 对比可以看到，R3 并没有让 $\omega_\theta$ 逼近 $\omega_{\text{old}}$ 或 $\omega_\mu$；它做的是：
     - 把对 $z \sim \omega_\theta$ 的期望改成了对 $z \sim \omega_\theta (\cdot \mid z \in M_\mu (s))$ 的条件期望；
     - 等价地说，把路由的可行 support 缩到了 $M_\mu (s)$
   - 因此 R3 训练的是一个 “被行为路由集合条件化后的 surrogate objective”，而不是原来的 $L_\mu (\pi_\theta)$
@@ -2484,18 +2484,18 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - 另一类 routing replay 复用参考策略（old policy）的路由器 ωold，这等价于训练一个混合策略
 
     $$
-    \hat {\pi}_\theta (a, z \mid s) := \omega_{\text {old}}(z \mid s) \, \pi_\theta (a \mid s, z)
+    \hat {\pi}_\theta (a, z \mid s) := \omega_{\text{old}}(z \mid s) \, \pi_\theta (a \mid s, z)
     $$
 
   - 对应 surrogate objective 为
 
     $$
-    L_\mu^{\text {ref-replay}}(\pi_\theta) = \mathcal {J}(\mu) + \frac {1}{1-\gamma} \mathbb {E}_{s \sim d_\mu}\left [\sum_z \omega_{\text {old}}(z \mid s) \, F_\theta (s, z) \right]
+    L_\mu^{\text{ref-replay}}(\pi_\theta) = \mathcal {J}(\mu) + \frac {1}{1-\gamma} \mathbb {E}_{s \sim d_\mu}\left [\sum_z \omega_{\text{old}}(z \mid s) \, F_\theta (s, z) \right]
     $$
 
   - 这意味着：
     - 在 surrogate objective 中，路由器被固定为旧路由器，路由相关的 “参考 vs 目标” 差异在 loss 里被直接抹掉；
-    - 训练对 “新路由器 $\omega_\theta$ 是否偏离 $\omega_{\text {old}}$” 不再敏感，由此绕开了路由不一致带来的不稳定
+    - 训练对 “新路由器 $\omega_\theta$ 是否偏离 $\omega_{\text{old}}$” 不再敏感，由此绕开了路由不一致带来的不稳定
   - 但注意这同样是换目标：
     - 真实策略空间里的 $\alpha_0$ 并没有因此变小，只是被 “用旧路由器重定义目标” 而在 loss 中不可见；
     - 路由器的学习被强行冻结或大幅削弱
@@ -2511,18 +2511,18 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
 
 - 全异步架构引入了两个算法层面的挑战
   - 数据过时（Data Staleness）：训练 batch 中的样本可能来自好几个版本之前的模型，与当前策略存在分布偏移
-  - 策略版本不一致（Inconsistent Policy Versions）：由于可中断生成，同一条轨迹的不同 token 可能由不同版本的模型产出，违反了标准 PPO "所有 action 来自同一策略 $\pi_{\text {old}}$" 的假设
+  - 策略版本不一致（Inconsistent Policy Versions）：由于可中断生成，同一条轨迹的不同 token 可能由不同版本的模型产出，违反了标准 PPO "所有 action 来自同一策略 $\pi_{\text{old}}$" 的假设
 - 标准 PPO 目标函数
   - 目标函数
 
     $$
-    J_{\text {PPO}}(\theta) = \mathbb {E}_{q \sim \mathcal {D},\ a_t \sim \pi_{\text {old}}} \left [\sum_{t=1}^{H} \min \left (u_t (\theta) \hat {A}_t,\ \text {clip}\left (u_t (\theta),\ 1-\epsilon,\ 1+\epsilon\right) \hat {A}_t \right) \right]
+    J_{\text{PPO}}(\theta) = \mathbb {E}_{q \sim \mathcal {D},\ a_t \sim \pi_{\text{old}}} \left [\sum_{t=1}^{H} \min \left (u_t (\theta) \hat {A}_t,\ \text{clip}\left (u_t (\theta),\ 1-\epsilon,\ 1+\epsilon\right) \hat {A}_t \right) \right]
     $$
 
   - 其中：
 
     $$
-    u_t (\theta) = \frac {\pi_\theta (a_t \mid s_t)}{\pi_{\text {old}}(a_t \mid s_t)}
+    u_t (\theta) = \frac {\pi_\theta (a_t \mid s_t)}{\pi_{\text{old}}(a_t \mid s_t)}
     $$
 
   - 各参数含义：
@@ -2530,54 +2530,54 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
     | 符号               | 含义                                                                              |
     | :----------------- | :-------------------------------------------------------------------------------- |
     | $\pi_\theta$       | 当前正在训练的策略（即我们要优化的模型参数）                                      |
-    | $\pi_{\text {old}}$ | 采样轨迹时使用的策略（同时充当行为策略和近端约束基准）                            |
+    | $\pi_{\text{old}}$ | 采样轨迹时使用的策略（同时充当行为策略和近端约束基准）                            |
     | $u_t (\theta)$      | 重要性比率（importance ratio）：衡量当前策略与采样策略在 token $a_t$ 上的概率之比 |
     | $\hat {A}_t$        | 优势函数估计值（advantage estimate）：衡量动作 $a_t$ 相对于平均水平好多少         |
     | $\epsilon$         | 裁剪范围（clipping range），通常取 0.2，限制策略更新的幅度                        |
     | $H$                | 轨迹长度（horizon），即生成序列的 token 数                                        |
 
-  - 标准 PPO 的核心思想是：$\pi_{\text {old}}$ 一人分饰两角 —— 既是采样数据的行为策略，又是 clip 约束的信任域中心
-  - 在同步训练中这没有问题，因为采样完立即训练，$\pi_{\text {old}}$ 就是最新的模型，但在异步训练中，$\pi_{\text {old}}$ 可能已经过时了好几个版本，导致：
+  - 标准 PPO 的核心思想是：$\pi_{\text{old}}$ 一人分饰两角 —— 既是采样数据的行为策略，又是 clip 约束的信任域中心
+  - 在同步训练中这没有问题，因为采样完立即训练，$\pi_{\text{old}}$ 就是最新的模型，但在异步训练中，$\pi_{\text{old}}$ 可能已经过时了好几个版本，导致：
     - 重要性比率 $u_t (\theta)$ 偏差过大，梯度估计方差增大
     - clip 约束的信任域中心是旧策略，无法有效防止模型跑偏
 
 - Decoupled PPO 目标函数
-  - Decoupled PPO 的核心改进就是把 $\pi_{\text {old}}$ 的两个角色拆开，引入两个独立的策略：
+  - Decoupled PPO 的核心改进就是把 $\pi_{\text{old}}$ 的两个角色拆开，引入两个独立的策略：
 
     $$
-    J (\theta) = \mathbb {E}_{q \sim \mathcal {D},\ a_t \sim \pi_{\text {behav}}} \left [\sum_{t=1}^{H} \min \left (\frac {\pi_\theta}{\pi_{\text {behav}}} \hat {A}_t,\ \frac {\pi_{\text {prox}}}{\pi_{\text {behav}}} \text {clip}\left (\frac {\pi_\theta}{\pi_{\text {prox}}},\ 1-\epsilon,\ 1+\epsilon \right) \hat {A}_t \right) \right]
+    J (\theta) = \mathbb {E}_{q \sim \mathcal {D},\ a_t \sim \pi_{\text{behav}}} \left [\sum_{t=1}^{H} \min \left (\frac {\pi_\theta}{\pi_{\text{behav}}} \hat {A}_t,\ \frac {\pi_{\text{prox}}}{\pi_{\text{behav}}} \text{clip}\left (\frac {\pi_\theta}{\pi_{\text{prox}}},\ 1-\epsilon,\ 1+\epsilon \right) \hat {A}_t \right) \right]
     $$
 
   - 等价简化形式：
 
     $$
-    J (\theta) = \mathbb {E}_{q \sim \mathcal {D},\ a_t \sim \pi_{\text {behav}}} \left [\sum_{t=1}^{H} \frac {\pi_{\text {prox}}}{\pi_{\text {behav}}} \min \left (u_t^{\text {prox}}(\theta) \hat {A}_t,\ \text {clip}\left (u_t^{\text {prox}}(\theta),\ 1-\epsilon,\ 1+\epsilon\right) \hat {A}_t \right) \right]
+    J (\theta) = \mathbb {E}_{q \sim \mathcal {D},\ a_t \sim \pi_{\text{behav}}} \left [\sum_{t=1}^{H} \frac {\pi_{\text{prox}}}{\pi_{\text{behav}}} \min \left (u_t^{\text{prox}}(\theta) \hat {A}_t,\ \text{clip}\left (u_t^{\text{prox}}(\theta),\ 1-\epsilon,\ 1+\epsilon\right) \hat {A}_t \right) \right]
     $$
 
   - 其中：
 
     $$
-    u_t^{\text {prox}}(\theta) = \frac {\pi_\theta (a_t \mid s_t)}{\pi_{\text {prox}}(a_t \mid s_t)}
+    u_t^{\text{prox}}(\theta) = \frac {\pi_\theta (a_t \mid s_t)}{\pi_{\text{prox}}(a_t \mid s_t)}
     $$
 
   - 各参数含义：
 
     | 符号                                           | 含义                                                                              | 来源                |
     | :--------------------------------------------- | :-------------------------------------------------------------------------------- | :------------------ |
-    | $\pi_{\text {behav}}$                           | 行为策略：实际生成轨迹时的策略（可能很旧，版本滞后多步）                          | 生成时记录          |
-    | $\pi_{\text {prox}}$                            | 近端策略：用于约束更新幅度的信任域中心（始终取训练前的最新模型参数）              | 每次 PPO 更新前刷新 |
+    | $\pi_{\text{behav}}$                           | 行为策略：实际生成轨迹时的策略（可能很旧，版本滞后多步）                          | 生成时记录          |
+    | $\pi_{\text{prox}}$                            | 近端策略：用于约束更新幅度的信任域中心（始终取训练前的最新模型参数）              | 每次 PPO 更新前刷新 |
     | $\pi_\theta$                                   | 当前正在优化的策略                                                                | 训练中的模型        |
-    | $\frac {\pi_{\text {prox}}}{\pi_{\text {behav}}}$ | 重要性采样修正系数：将旧策略采样的数据修正到以 $\pi_{\text {prox}}$ 为基准的分布上 | 自动计算            |
-    | $u_t^{\text {prox}}(\theta)$                    | 相对于近端策略的重要性比率，clip 约束作用于此比率上                               | 自动计算            |
+    | $\frac {\pi_{\text{prox}}}{\pi_{\text{behav}}}$ | 重要性采样修正系数：将旧策略采样的数据修正到以 $\pi_{\text{prox}}$ 为基准的分布上 | 自动计算            |
+    | $u_t^{\text{prox}}(\theta)$                    | 相对于近端策略的重要性比率，clip 约束作用于此比率上                               | 自动计算            |
 
 - Decoupled PPO 还有一个关键的理论保证 —— 它能兼容可中断生成产生的多版本混合轨迹
   - 由于可中断生成机制，同一条轨迹的不同片段可能由不同版本的模型生成（如 token 1-150 由 $\pi_{\theta_0}$ 生成，token 151-420 由 $\pi_{\theta_1}$ 生成）。这看起来违反了 PPO “所有 action 来自同一策略” 的假设
   - 但 Proposition 1 证明了这并不是问题：
     - 对于任意序列 $(q, a_1, \dots, a_H)$，由策略序列 $(\pi_\theta, \dots, \pi_{\theta+k})$ 生成，其中 $\pi_{\theta+i}$ 生成 token $(a_{t_i}, \dots, a_{t_{i+1}})$，满足 $1 = t_0 <\dots < t_{k+1} = H$
-    - 必然存在一个行为策略 $\pi_{\text {behav}}$，使得这种被中断的生成方式等价于完全从 $\pi_{\text {behav}}$ 采样
+    - 必然存在一个行为策略 $\pi_{\text{behav}}$，使得这种被中断的生成方式等价于完全从 $\pi_{\text{behav}}$ 采样
   - 证明的核心洞察是：在自回归语言模型中，不同时间步的状态空间天然不重叠
     - 设 $\mathcal {S}_{t}(q)$ 为给定问题 $q$ 时，在第 $t$ 步由策略序列经过的所有可能状态
-    - 由于状态 $s_t = \text {concat}(q, a_1, \dots, a_{t-1})$ 包含了所有历史 token，不同时间步的状态空间不会交叉，即对任意 $i \neq j$，
+    - 由于状态 $s_t = \text{concat}(q, a_1, \dots, a_{t-1})$ 包含了所有历史 token，不同时间步的状态空间不会交叉，即对任意 $i \neq j$，
 
       $$
       \mathcal {S}_{t_i}(q) \cap \mathcal {S}_{t_j}(q) = \emptyset
@@ -2586,18 +2586,18 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
     - 因此，可以构造一个分段定义的行为策略：
 
       $$
-      \pi_{\text {behav}}(\cdot \mid s) =
+      \pi_{\text{behav}}(\cdot \mid s) =
       \begin {cases}
-      \pi_{\theta+j}(\cdot \mid s) & \text {若} t_j \leq t \leq t_{j+1} \text {且} s \in \mathcal {S}_t (q) \\
-      \text {任意} & \text {其他}
+      \pi_{\theta+j}(\cdot \mid s) & \text{若} t_j \leq t \leq t_{j+1} \text{且} s \in \mathcal {S}_t (q) \\
+      \text{任意} & \text{其他}
       \end {cases}
       $$
 
-    - 也就是说：在第 $j$ 段被中断的区间内，$\pi_{\text {behav}}$ 就等于当时实际生成的策略 $\pi_{\theta+j}$
+    - 也就是说：在第 $j$ 段被中断的区间内，$\pi_{\text{behav}}$ 就等于当时实际生成的策略 $\pi_{\theta+j}$
     - 由于不同区间的状态不重叠，这个定义不会产生矛盾
 
   - 为什么这个性质很重要？
-    - 算法正确性保证：它证明了即使轨迹由多个策略版本拼接而成，Decoupled PPO 的重要性采样修正仍然数学上正确 —— 因为总存在一个等价的单一行为策略 $\pi_{\text {behav}}$
+    - 算法正确性保证：它证明了即使轨迹由多个策略版本拼接而成，Decoupled PPO 的重要性采样修正仍然数学上正确 —— 因为总存在一个等价的单一行为策略 $\pi_{\text{behav}}$
     - 系统设计自由度：有了这个保证，系统层面可以放心地在任意时刻中断生成、切换模型版本，而不需要担心破坏算法的理论基础
 
 ### Asymmetric PPO
@@ -2611,7 +2611,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
 - 回合级优势（Episode-level Advantage）
 
   $$
-  A^E (\tau_i) = \frac {R (\tau_i) - \text {mean}\left (\{R (\tau_j)\}_{j=1}^N\right)}{F_{\text {norm}}\left (\{R (\tau_j)\}_{j=1}^N\right)}
+  A^E (\tau_i) = \frac {R (\tau_i) - \text{mean}\left (\{R (\tau_j)\}_{j=1}^N\right)}{F_{\text{norm}}\left (\{R (\tau_j)\}_{j=1}^N\right)}
   $$
   - 与 GRPO 完全一致，在每个 rollout group 内比较完整轨迹的总回报，做组内归一化
   - 评估整条轨迹的整体优劣，保留全局优化信号
@@ -2627,7 +2627,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - 对步骤级分组做组内归一化，得到细粒度优势：
 
     $$
-    A^S ({a}_t^{(i)}) = \frac {R_t^{(i)} - \text {mean}\left (\left\{ R_t^{(j)} \mid ({a}_t^{(j)}, R_t^{(j)}) \in G^S (\tilde {s}) \right\}\right)}{F_{\text {norm}}\left (\left\{ R_t^{(j)} \mid ({a}_t^{(j)}, R_t^{(j)}) \in G^S (\tilde {s}) \right\}\right)}
+    A^S ({a}_t^{(i)}) = \frac {R_t^{(i)} - \text{mean}\left (\left\{ R_t^{(j)} \mid ({a}_t^{(j)}, R_t^{(j)}) \in G^S (\tilde {s}) \right\}\right)}{F_{\text{norm}}\left (\left\{ R_t^{(j)} \mid ({a}_t^{(j)}, R_t^{(j)}) \in G^S (\tilde {s}) \right\}\right)}
     $$
 
   - 评估同一状态下不同动作的局部优劣，捕捉 GRPO 无法感知的细微差异
@@ -2814,7 +2814,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
 - GRPO 的 Rollout 采样温度设置？
   - Polaris 的经验
 
-  <img src="C:\Users\ruida\OneDrive\Workspace\Obsidian\ 技能 \6. 大语言模型 \img\temperature.png" alt="temperature" style="zoom:67%;" />
+  ![temperature](/img/llm/temperature.png)
   - 训练初期，从 CEZ 区域初始化，并随着训练阶段的进行，逐步提升温度，以保证一定的探索
 
 - 数据飞轮和 agentic rl 怎么结合起来，怎么处理这种 off-policy 的数据？
@@ -2826,7 +2826,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - kl 散度：`kl(current, old)` 或 `kl(ref, current)`
   - gradient：gradient、clipped gradient、梯度范数、NAN/INF 次数
   - 学习率：lr 衰减曲线
-  - clip：clip threshold 触发次数；$\text {Ratio} = \frac {\pi_\theta}{\pi_{\text {old}}}$ 健康指标应在 0.5–2.0 之间，偏离太大 = 训练崩溃；clip fraction（被 clip 条件触发的样本比例）
+  - clip：clip threshold 触发次数；$\text{Ratio} = \frac {\pi_\theta}{\pi_{\text{old}}}$ 健康指标应在 0.5–2.0 之间，偏离太大 = 训练崩溃；clip fraction（被 clip 条件触发的样本比例）
   - GRPO：每组正确的占比、错误的占比
   - 业务相关：任务完成率、答案正确率、工具调用成功率、任务执行步数（Episode Length）
   - response 相关：response 长度，正误比例，组内 response 差距，
@@ -2937,7 +2937,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
 
 ### On-Policy Distillation
 
-- 知识蒸馏的目标是让学生策略 $\pi_\theta$ 学习教师策略 $\pi_{\text {teacher}}$ 的行为分布
+- 知识蒸馏的目标是让学生策略 $\pi_\theta$ 学习教师策略 $\pi_{\text{teacher}}$ 的行为分布
 - 蒸馏目标中采用的 KL 散度形式与采样分布，会显著影响学生的最终表现和 exposure bias
 - 监督微调（Forward KL）
   - 在教师模型生成的数据上最大化对数似然，即 SFT，这等价于最小化二者之间的 Forward KL
@@ -2959,7 +2959,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - 最小化 Reverse KL 可视为一种 REINFORCE：奖励是教师与学生概率的对数比，在采用 GRPO 框架时优化目标可以写成
 
     $$
-    J_{RKL}(\theta) = \mathbb {E}_{q, o_i \sim \pi_{\theta_{\text {old}}}} \left [\frac {1}{G} \sum_{i=1}^{G} \frac {1}{|o_i|} \sum_{t=1}^{|o_i|} \frac {\pi_\theta (o_{i,t})}{\pi_{\theta_{\text {old}}}(o_{i,t})} R_{i,t} \right]
+    J_{RKL}(\theta) = \mathbb {E}_{q, o_i \sim \pi_{\theta_{\text{old}}}} \left [\frac {1}{G} \sum_{i=1}^{G} \frac {1}{|o_i|} \sum_{t=1}^{|o_i|} \frac {\pi_\theta (o_{i,t})}{\pi_{\theta_{\text{old}}}(o_{i,t})} R_{i,t} \right]
     $$
 
   - 其中，奖励为 $R_{i,t} = \log \pi_T (o_{i,t}) - \log \pi_\theta (o_{i,t})$；这会提升教师偏好 token 的概率，并抑制教师认为不合理的 token

@@ -15,12 +15,12 @@ description: 介绍语言模型的定义、基本原理及概率分布，包括�
 
 - 这个概率直观地告诉我们一个标记序列有多 “好（good）”
 
-- 例如，如果词汇表为 {ate, ball, cheese, mouse, the}，语言模型可能会分配以下概率：
+- 例如，如果词汇表为 \{ate, ball, cheese, mouse, the\}，语言模型可能会分配以下概率：
 
   $$
-  p (\text {the, mouse, ate, the, cheese}) = 0.02,\\
-  p (\text {the, cheese ate, the, mouse}) = 0.01,\\
-  p (\text {mouse, the, the, cheese, ate}) = 0.0001
+  p (\text{the, mouse, ate, the, cheese}) = 0.02,\\
+  p (\text{the, cheese ate, the, mouse}) = 0.01,\\
+  p (\text{mouse, the, the, cheese, ate}) = 0.0001
   $$
 
 - 在这个例子中，语言模型应该隐含地赋予 "𝗆𝗈𝗎𝗌𝖾 𝗍𝗁𝖾 𝗍𝗁𝖾 𝖼𝗁𝖾𝖾𝗌𝖾 𝖺𝗍𝖾" 一个非常低的概率，因为它在语法上是不正确的
@@ -35,7 +35,7 @@ description: 介绍语言模型的定义、基本原理及概率分布，包括�
 
 - 所以 LM 的能力不是显式写出来的，而是通过数据学习出的隐式知识
 
-- 语言模型也可以用于生成任务，最纯粹的方法是从语言模型 $p$ 中以概率 $p (x_{1:L})$ 进行采样，表示为：
+- 语言模型也可以用于生成任务，最纯粹的方法是从语言模型 $p$ 中以概率 $p(x_{1:L})$ 进行采样，表示为：
 
   $$
   x_{1:L}∼p.
@@ -63,7 +63,7 @@ description: 介绍语言模型的定义、基本原理及概率分布，包括�
 
   $$
   \begin {align*}
-  x_i \sim p\left (x_i \mid x_{1: i-1}\right)^{\frac {1}{T}},\quad \text {for} i =1, \ldots, L
+  x_i \sim p\left (x_i \mid x_{1: i-1}\right)^{\frac {1}{T}},\quad \text{for} i =1, \ldots, L
   \end {align*}
   $$
   - 其中 $T≥0$ 是一个控制希望从语言模型中得到多少随机性的温度参数
@@ -87,14 +87,14 @@ description: 介绍语言模型的定义、基本原理及概率分布，包括�
 
   $$
   \begin {array}{cl}
-  p (\text { cheese})=0.4, & p (\text { mouse})=0.6 \\
-  p_{T=0.5}(\text { cheese})=0.31, & \left.p_{T=0.5} \text {(mouse}\right)=0.69 \\
-  \left.p_{T=0.2} \text {(cheese}\right)=0.12, & p_{T=0.2} \text {(mouse) }=0.88 \\
-  \left.p_{T=0} \text {(cheese}\right)=0, & \left.p_{T=0} \text {(mouse}\right)=1
+  p (\text{ cheese})=0.4, & p (\text{ mouse})=0.6 \\
+  p_{T=0.5}(\text{ cheese})=0.31, & \left.p_{T=0.5} \text{(mouse}\right)=0.69 \\
+  \left.p_{T=0.2} \text{(cheese}\right)=0.12, & p_{T=0.2} \text{(mouse) }=0.88 \\
+  \left.p_{T=0} \text{(cheese}\right)=0, & \left.p_{T=0} \text{(mouse}\right)=1
   \end {array}
   $$
 
-- 具体来说，这个温度参数会应用于每一步的条件概率分布 $p (x_{i}∣x_{1:i−1})$ ，将其幂变为 $\frac {1}{T}$
+- 具体来说，这个温度参数会应用于每一步的条件概率分布 $p(x_{i}∣x_{1:i−1})$ ，将其幂变为 $\frac{1}{T}$
 
 - 这意味着当 $T$ 值较高时，我们会获得更平均的概率分布，生成的结果更具随机性；反之，当 $T$ 值较低时，模型会更倾向于生成概率较高的令牌
 
@@ -109,7 +109,7 @@ description: 介绍语言模型的定义、基本原理及概率分布，包括�
   - 例如，当 $T=0$ 时产生：
 
     $$
-    \underbrace {{the}, {mouse}, {ate}}_\text {prompt} \stackrel {T=0}{\leadsto} \underbrace {{the}, {cheese}}_\text {completion}
+    \underbrace {{the}, {mouse}, {ate}}_\text{prompt} \stackrel {T=0}{\leadsto} \underbrace {{the}, {cheese}}_\text{completion}
     $$
 
   - 如果将温度改为 $T=1$ ，可以得到更多的多样性，例如，"its house" 和 "my homework"
@@ -166,7 +166,7 @@ description: 介绍语言模型的定义、基本原理及概率分布，包括�
 - 例如对于以下句子：
 
   $$
-  \text {the mouse ate my ho\_}
+  \text{the mouse ate my ho\_}
   $$
 
 - 任务：让人类猜下一字母是什么，但人类不会给概率分布 $q (x)$（人类不会说 “下一字符是 e 的概率是 0.65”）
@@ -182,7 +182,7 @@ description: 介绍语言模型的定义、基本原理及概率分布，包括�
 - 香农认为：“需要猜 3 次” 等价于 “这个字母的概率大概是 1/3”，因此可以数学近似：
 
   $$
-  q (x) \approx \frac {1}{\text {guess count}}
+  q (x) \approx \frac {1}{\text{guess count}}
   $$
 
 - 从而可以计算得到交叉熵：
@@ -208,7 +208,7 @@ description: 介绍语言模型的定义、基本原理及概率分布，包括�
   - 以语音识别为例：文本是 “隐藏的真实变量”，语音是带噪声的观察值，而我们希望从语音推断文本，贝叶斯公式如下：
 
     $$
-    p (\text {text} \mid \text {speech}) \propto \underbrace {p (\text {text})}_\text {language model} \underbrace {p (\text {speech} \mid \text {text})}_\text {acoustic model}
+    p (\text{text} \mid \text{speech}) \propto \underbrace {p (\text{text})}_\text{language model} \underbrace {p (\text{speech} \mid \text{text})}_\text{acoustic model}
     $$
 
   - 其含义是，声学模型产生候选文本 → 语言模型从中挑选最像英语的那个
@@ -223,7 +223,7 @@ description: 介绍语言模型的定义、基本原理及概率分布，包括�
   - 例如，一个 tri-gram（n=3）模型会定义：
 
     $$
-    p (\text {cheese}\vert\text {the},\text {mouse},\text {ate},\text {the})=p (\text {cheese}\vert\text {ate},\text {the})
+    p (\text{cheese}\vert\text{the},\text{mouse},\text{ate},\text{the})=p (\text{cheese}\vert\text{ate},\text{the})
     $$
 
   - 然而，它完全忽略了更开头的 “the mouse”（任何更长距离的语义关系）
@@ -238,7 +238,7 @@ description: 介绍语言模型的定义、基本原理及概率分布，包括�
   - 想象以下的前缀：
 
     $$
-    \text {Stanford has a new course on large language models. It will be taught by \_}
+    \text{Stanford has a new course on large language models. It will be taught by \_}
     $$
 
   - 如果 n 太小，那么模型将无法捕获长距离的依赖关系，下一个词将无法依赖于 𝖲𝗍𝖺𝗇𝖿𝗈𝗋𝖽
@@ -246,7 +246,7 @@ description: 介绍语言模型的定义、基本原理及概率分布，包括�
   - 如果 n 太大，那么数据过于稀疏（即使在 “大” 语料库中，几乎所有合理的长序列都出现 0 次）：
 
 $$
-\text {count (Stanford, has, a, new, course, on, large, language, models) = 0}
+\text{count (Stanford, has, a, new, course, on, large, language, models) = 0}
 $$
 
 - 因此，早期的语言模型只能解决局部依赖关系很强的任务
@@ -260,7 +260,7 @@ $$
 - [Bengio 等人](https://www.jmlr.org/papers/volume3/bengio03a/bengio03a.pdf "Bengio 等人") 在 2003 年首次提出了神经语言模型，核心公式：
 
   $$
-  p (x_i | x_{i-(n-1):i-1}) = \text {NN}(x_{i-(n-1)},\cdots, x_{i-1})
+  p (x_i | x_{i-(n-1):i-1}) = \text{NN}(x_{i-(n-1)},\cdots, x_{i-1})
   $$
 
 - 其与 n-gram 核心区别如下：

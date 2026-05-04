@@ -69,16 +69,16 @@ description: 介绍 Attention 机制的基本原理，包括 Scaled Dot-Product 
     Q \cdot K = \sum_{i=1}^{d_k} Q_i K_i
     $$
 
-  - 根据方差公式：$\text {Var}(Q\cdot K) = \sum_{i=1}^{d_k} \text {Var}(Q_i K_i)$
+  - 根据方差公式：$\text{Var}(Q\cdot K) = \sum_{i=1}^{d_k} \text{Var}(Q_i K_i)$
 
-  - 假设 $\text {Var}(Q_i K_i) = 1$，则 $\text {Var}(Q\cdot K) = d_k$
+  - 假设 $\text{Var}(Q_i K_i) = 1$，则 $\text{Var}(Q\cdot K) = d_k$
 
   - 即，随着 $d_k$ 增大，点积的方差也会增大
 
 - softmax 函数对大值敏感
 
   $$
-  s_i=\text {softmax}(x_i) = \frac {e^{x_i}}{\displaystyle\sum_j e^{x_j}}\\
+  s_i=\text{softmax}(x_i) = \frac {e^{x_i}}{\displaystyle\sum_j e^{x_j}}\\
   \frac {\partial s_i}{\partial x_i} = s_i (1-s_i)\\
   \frac {\partial s_i}{\partial x_j} = -s_i s_j \quad (i\neq j)
   $$
@@ -103,9 +103,9 @@ description: 介绍 Attention 机制的基本原理，包括 Scaled Dot-Product 
 - 公式示意
   - 假设 $d_k = 64$，Q / K 元素服从 $\mathcal {N}(0,1)$
 
-  - 不缩放：$\text {Var}(QK^T) = 64$ → Softmax 输出接近 one-hot
+  - 不缩放：$\text{Var}(QK^T) = 64$ → Softmax 输出接近 one-hot
 
-  - 缩放 $\frac {1}{\sqrt {64}} = \frac {1}{8}$ → $\text {Var} \approx 1$ → Softmax 平滑
+  - 缩放 $\frac {1}{\sqrt {64}} = \frac {1}{8}$ → $\text{Var} \approx 1$ → Softmax 平滑
 
 ### Mask（可选）
 
@@ -139,13 +139,13 @@ description: 介绍 Attention 机制的基本原理，包括 Scaled Dot-Product 
 - softmax 函数将查询 $q_i$ 与所有 $N$ 个键（$N$ 代表键 / 值对的序列长度）的注意力分数向量 $s_i = [s_{i1}, s_{i2}, ..., s_{iN}]$ 转换为注意力权重向量 $\alpha_i = [\alpha_{i1}, \alpha_{i2}, ..., \alpha_{iN}]$，其中每个权重 $\alpha_{ij}$ 的计算方式如下：
 
   $$
-  \alpha_{ij} = \text {softmax}(s_{ij}) = \frac {\exp (s_{ij})}{\sum_{l=1}^N \exp (s_{il})}
+  \alpha_{ij} = \text{softmax}(s_{ij}) = \frac {\exp (s_{ij})}{\sum_{l=1}^N \exp (s_{il})}
   $$
 
 - 总而言之，通过 Softmax 函数，将原始注意力分数转为权重分布
 
   $$
-  A = \text {softmax}(\tilde {S}')
+  A = \text{softmax}(\tilde {S}')
   $$
 
 - softmax 的作用
@@ -159,7 +159,7 @@ description: 介绍 Attention 机制的基本原理，包括 Scaled Dot-Product 
 - 最终公式为
 
   $$
-  \text {Attention}(Q, K, V) = A V = \text {Softmax}(\frac {QK^T}{\sqrt {d_k}}+M) V
+  \text{Attention}(Q, K, V) = A V = \text{Softmax}(\frac {QK^T}{\sqrt {d_k}}+M) V
   $$
 
 - 最终输出形状与 $V$ 相同
@@ -208,7 +208,7 @@ description: 介绍 Attention 机制的基本原理，包括 Scaled Dot-Product 
 
   $$
   \tilde {s}_t = \tanh (W_c [c_t; s_t])\\
-  y_t = \text {softmax}(W_o \tilde {s}_t)
+  y_t = \text{softmax}(W_o \tilde {s}_t)
   $$
 
 - 与 Dot-Product Attention 对比
@@ -251,10 +251,10 @@ description: 介绍 Attention 机制的基本原理，包括 Scaled Dot-Product 
   - 根据 Decoder 当前隐藏状态（Query）从 Encoder 隐藏状态（Key/Value）中提取相关信息 —— Query 来自 Decoder，而 Key/Value 来自 Encoder
   - 动态生成上下文向量，增强输出的条件依赖性
 
-- 假设，Encoder 隐藏状态（Key / Value）中 $K = V = H^E \in \mathbb {R}^{T \times d_\text {model}}$，Decoder 当前隐藏状态（Query）中 $Q = H^D \in \mathbb {R}^{S \times d_\text {model}}$，其中 $T$ 表示 Encoder 序列长度，$S$ 表示 Decoder 序列长度，那么 Cross-Attention 本质是**Query 与外部序列的注意力机制**，其输出为 $O \in \mathbb {R}^{S \times d_v}$
+- 假设，Encoder 隐藏状态（Key / Value）中 $K = V = H^E \in \mathbb {R}^{T \times d_\text{model}}$，Decoder 当前隐藏状态（Query）中 $Q = H^D \in \mathbb {R}^{S \times d_\text{model}}$，其中 $T$ 表示 Encoder 序列长度，$S$ 表示 Decoder 序列长度，那么 Cross-Attention 本质是**Query 与外部序列的注意力机制**，其输出为 $O \in \mathbb {R}^{S \times d_v}$
 
   $$
-  \text {Cross-Attention}(Q,H^E) = \mathrm {softmax}\left (\frac {Q (H^E)^\top}{\sqrt {d_k}}\right) H^E
+  \text{Cross-Attention}(Q,H^E) = \mathrm {softmax}\left (\frac {Q (H^E)^\top}{\sqrt {d_k}}\right) H^E
   $$
 
 - Cross-Attention 的直观理解
@@ -293,8 +293,8 @@ description: 介绍 Attention 机制的基本原理，包括 Scaled Dot-Product 
     Q_i = X W_i^Q,\quad K_i = X W_i^K,\quad V_i = X W_i^V
     $$
     - 其中 $H$ 为注意力头数，各投影矩阵大小为：
-      - $W_h^Q,W_h^K \in \mathbb {R}^{d_\text {model} \times d_k}$
-      - $W_h^V \in \mathbb {R}^{d_\text {model} \times d_v}$
+      - $W_h^Q,W_h^K \in \mathbb {R}^{d_\text{model} \times d_k}$
+      - $W_h^V \in \mathbb {R}^{d_\text{model} \times d_v}$
 
   - 每个头独立计算注意力：
 
@@ -313,7 +313,7 @@ description: 介绍 Attention 机制的基本原理，包括 Scaled Dot-Product 
     $$
     \mathrm {MHA}(X) = \mathrm {Concat}(\mathrm {head}_1,\dots,\mathrm {head}_H) W^O
     $$
-  - 其中 $W^O \in \mathbb {R}^{Hd_v \times d_\text {model}}$，从而 $\mathrm {MHA}(X)\in \mathbb {R}^{n \times d_\text {model}}$
+  - 其中 $W^O \in \mathbb {R}^{Hd_v \times d_\text{model}}$，从而 $\mathrm {MHA}(X)\in \mathbb {R}^{n \times d_\text{model}}$
 
   - 线性投影的作用有两个
     - 信息混合： 它使得从不同头（代表不同子空间）中学习到的信息得以组合和整合，线性层充当一个学习到的组合函数
@@ -330,16 +330,16 @@ description: 介绍 Attention 机制的基本原理，包括 Scaled Dot-Product 
 - 本质上，多头机制首先将模型的表示能力分解为多个子空间（$h$ 个头，每个维度为 $d_v$，允许每个头在其子空间内专门关注输入的不同方面，然后使用拼接，再进行线性投影（$W_O$），将这些专业化的表示合并回一个维度为 $d_{model}$ 的单一、更丰富的表示
 
 - 计算复杂度
-  - 对于输入序列长度 $n$、模型维度 $d_{\text {model}}$，其时间复杂度（总）：
+  - 对于输入序列长度 $n$、模型维度 $d_{\text{model}}$，其时间复杂度（总）：
 
     $$
     O (H \cdot n^2 \cdot d_k)
     $$
 
-  - 由于 $H d_k = d_\text {model}$（标准 Transformer 设置），所以整体复杂度保持不变：
+  - 由于 $H d_k = d_\text{model}$（标准 Transformer 设置），所以整体复杂度保持不变：
 
     $$
-    O (n^2 d_\text {model})
+    O (n^2 d_\text{model})
     $$
 
   - MHA 的多头并不会增加数量级，仅是常数倍的线性投影开销
@@ -356,7 +356,7 @@ description: 介绍 Attention 机制的基本原理，包括 Scaled Dot-Product 
   - 它在保持模型质量基本不降的前提下显著降低推理开销，因此 GPT-3.5、PaLM、Gemini、LLaMA-3 等均采用了 MQA 或 GQA
   - 与 MHA 相比，MQA 的关键改动：每个注意力头依然有独立的 Query 投影，**所有注意力头共享同一组 Key 和 Value**
 
-- 数学公式（对于输入 $X\in\mathbb {R}^{n \times d_\text {model}}$）
+- 数学公式（对于输入 $X\in\mathbb {R}^{n \times d_\text{model}}$）
   - Query（多头）：每个头有自己独立的投影
 
     $$
@@ -373,7 +373,7 @@ description: 介绍 Attention 机制的基本原理，包括 Scaled Dot-Product 
   - 注意力计算，对于第 $h$ 个头：
 
     $$
-    \text {head}_h = \mathrm {softmax}\left (\frac {Q_h K^\top}{\sqrt {d_k}}\right) V
+    \text{head}_h = \mathrm {softmax}\left (\frac {Q_h K^\top}{\sqrt {d_k}}\right) V
     $$
 
   - 区别仅在：
@@ -382,7 +382,7 @@ description: 介绍 Attention 机制的基本原理，包括 Scaled Dot-Product 
 
   - 最后拼接得到：
     $$
-    \mathrm {MQA}(X) = \mathrm {Concat}(\text {head}_1,\dots,\text {head}_H), W^O
+    \mathrm {MQA}(X) = \mathrm {Concat}(\text{head}_1,\dots,\text{head}_H), W^O
     $$
 
 - 为什么 MQA 能加速推理？
@@ -446,22 +446,22 @@ description: 介绍 Attention 机制的基本原理，包括 Scaled Dot-Product 
 
 ![mha-mqa-gqa 对比](/img/llm/mha-mqa-gqa 对比.png)
 
-- MHA / MQA / GQA 参数量比较（设 $d_\text {model}$ 表示隐藏维度，$H$ 表示注意力头数，$d_k = d_\text {model}/H$，$W^O \in \mathbb {R}^{H d_v \times d_\text {model}}$）
+- MHA / MQA / GQA 参数量比较（设 $d_\text{model}$ 表示隐藏维度，$H$ 表示注意力头数，$d_k = d_\text{model}/H$，$W^O \in \mathbb {R}^{H d_v \times d_\text{model}}$）
   - MHA（每头独立 Q/K/V）
 
     $$
-    \text {Params (MHA)} = H \cdot 3 (d_\text {model} \cdot d_k) + d_\text {model} \cdot (H d_v) = 4 d_\text {model}^2
+    \text{Params (MHA)} = H \cdot 3 (d_\text{model} \cdot d_k) + d_\text{model} \cdot (H d_v) = 4 d_\text{model}^2
     $$
 
   - MQA（所有头共享 K/V，对大 $H$（如 32），参数略小于 MHA）
 
     $$
-    \text {Params (MQA)} = H (d_\text {model} \cdot d_k) + 2 (d_\text {model} \cdot d_k) + d_\text {model} \cdot (H d_v) \approx (3 + 2/H) d_\text {model}^2
+    \text{Params (MQA)} = H (d_\text{model} \cdot d_k) + 2 (d_\text{model} \cdot d_k) + d_\text{model} \cdot (H d_v) \approx (3 + 2/H) d_\text{model}^2
     $$
 
   - GQA（每组头共享 K/V，组数 $G$）
     $$
-    \text {Params (GQA)} = H (d_\text {model} \cdot d_k) + G \cdot 2 (d_\text {model} \cdot d_k) + d_\text {model} \cdot (H d_v) = \left (3 + \frac {2G}{H}\right) d_\text {model}^2
+    \text{Params (GQA)} = H (d_\text{model} \cdot d_k) + G \cdot 2 (d_\text{model} \cdot d_k) + d_\text{model} \cdot (H d_v) = \left (3 + \frac {2G}{H}\right) d_\text{model}^2
     $$
 
 ## Multi Latent Attention
@@ -476,7 +476,7 @@ description: 介绍 Attention 机制的基本原理，包括 Scaled Dot-Product 
   \begin {align*}
   \mathbf {c}_t^Q &= W^{DQ} \mathbf {h}_t\\
   \mathbf {q}_t^C &= W^{UQ} \mathbf {c}_t^Q\\
-  \mathbf {q}_t^R &= \text {RoPE}(W^{QR} \mathbf {c}_t^Q)\\
+  \mathbf {q}_t^R &= \text{RoPE}(W^{QR} \mathbf {c}_t^Q)\\
   \mathbf {q}_{t,i} &= [\mathbf {q}_{t,i}^C; \mathbf {q}_{t,i}^R]
   \end {align*}
   $$
@@ -490,7 +490,7 @@ description: 介绍 Attention 机制的基本原理，包括 Scaled Dot-Product 
   \begin {align*}
   \mathbf {c}_t^{KV} &= W^{DKV} \mathbf {h}_t\\
   \mathbf {k}_t^C &= W^{UK} \mathbf {c}_t^{KV}\\
-  \mathbf {k}_t^R &= \text {RoPE}(W^{KR} \mathbf {h}_t)\\
+  \mathbf {k}_t^R &= \text{RoPE}(W^{KR} \mathbf {h}_t)\\
   \mathbf {k}_{t,i} &= [\mathbf {k}_{t,i}^C; \mathbf {k}_t^R]\\
   \mathbf {v}_t^C &= W^{UV} \mathbf {c}_t^{KV}
   \end {align*}
@@ -503,7 +503,7 @@ description: 介绍 Attention 机制的基本原理，包括 Scaled Dot-Product 
 
   $$
   \begin {align*}
-  \mathbf {o}_{t,i} &= \sum_{j=1}^t \text {Softmax}_j\left (\frac {\mathbf {q}_{t,i}^T \mathbf {k}_{j,i}}{\sqrt {d_h + d_h^R}}\right) \mathbf {v}_{j,i}^C\\
+  \mathbf {o}_{t,i} &= \sum_{j=1}^t \text{Softmax}_j\left (\frac {\mathbf {q}_{t,i}^T \mathbf {k}_{j,i}}{\sqrt {d_h + d_h^R}}\right) \mathbf {v}_{j,i}^C\\
   \mathbf {u}_t &= W^O [\mathbf {o}_{t,1}; \mathbf {o}_{t,2}; ...; \mathbf {o}_{t,n_h}]
   \end {align*}
   $$
@@ -612,7 +612,7 @@ description: 介绍 Attention 机制的基本原理，包括 Scaled Dot-Product 
 - 为了实现稀疏注意力，可以引入稀疏模式矩阵 $M \in {0,1}^{n \times n}$，定义哪些 Query-Key 对需要计算注意力，也即 Masked Sparse Attention
 
   $$
-  \text {SparseAttention}(Q,K,V) = \mathrm {softmax}\Big (\frac {Q K^\top}{\sqrt {d_k}} \odot M\Big) V
+  \text{SparseAttention}(Q,K,V) = \mathrm {softmax}\Big (\frac {Q K^\top}{\sqrt {d_k}} \odot M\Big) V
   $$
   - $\odot$ 表示元素级掩码
 
@@ -679,25 +679,25 @@ description: 介绍 Attention 机制的基本原理，包括 Scaled Dot-Product 
 - Performer（Choromanski et al., 2020）提出线性注意力，通过核方法近似 softmax，实现 $O (n d^2)$ 复杂度，显著提升长序列可扩展性
 
 - 核心思想
-  - 核心问题：标准注意力中 $\text {softmax}(Q K^T)$ 是 $n \times n$ 矩阵，计算量 $O (n^2)$
+  - 核心问题：标准注意力中 $\text{softmax}(Q K^T)$ 是 $n \times n$ 矩阵，计算量 $O (n^2)$
 
   - 将 softmax attention 视为核函数：
 
     $$
-    \text {softmax}(Q_i K_j^\top) = \phi (Q_i)^\top \phi (K_j)
+    \text{softmax}(Q_i K_j^\top) = \phi (Q_i)^\top \phi (K_j)
     $$
     - 其中 $\phi (\cdot)$ 是正交随机特征映射
 
   - 利用线性化性质：
 
     $$
-    \text {Attention}(Q,K,V)_i = \sum_j \text {softmax}(Q_i K_j^\top) V_j
+    \text{Attention}(Q,K,V)_i = \sum_j \text{softmax}(Q_i K_j^\top) V_j
     \approx \sum_j \phi (Q_i)^\top \phi (K_j) V_j
     $$
 
   - 重新排列求和顺序：
     $$
-    \text {Attention}(Q,K,V)_i \approx \phi (Q_i)^\top \left (\sum_j \phi (K_j) V_j \right)
+    \text{Attention}(Q,K,V)_i \approx \phi (Q_i)^\top \left (\sum_j \phi (K_j) V_j \right)
     $$
   - 关键优化：先对 K / V 做线性组合，再与 Q 做点积，实现线性复杂度
 
@@ -711,7 +711,7 @@ description: 介绍 Attention 机制的基本原理，包括 Scaled Dot-Product 
   - Attention 线性化：
 
     $$
-    \text {LinearAttention}(Q,K,V) = \phi (Q) (\phi (K)^\top V)
+    \text{LinearAttention}(Q,K,V) = \phi (Q) (\phi (K)^\top V)
     $$
     - $\phi (Q) \in \mathbb {R}^{n \times r}$
     - $\phi (K)^\top V \in \mathbb {R}^{r \times d_v}$

@@ -63,13 +63,13 @@ description: 介绍深度学习的基本概念、训练流程、常见技术（�
   - Effective batch size（有效批次大小）：一次参数更新相当于处理的总样本数：
 
 $$
-\text {effective batch size} = \text {per\_device\_train\_batch\_size} \times \text {gradient\_accumulation\_steps} \times \text {GPU 数量}
+\text{effective batch size} = \text{per\_device\_train\_batch\_size} \times \text{gradient\_accumulation\_steps} \times \text{GPU 数量}
 $$
 
 - Epoch 内 step 数：
 
 $$
-\text {steps per epoch} = \lceil \frac {\text {训练集样本数}}{\text {effective batch size}} \rceil
+\text{steps per epoch} = \lceil \frac {\text{训练集样本数}}{\text{effective batch size}} \rceil
 $$
 
 - Epoch（轮次）：模型完整遍历训练集一次，每条样本至少被使用一次
@@ -347,7 +347,7 @@ $$
   - Overall Accuracy 是最直观的指标，表示所有样本中预测正确的比例，其定义为
 
     $$
-    \text {OA} = \frac {TP + TN}{TP + FP + TN + FN}
+    \text{OA} = \frac {TP + TN}{TP + FP + TN + FN}
     $$
 
   - 它评价的是模型的整体分类正确率，但隐含假设是 “各类样本的重要性相同、分布相对均衡”
@@ -360,13 +360,13 @@ $$
   - 以多分类为例，第 $i$ 类的分类准确率为
 
     $$
-    \text {Acc}*i = \frac {TP_i}{N_i}
+    \text{Acc}*i = \frac {TP_i}{N_i}
     $$
 
   - 其中 $N_i$ 是该类的真实样本数，则
 
     $$
-    \text {AA} = \frac {1}{C} \sum*{i=1}^C \text {Acc}_i
+    \text{AA} = \frac {1}{C} \sum*{i=1}^C \text{Acc}_i
     $$
 
   - AA 的核心意义在于对类别不平衡进行显式校正，它不再让 “大类” 天然拥有更大的话语权，因此在遥感分类、医学影像等长尾分布场景中比 OA 更可信
@@ -379,7 +379,7 @@ $$
   - Recall 衡量的是：真实为正的样本中，有多少被模型找出来了
 
     $$
-    \text {Recall} = \frac {TP}{TP + FN}
+    \text{Recall} = \frac {TP}{TP + FN}
     $$
 
   - 它对 “漏报”（False Negative）非常敏感，常用于医学诊断、异常检测等场景，因为漏掉真正的重要样本代价极高
@@ -388,7 +388,7 @@ $$
   - Precision 衡量的是：模型预测为正的样本中，有多少是真的正类
 
     $$
-    \text {Precision} = \frac {TP}{TP + FP}
+    \text{Precision} = \frac {TP}{TP + FP}
     $$
 
   - 它对 “误报”（False Positive）非常敏感，比如垃圾邮件过滤、告警系统中，误报会带来很高的人工成本
@@ -399,7 +399,7 @@ $$
   - F1 是 Precision 和 Recall 的调和平均，其定义为
 
     $$
-    \text {F1} = \frac {2 \cdot \text {Precision} \cdot \text {Recall}}{\text {Precision} + \text {Recall}}
+    \text{F1} = \frac {2 \cdot \text{Precision} \cdot \text{Recall}}{\text{Precision} + \text{Recall}}
     $$
 
   - 使用调和平均而不是算术平均，是为了对 “短板” 更敏感：只要 Precision 或 Recall 其中之一很低，F1 就会被显著拉低
@@ -420,7 +420,7 @@ $$
   - AP 定义为 PR 曲线下面积，本质上是对 Precision 在 Recall 维度上的积分
 
     $$
-    \text {AP} = \int_0^1 \text {Precision}(r),dr
+    \text{AP} = \int_0^1 \text{Precision}(r),dr
     $$
 
   - 在目标检测中，AP 通常是在固定 IoU 阈值（如 IoU ≥ 0.5）下计算的，用来衡量某一个类别的检测性能
@@ -429,7 +429,7 @@ $$
   - mAP 是对所有类别 AP 的平均
 
     $$
-    \text {mAP} = \frac {1}{C} \sum_{i=1}^C \text {AP}_i
+    \text{mAP} = \frac {1}{C} \sum_{i=1}^C \text{AP}_i
     $$
 
   - 在现代检测基准（如 COCO）中，mAP 往往还会进一步扩展为在多个 IoU 阈值（如 0.5:0.95）上求平均，用以同时评价定位精度与分类置信度排序能力
@@ -440,7 +440,7 @@ $$
   - IoU 用于衡量预测区域与真实区域的重叠程度，其定义为
 
     $$
-    \text {IoU} = \frac {|A \cap B|}{|A \cup B|}
+    \text{IoU} = \frac {|A \cap B|}{|A \cup B|}
     $$
 
   - 其中 $A$ 为预测区域，$B$ 为真实区域

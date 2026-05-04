@@ -296,7 +296,7 @@ $$
 
 $$
 \begin {align*}
-H (X, Y) &= -\sum_{x \in \mathcal {X}} \sum_{y \in \mathcal {Y}} p (x, y) \text {log} [p (x) p (y|x)] \\
+H (X, Y) &= -\sum_{x \in \mathcal {X}} \sum_{y \in \mathcal {Y}} p (x, y) \text{log} [p (x) p (y|x)] \\
 &= -\sum_{x \in \mathcal {X}} \sum_{y \in \mathcal {Y}} p (x, y) [\log p (x) + \log p (y|x)] \\
 &= -\sum_{x \in \mathcal {X}} \sum_{y \in \mathcal {Y}} p (x, y) \log p (x) - \sum_{x \in \mathcal {X}} \sum_{y \in \mathcal {Y}} p (x, y) \log p (y|x) \\
 &= -\sum_{x \in \mathcal {X}} p (x) \log p (x) - \sum_{x \in \mathcal {X}} \sum_{y \in \mathcal {Y}} p (x, y) \log p (y|x) \\
@@ -413,7 +413,7 @@ $$
 
 ### 4.2 示例：词性标注任务中的 HMM
 
-以句子 “Time flies quickly” 为例，目标是推断最可能的词性序列 $S = (\text {N}, \text {V}, \text {ADV})$
+以句子 “Time flies quickly” 为例，目标是推断最可能的词性序列 $S = (\text{N}, \text{V}, \text{ADV})$
 
 #### （1）初始状态概率 $\Pi$
 
@@ -436,7 +436,7 @@ $$
 隐藏状态生成观测单词的概率：
 
 $$
-P (O_t=\text {"Time"} \mid S_t=N)=0.8,\quad P (O_t=\text {"flies"} \mid S_t=V)=0.7
+P (O_t=\text{"Time"} \mid S_t=N)=0.8,\quad P (O_t=\text{"flies"} \mid S_t=V)=0.7
 $$
 
 ### 4.3 求最优词性序列：维特比算法（Viterbi Algorithm）
@@ -454,7 +454,7 @@ $$
 以 “Time” 为例：
 
 $$
-V_1 (N)=\pi (N)\cdot B (N,\text {"Time"}) = 0.6 \cdot 0.8 = 0.48
+V_1 (N)=\pi (N)\cdot B (N,\text{"Time"}) = 0.6 \cdot 0.8 = 0.48
 $$
 
 #### （3）递推
@@ -462,7 +462,7 @@ $$
 例如计算第二个词 “flies” 的动词状态：
 
 $$
-V_2 (V)=\max_{S_1}\big [V_1 (S_1)\cdot A (S_1\to V)\big]\cdot B (V,\text {"flies"})
+V_2 (V)=\max_{S_1}\big [V_1 (S_1)\cdot A (S_1\to V)\big]\cdot B (V,\text{"flies"})
 $$
 
 #### （4）回溯
@@ -470,7 +470,7 @@ $$
 根据记录的最优前驱状态重建整条最优路径，最终输出最可能的词性序列：
 
 $$
-S = (\text {N}, \text {V}, \text {ADV})
+S = (\text{N}, \text{V}, \text{ADV})
 $$
 
 ### 4.4 HMM 的三个基本问题
@@ -554,7 +554,7 @@ $$
 
   - 输出：词表大小为 $V$ 的概率分布（Softmax）
 
-  - 训练完成后：$\text {词向量} = \text {输入层到隐藏层权重矩阵} W$​
+  - 训练完成后：$\text{词向量} = \text{输入层到隐藏层权重矩阵} W$​
 
 - 假如有一个句子 “`There is an apple on the table`” 作为训练数据，CBOW 的输入为（is,an,on,the），输出为 apple。而 Skip-gram 的输入为 apple，输出为（is,an,on,the）。
 
@@ -568,7 +568,7 @@ $$
   - 输入层：使用上下文单词的 One-Hot 编码表示，词汇表大小为 $V$，上下文窗口大小为 $C$。以句子 `There is an apple on the table` 为例，若 $C=4$，则输入为单词 `(is, an, on, the)` 的 One-Hot 向量
   - 嵌入层：初始化权重矩阵 $W \in \mathbb {R}^{V \times N}$，将每个输入 One-Hot 向量左乘 $W$ 得到 $N$ 维嵌入向量 $\omega_1, \omega_2, \dots, \omega_C$，其中 $N$ 为嵌入维度，可根据任务需求设定。
   - 隐藏层：对上下文向量求平均，得到隐藏层向量 $h = \frac {1}{C}\sum_{i=1}^{C} \omega_i$
-  - 输出层：初始化权重矩阵 $W' \in \mathbb {R}^{N \times V}$，计算输出向量 $y = \text {softmax}(h W')$ 其中 $y \in \mathbb {R}^V$ 表示词汇表中每个单词的预测概率分布，$W'$ 是输出权重矩阵（N × V，V 是词表大小），而词表非常大（V ≥ 1M），每次训练样本都需要计算完整 softmax 和梯度 → 计算量巨大！
+  - 输出层：初始化权重矩阵 $W' \in \mathbb {R}^{N \times V}$，计算输出向量 $y = \text{softmax}(h W')$ 其中 $y \in \mathbb {R}^V$ 表示词汇表中每个单词的预测概率分布，$W'$ 是输出权重矩阵（N × V，V 是词表大小），而词表非常大（V ≥ 1M），每次训练样本都需要计算完整 softmax 和梯度 → 计算量巨大！
   - 预测与训练：取 $y$ 中概率最大的元素对应的单词作为预测目标词，与真实词的 One-Hot 向量计算误差，通过反向传播更新 $W$ 和 $W'$
 
 - 训练完成后，输入层每个单词与矩阵 $W$ 相乘得到的向量即对应的词向量（word embedding）
@@ -710,7 +710,7 @@ $$
   - 期望错误的分解（偏差与方差分解）
 
     $$
-    \mathcal {R}(f) = (\text {bias})^2 + \text {variance} + \epsilon
+    \mathcal {R}(f) = (\text{bias})^2 + \text{variance} + \epsilon
     $$
     1. 偏差（Bias）：
 
@@ -742,7 +742,7 @@ $$
 | ------------- | --------------- | --------------------------------------- | ---------------- | ------------------ |
 | 线性模型      | $f (x)=w^Tx+b$   | $(y-w^Tx)^2$                            | 实数或类别       | 最小二乘、梯度下降 |
 | Logistic 回归 | logistic 函数   | 交叉熵损失：$y\log\sigma (w^Tx)$         | 类别的概率值     | 梯度下降           |
-| Softmax 回归  | softmax 函数    | 交叉熵损失：$y\log\text {softmax}(w^Tx)$ | 各类别的概率分布 | 梯度下降           |
+| Softmax 回归  | softmax 函数    | 交叉熵损失：$y\log\text{softmax}(w^Tx)$ | 各类别的概率分布 | 梯度下降           |
 | 感知机        | 阶跃函数        | $\max (0,-yw^Tx)$                        | $+1/-1$          | 随机梯度下降       |
 | SVM           | 阶跃函数        | $\max (0,1-yw^Tx)$                       | $+1/-1$          | 二次规划、SMO 等   |
 
@@ -757,7 +757,7 @@ $$
   - 分类规则：选择概率最大的类别 $\arg\max_kP (y=k|x)$
 
 - 感知机
-  - $f (x)=\text {sign}(w^Tx+b)$
+  - $f (x)=\text{sign}(w^Tx+b)$
 
   - 学习规则：通过误分类点的更新规则调整权重
 
@@ -924,7 +924,7 @@ $$
   - 通过一个带有卷积核的感受视野扫描生成的下一层神经元矩阵被称为一个 Feature Map（特征图）
 
 - 特征图大小的计算
-  - 输入图像大小为 $H_{\text {in}} \times W_{\text {in}}$（高度 × 宽度）
+  - 输入图像大小为 $H_{\text{in}} \times W_{\text{in}}$（高度 × 宽度）
 
   - 卷积核大小为 $K_h \times K_w$（高度 × 宽度）
 
@@ -932,11 +932,11 @@ $$
 
   - 填充（padding）为 $P_h$ 和 $P_w$（高度方向填充 × 宽度方向填充）
 
-  - 则输出图像大小 $H_{\text {out}} \times W_{\text {out}}$ 可以计算为：
+  - 则输出图像大小 $H_{\text{out}} \times W_{\text{out}}$ 可以计算为：
 
   $$
-  H_{\text {out}} = \left\lfloor \frac {H_{\text {in}} + 2P_h - K_h}{S_h} \right\rfloor + 1 \\
-  W_{\text {out}} = \left\lfloor \frac {W_{\text {in}} + 2P_w - K_w}{S_w} \right\rfloor + 1
+  H_{\text{out}} = \left\lfloor \frac {H_{\text{in}} + 2P_h - K_h}{S_h} \right\rfloor + 1 \\
+  W_{\text{out}} = \left\lfloor \frac {W_{\text{in}} + 2P_w - K_w}{S_w} \right\rfloor + 1
   $$
   - 很多深度学习框架会采取向下取整的方式，放弃输入特征图的一部分边界数据
   - Caffe 和 PyTorch 会放弃输入特征图的左侧和上侧的一部分数据， 使得卷积核滑动窗恰好能到达最右下角的点
@@ -953,22 +953,22 @@ $$
   - 可变形卷积
 
 - 卷积核的深度
-  - 卷积核（Kernel）的形状可以表示为 $K_h \times K_w \times C_{\text {in}}$:
+  - 卷积核（Kernel）的形状可以表示为 $K_h \times K_w \times C_{\text{in}}$:
     - $K_h$：卷积核的高度
     - $K_w$：卷积核的宽度
-    - $C_{\text {in}}$：输入特征图的通道数（深度）
+    - $C_{\text{in}}$：输入特征图的通道数（深度）
 
   - 特点
-    - 卷积核的深度 $C_{\text {in}}$ 必须与输入特征图的通道数相等，因为每个卷积核需要对输入的每一通道进行逐元素卷积
-    - 如果输入特征图是 RGB 图像（3 个通道），卷积核的深度 $C_{\text {in}}$ 就为 3
+    - 卷积核的深度 $C_{\text{in}}$ 必须与输入特征图的通道数相等，因为每个卷积核需要对输入的每一通道进行逐元素卷积
+    - 如果输入特征图是 RGB 图像（3 个通道），卷积核的深度 $C_{\text{in}}$ 就为 3
 
   - 卷积过程
-    - 输入特征图的形状：$H_{\text {in}} \times W_{\text {in}} \times C_{\text {in}}$（高度 × 宽度 × 通道数）
-    2. 卷积核的形状：$K_h \times K_w \times C_{\text {in}}$
+    - 输入特征图的形状：$H_{\text{in}} \times W_{\text{in}} \times C_{\text{in}}$（高度 × 宽度 × 通道数）
+    2. 卷积核的形状：$K_h \times K_w \times C_{\text{in}}$
     3. 每个卷积核的作用：
        - 对输入特征图的每一通道进行单独卷积
        - 将所有通道的卷积结果按元素相加（求和），生成一个二维特征图
-    - 输出特征图：如果有 $C_{\text {out}}$ 个卷积核，则输出特征图的形状为 $H_{\text {out}} \times W_{\text {out}} \times C_{\text {out}}$
+    - 输出特征图：如果有 $C_{\text{out}}$ 个卷积核，则输出特征图的形状为 $H_{\text{out}} \times W_{\text{out}} \times C_{\text{out}}$
 
 ### 7.3 池化（Pooling）
 
@@ -1032,7 +1032,7 @@ $$
 - 通常用于非线性激活函数之前或之后，最常见的是放在激活函数之前：
 
   $$
-  \text {Input} \to \text {Linear/Conv} \to \text {BatchNorm} \to \text {Activation (e.g., ReLU)}
+  \text{Input} \to \text{Linear/Conv} \to \text{BatchNorm} \to \text{Activation (e.g., ReLU)}
   $$
 
 - 瓶颈结构
@@ -1276,7 +1276,7 @@ $$
 - 公式表示：
 
 $$
-  Y = f_\theta (X) \quad\text {其中} X = (x_1,...,x_m), \quad Y=(y_1,...,y_n)
+  Y = f_\theta (X) \quad\text{其中} X = (x_1,...,x_m), \quad Y=(y_1,...,y_n)
 $$
 
 - 特点：
@@ -1309,13 +1309,13 @@ $$
 - Encoder：
 
   $$
-  H = \text {Encoder}(X) \quad\text {其中} H=(h*1,...,h_m)
+  H = \text{Encoder}(X) \quad\text{其中} H=(h*1,...,h_m)
   $$
 
 - Decoder：
 
   $$
-  y_t = \text {Decoder}(y_{*{<t}}, H)
+  y_t = \text{Decoder}(y_{*{<t}}, H)
   $$
 
 - 特点：
@@ -1346,13 +1346,13 @@ $$
 - 计算注意力分数：对于每个时间步 $t$ 的输出 $y_t$，计算输入序列中每个元素 $x_i$ 的相关性（称为注意力分数）
 
   $$
-  e_{t,i} = f (h_t^{\text {dec}}, h_i^{\text {enc}})
+  e_{t,i} = f (h_t^{\text{dec}}, h_i^{\text{enc}})
   $$
-  - $h_t^{\text {dec}}$：解码器当前时间步的隐藏状态
-  - $h_i^{\text {enc}}$：编码器中第 $i$ 个时间步的隐藏状态
+  - $h_t^{\text{dec}}$：解码器当前时间步的隐藏状态
+  - $h_i^{\text{enc}}$：编码器中第 $i$ 个时间步的隐藏状态
   - $f (\cdot)$：相关性函数，常用的形式包括：
-    - 点积：$e_{t,i} = h_t^{\text {dec}} \cdot h_i^{\text {enc}}$
-    - 加法：$e_{t,i} = W [h_t^{\text {dec}}, h_i^{\text {enc}}] + b$
+    - 点积：$e_{t,i} = h_t^{\text{dec}} \cdot h_i^{\text{enc}}$
+    - 加法：$e_{t,i} = W [h_t^{\text{dec}}, h_i^{\text{enc}}] + b$
     - 缩放点积（用于 Transformer）
 
 - 归一化注意力权重：使用 softmax 函数将注意力分数归一化为概率分布，$\alpha_{t,i}$ 表示输入 $x_i$ 对生成 $y_t$ 的贡献权重
@@ -1364,12 +1364,12 @@ $$
 - 加权求和生成上下文向量：用注意力权重对输入序列的隐藏状态进行加权求和，生成上下文向量 $c_t$
 
   $$
-  c_t = \sum_{i=1}^T \alpha_{t,i} h_i^{\text {enc}}
+  c_t = \sum_{i=1}^T \alpha_{t,i} h_i^{\text{enc}}
   $$
 
-- 生成输出：上下文向量 $c_t$ 和当前隐藏状态 $h_t^{\text {dec}}$ 结合，生成最终输出
+- 生成输出：上下文向量 $c_t$ 和当前隐藏状态 $h_t^{\text{dec}}$ 结合，生成最终输出
   $$
-  y_t = g (c_t, h_t^{\text {dec}})
+  y_t = g (c_t, h_t^{\text{dec}})
   $$
 
 #### 9.1.2 自注意力（Self-Attention）
@@ -1384,7 +1384,7 @@ $$
 
 - 自注意力的权重矩阵计算：
   $$
-  \text {Attention}(Q, K, V) = \text {softmax}\left (\frac {QK^\top}{\sqrt {d_k}}\right) V
+  \text{Attention}(Q, K, V) = \text{softmax}\left (\frac {QK^\top}{\sqrt {d_k}}\right) V
   $$
   - $Q$：查询矩阵
   - $K$：键矩阵
@@ -1397,10 +1397,10 @@ $$
 - 这些 “头” 的输出随后被合并（通常是拼接后再通过一个线性层），以产生最终的输出表示
 - 公式：
   $$
-  \text {MultiHead}(Q, K, V) = \text {Concat}(\text {head}_1, \text {head}_2, \dots, \text {head}_h) W^O
+  \text{MultiHead}(Q, K, V) = \text{Concat}(\text{head}_1, \text{head}_2, \dots, \text{head}_h) W^O
   $$
 
-其中，$\text {head}_i = \text {Attention}(QW_i^Q, KW_i^K, VW_i^V)$
+其中，$\text{head}_i = \text{Attention}(QW_i^Q, KW_i^K, VW_i^V)$
 
 ### 9.2 Transformer 结构
 
@@ -1414,8 +1414,8 @@ Transformer 模型是一种序列到序列（Sequence to Sequence，Seq2Seq）�
   - 残差连接与层归一化（Residual Connection & Layer Normalization）：保留梯度流，提高模型训练的稳定性
     $$
     \begin {align*}
-    Z' &= Z + \text {SubLayer}(Z)\\
-    \text {LayerNorm}(Z') &= \gamma \cdot \frac {Z' - \mu}{\sigma} + \beta
+    Z' &= Z + \text{SubLayer}(Z)\\
+    \text{LayerNorm}(Z') &= \gamma \cdot \frac {Z' - \mu}{\sigma} + \beta
     \end {align*}
     $$
 
@@ -1423,7 +1423,7 @@ Transformer 模型是一种序列到序列（Sequence to Sequence，Seq2Seq）�
   - 掩码自注意力（Masked Multi-Head Self-Attention）：遮蔽未来的时间步，确保仅依赖已生成的部分；
 
     $$
-    \text {MaskedAttention}(Q, K, V) = \text {softmax}\left (\frac {QK^\top}{\sqrt {d_k}} + M\right) V
+    \text{MaskedAttention}(Q, K, V) = \text{softmax}\left (\frac {QK^\top}{\sqrt {d_k}} + M\right) V
     $$
 
   - 交叉注意力（Encoder-Decoder Attention）：将自己的隐藏状态作为查询 $Q$，编码器的输出作为键 $K$ 和值 $V$
@@ -1436,8 +1436,8 @@ Transformer 模型是一种序列到序列（Sequence to Sequence，Seq2Seq）�
     - 位置编码公式（正弦和余弦）：
       $$
       \begin {align*}
-      PE (pos, 2i) &= \sin\left (\frac {pos}{10000^{2i/d_{\text {model}}}}\right)\\
-      PE (pos, 2i+1) &= \cos\left (\frac {pos}{10000^{2i/d_{\text {model}}}}\right)
+      PE (pos, 2i) &= \sin\left (\frac {pos}{10000^{2i/d_{\text{model}}}}\right)\\
+      PE (pos, 2i+1) &= \cos\left (\frac {pos}{10000^{2i/d_{\text{model}}}}\right)
       \end {align*}
       $$
 

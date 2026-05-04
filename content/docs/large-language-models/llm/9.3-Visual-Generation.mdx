@@ -32,12 +32,12 @@ description: 介绍视觉生成模型（Diffusion等）的基本概念及其应�
 
 	- 传统 DDPM 是 SDE（随机微分方程）：
 		$$
-		dx_t = f (x_t,t) dt + g (t) dw_t \quad (\text {含随机噪声项} dw_t)
+		dx_t = f (x_t,t) dt + g (t) dw_t \quad (\text{含随机噪声项} dw_t)
 		$$
 
 	- 但所有扩散模型都存在等价的确定性 ODE 形式（Probability Flow ODE）：
 		$$
-		\frac {dx_t}{dt} = v_\theta (x_t,t) \quad (\text {纯确定性速度场，无随机项})
+		\frac {dx_t}{dt} = v_\theta (x_t,t) \quad (\text{纯确定性速度场，无随机项})
 		$$
 
 	- DDIM 本质就是扩散的 ODE 采样器（去掉随机项）
@@ -51,7 +51,7 @@ description: 介绍视觉生成模型（Diffusion等）的基本概念及其应�
 
 	- 流定义
 		$$
-		\frac {d x_t}{dt}=v_\theta (x_t,t), \quad x_0 \sim \mathcal {N}(0,I), \quad x_1 \sim p_{\text {data}}
+		\frac {d x_t}{dt}=v_\theta (x_t,t), \quad x_0 \sim \mathcal {N}(0,I), \quad x_1 \sim p_{\text{data}}
 		$$
 
 	- 条件流匹配 CFM（标准范式）
@@ -83,14 +83,14 @@ description: 介绍视觉生成模型（Diffusion等）的基本概念及其应�
 
 	- 第二轮训练（Reflow 矫正，核心创新）
 	   - 固定噪声 $z_1,z_2,\dots,z_n$
-	   - 用模型生成 $x_i = \text {ODE solve}(v_\theta,z_i)$
+	   - 用模型生成 $x_i = \text{ODE solve}(v_\theta,z_i)$
 	   - 构造确定性配对 $(z_i,x_i)$
 	   - 用新配对重新训练 → 轨迹无交叉、更平直
 	   - 可多次迭代 Reflow → 越来越直、步数越少
 
 	- 理想 Rectified Flow：
 		$$
-		x_t=(1-t) x_0 + t x_1, \quad \frac {d x_t}{dt}=C \ (\text {常数速度})
+		x_t=(1-t) x_0 + t x_1, \quad \frac {d x_t}{dt}=C \ (\text{常数速度})
 		$$
 
 	- 几何意义：消除路径交叉（confusion region），速度场无冲突

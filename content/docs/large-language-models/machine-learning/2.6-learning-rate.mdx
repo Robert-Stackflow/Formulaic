@@ -30,7 +30,7 @@ description: 介绍学习率的定义、重要性，以及常见的 warmup 和�
 - 一个典型的线性热身形式是：
 
   $$
-  \eta_t = \eta_{\text {max}} \cdot \frac {t}{T_{\text {warmup}}}, \quad t \le T_{\text {warmup}}
+  \eta_t = \eta_{\text{max}} \cdot \frac {t}{T_{\text{warmup}}}, \quad t \le T_{\text{warmup}}
   $$
 
 - 引入热身的原因主要有三点：
@@ -58,7 +58,7 @@ description: 介绍学习率的定义、重要性，以及常见的 warmup 和�
 - Transformer 原论文中使用的经典策略：
 
   $$
-  \eta_t = d_{\text {model}}^{-0.5} \cdot \min \left (t^{-0.5},\ t \cdot T_{\text {warmup}}^{-1.5} \right)
+  \eta_t = d_{\text{model}}^{-0.5} \cdot \min \left (t^{-0.5},\ t \cdot T_{\text{warmup}}^{-1.5} \right)
   $$
 
 - 在训练初期线性 warmup，而在训练中后期学习率按 $1/\sqrt {t}$ 缓慢下降
@@ -86,7 +86,7 @@ description: 介绍学习率的定义、重要性，以及常见的 warmup 和�
 - 线性衰减在 warmup 后按固定速率降低学习率：
 
   $$
-  \eta_t = \eta_{\max} \left (1 - \frac {t - T_{\text {warmup}}}{T - T_{\text {warmup}}}\right)
+  \eta_t = \eta_{\max} \left (1 - \frac {t - T_{\text{warmup}}}{T - T_{\text{warmup}}}\right)
   $$
 
 - 线性衰减形式简单，行为可预测，与训练总步数强绑定

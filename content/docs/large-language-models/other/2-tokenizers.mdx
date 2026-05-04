@@ -273,7 +273,7 @@ batch = tokenizer(
 公式上，在自注意力中，原始的注意力权重计算为：
 
 $$
-A = \text {softmax}\Big (\frac {Q K^T}{\sqrt {d_k}}\Big)
+A = \text{softmax}\Big (\frac {Q K^T}{\sqrt {d_k}}\Big)
 $$
 
 加入 mask 后，计算变为：
@@ -281,15 +281,15 @@ $$
 $$
 A'_{ij} =
 \begin {cases}
-\frac {\exp (Q_i \cdot K_j / \sqrt {d_k})}{\sum_{k \in \text {valid}} \exp (Q_i \cdot K_k / \sqrt {d_k})}, & j \in \text {valid positions} \\
-0, & j \in \text {padding positions}
+\frac {\exp (Q_i \cdot K_j / \sqrt {d_k})}{\sum_{k \in \text{valid}} \exp (Q_i \cdot K_k / \sqrt {d_k})}, & j \in \text{valid positions} \\
+0, & j \in \text{padding positions}
 \end {cases}
 $$
 
 或者在实现中常见做法：
 
 $$
-A' = \text {softmax}\Big (\frac {Q K^T}{\sqrt {d_k}} + M\Big)
+A' = \text{softmax}\Big (\frac {Q K^T}{\sqrt {d_k}} + M\Big)
 $$
 
 其中 (M) 为 mask matrix：
@@ -297,8 +297,8 @@ $$
 $$
 M_{ij} =
 \begin {cases}
-0, & \text {token} j \text {是有效 token} \\
--10^9 \text {或}-\infty, & \text {token} j \text {是 padding}
+0, & \text{token} j \text{是有效 token} \\
+-10^9 \text{或}-\infty, & \text{token} j \text{是 padding}
 \end {cases}
 $$
 
@@ -362,22 +362,22 @@ attention_mask:            [0, 1,    1,    1,    1]
 给定 batch 的 input_ids：
 
 $$
-X = [x_1, x_2, ..., x_L], \quad x_i \in \text {vocab ids}
+X = [x_1, x_2, ..., x_L], \quad x_i \in \text{vocab ids}
 $$
 
 定义 pad_token_id：
 
 $$
-\text {pad\_id} \in \text {vocab}
+\text{pad\_id} \in \text{vocab}
 $$
 
 则 attention_mask 生成公式：
 
 $$
-\text {attention\_mask}_i =
+\text{attention\_mask}_i =
 \begin {cases}
-1, & x_i \neq \text {pad\_id} \\
-0, & x_i = \text {pad\_id}
+1, & x_i \neq \text{pad\_id} \\
+0, & x_i = \text{pad\_id}
 \end {cases}
 $$
 

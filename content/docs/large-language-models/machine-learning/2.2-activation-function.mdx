@@ -103,13 +103,13 @@ $$
 - ReLU（Rectified Linear Unit）系列激活函数用于解决 “能不能训” 的问题（梯度是否存在）
 
 $$
-\text {ReLU}(x) = \max (0, x)
+\text{ReLU}(x) = \max (0, x)
 $$
 
 - 其导数为：
 
 $$
-\text {ReLU}'(x) =
+\text{ReLU}'(x) =
 \begin {cases}
 1, & x > 0 \\
 0, & x \le 0
@@ -149,7 +149,7 @@ $$
 - Softmax 正是为满足这一建模目标而引入的映射
 
   $$
-  \text {Softmax}(x_i)
+  \text{Softmax}(x_i)
   =
   \frac {e^{x_i}}{\sum_{j=1}^n e^{x_j}}
   $$
@@ -164,15 +164,15 @@ $$
 - 由于指数函数的性质（指数放大效应）：
 
   $$
-  x_i - x_j \text {的差异} \Rightarrow
-  e^{x_i} /e^{x_j} \text {的指数级差异}
+  x_i - x_j \text{的差异} \Rightarrow
+  e^{x_i} /e^{x_j} \text{的指数级差异}
   $$
 
 - 若存在 $x_k \gg x_j$：
 
 $$
-\text {Softmax}(x_k) \to 1,\quad
-\text {Softmax}(x_j) \to 0
+\text{Softmax}(x_k) \to 1,\quad
+\text{Softmax}(x_j) \to 0
 $$
 
 - 因此，Softmax**天然倾向于产生近似 one-hot 的输出**
@@ -186,7 +186,7 @@ $$
 - 工程上必须进行等价变换，以在数值层面修正指数的放大副作用：
 
 $$
-\text {Softmax}(x_i)
+\text{Softmax}(x_i)
 =
 \frac {e^{x_i - \max (x)}}{\sum_j e^{x_j - \max (x)}}
 $$
@@ -207,7 +207,7 @@ $$
 - 其结构为：
 
   $$
-  x ;\xrightarrow {\text {Softmax}}; p ;\xrightarrow {\text {Loss}}; L
+  x ;\xrightarrow {\text{Softmax}}; p ;\xrightarrow {\text{Loss}}; L
   $$
 
 - 而 $L$ 是 所有 $p_j$ 的函数，每个 $p_j$ 又是 所有 $x_i$ 的函数，故
@@ -310,7 +310,7 @@ $$
 - 当模型预测过于自信：
 
 $$
-p_{\text {true}} \approx 1
+p_{\text{true}} \approx 1
 $$
 
 - 梯度自然趋于 0：
@@ -329,7 +329,7 @@ $$
 - ELU 的基本形式：
 
   $$
-  \text {ELU}(x) =
+  \text{ELU}(x) =
   \begin {cases}
   x, & x > 0 \\
   \alpha (e^x - 1), & x \le 0
@@ -347,7 +347,7 @@ $$
 - SELU 定义为对 ELU 的线性缩放：
 
   $$
-  \text {SELU}(x) = \lambda
+  \text{SELU}(x) = \lambda
   \begin {cases}
   x, & x > 0 \\
   \alpha (e^x - 1), & x \le 0
@@ -367,7 +367,7 @@ $$
 - GELU（Gaussian Error Linear Unit）的定义：
 
   $$
-  \text {GELU}(x) = x \cdot \Phi (x)
+  \text{GELU}(x) = x \cdot \Phi (x)
   $$
 
 - 其中 $\Phi (x)$ 是标准正态分布的累积分布函数：
@@ -379,7 +379,7 @@ $$
 - 常用近似形式（便于计算）：
 
   $$
-  \text {GELU}(x) \approx 0.5x \left (1 + \tanh\!\left (\sqrt {\frac {2}{\pi}} (x + 0.044715 x^3)\right)\right)
+  \text{GELU}(x) \approx 0.5x \left (1 + \tanh\!\left (\sqrt {\frac {2}{\pi}} (x + 0.044715 x^3)\right)\right)
   $$
 
 - GELU 的核心思想转变 —— 解决 “表示是否足够细腻、是否与概率建模假设一致” 的问题
@@ -390,7 +390,7 @@ $$
     - $\Phi (x)$ 表示：$x$ 在噪声扰动下仍为正的概率
     - 激活输出：
       $$
-      x \cdot P (\text {被保留})
+      x \cdot P (\text{被保留})
       $$
   - 因此小正值不会被硬性通过，小负值也不会被直接抹零，其激活是**连续、概率化、平滑的**
 

@@ -202,7 +202,7 @@ description: 介绍 CUDA 的基本概念、GPU 架构、CUDA Toolkit、cuBLAS、
   - 从实现关系上讲，cuDNN 的很多路径最终会落到 cuBLAS，例如 im2col + GEMM 路径，本质是：
 
     $$
-    \text {Conv} \rightarrow \text {matrix reshape} \rightarrow \text {GEMM}
+    \text{Conv} \rightarrow \text{matrix reshape} \rightarrow \text{GEMM}
     $$
 
   - cuDNN 负责 reshape 和算法选择，cuBLAS 负责真正的矩阵乘法 kernel
@@ -460,7 +460,7 @@ description: 介绍 CUDA 的基本概念、GPU 架构、CUDA Toolkit、cuBLAS、
   - 线程在 block 内的编号，表示当前线程在它所属 block 里的位置
   - 是一个三维向量，包括 `threadIdx.x`、`threadIdx.y`、`threadIdx.z`
 
-  - `threadIdx.x`：block 内 x 方向的线程编号，取值范围为 $0 \le \text {threadIdx.x} <\text {blockDim.x}$
+  - `threadIdx.x`：block 内 x 方向的线程编号，取值范围为 $0 \le \text{threadIdx.x} <\text{blockDim.x}$
 
 - block 维度大小：`blockDim`
   - 一个 block 有多少线程，表示一个 block 的尺寸
@@ -1525,7 +1525,7 @@ description: 介绍 CUDA 的基本概念、GPU 架构、CUDA Toolkit、cuBLAS、
   - ELU 激活函数的定义为：
 
     $$
-    \text {ELU}(x) =
+    \text{ELU}(x) =
     \begin {cases}
     \alpha (e^x - 1), & x < 0 \
     x, & x \ge 0
@@ -1644,15 +1644,15 @@ description: 介绍 CUDA 的基本概念、GPU 架构、CUDA Toolkit、cuBLAS、
     - 也称为计算平台的性能上限，指的是一个计算平台倾尽全力每秒钟所能完成的浮点运算数，单位是 `FLOP/s`
 
       $$
-      \pi=N_{\text {core}}\times f\times\text {IPC}
+      \pi=N_{\text{core}}\times f\times\text{IPC}
       $$
 
-    - $N_{\text {core}}$ 是计算单元数量，$f$ 是主频，IPC 是每周期可完成的运算量（Tensor Core 场景下通常远大于 1）
+    - $N_{\text{core}}$ 是计算单元数量，$f$ 是主频，IPC 是每周期可完成的运算量（Tensor Core 场景下通常远大于 1）
 
   - 带宽 $\beta$
     - 也即计算平台的带宽上限，指的是一个计算平台倾尽全力每秒所能完成的内存交换量，单位是 `Byte/s`
       $$
-      \beta = \text {Bus Width}\times\text {Data Rate}
+      \beta = \text{Bus Width}\times\text{Data Rate}
       $$
 
   - 计算强度上限
@@ -1665,7 +1665,7 @@ description: 介绍 CUDA 的基本概念、GPU 架构、CUDA Toolkit、cuBLAS、
     - 单位是 `#FLOP` or `FLOPs`，例如卷积层的计算量公式如下:
 
       $$
-      \text {Conv Layer Time Complexity}: M^2\cdot K^2\cdot C_{in}\cdot C_{out}\quad (\text {FLOPS})
+      \text{Conv Layer Time Complexity}: M^2\cdot K^2\cdot C_{in}\cdot C_{out}\quad (\text{FLOPS})
       $$
 
     - $M$：每个卷积核输出特征图（Feature Map）的边长
@@ -1688,14 +1688,14 @@ description: 介绍 CUDA 的基本概念、GPU 架构、CUDA Toolkit、cuBLAS、
 
     - 由于数据类型通常为 float32 ，因此需要乘以四
       $$
-      \text {Conv Layer Space Complexity}:(K^2\cdot C_{in}\cdot C_{out}+M^2\cdot C_{out})\cdot 4\quad (\text {Bytes})
+      \text{Conv Layer Space Complexity}:(K^2\cdot C_{in}\cdot C_{out}+M^2\cdot C_{out})\cdot 4\quad (\text{Bytes})
       $$
 
   - 模型的计算强度 / 算术强度（Arithmetic Intensity） $I$
     - 由计算量除以访存量就可以得到模型的计算强度，它表示此模型在计算过程中，每 Byte 内存交换到底用于进行多少次浮点运算，单位是 `FLOPs/Byte`
 
       $$
-      \text {I}=\frac {\text {FLOPs}}{\text {Bytes accessed}}
+      \text{I}=\frac {\text{FLOPs}}{\text{Bytes accessed}}
       $$
 
     - 可以看到，模计算强度越大，其内存使用效率越高
@@ -1719,8 +1719,8 @@ description: 介绍 CUDA 的基本概念、GPU 架构、CUDA Toolkit、cuBLAS、
     $$
     P =
     \begin {cases}
-    \beta \cdot I, & \text {when} I <I_{\text {max}} \quad \text {\color {red} Memory Bound} \\
-    \pi, & \text {when} I \ge I_{\text {max}} \quad \text {\color {green} Compute Bound}
+    \beta \cdot I, & \text{when} I <I_{\text{max}} \quad \text{\color {red} Memory Bound} \\
+    \pi, & \text{when} I \ge I_{\text{max}} \quad \text{\color {green} Compute Bound}
     \end {cases}
     $$
   - 其示意图如下
@@ -1749,7 +1749,7 @@ description: 介绍 CUDA 的基本概念、GPU 架构、CUDA Toolkit、cuBLAS、
   - 可以用 Occupancy 来衡量并行度：
 
     $$
-    \text {Occupancy} = \frac {\text {Active\ Warps\ per\ SM}}{\text {Maximum\ Warps\ per\ SM}}
+    \text{Occupancy} = \frac {\text{Active\ Warps\ per\ SM}}{\text{Maximum\ Warps\ per\ SM}}
     $$
 
   - SM 的资源是有限的，比如 register 总量、shared memory 总量、最大线程数、最大 block 数等都是有限的
@@ -1825,18 +1825,18 @@ description: 介绍 CUDA 的基本概念、GPU 架构、CUDA Toolkit、cuBLAS、
   - 计算公式
 
     $$
-    \text {MFU} = \frac {\text {实际 FLOPs}}{\text {理论峰值 FLOPs}} \times 100%
+    \text{MFU} = \frac {\text{实际 FLOPs}}{\text{理论峰值 FLOPs}} \times 100%
     $$
 
   - 首先要统计模型的计算量，对于 Transformer 类模型，常用的估算公式（以前向计算为例）：
     - Self-Attention (每层)：
       $$
-      \text {FLOPs}_{\text {attn}} \approx 4 \times \text {seq\_len} \times \text {hidden\_dim}^2 + 2 \times \text {seq\_len}^2 \times \text {hidden\_dim}
+      \text{FLOPs}_{\text{attn}} \approx 4 \times \text{seq\_len} \times \text{hidden\_dim}^2 + 2 \times \text{seq\_len}^2 \times \text{hidden\_dim}
       $$
     - MLP (Feed-Forward) 每层：
 
       $$
-      \text {FLOPs}_{\text {MLP}} \approx 8 \times \text {seq\_len} \times \text {hidden\_dim} \times \text {intermediate\_dim}
+      \text{FLOPs}_{\text{MLP}} \approx 8 \times \text{seq\_len} \times \text{hidden\_dim} \times \text{intermediate\_dim}
       $$
 
     - 然后累加所有层，并乘以 batch size 得到每个 step 的 FLOPs
@@ -1845,20 +1845,20 @@ description: 介绍 CUDA 的基本概念、GPU 架构、CUDA Toolkit、cuBLAS、
   - 然后结合吞吐率（Throughput），假设已经知道每秒处理的样本数（tokens 或 batch）：
 
     $$
-    \text {实际 FLOPs/s} = \text {每 step FLOPs} \times \text {step/s}
+    \text{实际 FLOPs/s} = \text{每 step FLOPs} \times \text{step/s}
     $$
 
   - 例如，每秒训练 1000 个序列，每个序列 1024 token，模型每 token 前向 + 反向需要 10 GFLOPs，那么：
 
     $$
-    \text {实际 FLOPs/s} = 1000 \times 10 \text {GFLOPs} = 10, \text {TFLOPs/s}
+    \text{实际 FLOPs/s} = 1000 \times 10 \text{GFLOPs} = 10, \text{TFLOPs/s}
     $$
 
   - 理论峰值 FLOPs 通常可以在 GPU 数据手册查到，例如：
     - NVIDIA RTX 4090\*- FP32 理论峰值约 82.6 TFLOPs，FP16 Tensor Core 可达 330 TFLOPs
     - 计算公式：
       $$
-      \text {FLOPs}_{\text {theoretical}} = \text {CUDA 核心数} \times \text {每个核心时钟频率} \times \text {每周期浮点运算数}
+      \text{FLOPs}_{\text{theoretical}} = \text{CUDA 核心数} \times \text{每个核心时钟频率} \times \text{每周期浮点运算数}
       $$
 
   - Tensor Core 的情况要区分 FP16/BF16，因为每个 Tensor Core 每个时钟周期可以做多个 MAC（乘加）操作
@@ -1873,7 +1873,7 @@ description: 介绍 CUDA 的基本概念、GPU 架构、CUDA Toolkit、cuBLAS、
     - MFU：
 
       $$
-      \text {MFU} = \frac {5}{1320} \times 100\% \approx 0.38\%
+      \text{MFU} = \frac {5}{1320} \times 100\% \approx 0.38\%
       $$
 
     - 很低，说明 GPU 大部分时间没在做计算，可能瓶颈在 显存带宽、通信、数据加载或 Kernel 利用率不高
@@ -1974,8 +1974,8 @@ description: 介绍 CUDA 的基本概念、GPU 架构、CUDA Toolkit、cuBLAS、
 - 可以改为使用 1D block，用一个 threadIdx.x 手动 “拆” 出二维坐标：
 
   $$
-  x = \text {blockIdx.x} \cdot \text {BLOCKSIZE} + \left\lfloor \frac {\text {threadIdx.x}}{\text {BLOCKSIZE}} \right\rfloor\\
-  y = \text {blockIdx.y} \cdot \text {BLOCKSIZE} + (\text {threadIdx.x} \bmod \text {BLOCKSIZE})
+  x = \text{blockIdx.x} \cdot \text{BLOCKSIZE} + \left\lfloor \frac {\text{threadIdx.x}}{\text{BLOCKSIZE}} \right\rfloor\\
+  y = \text{blockIdx.y} \cdot \text{BLOCKSIZE} + (\text{threadIdx.x} \bmod \text{BLOCKSIZE})
   $$
 
 - 直观理解上，`threadIdx.x / BLOCKSIZE` → 行内编号（决定 x），`threadIdx.x % BLOCKSIZE` → 列内编号（决定 y）
@@ -2031,8 +2031,8 @@ description: 介绍 CUDA 的基本概念、GPU 架构、CUDA Toolkit、cuBLAS、
 - 以矩阵乘法为例
   - 假设进行运算：$C = A \times B$
   - Tiling 会把大矩阵拆成很多小块：
-    - A 的一个 tile：$\text {BLOCK\_SIZE\_M} \times \text {BLOCK\_SIZE\_K}$
-    - B 的一个 tile：$\text {BLOCK\_SIZE\_K} \times \text {BLOCK\_SIZE\_N}$
+    - A 的一个 tile：$\text{BLOCK\_SIZE\_M} \times \text{BLOCK\_SIZE\_K}$
+    - B 的一个 tile：$\text{BLOCK\_SIZE\_K} \times \text{BLOCK\_SIZE\_N}$
 
   - 这些 tile 的大小通常正好适合放进共享内存，并且和 block 中线程的排布对应
 
@@ -2044,7 +2044,7 @@ description: 介绍 CUDA 的基本概念、GPU 架构、CUDA Toolkit、cuBLAS、
   - 同步：使用 \_\_syncthreads ()，确保 A、B 的 tile 已经全部加载完成，没有线程读到未初始化的数据
   - 在 shared memory 中计算
     - 现在每个线程需要的数据都已经在共享内存里，访问延迟极低
-    - 于是线程就可以计算 $C_{\text {tile}} += A_{\text {tile}} \times B_{\text {tile}}$
+    - 于是线程就可以计算 $C_{\text{tile}} += A_{\text{tile}} \times B_{\text{tile}}$
     - 并把结果累加到一个寄存器里的 accumulation matrix 中
     - 这个 accumulation 是 跨 tile 的，不会每次清零
   - 沿着 $K$ 维移动到下一个 tile，重复加载、同步、计算、累加，直到所有 tile 都处理完

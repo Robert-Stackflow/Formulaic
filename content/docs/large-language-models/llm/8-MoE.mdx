@@ -186,7 +186,7 @@ description: 介绍混合专家（Mixture of Experts，MoE）架构及其在大�
 
   - 实际应用中，门控网络通常采用一个简单的前馈神经网络加 Softmax，用于学习输入到专家的分配关系：
     $$
-    G_\sigma (x) = \text {Softmax}(x \cdot W_g)
+    G_\sigma (x) = \text{Softmax}(x \cdot W_g)
     $$
 
 - 门控网络的示意图如下：
@@ -219,7 +219,7 @@ description: 介绍混合专家（Mixture of Experts，MoE）架构及其在大�
   - 首先，在门控 logits 上加入噪声：
 
     $$
-    H (x)_i = (x \cdot W_g)_i + \epsilon \cdot \text {Softplus}((x \cdot W_{\text {noise}})_i)
+    H (x)_i = (x \cdot W_g)_i + \epsilon \cdot \text{Softplus}((x \cdot W_{\text{noise}})_i)
     $$
     - 其中，$\epsilon \sim \mathcal {N}(0,1)$ 是每个令牌采样的标准高斯噪声，$W_{noise}$ 是另一个可训练的权重矩阵，用于根据输入对噪声进行缩放
     - softplus 函数确保噪声缩放因子为正，随后使用这些含噪声的分数进行 top-k 选择
@@ -232,10 +232,10 @@ description: 介绍混合专家（Mixture of Experts，MoE）架构及其在大�
   - 随后，仅保留前 $k$ 个值，其余位置置为 $-\infty$：
 
     $$
-    \text {KeepTopK}(v, k)_i =
+    \text{KeepTopK}(v, k)_i =
     \begin {cases}
-    v_i & \text {if} v_i \text {is in the top} k \text {elements of} v, \\
-    -\infty & \text {otherwise.}
+    v_i & \text{if} v_i \text{is in the top} k \text{elements of} v, \\
+    -\infty & \text{otherwise.}
     \end {cases}
     $$
 
@@ -246,7 +246,7 @@ description: 介绍混合专家（Mixture of Experts，MoE）架构及其在大�
   - 最后对结果应用 Softmax，得到最终门控权重：
 
     $$
-    G (x) = \text {Softmax}(\text {KeepTopK}(H (x), k))
+    G (x) = \text{Softmax}(\text{KeepTopK}(H (x), k))
     $$
 
   - 示意图如下：
@@ -425,7 +425,7 @@ description: 介绍混合专家（Mixture of Experts，MoE）架构及其在大�
 - 假设输入维度为 [B,S,H]，那么总的 token 数量就是 B×S
 
 - 路由网络
-  - 一个线性层 + softmax，即 $G (X)=\text {Softmax}(X\cdot W_g)$
+  - 一个线性层 + softmax，即 $G (X)=\text{Softmax}(X\cdot W_g)$
   - $W_g$ 维度大小为 [H,E]，当输入数据 [B,S,H] 经过路由网络后，得到 prob 数据 [B,S,E]，含义是每个 token 对应 E 个专家的分数（概率）
   - 基于此，进行 Top-K 选择，输出 scores 和 indices，维度均为 [B,S,K]
 
@@ -544,11 +544,11 @@ description: 介绍混合专家（Mixture of Experts，MoE）架构及其在大�
   - Capacity factor：
 
     $$
-    \text {Expert Capacity} =
-    \left (\frac {\text {tokens per batch}}{\text {number of experts}}
+    \text{Expert Capacity} =
+    \left (\frac {\text{tokens per batch}}{\text{number of experts}}
     \right)
     \times
-    \text {capacity factor}
+    \text{capacity factor}
     $$
     - 决定了专家可以处理的 token 数量，如果提高容量因子，每个专家将能够处理更多的 token
     - 当容量因子大于 1 时，可以在一定程度上缓解 token 在专家之间分配不均的问题
@@ -1449,7 +1449,7 @@ description: 介绍混合专家（Mixture of Experts，MoE）架构及其在大�
   - 熵正则化项通常定义为：
 
     $$
-    \mathcal {L}_{\text {entropy}}
+    \mathcal {L}_{\text{entropy}}
     =
     -\lambda_e \cdot \frac {1}{N \cdot T}
     \sum_{i=1}^{N \cdot T}

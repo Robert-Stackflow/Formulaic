@@ -1664,7 +1664,7 @@ description: 介绍 Megatron 框架的设计模式、训练流程以及代码实
 - 首先求解最大值，得到基于全局的最大 logit 值，再进行减法来防止计算溢出
 
   $$
-  \text {Softmax}(x_i) = \frac {\exp (x_i - \max (x))}{\sum_j \exp (x_j - \max (x))}
+  \text{Softmax}(x_i) = \frac {\exp (x_i - \max (x))}{\sum_j \exp (x_j - \max (x))}
   $$
 
 - 在这里，all-reduce 操作是取全局最大值，而不是进行相加操作
@@ -1698,7 +1698,7 @@ description: 介绍 Megatron 框架的设计模式、训练流程以及代码实
 - 我们的优化目标是最小化以下损失值：
 
   $$
-  \text {Loss} = \frac {e - L}{e}
+  \text{Loss} = \frac {e - L}{e}
   $$
 
 - 其中：
@@ -1827,7 +1827,7 @@ description: 介绍 Megatron 框架的设计模式、训练流程以及代码实
 
     - 如果 fraction 位不全为 0，则表示一个很小的数字（fraction 表示由 fraction 位的 bitmap 换算成十进制后的结果）
       $$
-      (-1)^{\text {signbit}} \cdot 2^{-14} \cdot \left (0 + \frac {\text {fraction}}{1024}\right)
+      (-1)^{\text{signbit}} \cdot 2^{-14} \cdot \left (0 + \frac {\text{fraction}}{1024}\right)
       $$
 
   - 如果 exponent 位全为 1，此时意味着表达的数值可能非常大
@@ -1836,7 +1836,7 @@ description: 介绍 Megatron 框架的设计模式、训练流程以及代码实
 
   - 其他情况
     $$
-    (-1)^{\text {signbit}} * 2^{(\text {exponent}-15)} * \left (1 + \frac {\text {fraction}}{1024}\right)
+    (-1)^{\text{signbit}} * 2^{(\text{exponent}-15)} * \left (1 + \frac {\text{fraction}}{1024}\right)
     $$
 
 - 计算示例
@@ -1990,14 +1990,14 @@ description: 介绍 Megatron 框架的设计模式、训练流程以及代码实
 - 常量损失放大
   - 若训练全程采用固定的缩放因子 `loss_scale` 对损失（Loss）进行缩放，该策略被称为「常量损失放大」，具体执行流程如下：
 
-  - 损失放大阶段（Scale up）：在反向传播（backward）阶段，将 Loss 值放大 $2^{\text {loss\_scale}}$ 倍，基于放大后的 Loss 计算梯度，并将梯度以 FP16 精度存储（兼顾显存效率）
+  - 损失放大阶段（Scale up）：在反向传播（backward）阶段，将 Loss 值放大 $2^{\text{loss\_scale}}$ 倍，基于放大后的 Loss 计算梯度，并将梯度以 FP16 精度存储（兼顾显存效率）
 
   - 梯度反缩放阶段（Scale down），当需要用梯度更新权重时，执行以下操作：
     - 梯度校验：先检查放大后的梯度是否出现上溢（inf/nan）—— 尽管放大 Loss 解决了梯度下溢问题，但可能引发梯度上溢；
 
     - 权重更新判定：
       - 若梯度存在上溢，直接跳过本轮（step）的权重更新；
-      - 若梯度无异常，则对 FP16 梯度执行反缩放（unscale）：将梯度值缩小 $2^{\text {loss\_scale}}$ 倍，并转换为 FP32 精度，用于本轮权重更新
+      - 若梯度无异常，则对 FP16 梯度执行反缩放（unscale）：将梯度值缩小 $2^{\text{loss\_scale}}$ 倍，并转换为 FP32 精度，用于本轮权重更新
 
 - 常量损失放大的核心问题
   - 该策略看似可行，但存在一个关键缺陷：固定 `loss_scale` 的取值难以适配训练全程

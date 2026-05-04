@@ -555,7 +555,7 @@ description: 介绍 PyTorch 中模型定义的核心概念 nn.Module，以及常
 
   $$
   \frac {\partial \mathcal {L}}{\partial x}
-  \rightarrow \text {LN}
+  \rightarrow \text{LN}
   \rightarrow (x + f (x))
   $$
   - LayerNorm 在反向传播中会引入 scale /shift 的耦合，削弱 identity shortcut 的 “直通梯度”
@@ -606,7 +606,7 @@ description: 介绍 PyTorch 中模型定义的核心概念 nn.Module，以及常
 - 在非常深的模型中，可能会使用
 
   $$
-  x = x + \alpha \cdot f (\text {LN}(x)),\quad \alpha = \frac {1}{\sqrt {N}}
+  x = x + \alpha \cdot f (\text{LN}(x)),\quad \alpha = \frac {1}{\sqrt {N}}
   $$
   - 其中 $\alpha$ 也可以是可学习参数，来控制早期训练的激活幅度，稳定深层网络的训练过程
 

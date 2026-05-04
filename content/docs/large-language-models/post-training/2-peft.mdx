@@ -56,7 +56,7 @@ description: 介绍参数高效微调（PEFT）技术及其应用
   - 通过减少优化器状态和梯度的内存占用，并对冻结的模型参数进行量化，基于额外参数的方法使得微调更大规模的网络成为可能，或者允许使用更大的 microbatch size，从而提升 GPU 上的训练吞吐率。其中，batch size 的关系为
 
     $$
-    \text {Batch size} = \text {microbatch size} \times \text {gradient accumulation} \times \text {num. devices}
+    \text{Batch size} = \text{microbatch size} \times \text{gradient accumulation} \times \text{num. devices}
     $$
 
   - 此外，由于需要更新的参数数量更少，PEFT 方法中的优化器更新步骤相比全量微调要快得多，这一点在实际中非常明显
@@ -82,13 +82,13 @@ description: 介绍参数高效微调（PEFT）技术及其应用
     =
     x
     +
-    W_{\text {up}}
+    W_{\text{up}}
     \sigma
-    (W_{\text {down}} x
+    (W_{\text{down}} x
     )
     $$
     - $x \in \mathbb {R}^h$：Transformer 层的隐藏状态
-    - $W_{\text {down}} \in \mathbb {R}^{r \times h}$、$W_{\text {up}} \in \mathbb {R}^{h \times r}$
+    - $W_{\text{down}} \in \mathbb {R}^{r \times h}$、$W_{\text{up}} \in \mathbb {R}^{h \times r}$
     - $r \ll h$：瓶颈维度
     - $\sigma$：非线性激活函数（ReLU / GELU）
 
@@ -102,7 +102,7 @@ description: 介绍参数高效微调（PEFT）技术及其应用
   - 每层 Adapter 参数量：
 
     $$
-    |W_{\text {down}}| + |W_{\text {up}}|
+    |W_{\text{down}}| + |W_{\text{up}}|
     = hr + rh = 2hr
     $$
 
@@ -121,9 +121,9 @@ description: 介绍参数高效微调（PEFT）技术及其应用
   - 比例：
 
   $$
-  \frac {\text {Adapter}}{\text {Full FT}} \approx \frac {r}{h}
+  \frac {\text{Adapter}}{\text{Full FT}} \approx \frac {r}{h}
   $$
-  - 当 $h = 4096$、$r = 16$ 时，参数比例 $\approx 0.4%$，参数规模显著更小
+  - 当 $h = 4096$、$r = 16$ 时，参数比例 $\approx 0.4\%$，参数规模显著更小
 
 - 根据最初的 Adapter 论文结果，使用 Adapter 方法训练的 BERT 模型，在仅训练 3.6% 参数的情况下，就可以达到与全参数微调的 BERT 模型相当的性能
 
@@ -325,8 +325,8 @@ description: 介绍参数高效微调（PEFT）技术及其应用
   - 参数量略高于静态 Prefix，但远低于 Adapter / LoRA
 
 - 根本区别
-  - 标准 Prefix Tuning 学习的是 $\mathbb {E}_X [\text {attention bias}]$
-  - Adaptive Prefix Tuning 学习的是 $\text {attention bias}(X)$​
+  - 标准 Prefix Tuning 学习的是 $\mathbb {E}_X [\text{attention bias}]$
+  - Adaptive Prefix Tuning 学习的是 $\text{attention bias}(X)$​
 
 - 伪代码
 
@@ -431,7 +431,7 @@ description: 介绍参数高效微调（PEFT）技术及其应用
 - 在这些方法中，最为人熟知的是 Low-Rank Adaptation（LoRA），其采用一种简单的低秩矩阵分解来参数化权重更新：
 
   $$
-  \delta W = W_{\text {down}} W_{\text {up}}
+  \delta W = W_{\text{down}} W_{\text{up}}
   $$
 
 - 这种方法实现起来非常直接，并且已经在参数规模高达 1750 亿的模型上进行了验证
@@ -499,13 +499,13 @@ description: 介绍参数高效微调（PEFT）技术及其应用
 ![LoRA](/img/llm/lora.png)
 
 - 基本思想
-  - 设一个大模型包含一个权重矩阵 $W \in \mathbb {R}^{\text {in} \times \text {out}}$
+  - 设一个大模型包含一个权重矩阵 $W \in \mathbb {R}^{\text{in} \times \text{out}}$
 
   - 例如总参数规模是 7B，在标准微调中，反向传播会学习一个与 $W$​ 同形状的更新量：
 
     $$
-    \Delta W \in \mathbb {R}^{\text {in} \times \text {out}}\\
-    W_{\text {updated}} = W + \Delta W
+    \Delta W \in \mathbb {R}^{\text{in} \times \text{out}}\\
+    W_{\text{updated}} = W + \Delta W
     $$
 
   - 问题在于，$\Delta W$ 和 $W$ 一样大，需要存梯度、optimizer states（Adam: 2×FP32），显存和带宽成本与模型规模线性增长，这在 7B、70B 甚至 175B 模型上是不可承受的
@@ -516,16 +516,16 @@ description: 介绍参数高效微调（PEFT）技术及其应用
 
     $$
     \Delta W = W_A W_B\\
-    W_A \in \mathbb {R}^{\text {in} \times r}, \quad
-    W_B \in \mathbb {R}^{r \times \text {out}}, \quad
-    r \ll \min (\text {in}, \text {out})
+    W_A \in \mathbb {R}^{\text{in} \times r}, \quad
+    W_B \in \mathbb {R}^{r \times \text{out}}, \quad
+    r \ll \min (\text{in}, \text{out})
     $$
 
   - 这就是 LoRA 的低秩分解
 
 - 参数量节省
-  - 原始微调需要优化的参数量：$|\Delta W| = \text {in} \times \text {out}$
-  - LoRA 需要优化的参数量：$|W_A| + |W_B| = r (\text {in} + \text {out})$
+  - 原始微调需要优化的参数量：$|\Delta W| = \text{in} \times \text{out}$
+  - LoRA 需要优化的参数量：$|W_A| + |W_B| = r (\text{in} + \text{out})$
   - 当 $r$ 很小时（如 4、8、16），参数量下降 10–100×，梯度、optimizer states 同比例下降，显存占用显著减少
 
 - LoRA 的关键工程优势在于：
@@ -586,7 +586,7 @@ $$
     $$
     \delta W = W_A W_B
     $$
-    - 其中 $W_A \in \mathbb {R}^{\text {in} \times r}$、$W_B \in \mathbb {R}^{r \times \text {out}}$
+    - 其中 $W_A \in \mathbb {R}^{\text{in} \times r}$、$W_B \in \mathbb {R}^{r \times \text{out}}$
 
   - 这在工程上非常高效，但有一个结构性限制：$\operatorname {rank}(\delta W) \le r$
 
@@ -612,7 +612,7 @@ $$
   - 这意味着如果 $A$ 和 $B$ 都是低秩的，它们的 Kronecker 积可以拥有显著更高的秩
 
 - 为什么 Kronecker 积更划算
-  - 假设 LoRA：参数量 $\sim r (\text {in} + \text {out})$，秩 $\le r$，KronA：参数量 $\sim nm + kl$，秩 $\le \operatorname {rank}(A)\operatorname {rank}(B)$
+  - 假设 LoRA：参数量 $\sim r (\text{in} + \text{out})$，秩 $\le r$，KronA：参数量 $\sim nm + kl$，秩 $\le \operatorname {rank}(A)\operatorname {rank}(B)$
   - 在合理拆分矩阵形状的情况下，KronA 用相同甚至更少参数，可以表达更复杂的线性变换结构，尤其适合具有二维或块结构的权重矩阵
   - 直觉上，LoRA 是 “一条低维通道”，而 KronA 是 “两个低维结构的张量化组合”
 
@@ -629,7 +629,7 @@ $$
 
   - KronA 的实现思路是先把向量 $x$ reshape 成矩阵，然后左乘 $A^\top$，再右乘 $B$​，最后 flatten 回向量
 
-- 在 GLUE 上，参数预算约为 $0.07%$ 时：
+- 在 GLUE 上，参数预算约为 $0.07\%$ 时：
   - 性能：KronA ≥ LoRA ≈ Adapter ≈ Compacter
   - 推理速度：KronA 显著快于 Adapter 和 Compacter
   - 训练参数量：相同
@@ -819,7 +819,7 @@ $$
   $$
   W = W_0 + W_A \Lambda W_B
   $$
-  - 其中 $W_A \in \mathbb {R}^{d_{\text {in}} \times r}$、$W_B \in \mathbb {R}^{r \times d_{\text {out}}}$、$\Lambda \in \mathbb {R}^{r \times r}$ 是对角矩阵
+  - 其中 $W_A \in \mathbb {R}^{d_{\text{in}} \times r}$、$W_B \in \mathbb {R}^{r \times d_{\text{out}}}$、$\Lambda \in \mathbb {R}^{r \times r}$ 是对角矩阵
 
   - 可以把它类比为：
 
@@ -1137,13 +1137,13 @@ $$
 - 前向传播过程
   - 设 $X$ 为原始 token hidden states，$P$ 为 adapter prompt（可学习）
 
-  - 原 attention：$\text {Attn}_{\text {orig}}(X)$
+  - 原 attention：$\text{Attn}_{\text{orig}}(X)$
 
-  - Adapter attention：$\text {Attn}_{\text {adapter}}(Q=X,\ K=P,\ V=P)$
+  - Adapter attention：$\text{Attn}_{\text{adapter}}(Q=X,\ K=P,\ V=P)$
 
   - 最终输出：
     $$
-    X' = X + \text {Attn}_{\text {orig}}(X) + \text {Attn}_{\text {adapter}}(X, P)
+    X' = X + \text{Attn}_{\text{orig}}(X) + \text{Attn}_{\text{adapter}}(X, P)
     $$
 
 - 伪代码

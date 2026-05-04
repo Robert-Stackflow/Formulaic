@@ -9,14 +9,14 @@ description: 介绍位置编码的基本原理、常见方法（正余弦编码�
 
 ## 什么是位置编码
 
-- 假设序列长度为 $L$、模型维度为 $d_{\text {model}}$，输入嵌入可表示为：
+- 假设序列长度为 $L$、模型维度为 $d_{\text{model}}$，输入嵌入可表示为：
 
   $$
-  \text {InputEmbedding}[i] = \text {TokenEmbedding}[i] + \text {PositionalEncoding}[i]
+  \text{InputEmbedding}[i] = \text{TokenEmbedding}[i] + \text{PositionalEncoding}[i]
   $$
-  - $\text {TokenEmbedding}[i]$：表示 token 的语义信息
+  - $\text{TokenEmbedding}[i]$：表示 token 的语义信息
 
-  - $\text {PositionalEncoding}[i]$：表示 token 的位置信息
+  - $\text{PositionalEncoding}[i]$：表示 token 的位置信息
 
 - Transformer 没有循环或卷积结构，所以无法天然知道 token 的顺序，因此需要给每个 token 添加位置信息
 - 位置编码大体上分为两种方法：
@@ -52,7 +52,7 @@ description: 介绍位置编码的基本原理、常见方法（正余弦编码�
 - 考虑将位置向量中的每个元素都用一个 sin 函数来表示，那么第 t 个 token 的位置向量可以表示为
 
   $$
-  PE_t = \left [\sin\left (\frac {1}{2^0} t\right), \sin\left (\frac {1}{2^1} t\right), \dots, \sin\left (\frac {1}{2^{i-1}} t\right), \dots, \sin\left (\frac {1}{2^{d_{\text {model}}-1}} t\right) \right]
+  PE_t = \left [\sin\left (\frac {1}{2^0} t\right), \sin\left (\frac {1}{2^1} t\right), \dots, \sin\left (\frac {1}{2^{i-1}} t\right), \dots, \sin\left (\frac {1}{2^{d_{\text{model}}-1}} t\right) \right]
   $$
 
 - 显然，维度索引越大，对应的值随着 t 的变化程度越小
@@ -60,7 +60,7 @@ description: 介绍位置编码的基本原理、常见方法（正余弦编码�
 - 由于 sin 的周期函数，从不同的 t 的角度来看，如果函数的频率偏大，波长偏短，那么不同 t 下的位置向量可能重合，为了避免这种情况，可以将这个频率设置为很小的值
 
   $$
-  PE_t = \left [\sin (w_0 t), \sin (w_1 t), \dots, \sin (w_{i-1} t), \dots, \sin (w_{d_{\text {model}}-1} t) \right],\quad w_i = \frac {1}{10000^{i/(d_{\text {model}}-1)}}
+  PE_t = \left [\sin (w_0 t), \sin (w_1 t), \dots, \sin (w_{i-1} t), \dots, \sin (w_{d_{\text{model}}-1} t) \right],\quad w_i = \frac {1}{10000^{i/(d_{\text{model}}-1)}}
   $$
 
 - 通过 sin 函数，实现了
@@ -96,7 +96,7 @@ description: 介绍位置编码的基本原理、常见方法（正余弦编码�
 - 由此，可以修改原来均为 sin 函数的位置编码，让位置两两一组，分别用 sin 和 cos 函数来表示
 
   $$
-  PE_t = \left [\sin (w_0 t), \cos (w_0 t), \sin (w_1 t), \cos (w_1 t), \dots, \sin (w_{\frac {d_{\text {model}}}{2}-1} t), \cos (w_{\frac {d_{\text {model}}}{2}-1} t) \right]
+  PE_t = \left [\sin (w_0 t), \cos (w_0 t), \sin (w_1 t), \cos (w_1 t), \dots, \sin (w_{\frac {d_{\text{model}}}{2}-1} t), \cos (w_{\frac {d_{\text{model}}}{2}-1} t) \right]
   $$
 
 - 从而得到一个线性变换公式
@@ -113,8 +113,8 @@ description: 介绍位置编码的基本原理、常见方法（正余弦编码�
 
   $$
   \begin {align*}
-  \text {PE}_{(pos, 2i)} &= \sin\left (\frac {pos}{10000^{2i/d_{\text {model}}}}\right) \\
-  \text {PE}_{(pos, 2i+1)} &= \cos\left (\frac {pos}{10000^{2i/d_{\text {model}}}}\right)
+  \text{PE}_{(pos, 2i)} &= \sin\left (\frac {pos}{10000^{2i/d_{\text{model}}}}\right) \\
+  \text{PE}_{(pos, 2i+1)} &= \cos\left (\frac {pos}{10000^{2i/d_{\text{model}}}}\right)
   \end {align*}
   $$
   - $pos$ 为 token 在序列中的位置（0,1,2,...,L-1）
@@ -130,9 +130,9 @@ description: 介绍位置编码的基本原理、常见方法（正余弦编码�
 
     $$
     \begin {align*}
-    PE_t^T * PE_{t+\triangle t} &= \sum_{i=0}^{\frac {d_{\text {model}}}{2}-1} \left [\sin (w_i t)\sin (w_i (t+\triangle t)) + \cos (w_i t)\cos (w_i (t+\triangle t)) \right] \\
-    &= \sum_{i=0}^{\frac {d_{\text {model}}}{2}-1} \cos\left (w_i \left ( t - (t+\triangle t) \right)\right) \\
-    &= \sum_{i=0}^{\frac {d_{\text {model}}}{2}-1} \cos (w_i \triangle t)
+    PE_t^T * PE_{t+\triangle t} &= \sum_{i=0}^{\frac {d_{\text{model}}}{2}-1} \left [\sin (w_i t)\sin (w_i (t+\triangle t)) + \cos (w_i t)\cos (w_i (t+\triangle t)) \right] \\
+    &= \sum_{i=0}^{\frac {d_{\text{model}}}{2}-1} \cos\left (w_i \left ( t - (t+\triangle t) \right)\right) \\
+    &= \sum_{i=0}^{\frac {d_{\text{model}}}{2}-1} \cos (w_i \triangle t)
     \end {align*}
     $$
 
@@ -450,13 +450,13 @@ description: 介绍位置编码的基本原理、常见方法（正余弦编码�
 - 在普通注意力机制中，注意力分数为：
 
   $$
-  \text {score}_{ij} = \frac {Q_i \cdot K_j}{\sqrt {d}}
+  \text{score}_{ij} = \frac {Q_i \cdot K_j}{\sqrt {d}}
   $$
 
 - ALiBi（Attention with Linear Biases）不修改 token embedding，也不使用显式位置向量，而是直接在注意力分数中加入距离惩罚：
 
   $$
-  \text {score}_{ij} = \frac {Q_i \cdot K_j}{\sqrt {d}} - m_h (i - j)
+  \text{score}_{ij} = \frac {Q_i \cdot K_j}{\sqrt {d}} - m_h (i - j)
   $$
   - $i$ 为当前 token 的位置
 
@@ -503,11 +503,11 @@ description: 介绍位置编码的基本原理、常见方法（正余弦编码�
   - 在训练阶段，序列长度通常较短：
     - 受限于训练成本，长序列显著增加计算量与内存开销
 
-    - 真实语料存在严重长尾分布，大部分文本并不长，因此设置极大 $\text {max\_length}$ 在统计意义上并不有效
+    - 真实语料存在严重长尾分布，大部分文本并不长，因此设置极大 $\text{max\_length}$ 在统计意义上并不有效
 
   - 在测试阶段，希望模型在远超训练长度的输入上仍保持性能，即**test-long**：
     $$
-    L_{\text {test}} \gg L_{\text {train}}
+    L_{\text{test}} \gg L_{\text{train}}
     $$
   - 但由于 Transformer 的位置编码是按训练域拟合的函数，超过训练位置后会出现无法控制的外推偏差
 
@@ -531,13 +531,13 @@ description: 介绍位置编码的基本原理、常见方法（正余弦编码�
     - 学习式位置编码（如 APE、T5 相对位置偏置）更明显地无法外推，但非学习式编码同样会影响上层参数的泛化性
     - 因此，位置编码不仅要形式上可外推，更需要在训练过程中避免对有限长度区间的过拟合
 
-  - 长序列导致注意力熵显著增大：在推理时，序列长度 $L_\text {test} \gg L_\text {train}$ 会改变注意力的统计结构：
+  - 长序列导致注意力熵显著增大：在推理时，序列长度 $L_\text{test} \gg L_\text{train}$ 会改变注意力的统计结构：
     - 随着 $L$ 增大，softmax 分布的熵上升，注意力更分散
     - 如果训练阶段仅在短序列上优化，模型会倾向于将注意力集中在局部区域，并学习到与短上下文相关的归纳偏置
     - 长序列输入会破坏这种偏置，导致：
 
       $$
-      \text {AttnEntropy}(L\_\text {test}) \gg \text {AttnEntropy}(L\_\text {train})
+      \text{AttnEntropy}(L\_\text{test}) \gg \text{AttnEntropy}(L\_\text{train})
       $$
 
       结果是注意力无法集中，各 token 难以聚焦于关键信息，最终造成性能下降
@@ -549,7 +549,7 @@ description: 介绍位置编码的基本原理、常见方法（正余弦编码�
 - 在 Transformer 中，注意力得分为
 
   $$
-  \text {score}_{mn} = Q_m \cdot K_n
+  \text{score}_{mn} = Q_m \cdot K_n
   $$
 
 - 若希望注意力依赖相对位置 $(m-n)$ 而非绝对位置 $(m,n)$，需满足
@@ -638,7 +638,7 @@ description: 介绍位置编码的基本原理、常见方法（正余弦编码�
 - 将 $d$ 维向量分成 $d/2$ 个二维子空间，每个子空间使用不同频率 $\theta_i$，则
 
   $$
-  (Q_m^{\text {rot}})^\top K_n^{\text {rot}}
+  (Q_m^{\text{rot}})^\top K_n^{\text{rot}}
   = \operatorname {Re}!\left [\sum_{i=0}^{d/2-1}
   q_{[2i:2i+1]},
   k_{[2i:2i+1]}^*,
@@ -723,9 +723,9 @@ description: 介绍位置编码的基本原理、常见方法（正余弦编码�
 
 - 分段缩放
   $$
-  \text {inv\_freq}_i =
+  \text{inv\_freq}_i =
   \begin {cases}
-  \frac {1}{\text {base}^{2i/d}} \cdot \alpha & (i < \text {cutoff}) \quad \text {（低频段：小缩放）} \\
-  \frac {1}{(\text {base} \cdot \lambda)^{2i/d}} & (i \geq \text {cutoff}) \quad \text {（高频段：NTK 缩放）}
+  \frac {1}{\text{base}^{2i/d}} \cdot \alpha & (i < \text{cutoff}) \quad \text{（低频段：小缩放）} \\
+  \frac {1}{(\text{base} \cdot \lambda)^{2i/d}} & (i \geq \text{cutoff}) \quad \text{（高频段：NTK 缩放）}
   \end {cases}
   $$

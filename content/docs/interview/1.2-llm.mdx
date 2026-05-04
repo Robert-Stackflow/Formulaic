@@ -13,7 +13,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - 根据原始点乘注意力
 
     $$
-    \text {Attention}(Q,K,V) = \text {softmax}\left (\frac {QK^\top}{\sqrt {d_k}}\right) V
+    \text{Attention}(Q,K,V) = \text{softmax}\left (\frac {QK^\top}{\sqrt {d_k}}\right) V
     $$
 
   - 如果不做 scale，就是：
@@ -100,7 +100,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
     \begin {align*}
     \mathbf {c}_t^Q &= W^{DQ} \mathbf {h}_t\\
     \mathbf {q}_t^C &= W^{UQ} \mathbf {c}_t^Q\\
-    \mathbf {q}_t^R &= \text {RoPE}(W^{QR} \mathbf {c}_t^Q)\\
+    \mathbf {q}_t^R &= \text{RoPE}(W^{QR} \mathbf {c}_t^Q)\\
     \mathbf {q}_{t,i} &= [\mathbf {q}_{t,i}^C; \mathbf {q}_{t,i}^R]
     \end {align*}
     $$
@@ -114,7 +114,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
     \begin {align*}
     \mathbf {c}_t^{KV} &= W^{DKV} \mathbf {h}_t\\
     \mathbf {k}_t^C &= W^{UK} \mathbf {c}_t^{KV}\\
-    \mathbf {k}_t^R &= \text {RoPE}(W^{KR} \mathbf {h}_t)\\
+    \mathbf {k}_t^R &= \text{RoPE}(W^{KR} \mathbf {h}_t)\\
     \mathbf {k}_{t,i} &= [\mathbf {k}_{t,i}^C; \mathbf {k}_t^R]\\
     \mathbf {v}_t^C &= W^{UV} \mathbf {c}_t^{KV}
     \end {align*}
@@ -127,7 +127,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
 
     $$
     \begin {align*}
-    \mathbf {o}_{t,i} &= \sum_{j=1}^t \text {Softmax}_j\left (\frac {\mathbf {q}_{t,i}^T \mathbf {k}_{j,i}}{\sqrt {d_h + d_h^R}}\right) \mathbf {v}_{j,i}^C\\
+    \mathbf {o}_{t,i} &= \sum_{j=1}^t \text{Softmax}_j\left (\frac {\mathbf {q}_{t,i}^T \mathbf {k}_{j,i}}{\sqrt {d_h + d_h^R}}\right) \mathbf {v}_{j,i}^C\\
     \mathbf {u}_t &= W^O [\mathbf {o}_{t,1}; \mathbf {o}_{t,2}; ...; \mathbf {o}_{t,n_h}]
     \end {align*}
     $$
@@ -318,14 +318,14 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
     - LayerNorm：先减均值，再除方差，含平移 + 缩放两步
 
       $$
-      \text {LayerNorm}(x) = \frac {x - \mu}{\sqrt {\sigma^2 + \epsilon}} * \gamma + \beta
+      \text{LayerNorm}(x) = \frac {x - \mu}{\sqrt {\sigma^2 + \epsilon}} * \gamma + \beta
       $$
 
     - RMSNorm：只做缩放，不移位，去掉均值
 
       $$
-      \text {RMSNorm}(x) = \frac {x}{\sqrt {\text {RMS}(x)^2 + \epsilon}} * \gamma\\
-      \text {RMS}(x) = \sqrt {\frac {1}{d}\sum_{i=1}^d x_i^2}
+      \text{RMSNorm}(x) = \frac {x}{\sqrt {\text{RMS}(x)^2 + \epsilon}} * \gamma\\
+      \text{RMS}(x) = \sqrt {\frac {1}{d}\sum_{i=1}^d x_i^2}
       $$
 
   - 为什么去掉 mean 依然有效？
@@ -344,7 +344,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - 门控 FFN 结构可统一表示为：
 
     $$
-    \text {FFN}(x) = \left (x W_1 \odot \text {act}(x W_2)\right) W_3
+    \text{FFN}(x) = \left (x W_1 \odot \text{act}(x W_2)\right) W_3
     $$
 
   - 通过门控机制对不同特征通道做动态选择与加权，让模型自适应控制信息流通，比普通 ReLU/GELU FFN 表达更精细、效率更高
@@ -421,8 +421,8 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
 
     $$
     \begin {align*}
-    \text {PE}_{(pos, 2i)} &= \sin\left (\frac {pos}{10000^{2i/d_{\text {model}}}}\right) \\
-    \text {PE}_{(pos, 2i+1)} &= \cos\left (\frac {pos}{10000^{2i/d_{\text {model}}}}\right)
+    \text{PE}_{(pos, 2i)} &= \sin\left (\frac {pos}{10000^{2i/d_{\text{model}}}}\right) \\
+    \text{PE}_{(pos, 2i+1)} &= \cos\left (\frac {pos}{10000^{2i/d_{\text{model}}}}\right)
     \end {align*}
     $$
 
@@ -468,7 +468,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - ALiBi（Attention with Linear Biases）不修改 token embedding，也不使用显式位置向量，而是直接在注意力分数中加入距离惩罚：
 
     $$
-    \text {score}_{ij} = \frac {Q_i \cdot K_j}{\sqrt {d}} - m_h (i - j)
+    \text{score}_{ij} = \frac {Q_i \cdot K_j}{\sqrt {d}} - m_h (i - j)
     $$
     - i 为当前 token 的位置
     - j 为被关注的 token 的位置
@@ -578,7 +578,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - 而 RoPE 位置是 “乘进去”（旋转），attention 内积天然变成下式，更干净、更结构化
 
     $$
-    \text {content} \times \text {relative position}
+    \text{content} \times \text{relative position}
     $$
 
 - RoPE 的代码实现
@@ -692,7 +692,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
     \omega_k^{\prime} =
     \begin {cases}
     \omega_k & k \leq k_0 \\
-    \text {interpolate}(\omega_k) & k > k_0
+    \text{interpolate}(\omega_k) & k > k_0
     \end {cases}
     $$
 
@@ -735,7 +735,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - 均衡辅助损失（Aux Loss）：直接在门控输出上加损失，强制让每个专家分到的 token 数量接近，让所有专家的平均概率
 
     $$
-    \text {aux\_loss} = (\text {gate\_prob.mean (dim=0)} \cdot \text {expert\_count}).sum ()
+    \text{aux\_loss} = (\text{gate\_prob.mean (dim=0)} \cdot \text{expert\_count}).sum ()
     $$
 
   - Top-K 随机平滑：选专家时加一点噪声，避免模型永远只选固定专家
@@ -745,7 +745,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - 计算公式
 
     $$
-    \text {aux\_loss} = \lambda \cdot \sum_i P_i \cdot C_i
+    \text{aux\_loss} = \lambda \cdot \sum_i P_i \cdot C_i
     $$
 
   - $P_i$：第 i 个专家被选中的概率
@@ -888,7 +888,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
 - Swin Transformer 的窗口注意力、移位窗口是怎么实现的？
   - 窗口注意力（Window Attention）
     - 将特征图划分为不重叠窗口，只在窗口内算注意力
-    - 复杂度从全局 $O (N^2)$ → 窗口内 $O ((\text {window\_size})^2)$，大幅降低
+    - 复杂度从全局 $O (N^2)$ → 窗口内 $O ((\text{window\_size})^2)$，大幅降低
   - 移位窗口（Shifted Window）
     - 下一层将窗口平移半窗，让相邻窗口信息交叉
     - 用 mask 注意力避免无效区域计算
@@ -1013,7 +1013,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
 - 视觉生成模型的一般流程
   - 文本编码器：CLIP/T5 text encoder 把 prompt 变成条件特征
   - VAE（变分自编码器）：负责把图像压缩到低维隐空间
-  - UNet / DiT（核心生成网络）：接收噪声隐变量 $z_t$ + 时间步 $t$ + 文本条件，预测噪声 $\epsilon_\theta (z_t, t, \text {text})$
+  - UNet / DiT（核心生成网络）：接收噪声隐变量 $z_t$ + 时间步 $t$ + 文本条件，预测噪声 $\epsilon_\theta (z_t, t, \text{text})$
   - 扩散过程：前向给图像逐步加高斯噪声，反向从噪声逐步去噪生成图像
 - 视觉生成模型的理论基础演变
   - DDPM：离散马尔可夫链

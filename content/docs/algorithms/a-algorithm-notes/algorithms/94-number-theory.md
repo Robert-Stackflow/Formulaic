@@ -148,7 +148,7 @@ description: 素数判定、埃氏筛法等数论基础知识与算法实现
 
 - 时间复杂度为 $O(n)$​
 
-- 质数定理 ——n 以内的质数数量约为 $\frac{n}{\ln n}$，因此可以预分配数组空间
+- 质数定理 —— n 以内的质数数量约为 \{$\frac{n}{\ln n}$\}，因此可以预分配数组空间
 
   ```cpp
   primes.reserve(static_cast<int>(n / log(n)) + 1);

@@ -2869,13 +2869,13 @@ description: 介绍 Build LLM from Scratch，包括 Tokenization、Batching、Mo
 - GELU 激活函数有多种实现方式，其标准定义如下，其中 $Φ(x)$ 代表标准高斯分布的累积分布函数
 
   $$
-  \text {GELU}(x)=x\cdot\Phi (x)
+  \text{GELU}(x)=x\cdot\Phi (x)
   $$
 
 - 实际工程中，人们通常会采用一种计算成本更低的近似实现方式：
 
   $$
-  \text {GELU}(x) \approx 0.5 \cdot x \cdot \left (1 + \tanh\left [\sqrt {\frac {2}{\pi}} \cdot \left (x + 0.044715 \cdot x^3\right)\right]\right)
+  \text{GELU}(x) \approx 0.5 \cdot x \cdot \left (1 + \tanh\left [\sqrt {\frac {2}{\pi}} \cdot \left (x + 0.044715 \cdot x^3\right)\right]\right)
   $$
 
 - GELU 实现
@@ -5039,7 +5039,7 @@ description: 介绍 Build LLM from Scratch，包括 Tokenization、Batching、Mo
 - 均方根层归一化的运算公式如下，其中 $x$ 为输入，$\gamma$ 为可训练参数（向量），$\epsilon$ 为用于避免除零错误的小常数：
 
   $$
-  y_i = \frac {x_i}{\text {RMS}(x)} \gamma_i, \quad \text {其中} \quad \text {RMS}(x) = \sqrt {\epsilon + \frac {1}{n} \sum x_i^2}
+  y_i = \frac {x_i}{\text{RMS}(x)} \gamma_i, \quad \text{其中} \quad \text{RMS}(x) = \sqrt {\epsilon + \frac {1}{n} \sum x_i^2}
   $$
 
 - RMSNorm 的实现
@@ -5093,7 +5093,7 @@ description: 介绍 Build LLM from Scratch，包括 Tokenization、Batching、Mo
 - 替换 GELU 激活函数为 SiLU 激活函数，也被称作 Swish 函数，公式如下：
 
   $$
-  \text {silu}(x) = x \cdot \sigma (x), \quad \text {其中} \sigma (x) \text {为 Sigmoid 函数}
+  \text{silu}(x) = x \cdot \sigma (x), \quad \text{其中} \sigma (x) \text{为 Sigmoid 函数}
   $$
 
 - SiLU 的代码实现
@@ -5131,7 +5131,7 @@ description: 介绍 Build LLM from Scratch，包括 Tokenization、Batching、Mo
 - Llama 使用了 SiLU 的一个 GLU 变体，即 SwiGLU，其公式如下
 
   $$
-  \text {SwiGLU}(x) = \text {SiLU}(\text {Linear}_1 (x)) * (\text {Linear}_2 (x))
+  \text{SwiGLU}(x) = \text{SiLU}(\text{Linear}_1 (x)) * (\text{Linear}_2 (x))
   $$
 
 - 这里有两个线性层，\* 表示逐元素乘法，而第三个线性层被应用于门控之后
@@ -5770,7 +5770,7 @@ description: 介绍 Build LLM from Scratch，包括 Tokenization、Batching、Mo
   - 下述公式中，旋转位置编码的基准值 $\theta$ 已从 Llama 2 的 10000 上调至 Llama 3 的 500000
 
     $$
-    \Theta = \left\{\theta_i = \text {base}^{\frac {-2 (i-1)}{d}}, i \in \left [1, 2, ..., d/2\right]\right\}
+    \Theta = \left\{\theta_i = \text{base}^{\frac {-2 (i-1)}{d}}, i \in \left [1, 2, ..., d/2\right]\right\}
     $$
 
   - 上述 $\theta$ 值为一组预定义参数，用于确定旋转矩阵中的旋转角度，其中 $d$ 代表嵌入空间的维度

@@ -322,7 +322,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - 在自回归推理（decode）阶段，每一步只生成 1 个 token，此时计算的特点是：
   - Q 只有一个（当前 token）
   - K/V 是历史所有 token（长度 t）
-  - attention 计算变成 $Q^T K \rightarrow \text {softmax} \rightarrow V$
+  - attention 计算变成 $Q^T K \rightarrow \text{softmax} \rightarrow V$
   - 这里 FLOPs 很少（O (t・d)），但问题在于：
     - 每一步都要把整个 KV cache 从 HBM 读出来
     - 计算量小，但访存量大
@@ -487,7 +487,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
 - KV Cache 需要占用多少显存？公式计算？
 
   $$
-  \text {KV Cache 显存 (Bytes)} = 2 \times N_L \times B \times S \times N_{kv} \times d_h \times D_b
+  \text{KV Cache 显存 (Bytes)} = 2 \times N_L \times B \times S \times N_{kv} \times d_h \times D_b
   $$
   - 2：同时存储 Key 与 Value 两份矩阵
   - $N_L$ (num_layers)：Transformer 模型总层数
@@ -496,7 +496,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - $N_{kv}$ (num_kv_heads)：KV 头数
     - 标准 MHA：$N_{kv} = N_q$
     - GQA/MQA：$N_{kv} <N_q$（如 LLaMA 3 70B: $N_{kv}=64$）
-  - $d_h$ (head_dim)：单个头维度 ($d_h = \text {hidden\_size} \div N_q$)
+  - $d_h$ (head_dim)：单个头维度 ($d_h = \text{hidden\_size} \div N_q$)
   - $D_b$ (dtype_bytes)：精度字节数
     - FP16/BF16: 2 Bytes
     - INT8/FP8: 1 Byte
@@ -635,7 +635,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - 第一步特征融合
 
     $$
-    \mathbf {h}_i^k = M_k [\text {RMSNorm}(\mathbf {h}_i^{k-1}); \text {RMSNorm}(Emb (t_{i+k}))],
+    \mathbf {h}_i^k = M_k [\text{RMSNorm}(\mathbf {h}_i^{k-1}); \text{RMSNorm}(Emb (t_{i+k}))],
     $$
     - 输入：
       - $h_{i}^{k-1}$：第 $k-1$ 层的隐层输出（$k=1$ 时为 Main Model 的隐层表征）
@@ -646,17 +646,17 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - 第二步特征提取
 
     $$
-    \mathbf {h}_{1:T-k}^k = \text {TRM}_k (\mathbf {h}_{1:T-k}'^k),
+    \mathbf {h}_{1:T-k}^k = \text{TRM}_k (\mathbf {h}_{1:T-k}'^k),
     $$
     - 输入：融合特征序列 $\mathbf {h}_{1:T-k}'^k$（切片范围 $[1, T-k]$，保证 $i+k \leq T$）
-    - 处理：第 $k$ 个独立 Transformer 层 $\text {TRM}_k$ 提取上下文特征
+    - 处理：第 $k$ 个独立 Transformer 层 $\text{TRM}_k$ 提取上下文特征
     - 输出：第 $k$ 预测深度的隐层表征 $\mathbf {h}_{1:T-k}^k$
     - $1:T-k$：第 $k$ 预测深度的输入 token 位置 $i$ 需满足 $i+k \leq T$，因此有效输入范围为 $i \in [1, T-k]$
 
   - 第三步词表概率输出
 
     $$
-    P_{i+k+1}^k = \text {OutHead}(\mathbf {h}_i^k).
+    P_{i+k+1}^k = \text{OutHead}(\mathbf {h}_i^k).
     $$
     - 输入：隐层表征 $\mathbf {h}_i^k$
     - 处理：共享的映射矩阵 OutHead∈RV×d 变换 + Softmax
@@ -666,7 +666,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - 损失计算
 
     $$
-    \mathcal {L}_{\text {MTP}}^k = \text {CrossEntropy}(P_{2+k:T+1}^k, t_{2+k:T+1}) = -\frac {1}{T} \sum_{i=2+k}^{T} \log P_i^k [t_i]
+    \mathcal {L}_{\text{MTP}}^k = \text{CrossEntropy}(P_{2+k:T+1}^k, t_{2+k:T+1}) = -\frac {1}{T} \sum_{i=2+k}^{T} \log P_i^k [t_i]
     $$
     - $2+k:T+1$：label 范围，起始下标 $2+k$（MTP Module k 第一个预测 token 为 $t_{2+k}$），结束下标 $T+1$（eos token 位置）
     - $i=2+k$ 到 $T$：遍历所有有效预测位置，计算交叉熵损失
@@ -787,7 +787,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
 
     $$
     \begin {align*}
-    x_{quant} &= \text {round}\left (\frac {x_{float}}{scale} \right)\\
+    x_{quant} &= \text{round}\left (\frac {x_{float}}{scale} \right)\\
     scale &= \frac {\max (|x_{float}|)}{\max (|q_{min}|, q_{max})}\\
     x_{float} &= x_{quant} \times scale
     \end {align*}
@@ -799,7 +799,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
 
     $$
     \begin {align*}
-    x_{quant} &= \text {round}\left (\frac {x_{float}}{scale} + zero\_point \right)\\
+    x_{quant} &= \text{round}\left (\frac {x_{float}}{scale} + zero\_point \right)\\
     scale &= \frac {x_{max} - x_{min}}{q_{max} - q_{min}}\\
     zero\_point &= q_{max} - \frac {x_{max}}{scale}\\
     x_{float} &= scale \times (x_{quant} - zero\_point)
@@ -862,7 +862,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
     - 不丢弃误差，而是把误差 “扔” 给后面还没量化的列，抵消掉
 
       $$
-      W_{\text {remaining}} = W_{\text {remaining}} - e \cdot g^\top
+      W_{\text{remaining}} = W_{\text{remaining}} - e \cdot g^\top
       $$
 
     - 其中 g 由海森矩阵 H 计算得到，用于加权分配误差
@@ -892,7 +892,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - 根据激活值，找出重要的通道，即运行少量校准数据，统计每个输入通道的激活幅度
 
     $$
-    s_i = \text {mean}(|X_i|)
+    s_i = \text{mean}(|X_i|)
     $$
 
   - 激活越大，说明这个通道对模型输出越关键
@@ -916,18 +916,18 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - SmoothQuant 引入逐通道缩放因子 s（向量）：
 
     $$
-    Y = \underbrace {X \cdot \text {diag}(s)^{-1}}_{\hat {X}} \cdot \underbrace {\text {diag}(s) \cdot W}_{\hat {W}} = \hat {X} \cdot \hat {W}
+    Y = \underbrace {X \cdot \text{diag}(s)^{-1}}_{\hat {X}} \cdot \underbrace {\text{diag}(s) \cdot W}_{\hat {W}} = \hat {X} \cdot \hat {W}
     $$
     - 激活侧：X 除以 s → 把大离群点 “压平”（平滑）
     - 权重侧：W 乘以 s → 难度转移到权重（权重本来就好量化）
     - 数学完全等价，输出 Y 不变
 
   - 如何计算平滑因子 s
-    - 用校准数据（几十～几百条）离线统计激活每通道最大绝对值：$|X|_{\text {max}}$ 和权重对应输入通道最大绝对值：$|W|_{\text {max}}$
+    - 用校准数据（几十～几百条）离线统计激活每通道最大绝对值：$|X|_{\text{max}}$ 和权重对应输入通道最大绝对值：$|W|_{\text{max}}$
     - 平滑因子计算公式
 
       $$
-      s_i = \left (|X_i|_{\text {max}}\right)^\alpha \bigg/ \left (|W_i|_{\text {max}}\right)^{1-\alpha}
+      s_i = \left (|X_i|_{\text{max}}\right)^\alpha \bigg/ \left (|W_i|_{\text{max}}\right)^{1-\alpha}
       $$
 
     - α：平衡系数（通常 0.5~0.8）
@@ -972,9 +972,9 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
 
       $$
       \begin {align*}
-      Q (x) &= \text {FakeQuant}(x) \\
-      &= \text {DeQuant}(\text {Quant}(x)) \\
-      &= s * \left (\text {Clamp}(\text {round}(x/s) - z) + z \right)
+      Q (x) &= \text{FakeQuant}(x) \\
+      &= \text{DeQuant}(\text{Quant}(x)) \\
+      &= s * \left (\text{Clamp}(\text{round}(x/s) - z) + z \right)
       \end {align*}
       $$
 

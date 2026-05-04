@@ -39,7 +39,7 @@ description: 介绍量化技术在 LLM 推理中的应用
 - 由于 1 字节内存包含 8 个比特位，那么所需内存的计算公式如下
 
   $$
-  \text {memory}=\frac {\text {nr\_bits}}{8}\times \text {nr\_params}
+  \text{memory}=\frac {\text{nr\_bits}}{8}\times \text{nr\_params}
   $$
 
 - 假设一个 70B（700 亿）参数的模型，加载该模型所需的内存如下：
@@ -102,19 +102,19 @@ description: 介绍量化技术在 LLM 推理中的应用
   - 然后对输入 $x$ 进行量化
 
     $$
-    x_{\text {quantized}}=\text {round}(s\cdot x)
+    x_{\text{quantized}}=\text{round}(s\cdot x)
     $$
 
   - 例如，对于以下例子
 
     ![asbmax Quantization example](/img/llm/absmax-quantization-example.png)
 
-  - 计算得到：$s=\frac {127}{10.8}=11.76$，$x_{\text {quantized}}=\text {round}(11.76\cdot x)$
+  - 计算得到：$s=\frac {127}{10.8}=11.76$，$x_{\text{quantized}}=\text{round}(11.76\cdot x)$
 
   - 为了恢复原始的 FP32 值，可以使用之前计算的缩放因子进行反量化（dequantize）
 
     $$
-    x_{\text {dequantized}}=\frac {X_{\text {quantized}}}{s}
+    x_{\text{dequantized}}=\frac {X_{\text{quantized}}}{s}
     $$
 
   - 示例如下
@@ -141,22 +141,22 @@ description: 介绍量化技术在 LLM 推理中的应用
 
   $$
   s=\frac {2^b-1}{\alpha-\beta}\\
-  z=\text {round}(-s\cdot\beta)-z^{b-1}\qquad (\text {zeropoint})\\
-  x_{\text {quantized}}=\text {round}(s\cdot x+z)
+  z=\text{round}(-s\cdot\beta)-z^{b-1}\qquad (\text{zeropoint})\\
+  x_{\text{quantized}}=\text{round}(s\cdot x+z)
   $$
 
 - 对于示例，计算过程如下
 
   $$
   s=\frac {255}{10.8--7.59}=13.86\\
-  z=\text {round}(-13.86\cdot-7.59)-128=-23\\
-  x_{\text {quantized}}=\text {round}(13.86\cdot x+-23)
+  z=\text{round}(-13.86\cdot-7.59)-128=-23\\
+  x_{\text{quantized}}=\text{round}(13.86\cdot x+-23)
   $$
 
 - 将量化后的 INT8 值反量化为 FP32 的公式如下
 
   $$
-  x_{\text {dequantized}}=\frac {x_{quantized}-z}{s}
+  x_{\text{dequantized}}=\frac {x_{quantized}-z}{s}
   $$
 
 - 对称量化和非对称量化的对比
@@ -371,9 +371,9 @@ description: 介绍量化技术在 LLM 推理中的应用
 
     $$
     \begin {align*}
-    Q (x) &= \text {FakeQuant}(x) \\
-    &= \text {DeQuant}(\text {Quant}(x)) \\
-    &= s * \left (\text {Clamp}(\text {round}(x/s) - z) + z \right)
+    Q (x) &= \text{FakeQuant}(x) \\
+    &= \text{DeQuant}(\text{Quant}(x)) \\
+    &= s * \left (\text{Clamp}(\text{round}(x/s) - z) + z \right)
     \end {align*}
     $$
 

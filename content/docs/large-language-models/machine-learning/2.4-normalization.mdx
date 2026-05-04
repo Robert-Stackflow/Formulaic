@@ -16,8 +16,8 @@ description: 从优化动力学与表示分布出发，系统阐明归一化方�
 - 标准评分（Standard Score）将特征转换为均值为 0、方差为 1 的分布：
   $$
   z = \frac {x - \mu}{\sigma}\\
-  \mu = \text {mean}(x) = \frac {1}{N} \sum_{i=1}^{N} x_i\\
-  \sigma = \text {std}(x) = \sqrt {\frac {1}{N} \sum_{i=1}^{N} (x_i - \mu)^2}
+  \mu = \text{mean}(x) = \frac {1}{N} \sum_{i=1}^{N} x_i\\
+  \sigma = \text{std}(x) = \sqrt {\frac {1}{N} \sum_{i=1}^{N} (x_i - \mu)^2}
   $$
 
 ## 为什么需要归一化
@@ -47,7 +47,7 @@ description: 从优化动力学与表示分布出发，系统阐明归一化方�
   - 选一组数，算均值和方差
 
     $$
-    \mu = \text {mean}(h), \quad \sigma^2 = \text {var}(h), \quad \sigma^{\prime} = \sqrt {\sigma^2 + \epsilon}
+    \mu = \text{mean}(h), \quad \sigma^2 = \text{var}(h), \quad \sigma^{\prime} = \sqrt {\sigma^2 + \epsilon}
     $$
 
   - 标准化
@@ -116,8 +116,8 @@ description: 从优化动力学与表示分布出发，系统阐明归一化方�
     - 推理：batch size = 1 或 batch size 很小或实时流式输入，无法保证 “当前 batch” 是一个好统计样本，因此不再使用当前 batch 的统计而是使用训练期间累计的滑动平均
 
       $$
-      \mu_c^{(test)} \approx \mathbb {E}_{\text {train}}[\mu_c^{(B)}]\\
-      (\sigma_c^{(test)})^2 \approx \mathbb {E}_{\text {train}}[(\sigma_c^{(B)})^2]\\
+      \mu_c^{(test)} \approx \mathbb {E}_{\text{train}}[\mu_c^{(B)}]\\
+      (\sigma_c^{(test)})^2 \approx \mathbb {E}_{\text{train}}[(\sigma_c^{(B)})^2]\\
       \hat {x}=\frac {x - \mu_c^{(test)}}{\sqrt {(\sigma_c^{(test)})^2 + \epsilon}}
       $$
 

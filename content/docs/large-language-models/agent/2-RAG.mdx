@@ -482,7 +482,7 @@ Naive RAG 工作流程：Query->Retriever->Context->Generator (LLM)
 - 为什么需要量化（Quantization Motivation）
   - 在 ANN 里，索引结构（如树、图）主要解决的是 “少算距离” 的问题，而量化解决的是 “少存向量” 的问题，两者关注的是不同瓶颈
   - 现实中的核心约束主要来自三方面：
-    - 向量是线性存储的，空间复杂度为 $N \times D \times \text {float}$，当 $N$ 和 $D$ 同时变大时，内存占用不可控
+    - 向量是线性存储的，空间复杂度为 $N \times D \times \text{float}$，当 $N$ 和 $D$ 同时变大时，内存占用不可控
     - 现代语义 embedding 通常是高维的（如 $D=768,1024$），导致内存占用、内存带宽、cache miss 成本都很高
     - 许多 ANN 算法在查询阶段需要把向量加载进 RAM，而不是仅存放在对象存储中
   - 即使有 S3 等廉价存储，ANN 实际上消耗的是内存带宽和本地内存容量；在 “存储 / 计算不分离” 的系统中，线性存储的成本会迅速放大
@@ -582,7 +582,7 @@ $$
   - 在 IVF + PQ 中，一个重要改进是不要直接对原始向量做 PQ，而是对它相对于 coarse centroid 的残差做 PQ
 
     $$
-    r = x - c_{\text {coarse}}
+    r = x - c_{\text{coarse}}
     $$
 
   - 直觉上，这是因为残差向量的分布范围更小、更集中，在相同码本规模下，PQ 对残差的表达能力更强，因此整体近似误差显著下降
@@ -953,7 +953,7 @@ $$
   - 计算公式：
 
     $$
-    \text {score}(d, q) = \sum_{t \in q} \frac {tf (t,d) \cdot idf (t) \cdot (k_1+1)}{k_1 + tf (t,d)}
+    \text{score}(d, q) = \sum_{t \in q} \frac {tf (t,d) \cdot idf (t) \cdot (k_1+1)}{k_1 + tf (t,d)}
     $$
 
   - 其中 $tf (t,d)$ 为词 t 在文档 d 中词频，$idf (t)$ 为逆文档频率，$k_1$ 为长度调节参数
@@ -1029,7 +1029,7 @@ $$
   - 检索出的相关文档占所有相关文档的比例
 
     $$
-    \text {Recall} = \frac {|\text {检索出的相关文档}|}{|\text {所有相关文档}|}
+    \text{Recall} = \frac {|\text{检索出的相关文档}|}{|\text{所有相关文档}|}
     $$
 
   - 衡量系统 “找回” 了多少真实相关信息，在 RAG、问答场景中，强调不要漏关键信息
@@ -1038,7 +1038,7 @@ $$
   - 检索出的文档中有多少是真正相关的
 
     $$
-    \text {Precision} = \frac {|\text {检索出的相关文档}|}{|\text {检索出的文档总数}|}
+    \text{Precision} = \frac {|\text{检索出的相关文档}|}{|\text{检索出的文档总数}|}
     $$
 
   - 衡量检索结果的纯度，用于希望 LLM 输入更干净、减少噪声时
@@ -1047,7 +1047,7 @@ $$
   - 精确率与召回率的调和平均
 
     $$
-    F1 = 2 \cdot \frac {\text {Precision} \cdot \text {Recall}}{\text {Precision} + \text {Recall}}
+    F1 = 2 \cdot \frac {\text{Precision} \cdot \text{Recall}}{\text{Precision} + \text{Recall}}
     $$
 
   - 综合考虑召回与精度的平衡
@@ -1056,13 +1056,13 @@ $$
   - 对每个查询计算平均精度（AP），再对所有查询取均值
 
     $$
-    AP = \frac {1}{R} \sum_{k=1}^{n} P (k) \cdot \text {rel}(k)\\
+    AP = \frac {1}{R} \sum_{k=1}^{n} P (k) \cdot \text{rel}(k)\\
     MAP = \frac {1}{Q} \sum_{q=1}^{Q} AP_q
     $$
 
   - $P (k)$ = 前 k 个结果的精确率
 
-  - $\text {rel}(k)$ = 第 k 个文档是否相关（1 或 0）
+  - $\text{rel}(k)$ = 第 k 个文档是否相关（1 或 0）
 
   - $R$ = 查询相关文档总数
 
@@ -1088,7 +1088,7 @@ $$
   - 在前 k 个检索结果中，包含相关文档的比例
 
     $$
-    \text {Recall@k} = \frac {\text {查询前 k 个结果中相关文档数}}{\text {总相关文档数}}
+    \text{Recall@k} = \frac {\text{查询前 k 个结果中相关文档数}}{\text{总相关文档数}}
     $$
 
   - RAG 或 LLM 检索中最常用指标，反映实际使用中 LLM 能够获取到关键信息的概率
@@ -1097,7 +1097,7 @@ $$
   - Top-k 结果中至少包含一个相关文档的查询比例
 
     $$
-    \text {Hit@k} = \frac {\text {至少命中一个相关文档的查询数}}{\text {查询总数}}
+    \text{Hit@k} = \frac {\text{至少命中一个相关文档的查询数}}{\text{查询总数}}
     $$
 
   - 强调 “至少找到一条相关信息”，对问答和推荐场景非常直观
@@ -1108,7 +1108,7 @@ $$
   - 对于一组查询集合 $Q = {q_1, q_2, \dots, q_N}$，假设每个查询 $q_i$ 的检索结果列表中，第一个正确答案的排名为 $rank_i$，则 MRR 定义为：
 
     $$
-    \text {MRR} = \frac {1}{|Q|} \sum_{i=1}^{|Q|} \frac {1}{rank_i}
+    \text{MRR} = \frac {1}{|Q|} \sum_{i=1}^{|Q|} \frac {1}{rank_i}
     $$
     - $rank_i$ 是第 $i$ 个查询第一个正确答案在检索列表中的位置（从 1 开始计数）
     - 如果该查询没有正确答案，则通常取 $\frac {1}{rank_i} = 0$

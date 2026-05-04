@@ -864,24 +864,24 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - 最后一项 $-\eta\lambda \theta_t$ 就是独立权重衰减，不参与动量、二阶矩计算
 
 - Lion（EvoLved Sign Momentum）
-  - 基于符号动量，不使用梯度本身，只用梯度的符号（$\text {sign}(g_t)$）更新；内存更小，只维护一阶动量，无二阶矩
+  - 基于符号动量，不使用梯度本身，只用梯度的符号（$\text{sign}(g_t)$）更新；内存更小，只维护一阶动量，无二阶矩
 
     $$
     \begin {align*}
-    c_t &= \beta_1 \cdot m_{t-1} + (1-\beta_1) \cdot g_t \quad \text {（动量组合）} \\
-    m_t &= \beta_2 \cdot m_{t-1} + (1-\beta_2) \cdot g_t \quad \text {（更新动量）} \\
-    \theta_{t+1} &= \theta_t - \eta \cdot ({\text {sign}(c_t)} + \lambda \cdot \theta_t)
+    c_t &= \beta_1 \cdot m_{t-1} + (1-\beta_1) \cdot g_t \quad \text{（动量组合）} \\
+    m_t &= \beta_2 \cdot m_{t-1} + (1-\beta_2) \cdot g_t \quad \text{（更新动量）} \\
+    \theta_{t+1} &= \theta_t - \eta \cdot ({\text{sign}(c_t)} + \lambda \cdot \theta_t)
     \end {align*}
     $$
     - $m_t$：只存一个动量
-    - $\text {sign}(x)$：符号函数 → 输出 +1 / 0 /-1
+    - $\text{sign}(x)$：符号函数 → 输出 +1 / 0 /-1
     - $\lambda$：解耦权重衰减（同 AdamW）
 
   - 用 sign () 代替自适应缩放
     - Adam：$m_t$、$v_t$ → 每个参数步长不一样
-    - Lion：$\text {sign}(c_t)$ → 所有参数步长大小相同，只有方向不同
+    - Lion：$\text{sign}(c_t)$ → 所有参数步长大小相同，只有方向不同
   - 为什么 sign () 反而更好？
-    - 抗噪声：梯度噪声大时，$\text {sign}()$ 只看方向、不看大小 → 更稳
+    - 抗噪声：梯度噪声大时，$\text{sign}()$ 只看方向、不看大小 → 更稳
     - 步长均匀：不会出现某些参数步长爆炸、某些几乎不动
     - 计算更快：少了除法、开方、平方 → 速度快 10%~15%
   - 训练大模型、视觉模型效果 often 优于 AdamW，对学习率更敏感，需要精细调参
@@ -898,8 +898,8 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
 
     $$
     \begin {align*}
-    M_t &= \mu \cdot M_{t-1} + g_t \quad \text {（动量，矩阵形式）} \\
-    O_t &= \text {Newton-Schulz}(M_t) \approx (M_t M_t^\top)^{-1/2} M_t \quad \text {（正交化）} \\
+    M_t &= \mu \cdot M_{t-1} + g_t \quad \text{（动量，矩阵形式）} \\
+    O_t &= \text{Newton-Schulz}(M_t) \approx (M_t M_t^\top)^{-1/2} M_t \quad \text{（正交化）} \\
     W_{t+1} &= W_t - \eta \cdot O_t - \lambda \cdot W_t
     \end {align*}
     $$
@@ -1003,7 +1003,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - 公式
 
     $$
-    \text {CrossEntropy}(p,y)=-\Sigma y_i\log (\text {softmax}(p_i))
+    \text{CrossEntropy}(p,y)=-\Sigma y_i\log (\text{softmax}(p_i))
     $$
 
   - 第一步，先对 logits 做 softmax，把输出改为概率分布
@@ -1021,9 +1021,9 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
 - 什么是精确率 (Precision) 和召回率 (Recall)？什么是 F1？
 
   $$
-  \text {Precision} = \frac {TP}{TP+FP}\\
-  \text {Recall} = \frac {TP}{TP+FN}\\
-  F1 = 2 \times \frac {\text {Precision} \times \text {Recall}}{\text {Precision} + \text {Recall}}
+  \text{Precision} = \frac {TP}{TP+FP}\\
+  \text{Recall} = \frac {TP}{TP+FN}\\
+  F1 = 2 \times \frac {\text{Precision} \times \text{Recall}}{\text{Precision} + \text{Recall}}
   $$
   - TP（真阳性）：预测有，且确实对
   - FP（假阳性）：预测有，但实际错 / 多余

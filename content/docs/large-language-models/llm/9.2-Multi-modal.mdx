@@ -98,10 +98,10 @@ description: 介绍多模态大规模语言模型的基本概念及其应用
 
   $$
   \begin {align*}
-  \mathbf {z}_0 &= \left [\mathbf {x}_{\text {class}}; \mathbf {x}_p^1 \mathbf {E}; \mathbf {x}_p^2 \mathbf {E}; \dots; \mathbf {x}_p^N \mathbf {E} \right] + \mathbf {E}_{\text {pos}}, \quad \mathbf {E} \in \mathbb {R}^{(P^2 \cdot C) \times D}, \mathbf {E}_{\text {pos}} \in \mathbb {R}^{(N+1) \times D} \\
-  \mathbf {z}'_\ell &= \text {MSA}\left (\text {LN}(\mathbf {z}_{\ell-1}) \right) + \mathbf {z}_{\ell-1}, \quad \ell = 1 \dots L \\
-  \mathbf {z}_\ell &= \text {MLP}\left (\text {LN}(\mathbf {z}'_\ell) \right) + \mathbf {z}'_\ell, \quad \ell = 1 \dots L \\
-  \mathbf {y} &= \text {LN}(\mathbf {z}_L^0)
+  \mathbf {z}_0 &= \left [\mathbf {x}_{\text{class}}; \mathbf {x}_p^1 \mathbf {E}; \mathbf {x}_p^2 \mathbf {E}; \dots; \mathbf {x}_p^N \mathbf {E} \right] + \mathbf {E}_{\text{pos}}, \quad \mathbf {E} \in \mathbb {R}^{(P^2 \cdot C) \times D}, \mathbf {E}_{\text{pos}} \in \mathbb {R}^{(N+1) \times D} \\
+  \mathbf {z}'_\ell &= \text{MSA}\left (\text{LN}(\mathbf {z}_{\ell-1}) \right) + \mathbf {z}_{\ell-1}, \quad \ell = 1 \dots L \\
+  \mathbf {z}_\ell &= \text{MLP}\left (\text{LN}(\mathbf {z}'_\ell) \right) + \mathbf {z}'_\ell, \quad \ell = 1 \dots L \\
+  \mathbf {y} &= \text{LN}(\mathbf {z}_L^0)
   \end {align*}
   $$
 
@@ -113,16 +113,16 @@ description: 介绍多模态大规模语言模型的基本概念及其应用
   | --------------------------- | --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
   | $\mathbf {x}_p^i$            | 第 $i$ 个图像 Patch    | 原始图像尺寸 $H \times W \times C$，切分为 $N = \frac {H \cdot W}{P^2}$ 个 $P \times P \times C$ 的 Patch，展平后为 $P^2 \cdot C$ 维向量（例：$P=16,C=3$ 时为 $768$ 维） |
   | $\mathbf {E}$                | Token Embedding 矩阵   | 可学习参数，形状 $(P^2 \cdot C) \times D$，作用是将 Patch 从像素空间线性投影到 $D$ 维模型隐空间（例：$D=768$，即 BERT-base 维度）                                          |
-  | $\mathbf {x}_{\text {class}}$ | 分类头（`cls` token） | 额外添加的可学习向量，形状 $1 \times D$，类比 BERT 的 `cls` token，最终用它的输出做分类                                                                                  |
-  | $\mathbf {E}_{\text {pos}}$   | 1-D 可学习位置编码     | 形状 $(N+1) \times D$，为每个 Patch token + `cls` token 注入空间位置信息，ViT 默认采用可学习式 1-D 绝对位置编码                                                             |
+  | $\mathbf {x}_{\text{class}}$ | 分类头（`cls` token） | 额外添加的可学习向量，形状 $1 \times D$，类比 BERT 的 `cls` token，最终用它的输出做分类                                                                                  |
+  | $\mathbf {E}_{\text{pos}}$   | 1-D 可学习位置编码     | 形状 $(N+1) \times D$，为每个 Patch token + `cls` token 注入空间位置信息，ViT 默认采用可学习式 1-D 绝对位置编码                                                             |
   | $\mathbf {z}_0$              | ViT 的最终输入         | 形状 $(N+1) \times D$，由「`cls` token + 所有 Patch 的投影向量」拼接后，加上位置编码得到                                                                                 |
 
 - 多头自注意力（MSA）层 + 残差连接
 
   | 符号                  | 含义                                      | 细节说明                                                                                                     |
   | --------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-  | $\text {LN}(\cdot)$    | Layer Normalization（层归一化）           | 对输入做归一化，稳定训练，ViT 采用 Pre-LN 结构（先归一化再进注意力 / MLP，区别于原始 Transformer 的 Post-LN）        |
-  | $\text {MSA}(\cdot)$   | Multi-Head Self-Attention（多头自注意力） | 将 $D$ 维特征拆分为 $h$ 个独立头（例：$h=12$，每头 $64$ 维），并行计算注意力后拼接，捕捉不同子空间的依赖关系 |
+  | $\text{LN}(\cdot)$    | Layer Normalization（层归一化）           | 对输入做归一化，稳定训练，ViT 采用 Pre-LN 结构（先归一化再进注意力 / MLP，区别于原始 Transformer 的 Post-LN）        |
+  | $\text{MSA}(\cdot)$   | Multi-Head Self-Attention（多头自注意力） | 将 $D$ 维特征拆分为 $h$ 个独立头（例：$h=12$，每头 $64$ 维），并行计算注意力后拼接，捕捉不同子空间的依赖关系 |
   | $\mathbf {z}_{\ell-1}$ | 上一层的输出                              | 第 $\ell-1$ 层 Encoder 的输出，作为当前层的输入                                                                |
   | $+$                   | 残差连接（Residual Connection）           | 将 MSA 的输出与输入直接相加，缓解深层网络的梯度消失问题                                                        |
   | $\mathbf {z}'_\ell$    | MSA 子层的输出                             | 形状与输入一致 $(N+1) \times D$，进入下一个 MLP 子层                                                           |
@@ -132,8 +132,8 @@ description: 介绍多模态大规模语言模型的基本概念及其应用
 
   | 符号                | 含义                          | 细节说明                                                                                                                        |
   | ------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-  | $\text {MLP}(\cdot)$ | 多层感知机                    | 结构为「线性层 → GELU 激活 → Dropout → 线性层」，中间层维度通常为 $4D$（例：$D=768$ 时中间层为 $3072$ 维），用于特征的非线性变换 |
-  | $\text {LN}(\cdot)$  | 层归一化                      | 同样采用 Pre-LN 结构，先归一化再进 MLP                                                                                             |
+  | $\text{MLP}(\cdot)$ | 多层感知机                    | 结构为「线性层 → GELU 激活 → Dropout → 线性层」，中间层维度通常为 $4D$（例：$D=768$ 时中间层为 $3072$ 维），用于特征的非线性变换 |
+  | $\text{LN}(\cdot)$  | 层归一化                      | 同样采用 Pre-LN 结构，先归一化再进 MLP                                                                                             |
   | $\mathbf {z}'_\ell$  | 上一个 MSA 子层的输出           | 作为 MLP 子层的输入                                                                                                               |
   | $+$                 | 残差连接                      | 将 MLP 的输出与输入相加，进一步稳定梯度                                                                                           |
   | $\mathbf {z}_\ell$   | 第 $\ell$ 层 Encoder 的最终输出 | 形状 $(N+1) \times D$，作为下一层 Encoder 的输入（$\ell < L$ 时），或最终层输出（$\ell = L$ 时）                                  |
@@ -143,10 +143,10 @@ description: 介绍多模态大规模语言模型的基本概念及其应用
   | 符号               | 含义                                          | 细节说明                                                                        |
   | ------------------ | --------------------------------------------- | ------------------------------------------------------------------------------- |
   | $\mathbf {z}_L^0$   | 第 $L$ 层 Encoder 输出中，`cls` token 对应的向量 | 取 $\mathbf {z}_L$ 的第 0 个元素（形状 $1 \times D$），聚合了全局图像特征          |
-  | $\text {LN}(\cdot)$ | 层归一化                                      | 对`cls` token 做最终归一化                                                       |
+  | $\text{LN}(\cdot)$ | 层归一化                                      | 对`cls` token 做最终归一化                                                       |
   | $\mathbf {y}$       | 模型最终输出                                  | 后续接一个线性分类层（公式中省略），将 $D$ 维特征映射为类别数维度，得到分类概率 |
 
-- 分类头是「$\text {LN}(\mathbf {z}_L^0) \cdot \mathbf {W}_{\text {cls}} + \mathbf {b}_{\text {cls}}$」，$\mathbf {W}_{\text {cls}}$ 为分类权重矩阵
+- 分类头是「$\text{LN}(\mathbf {z}_L^0) \cdot \mathbf {W}_{\text{cls}} + \mathbf {b}_{\text{cls}}$」，$\mathbf {W}_{\text{cls}}$ 为分类权重矩阵
 
 ### 微调
 
@@ -174,17 +174,17 @@ description: 介绍多模态大规模语言模型的基本概念及其应用
   - 插值分为 3 个核心步骤：
     - Reshape 还原 2D 结构
 
-    - 将预训练阶段的 1D 位置编码（形状 $(s_{\text {pretrain}}, D)$，$D$ 为隐维度），还原为 2D 特征图：
+    - 将预训练阶段的 1D 位置编码（形状 $(s_{\text{pretrain}}, D)$，$D$ 为隐维度），还原为 2D 特征图：
 
       $$
       (196, 768) \rightarrow (14, 14, 768)
       $$
 
-    - 对应公式中的 $\sqrt {s_{\text {pretrain}}} \times \sqrt {s_{\text {pretrain}}}$ 空间结构
+    - 对应公式中的 $\sqrt {s_{\text{pretrain}}} \times \sqrt {s_{\text{pretrain}}}$ 空间结构
 
     - 2D 插值扩展尺寸
 
-    - 对 2D 特征图执行双三次插值（bicubic），将空间尺寸从 $\sqrt {s_{\text {pretrain}}}$ 扩展到 $\sqrt {s_{\text {finetune}}}$：
+    - 对 2D 特征图执行双三次插值（bicubic），将空间尺寸从 $\sqrt {s_{\text{pretrain}}}$ 扩展到 $\sqrt {s_{\text{finetune}}}$：
 
       $$
       (14, 14, 768) \rightarrow (64, 64, 768)
@@ -214,7 +214,7 @@ description: 介绍多模态大规模语言模型的基本概念及其应用
     | 参数 | 含义 | ViT 实践细节 |
     | -------------------- | --------------------------------------------- | ------------------------------------------------------------ |
     | `pos_embedding_img` | 输入的预训练位置编码（已 reshape 为 2D 格式） | 形状为 `(batch, hidden_dim, h_pretrain, w_pretrain)`，PyTorch 插值默认以最后两维为空间维度 |
-    | `size` | 目标空间尺寸 | 对应微调阶段的 $\sqrt {s_{\text {finetune}}}$，如 64×64 |
+    | `size` | 目标空间尺寸 | 对应微调阶段的 $\sqrt {s_{\text{finetune}}}$，如 64×64 |
     | `mode` | 插值方法 | ViT 论文默认采用 bicubic（双三次插值），相比线性插值能更好保留局部细节 |
     | `align_corners=True` | 角点对齐 | 固定原矩阵的四个角点位置不变，仅对中间区域做插值，保证空间位置的一致性（如图中白色圆圈为原始点，蓝色点为插值后点） |
 

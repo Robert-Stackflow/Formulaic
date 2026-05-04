@@ -322,14 +322,14 @@ description: 介绍大语言模型推理系统的基本架构
   - 计算：
     - Prefilling 阶段是大矩阵乘（算力密集）
     - Decoding 阶段是小 GEMM + attention（更容易被通信拖慢）
-- Prefilling FLOPs 估计：$Prefilling_{FLOPs} = 2 \times 1 \times 1024 \times 32\text {B} = 65.5 \text {TFLOPs}$
-- 理论 TTFT（不考虑利用率）：$TTFT_{theoretical} = \frac {Prefilling_FLOPs}{GPU_FLOPS} = \frac {65.5}{148} \approx 0.44 \text {s}$​，即理论 TTFT ≈ 440 ms
-- 假设 GPU 实际利用率约 60%：$TTFT_{actual} \approx \frac {0.44}{0.6} \approx 0.73 \text {s}$​，则单请求输入 1024 tokens，TTFT 大约在 700~800 ms 这个量级
-- 单 token 的 Decoding FLOPs：$Decoding_{FLOPs_{per\ token}} = 2 \times Batch_size \times Parameters = 2 \times 1 \times 32\text {B} = 0.064 \text {TFLOPs}$
-- 理论 TPS（单请求）：$TPS_{theoretical} = \frac {GPU_FLOPS}{Decoding_FLOPs_{per\ token}}= \frac {148}{0.064} \approx 2312 \text {token/s}$
-- 考虑 GPU 利用率：$TPS_{actual} \approx 2312 \times 0.6 \approx 1380 \text {token/s}$​​，单请求 Decoding 阶段的 TPS 大致在 1200~1500 token/s
-- 生成每个 token 的时间：$TPOT \approx \frac {1}{TPS} \approx \frac {1}{1380} \approx 0.72 \text {ms}$
-- 生成 1024 个 token：$Latency = TTFT + TPOT \times Output_{tokens} \approx 730\text {ms} + 1024 \times 0.72\text {ms}= 730\text {ms} + 737\text {ms}\approx 1.47 \text {s}$
+- Prefilling FLOPs 估计：$Prefilling_{FLOPs} = 2 \times 1 \times 1024 \times 32\text{B} = 65.5 \text{TFLOPs}$
+- 理论 TTFT（不考虑利用率）：$TTFT_{theoretical} = \frac {Prefilling_FLOPs}{GPU_FLOPS} = \frac {65.5}{148} \approx 0.44 \text{s}$​，即理论 TTFT ≈ 440 ms
+- 假设 GPU 实际利用率约 60%：$TTFT_{actual} \approx \frac {0.44}{0.6} \approx 0.73 \text{s}$​，则单请求输入 1024 tokens，TTFT 大约在 700~800 ms 这个量级
+- 单 token 的 Decoding FLOPs：$Decoding_{FLOPs_{per\ token}} = 2 \times Batch_size \times Parameters = 2 \times 1 \times 32\text{B} = 0.064 \text{TFLOPs}$
+- 理论 TPS（单请求）：$TPS_{theoretical} = \frac {GPU_FLOPS}{Decoding_FLOPs_{per\ token}}= \frac {148}{0.064} \approx 2312 \text{token/s}$
+- 考虑 GPU 利用率：$TPS_{actual} \approx 2312 \times 0.6 \approx 1380 \text{token/s}$​​，单请求 Decoding 阶段的 TPS 大致在 1200~1500 token/s
+- 生成每个 token 的时间：$TPOT \approx \frac {1}{TPS} \approx \frac {1}{1380} \approx 0.72 \text{ms}$
+- 生成 1024 个 token：$Latency = TTFT + TPOT \times Output_{tokens} \approx 730\text{ms} + 1024 \times 0.72\text{ms}= 730\text{ms} + 737\text{ms}\approx 1.47 \text{s}$
 
 ### 解码算法改进
 

@@ -154,7 +154,7 @@ description: 从过拟合的本质出发，系统引入参数正则化与结构�
   $$
   h^{(l)} = m^{(l)} \odot f (W^{(l)} h^{(l-1)})
   $$
-  - 其中，$m^{(l)} \sim \text {Bernoulli}(p)$
+  - 其中，$m^{(l)} \sim \text{Bernoulli}(p)$
   - 每一次前向传播，都是一个 “子网络”
 
 - 测试时：
@@ -222,11 +222,11 @@ description: 从过拟合的本质出发，系统引入参数正则化与结构�
     $$
 
   - 给定一个阈值 `max_norm`：
-    - 若 $||G||_2 \leq \text {max\_norm}$：梯度不变
+    - 若 $||G||_2 \leq \text{max\_norm}$：梯度不变
 
-    - 若 $||G||_2 > \text {max\_norm}$：则整体缩放为：
+    - 若 $||G||_2 > \text{max\_norm}$：则整体缩放为：
       $$
-      G_{\text {clipped}} = G \times \frac {\text {max\_norm}}{||G||_2}
+      G_{\text{clipped}} = G \times \frac {\text{max\_norm}}{||G||_2}
       $$
 
   - 这种方式保持梯度方向不变，只限制其整体幅度，有助于避免单次更新过大，同时保留优化方向不偏离

@@ -91,22 +91,22 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   | $K=x\cdot W_K$                               | [b,a,s,ha]=[b,s,h]        | 2bsh             |
   | $V=x\cdot W_V$                               | [b,a,s,ha]=[b,s,h]        | 2bsh             |
   | $Q\cdot K^T$                                 | [b,a,s,s]                 | 2bas^2           |
-  | $\text {softmax}(Q\cdot K^T)$                 | [b,a,s,s]                 | 2bas^2           |
-  | $\text {Dropout}[\text {softmax}(Q\cdot K^T)]$ | [b,a,s,s]                 | bas^2            |
-  | $x_{self} = \text {Dropout}[...] \cdot V$     | [b, a, s, ha] = [b, s, h] | 2bsh             |
+  | $\text{softmax}(Q\cdot K^T)$                 | [b,a,s,s]                 | 2bas^2           |
+  | $\text{Dropout}[\text{softmax}(Q\cdot K^T)]$ | [b,a,s,s]                 | bas^2            |
+  | $x_{self} = \text{Dropout}[...] \cdot V$     | [b, a, s, ha] = [b, s, h] | 2bsh             |
   | $x_{self}⋅Wo$                                | [b,s,h]                   | 2bsh             |
-  | $\text {Dropout}(x_{self}⋅Wo)$                | [b,s,h]                   | bsh              |
-  | $x_{attn} = \text {LN}[...] + x$              | [b, s, h]                 | 2bsh             |
+  | $\text{Dropout}(x_{self}⋅Wo)$                | [b,s,h]                   | bsh              |
+  | $x_{attn} = \text{LN}[...] + x$              | [b, s, h]                 | 2bsh             |
 
 - FFN 层激活值及显存占用
 
   | 计算项                                        | 维度     | 显存大小（字节） |
   | --------------------------------------------- | -------- | ---------------- |
   | $x_{attn}⋅W_{ff1}$                            | [b,s,4h] | 8bsh             |
-  | $\text {GeLU}(x_{attn}⋅W_{ff1})$               | [b,s,4h] | 8bsh             |
-  | $x_{ffn}=\text {GeLU}(...)\cdot W_{ff2}$       | [b,s,h]  | 2bsh             |
-  | $\text {Dropout}(x_{ffn})$                     | [b,s,h]  | bsh              |
-  | $\text {LN}[\text {Dropout}(x_{ffn})+x_{attn}]$ | [b,s,h]  | 2bsh             |
+  | $\text{GeLU}(x_{attn}⋅W_{ff1})$               | [b,s,4h] | 8bsh             |
+  | $x_{ffn}=\text{GeLU}(...)\cdot W_{ff2}$       | [b,s,h]  | 2bsh             |
+  | $\text{Dropout}(x_{ffn})$                     | [b,s,h]  | bsh              |
+  | $\text{LN}[\text{Dropout}(x_{ffn})+x_{attn}]$ | [b,s,h]  | 2bsh             |
 
 - 单 Transformer 层总显存 —— 将 MHA 和 FFN 层显存相加：
 
@@ -180,7 +180,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
 - MFU 为
 
   $$
-  \text {MFU}=\frac {L\cdot (72bsh^2+12bs^2h)\cdot \text {Gradient Accum Steps}\cdot N_{DP}\cdot\text {Through output}}{4\cdot\text {Single GPU TFLOPS}}\approx 34\%
+  \text{MFU}=\frac {L\cdot (72bsh^2+12bs^2h)\cdot \text{Gradient Accum Steps}\cdot N_{DP}\cdot\text{Through output}}{4\cdot\text{Single GPU TFLOPS}}\approx 34\%
   $$
 
 ### DP
@@ -517,31 +517,31 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
     - 包括瞬时用到的 FP16/BF16 模型权重（临时 gathered）、即时生成的梯度 buffer、中间激活值、dropout 随机掩码、算子临时 Workspace
   - CPU 优化器更新完整流程
     - 第一步：GPU 侧准备 & 梯度 D2H 搬运
-      - 反向结束，GPU 显存中：本地分片全局梯度 $\bar g_{\text {shard}}$
+      - 反向结束，GPU 显存中：本地分片全局梯度 $\bar g_{\text{shard}}$
       - 发起异步 D2H 拷贝：把该分片梯度从 VRAM → CPU DRAM
       - 拷贝期间 GPU 可预调度下一轮 / 清理临时缓存，不等待
     - 第二步：CPU 侧精度提升，即 FP16/BF16 梯度 → FP32
       - CPU 等待梯度分片就位
-      - 执行类型强制转换：$g_{\text {fp32}} = \text {cast}(g_{\text {fp16}})$
+      - 执行类型强制转换：$g_{\text{fp32}} = \text{cast}(g_{\text{fp16}})$
       - 匹配 CPU 上的 FP32 优化器状态精度（避免混合精度误差）
     - 第三步：CPU 内存执行 AdamW 完整数学更新
-      - CPU 侧常驻 $w_{\text {master}}(\text {fp32}), m, v$，逐元素独立更新：
+      - CPU 侧常驻 $w_{\text{master}}(\text{fp32}), m, v$，逐元素独立更新：
       - 动量平滑：
 
         $$
-        m_t = \beta_1 m_{t-1} + (1-\beta_1) g_{\text {fp32}}
+        m_t = \beta_1 m_{t-1} + (1-\beta_1) g_{\text{fp32}}
         $$
 
       - 二阶平方平滑：
 
         $$
-        v_t = \beta_2 v_{t-1} + (1-\beta_2) g_{\text {fp32}}^2
+        v_t = \beta_2 v_{t-1} + (1-\beta_2) g_{\text{fp32}}^2
         $$
 
       - 偏差校正 + 参数步进 + 权重衰减
 
         $$
-        w_{\text {master},t+1} = w_{\text {master},t} - \eta \cdot \frac {\hat m}{\sqrt {\hat v}+\epsilon} - \lambda w
+        w_{\text{master},t+1} = w_{\text{master},t} - \eta \cdot \frac {\hat m}{\sqrt {\hat v}+\epsilon} - \lambda w
         $$
 
       - 全程在 CPU DRAM 运算，不占 GPU 算力、不占 GPU 显存
@@ -713,10 +713,10 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
 
       $$
       \begin {align*}
-      Y &= \text {GELU}(X [A_1\ A_2]) \begin {bmatrix} B_1\\B_2\end {bmatrix} \\
-      &= \text {GELU}([XA_1\ \ XA_2]) \begin {bmatrix} B_1\\B_2\end {bmatrix} \\
-      &= \big [\text {GELU}(XA_1)\ \ \text {GELU}(XA_2)\big] \begin {bmatrix} B_1\\B_2\end {bmatrix} \\
-      &= \text {GELU}(XA_1) B_1 + \text {GELU}(XA_2) B_2
+      Y &= \text{GELU}(X [A_1\ A_2]) \begin {bmatrix} B_1\\B_2\end {bmatrix} \\
+      &= \text{GELU}([XA_1\ \ XA_2]) \begin {bmatrix} B_1\\B_2\end {bmatrix} \\
+      &= \big [\text{GELU}(XA_1)\ \ \text{GELU}(XA_2)\big] \begin {bmatrix} B_1\\B_2\end {bmatrix} \\
+      &= \text{GELU}(XA_1) B_1 + \text{GELU}(XA_2) B_2
       \end {align*}
       $$
 
@@ -724,9 +724,9 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
 
       $$
       \begin {align*}
-      Y &= \text {GELU}\big ((X_1\ X_2)\begin {bmatrix} A_1\\A_2\end {bmatrix} \big) [B_1\ B_2] \\
-      &= \text {GELU}(X_1A_1 + X_2A_2)\ [B_1\ B_2] \\
-      &= \big [\ \text {GELU}(X_1A_1 {+} X_2A_2) B_1 \ \ \ \text {GELU}(X_1A_1 {+} X_2A_2) B_2\ \big]
+      Y &= \text{GELU}\big ((X_1\ X_2)\begin {bmatrix} A_1\\A_2\end {bmatrix} \big) [B_1\ B_2] \\
+      &= \text{GELU}(X_1A_1 + X_2A_2)\ [B_1\ B_2] \\
+      &= \big [\ \text{GELU}(X_1A_1 {+} X_2A_2) B_1 \ \ \ \text{GELU}(X_1A_1 {+} X_2A_2) B_2\ \big]
       \end {align*}
       $$
 
@@ -734,7 +734,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
     - LayerNorm 计算公式
 
       $$
-      \text {LN}(x) = \frac {x-\mathbb E [x]}{\sqrt {\text {Var}(x)+\varepsilon}}\cdot \gamma+\beta
+      \text{LN}(x) = \frac {x-\mathbb E [x]}{\sqrt {\text{Var}(x)+\varepsilon}}\cdot \gamma+\beta
       $$
 
     - 均值、方差是全局样本 / 全局隐藏维统计量，它是逐个 token 进行统计的
@@ -1239,7 +1239,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
     - perplexity（困惑度）和 loss 关系
 
       $$
-      \text {PPL}=\exp (\text {loss})
+      \text{PPL}=\exp (\text{loss})
       $$
 
 - 掩码语言模型（MLM）的损失函数是什么？
@@ -1259,7 +1259,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - 损失函数
 
     $$
-    \mathcal {L} = -\frac {1}{N}\sum_{i\in\text {response}} \log p_\theta (y_i\mid y_{<i})
+    \mathcal {L} = -\frac {1}{N}\sum_{i\in\text{response}} \log p_\theta (y_i\mid y_{<i})
     $$
 
   - 代码实现
@@ -1285,7 +1285,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - 不直接限制参数变化，而是约束当前策略 πθ 与冻结参考策略 πSFT 的概率分布距离：
 
     $$
-    D_{\text {KL}}(\pi_\theta\parallel\pi_\text {ref})
+    D_{\text{KL}}(\pi_\theta\parallel\pi_\text{ref})
     $$
 
   - SFT 约束的是行为 / 生成分布的距离，通过 KL 散度能够保证在偏好对齐或强化学习训练过程中，不会遗忘已经监督微调得到的语言能力
@@ -1326,13 +1326,13 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - SFT 的目标函数
 
     $$
-    \mathcal {L}_{\text {SFT}} = -\mathbb {E}_{(x,y)\sim D} \log p_\pi (y|x)
+    \mathcal {L}_{\text{SFT}} = -\mathbb {E}_{(x,y)\sim D} \log p_\pi (y|x)
     $$
 
   - PPO/GRPO 的目标函数
 
     $$
-    \mathcal {L}_{\text {RL}} = \mathbb {E}_{x\sim D,\,y\sim\pi_\text {old}} \; \underbrace {A_t (\pi_\text {old})}_{=A_t (x,y,\pi_\text {old})} \cdot \log p_\pi (y|x)\
+    \mathcal {L}_{\text{RL}} = \mathbb {E}_{x\sim D,\,y\sim\pi_\text{old}} \; \underbrace {A_t (\pi_\text{old})}_{=A_t (x,y,\pi_\text{old})} \cdot \log p_\pi (y|x)\
     A_t = A_t (\color {red}{\pi})
     $$
 
@@ -1408,7 +1408,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   - 损失函数（成对排序损失）
 
     $$
-    \mathcal {L}_{\text {RM}}(\theta) = -\mathbb {E}_{(x,y_j,y_k) \sim \mathcal {D}} \left [\log\sigma\big (r_\theta (x,y_j) - r_\theta (x,y_k)\big)
+    \mathcal {L}_{\text{RM}}(\theta) = -\mathbb {E}_{(x,y_j,y_k) \sim \mathcal {D}} \left [\log\sigma\big (r_\theta (x,y_j) - r_\theta (x,y_k)\big)
     		\right]
     $$
     - $\sigma$ 为 Sigmoid 函数

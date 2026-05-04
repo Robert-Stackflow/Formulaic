@@ -95,7 +95,7 @@ description: 介绍强化学习的基本范式、核心概念及相关技术，�
 - 数学公式理解（期望均方误差（MSE）分解）：
 
 $$
-\mathbb {E}[(\hat {f}(x) - f (x))^2] = \underbrace {[\mathbb {E}[\hat {f}(x)] - f (x)]^2}_{\text {Bias}^2} + \underbrace {\mathbb {E}[(\hat {f}(x) - \mathbb {E}[\hat {f}(x)])^2]}_{\text {Variance}} + \underbrace {\sigma^2}_{\text {不可约误差}}
+\mathbb {E}[(\hat {f}(x) - f (x))^2] = \underbrace {[\mathbb {E}[\hat {f}(x)] - f (x)]^2}_{\text{Bias}^2} + \underbrace {\mathbb {E}[(\hat {f}(x) - \mathbb {E}[\hat {f}(x)])^2]}_{\text{Variance}} + \underbrace {\sigma^2}_{\text{不可约误差}}
 $$
 
 - 其中：
@@ -463,10 +463,10 @@ $$
     $$
     q_\pi (s,a)
     =\mathbb {E}
-    \big [\text {当前奖励}
+    \big [\text{当前奖励}
     +
     \gamma \times
-    \text {下一步按}\pi\text {选动作的} q
+    \text{下一步按}\pi\text{选动作的} q
     \big]
     $$
 
@@ -503,7 +503,7 @@ $$
   - $v_{*}(s)=\displaystyle\max_{\pi} v_{\pi}(s)$
   - $q_{*}(s,a)=\displaystyle\max_{\pi} q_{\pi}(s,a)$
   - 以动作值函数为例，在最优化问题里关心的是：从 $(s,a)$ 出发，之后永远 “选得最优”，能拿到的最大期望回报
-  - 因此，相比随机选择动作，此处直接选择最好的动作，所以期望变为了 $\text {max}$ 函数
+  - 因此，相比随机选择动作，此处直接选择最好的动作，所以期望变为了 $\text{max}$ 函数
   - 当求得最优值函数时，即称 MDP 问题被解决
 - 最优策略
   - 称 $\pi \geq \pi^\prime \iff v_\pi (s) \geq v_{\pi^\prime}(s), \, \forall s$，来定义策略的优劣
@@ -514,8 +514,8 @@ $$
   $$
     \pi^*(a|s) =
     \begin {cases}
-    1, & \text {如果} a = \arg\displaystyle\max_{a \in A} q^*(s, a), \\
-    0, & \text {否则}.
+    1, & \text{如果} a = \arg\displaystyle\max_{a \in A} q^*(s, a), \\
+    0, & \text{否则}.
     \end {cases}
   $$
 
@@ -698,7 +698,7 @@ $$
     T (V^*) = V^*
     $$
 
-  - 则称，$V^* \text {是算子} T \text {的不动点}$
+  - 则称，$V^* \text{是算子} T \text{的不动点}$
   - 策略评估的不动点：$V^\pi = T_\pi V^\pi$，即在策略 $\pi$ 下，自洽的价值函数
   - 最优控制的不动点：$V^* = T_* V^*$​，即最优价值函数必须满足 Bellman 最优方程
 
@@ -840,7 +840,7 @@ $$
     $$
     \begin {align*}
     q_{\pi}(s,\pi^{\prime}(s))&=\displaystyle\max_a q_{\pi}(s,a)= q_{\pi}(s,\pi (s))=v_{\pi}(s)\\
-        \text {Bellman Optimality Equation:} v_{\pi}(s)&=\displaystyle\max_a q_{\pi}(s,a)\rightarrow v_{\pi}(s)=v_{*}(s)
+        \text{Bellman Optimality Equation:} v_{\pi}(s)&=\displaystyle\max_a q_{\pi}(s,a)\rightarrow v_{\pi}(s)=v_{*}(s)
         \end {align*}
     $$
 
@@ -1025,8 +1025,8 @@ $$
 
       $$
       \begin {align*}
-      \text {非负性}&:\tilde\pi (a|s)\ge 0\\
-      \text {归一性}&:\sum_a\tilde\pi (a|s)=\frac {\sum_a\pi (a|s)-\sum_a\epsilon/m}{1-\epsilon}=\frac {1-\epsilon}{1-\epsilon}=1
+      \text{非负性}&:\tilde\pi (a|s)\ge 0\\
+      \text{归一性}&:\sum_a\tilde\pi (a|s)=\frac {\sum_a\pi (a|s)-\sum_a\epsilon/m}{1-\epsilon}=\frac {1-\epsilon}{1-\epsilon}=1
       \end {align*}
       $$
 
@@ -1140,7 +1140,7 @@ $$
     - 这等价于对**平方误差**做随机梯度下降
 
       $$
-      \min\frac12\Big (\underbrace {R_{t+1} + \gamma V (S_{t+1})}_{\text {target}}-V (S_t)\Big)^2
+      \min\frac12\Big (\underbrace {R_{t+1} + \gamma V (S_{t+1})}_{\text{target}}-V (S_t)\Big)^2
       $$
 
     - 即 TD 在用单步样本，逼近 Bellman 方程的固定点
@@ -1247,7 +1247,7 @@ $$
 
 - 需要在完整的回合之后计算，不适合在线学习
 
-  ![前向 TD (λ)](/img/llm/ 前向 TD%28λ%29.png)
+  ![前向 TD (λ)](/img/llm/前向TD%28λ%29.png)
 
 ##### 2.4.2.3 后向 TD ($\lambda$)
 
@@ -1262,8 +1262,8 @@ $$
 
   $$
   \begin {cases}
-        \mathbb {E}_t (s) = \gamma \lambda \mathbb {E}_{t-1}(s), & \text {for} s \ne S_t \\
-        \mathbb {E}_t (S_t) = \gamma \lambda \mathbb {E}_{t-1}(S_t) + 1, & \text {for} s = S_t \\
+        \mathbb {E}_t (s) = \gamma \lambda \mathbb {E}_{t-1}(s), & \text{for} s \ne S_t \\
+        \mathbb {E}_t (S_t) = \gamma \lambda \mathbb {E}_{t-1}(S_t) + 1, & \text{for} s = S_t \\
         \Rightarrow \mathbb {E}_t (s) = \gamma \lambda \mathbb {E}_{t-1}(s) + \mathbf {1}(S_t = s)
         \end {cases}
   $$
@@ -1278,8 +1278,8 @@ $$
 
 - 当前 TD 误差不仅更新 $S_t$，还**按资格迹大小，回传给过去的状态**
 - 后向 TD ($\lambda$) 的特殊情况
-  - 当 $\lambda=0$ 时，$\mathbb {E}_t (s)=\mathbf {1}(S_t=s)$，仅有当前状态被更新，退化为 $\text {TD}(0)$
-  - 当 $\lambda=1$ 时，$\mathbb {E}_t (s)=\displaystyle\sum_{k=0}^{\infty}\gamma^k1 (S_{t+k}=s)$，退化为 MC 或称为 $\text {TD}(1)$
+  - 当 $\lambda=0$ 时，$\mathbb {E}_t (s)=\mathbf {1}(S_t=s)$，仅有当前状态被更新，退化为 $\text{TD}(0)$
+  - 当 $\lambda=1$ 时，$\mathbb {E}_t (s)=\displaystyle\sum_{k=0}^{\infty}\gamma^k1 (S_{t+k}=s)$，退化为 MC 或称为 $\text{TD}(1)$
 
 ##### 2.4.2.4 前向 / 后向 / MC/TD 的等价性
 
@@ -1360,8 +1360,8 @@ $$
 
   - 这说明：前向 λ- 回报 = 后向 TD 误差的指数加权和，也即前向 / 后向的更新量是等价的
 
-- $\text {TD}(\lambda)$ 与 MC 方法
-  - 对于 $\text {TD}(\lambda)$，展开资格迹（数学归纳法）
+- $\text{TD}(\lambda)$ 与 MC 方法
+  - 对于 $\text{TD}(\lambda)$，展开资格迹（数学归纳法）
 
     $$
           \begin {align*}
@@ -1374,13 +1374,13 @@ $$
     $$
 
   - 上述展开形式，也说明了状态 $s$ 的 “信用” 会以 $\gamma\lambda$ 指数衰减
-  - 对于 $\text {TD}(1)$ ，其资格迹不衰减
+  - 对于 $\text{TD}(1)$ ，其资格迹不衰减
 
     $$
     \mathbb {E}_t (s)=(\gamma)^{t-k}
     $$
 
-  - 根据 $\text {TD}(\lambda)$ 的更新规则，对状态 $S_k$，把一个 episode 内所有更新加起来
+  - 根据 $\text{TD}(\lambda)$ 的更新规则，对状态 $S_k$，把一个 episode 内所有更新加起来
 
   $$
   \sum_{t=1}^{\mathcal {T}-1}\alpha\delta_{t}\mathbb {E}_{t}(s)=\alpha\sum_{t=k}^{\mathcal {T}-1}\gamma^{t-k}\delta_{t}=\alpha\left (G_{k}-V (S_{k})\right)
@@ -1399,7 +1399,7 @@ $$
           \end {align*}
     $$
 
-  - $\text {TD}(1)$ 大致相当于 Every-Visit 蒙特卡洛：
+  - $\text{TD}(1)$ 大致相当于 Every-Visit 蒙特卡洛：
     - 每次访问状态都更新
     - 更新量等于 MC 误差
     - 但实现是**在线、逐步的**
@@ -1449,8 +1449,8 @@ $$
   - 问题根源中的偏差来自
 
     $$
-    \text {forward 目标用的是} V_{\text {old}}, \quad
-    \text {而 TD 误差用的是} V_{\text {new}}
+    \text{forward 目标用的是} V_{\text{old}}, \quad
+    \text{而 TD 误差用的是} V_{\text{new}}
     $$
 
   - Exact Online TD (λ) 显示跟踪前后价值函数的差距
@@ -1706,7 +1706,7 @@ $$
   - TD 误差（Q-learning）：
 
     $$
-    \delta_t^{\text {QL}}=R_{t+1}+\gamma \max_{a'} Q (S_{t+1},a')-Q (S_t,A_t)
+    \delta_t^{\text{QL}}=R_{t+1}+\gamma \max_{a'} Q (S_{t+1},a')-Q (S_t,A_t)
     $$
 
   - 更新规则：
@@ -1765,7 +1765,7 @@ $$
   | Bellman 期望方程（$q_\pi (s, a)$） | Q-Policy Iteration<br/>$Q (s, a) \leftarrow \mathbb {E}[R + \gamma Q (S', A') \mid s, a]$                                           | SARSA<br/>$Q (S, A) \stackrel {\alpha}{\leftarrow} R + \gamma Q (S', A')$                                    |
   | Bellman 最优方程（$q_*(s, a)$）   | Q-Value Iteration<br/>$Q (s, a) \leftarrow \mathbb {E} \left [R + \gamma \displaystyle\max_{a' \in A} Q (S', a') \mid s, a \right]$ | Q-Learning <br/>$Q (S, A) \stackrel {\alpha}{\leftarrow} R + \gamma \displaystyle\max_{a' \in A} Q (S', a')$ |
 
-  ![DP 与 TD 的关系](/img/llm/DP 与 TD 的关系.png)
+  ![DP 与 TD 的关系](/img/llm/DP与TD的关系.png)
 
 #### 2.5.3 从算子与不动点的角度看强化学习
 
@@ -2173,7 +2173,7 @@ $$
     \nabla_\theta J (\theta)
     &=
     \sum_s
-    \underbrace {\nabla_\theta d^{\pi_\theta}(s)}_{\text {极其复杂}}
+    \underbrace {\nabla_\theta d^{\pi_\theta}(s)}_{\text{极其复杂}}
     \sum_a\pi_\theta (a|s) r (s,a)
     +
     \sum_s d^{\pi_\theta}(s)\sum_a\nabla_\theta\pi_\theta (a|s) r (s,a)
@@ -2364,13 +2364,13 @@ $$
   - 公式定义：
 
     $$
-    A_t^{\text {GAE}(\gamma, \lambda)} = \displaystyle\sum_{l=0}^{\infty} (\gamma \lambda)^l \delta_{t+l}
+    A_t^{\text{GAE}(\gamma, \lambda)} = \displaystyle\sum_{l=0}^{\infty} (\gamma \lambda)^l \delta_{t+l}
     $$
 
   - 或递推形式：
 
     $$
-    A_t^{\text {GAE}(\gamma, \lambda)} = \delta_t + \gamma \lambda A_{t+1}^{\text {GAE}(\gamma, \lambda)}
+    A_t^{\text{GAE}(\gamma, \lambda)} = \delta_t + \gamma \lambda A_{t+1}^{\text{GAE}(\gamma, \lambda)}
     $$
 
   - 其中：
@@ -2490,7 +2490,7 @@ $$
     - 广义优势估计
 
       $$
-      A_t^{\text {GAE}(\lambda)}
+      A_t^{\text{GAE}(\lambda)}
         =
         \sum_{l=0}^{\infty}
         (\gamma\lambda)^l
@@ -2550,7 +2550,7 @@ $$
       - 由此可得
 
         $$
-        A_t^{\text {GAE}(\lambda)}
+        A_t^{\text{GAE}(\lambda)}
         \equiv
         A_t^{(\lambda)}
         =
@@ -3004,7 +3004,7 @@ $$
   - 在基于不确定性的探索方法（如 UCB、多臂老虎机与 PAC-MDP 分析）中，奖励或价值的不确定性通常满足：
 
     $$
-    \text {uncertainty} \propto \sqrt {\text {time since last observation}}
+    \text{uncertainty} \propto \sqrt {\text{time since last observation}}
     $$
 
   - 或更常见地：
@@ -3131,7 +3131,7 @@ for each episode:
   - 价值函数是长期记忆和短期记忆的加权总和
 
     $$
-        V (s) = V_{\text {long}}(s) + V_{\text {short}}(s)
+        V (s) = V_{\text{long}}(s) + V_{\text{short}}(s)
     $$
 
   - 模拟经验通过模型生成，允许智能体进行规划而不依赖于与环境的每一步交互
@@ -3233,8 +3233,8 @@ for each episode:
     $$
     a_t=
     \begin {cases}
-    \arg\max_a \hat {Q}_t (a), & \text {with prob.} 1-\epsilon \\
-    \text {uniform random}, & \text {with prob.} \epsilon
+    \arg\max_a \hat {Q}_t (a), & \text{with prob.} 1-\epsilon \\
+    \text{uniform random}, & \text{with prob.} \epsilon
     \end {cases}
     $$
 
@@ -3838,8 +3838,8 @@ for each episode:
 
     $$
     \begin {align*}
-        \max_{\theta} &\quad \mathbb {E}_{s \sim \rho^\pi} \left [\frac {\pi_\theta (a|s)}{\pi_{\theta_{\text {old}}}(a|s)} A^{\pi_{\theta_{\text {old}}}}(s, a) \right]\\
-        \text {subject to} &\quad \mathbb {E}_{s \sim \rho^\pi} \left [D_{\text {KL}}(\pi_\theta (\cdot|s) \parallel \pi_{\theta_{\text {old}}}(\cdot|s)) \right] \leq \delta
+        \max_{\theta} &\quad \mathbb {E}_{s \sim \rho^\pi} \left [\frac {\pi_\theta (a|s)}{\pi_{\theta_{\text{old}}}(a|s)} A^{\pi_{\theta_{\text{old}}}}(s, a) \right]\\
+        \text{subject to} &\quad \mathbb {E}_{s \sim \rho^\pi} \left [D_{\text{KL}}(\pi_\theta (\cdot|s) \parallel \pi_{\theta_{\text{old}}}(\cdot|s)) \right] \leq \delta
         \end {align*}
     $$
 
@@ -3847,20 +3847,20 @@ for each episode:
   - 优势函数
 
     $$
-    A^{\pi_{\theta_{\text {old}}}}(s, a) = Q^{\pi_{\theta_{\text {old}}}}(s, a) - V^{\pi_{\theta_{\text {old}}}}(s)
+    A^{\pi_{\theta_{\text{old}}}}(s, a) = Q^{\pi_{\theta_{\text{old}}}}(s, a) - V^{\pi_{\theta_{\text{old}}}}(s)
     $$
 
   - 需要显式计算费舍尔信息矩阵和逆矩阵
-    - 在 $\theta_{\text {old}}$ 附近，对 KL 做二阶展开：
+    - 在 $\theta_{\text{old}}$ 附近，对 KL 做二阶展开：
 
       $$
       \begin {align*}
       D_{\mathrm {KL}}
       &\approx
       \frac {1}{2}
-      (\theta-\theta_{\text {old}})^T
+      (\theta-\theta_{\text{old}})^T
       F
-      (\theta-\theta_{\text {old}})\\
+      (\theta-\theta_{\text{old}})\\
       F
       &=
       \mathbb {E}
@@ -3881,10 +3881,10 @@ for each episode:
 - TRPO 很对，但工程代价太高，PPO 对此做出了改进，不要显式 KL 约束，不要二阶优化
 - **a. 策略损失（Policy Loss）**：通过对比新旧策略的比率 $R_t$ 和优势函数 $A_t$ 计算：
   - 利用重要性采样（importance sampling）来估计在当前策略下的回报
-    - 新旧策略比率：其中 $\pi_{\theta}$ 是当前策略，$\pi_{\text {old}}$ 是旧策略
+    - 新旧策略比率：其中 $\pi_{\theta}$ 是当前策略，$\pi_{\text{old}}$ 是旧策略
 
       $$
-      R_t (\theta) = \frac {\pi_{\theta}(a_t | s_t)}{\pi_{\text {old}}(a_t | s_t)}
+      R_t (\theta) = \frac {\pi_{\theta}(a_t | s_t)}{\pi_{\text{old}}(a_t | s_t)}
       $$
       - $R_t=1$：没变
       - $R_t>1$：新策略更偏向该动作
@@ -3893,31 +3893,31 @@ for each episode:
     - 可以使用对数计算
 
       $$
-      R_t (\theta) = \exp (\log \pi_\theta (a_t | s_t) - \log \pi_{\text {old}}(a_t | s_t))
+      R_t (\theta) = \exp (\log \pi_\theta (a_t | s_t) - \log \pi_{\text{old}}(a_t | s_t))
       $$
 
     - 无截断损失项
 
       $$
-      \mathcal {L}(\theta) = R_t (\theta) \cdot \text {A}_t
+      \mathcal {L}(\theta) = R_t (\theta) \cdot \text{A}_t
       $$
 
   - 裁剪策略（Clipped Objective）：限制策略更新的幅度来保证训练稳定性，具体形式为：
 
     $$
-    \mathcal {L}_{\text {clip}}(\theta) = \mathbb {E}_t \left [\min \left ( R_t (\theta) A_t, \text {clip}(R_t (\theta), 1-\epsilon, 1+\epsilon) A_t \right) \right]
+    \mathcal {L}_{\text{clip}}(\theta) = \mathbb {E}_t \left [\min \left ( R_t (\theta) A_t, \text{clip}(R_t (\theta), 1-\epsilon, 1+\epsilon) A_t \right) \right]
     $$
     - $\epsilon$ 是一个超参数，通常取 0.1 到 0.2，用于控制裁剪范围
-    - $\text {clip}(R_t, 1-\epsilon, 1+\epsilon)$​​ 限制了策略比率的变化幅度，确保新策略不会偏离旧策略太远
+    - $\text{clip}(R_t, 1-\epsilon, 1+\epsilon)$​​ 限制了策略比率的变化幅度，确保新策略不会偏离旧策略太远
       - 优势为正：不允许概率提升超过 $1+\epsilon$
       - 优势为负：不允许概率下降超过 $1-\epsilon$
     - 通过取最小值，算法在优势函数为正或负的情况下都能防止过度优化
-    - 通常来说，策略损失取 $\mathcal {L}_{\text {PG}}(\theta) = - \min \left (\mathcal {L}(\theta), \mathcal {L}_{clip}(\theta) \right)$
+    - 通常来说，策略损失取 $\mathcal {L}_{\text{PG}}(\theta) = - \min \left (\mathcal {L}(\theta), \mathcal {L}_{clip}(\theta) \right)$
 
 - **b. 值函数损失（Value Function Loss）**：值函数的损失通过最小化预测值 $V_{\phi}(s_t)$ 与实际折扣回报 $\hat {R}_t$ 之间的误差来优化：
 
   $$
-  \mathcal {L}_{\text {value}}(\phi) = \mathbb {E}_t \left [\left ( V_{\phi}(s_t) - \hat {R}_t \right)^2 \right]
+  \mathcal {L}_{\text{value}}(\phi) = \mathbb {E}_t \left [\left ( V_{\phi}(s_t) - \hat {R}_t \right)^2 \right]
   $$
   - 同样也可以通过裁剪策略计算值函数损失
   - PPO 的 Actor 稳定，高度依赖一个 “不过拟合 / 不偏置” 的 Critic
@@ -3933,7 +3933,7 @@ for each episode:
 - **d. 总损失函数**：PPO 的总损失函数包括策略损失、值函数损失和熵奖励（用于增加探索）：
 
   $$
-      \mathcal {L}_{\text {PPO}}(\theta, \phi) = \mathcal {L}_{\text {PG}}(\theta) - c_1 \mathcal {L}_{\text {value}}(\phi) + c_2 \mathcal {H}(\pi_{\theta})
+      \mathcal {L}_{\text{PPO}}(\theta, \phi) = \mathcal {L}_{\text{PG}}(\theta) - c_1 \mathcal {L}_{\text{value}}(\phi) + c_2 \mathcal {H}(\pi_{\theta})
   $$
   - $c_1$ 和 $c_2$ 是权重系数，用于平衡各个损失项
   - $\mathcal {H}(\pi_{\theta})=-\sum_a\pi_{\theta}(a\vert s_t)\log\pi_{\theta}(a\vert s_t)$ 是策略的熵，鼓励策略的多样性，从而促进探索
@@ -3941,7 +3941,7 @@ for each episode:
 - **e. KL 惩罚项**（可选）：在损失函数中加入一个 KL 惩罚项，用来监控新旧策略的 KL 散度：
 
   $$
-      L^{\text {KL}} = \mathbb {E} \left [L^{\text {CLIP}}(\theta) - \beta D_{\text {KL}}(\pi_{\theta_{\text {old}}} \| \pi_{\theta}) \right]
+      L^{\text{KL}} = \mathbb {E} \left [L^{\text{CLIP}}(\theta) - \beta D_{\text{KL}}(\pi_{\theta_{\text{old}}} \| \pi_{\theta}) \right]
   $$
   - 其中 $\beta$ 是 KL 散度的惩罚系数
 
@@ -3949,19 +3949,19 @@ for each episode:
 
 - 采集数据
   - 使用当前策略 $\pi_{\theta}$ 与环境交互，采集一批轨迹数据，包括状态 $s_t$、动作 $a_t$、奖励 $R_t$、下一状态 $s_{t+1}$
-  - 记录旧策略的概率分布 $\pi_{\text {old}}(a_t|s_t)$
+  - 记录旧策略的概率分布 $\pi_{\text{old}}(a_t|s_t)$
 - 计算奖励和优势函数
   - 计算折扣累计回报 $R_t$（未来奖励的总和）
   - 计算优势函数 $A_t$
 - 更新网络参数
-  - 更新策略网络：计算策略比率 $R_t (\theta)$ 和裁剪后的策略损失 $\mathcal {L}_{\text {PG}}(\theta)$
-  - 更新值函数网络：使用均方误差损失 $\mathcal {L}_{\text {value}}(\phi)$ 最小化值函数预测 $V_{\phi}(s_t)$ 和折扣回报 $\hat {R}_t$ 之间的差异
-  - 总损失函数：总损失函数 $\mathcal {L}_{\text {PPO}}(\theta, \phi)$ 结合策略损失、值函数损失和熵正则项
+  - 更新策略网络：计算策略比率 $R_t (\theta)$ 和裁剪后的策略损失 $\mathcal {L}_{\text{PG}}(\theta)$
+  - 更新值函数网络：使用均方误差损失 $\mathcal {L}_{\text{value}}(\phi)$ 最小化值函数预测 $V_{\phi}(s_t)$ 和折扣回报 $\hat {R}_t$ 之间的差异
+  - 总损失函数：总损失函数 $\mathcal {L}_{\text{PPO}}(\theta, \phi)$ 结合策略损失、值函数损失和熵正则项
 - 执行梯度更新：使用优化器对策略网络参数 $\theta$ 和值函数网络参数 $\phi$ 执行梯度下降更新：
 
   $$
-    \theta \leftarrow \theta - \eta \nabla_{\theta} \mathcal {L}_{\text {PPO}}(\theta, \phi)\\
-    \phi \leftarrow \phi - \eta \nabla_{\phi} \mathcal {L}_{\text {PPO}}(\theta, \phi)
+    \theta \leftarrow \theta - \eta \nabla_{\theta} \mathcal {L}_{\text{PPO}}(\theta, \phi)\\
+    \phi \leftarrow \phi - \eta \nabla_{\phi} \mathcal {L}_{\text{PPO}}(\theta, \phi)
   $$
 
 ### 3.4 连续控制方法
@@ -4045,7 +4045,7 @@ DDPG、TD3 和 SAC 通过引入可学习的策略网络（Actor）直接处理�
       y_t = R_t + \gamma \min (Q_{w_1'}(s_{t+1}, \tilde {a}_{t+1}), Q_{w_2'}(s_{t+1}, \tilde {a}_{t+1}))
       $$
 
-    - 其中 $\tilde {a}_{t+1} = \mu_{\theta'}(s_{t+1}) + \text {clip}(\epsilon, -c, c)$，$\epsilon \sim \mathcal {N}(0, \sigma^2)$ 是策略平滑化噪声
+    - 其中 $\tilde {a}_{t+1} = \mu_{\theta'}(s_{t+1}) + \text{clip}(\epsilon, -c, c)$，$\epsilon \sim \mathcal {N}(0, \sigma^2)$ 是策略平滑化噪声
     - 通过最小值运算显式地对抗价值高估
 
   - 延迟策略更新（Delayed Policy Update）：
@@ -4053,14 +4053,14 @@ DDPG、TD3 和 SAC 通过引入可学习的策略网络（Actor）直接处理�
     - Actor 更新的标志是 Critic 已经更新得相对稳定，减少基于不可靠 Critic 反馈的策略更新
 
       $$
-      \text {if} \text {step} \mod d = 0 \text {then update} \theta \text {else only update} w_1, w_2
+      \text{if} \text{step} \mod d = 0 \text{then update} \theta \text{else only update} w_1, w_2
       $$
 
   - 目标策略平滑化（Target Policy Smoothing）：
     - 在目标 Q 值计算中，动作添加噪声而非硬性选择最优动作：
 
       $$
-      \tilde {a}_{t+1} = \text {clip}(\mu_{\theta'}(s_{t+1}) + \text {clip}(\epsilon, -c, c), a_{\min}, a_{\max})
+      \tilde {a}_{t+1} = \text{clip}(\mu_{\theta'}(s_{t+1}) + \text{clip}(\epsilon, -c, c), a_{\min}, a_{\max})
       $$
 
     - 避免 Q 网络在动作空间中的尖峰（sharp peaks），提高泛化能力
@@ -4168,7 +4168,7 @@ DDPG、TD3 和 SAC 通过引入可学习的策略网络（Actor）直接处理�
     - 或等价地（使用价值函数形式）：
 
       $$
-      \mathcal {L}_\pi (\theta) = \mathbb {E}_{s\sim\mathcal {D}} \left [D_{\text {KL}} \left (\pi_\theta (\cdot|s) \big\| \frac {\exp (Q_{\phi_1}(s,\cdot))}{\mathcal {Z}(s)} \right) \right]
+      \mathcal {L}_\pi (\theta) = \mathbb {E}_{s\sim\mathcal {D}} \left [D_{\text{KL}} \left (\pi_\theta (\cdot|s) \big\| \frac {\exp (Q_{\phi_1}(s,\cdot))}{\mathcal {Z}(s)} \right) \right]
       $$
 
     - 该形式说明策略向 "Q 加权的 Boltzmann 分布" 靠近
@@ -4390,7 +4390,7 @@ $$
     - 通常，奖励模型从 $\pi^{SFT}$ 初始化，并在最后加一层线性层来生成标量奖励
     - 为了降低方差，可以正则化奖励，如 $\mathbb {E}_{x,y\sim\mathcal {D}}\left [r_{\phi}(x,y)\right]$
 
-    ![奖励模型建模](/img/llm/ 奖励模型建模阶段.png)
+    ![奖励模型建模](/img/llm/奖励模型建模阶段.png)
 
   - 强化学习阶段
     - 利用奖励模型为 LLM 提供反馈，目标为最大化奖励，建模为
@@ -4407,7 +4407,7 @@ $$
       r (x,y)=r_{\phi}(x,y)-\beta (\log\pi_{\theta}(y\mid x)-\log\pi_{\mathrm {ref}}(y\mid x))
       $$
 
-    ![强化学习阶段](/img/llm/ 强化学习阶段.png)
+    ![强化学习阶段](/img/llm/强化学习阶段.png)
 
 ### 4.2 直接偏好优化（DPO）
 
@@ -4416,7 +4416,7 @@ $$
 
     $$
     \begin {align*}
-    \text {Objective Function}&=\max_{\pi_\theta}\mathbb {E}_{x\sim\mathcal {D},y\sim\pi_\theta (y|x)}\left [r_\phi (x,y)\right]-\beta\mathbb {D}_{KL}\left [\pi_\theta (y|x)\parallel\pi_{\mathrm {ref}}(y|x)\right] \\
+    \text{Objective Function}&=\max_{\pi_\theta}\mathbb {E}_{x\sim\mathcal {D},y\sim\pi_\theta (y|x)}\left [r_\phi (x,y)\right]-\beta\mathbb {D}_{KL}\left [\pi_\theta (y|x)\parallel\pi_{\mathrm {ref}}(y|x)\right] \\
     & =\max_\pi\mathbb {E}_{x\sim\mathcal {D}}\mathbb {E}_{y\sim\pi (y|x)}\left [r (x,y)-\beta\log\frac {\pi (y|x)}{\pi_{\mathrm {ref}}(y|x)}\right] \\
     & =\min_\pi\mathbb {E}_{x\sim\mathcal {D}}\mathbb {E}_{y\sim\pi (y|x)}\left [\log\frac {\pi (y|x)}{\pi_{\mathrm {ref}}(y|x)}-\frac {1}{\beta} r (x,y)\right] \\
     & =\min_\pi\mathbb {E}_{x\sim\mathcal {D}}\mathbb {E}_{y\sim\pi (y|x)}\left [\log\frac {\pi (y|x)}{\frac {1}{Z (x)}\pi_{\mathrm {ref}}(y|x)\exp\left (\frac {1}{\beta} r (x,y)\right)}-\log Z (x)\right]\\
@@ -4458,7 +4458,7 @@ $$
     $$
     \begin {align*}
     \nabla_{\theta}\mathcal {L}_{\mathrm {DPO}}(\pi_{\theta};\pi_{\mathrm {ref}})&=-\mathbb {E}_{(x,y_{w},y_{l})\sim\mathcal {D}}\left [\frac {\sigma^{\prime}\left (u\right)}{\sigma\left (u\right)}\nabla_{\theta}\left (u\right)\right] \\
-    & = -\beta\mathbb {E}_{(x,y_{w},y_{l})\sim\mathcal {D}}\left [\underbrace {\sigma (\hat {r}_{\theta}(x,y_{l})-\hat {r}_{\theta}(x,y_{w}))}_{\text {higher weight when reward estimate is wrong}}\left [\underbrace {\nabla_{\theta}\log\pi (y_{w}\mid x)}_{\text {increase likelihood of} y_{w}}-\underbrace {\nabla_{\theta}\log\pi (y_{l}\mid x)}_{\text {decrease likelihood of} y_{l}}\right]\right]\\
+    & = -\beta\mathbb {E}_{(x,y_{w},y_{l})\sim\mathcal {D}}\left [\underbrace {\sigma (\hat {r}_{\theta}(x,y_{l})-\hat {r}_{\theta}(x,y_{w}))}_{\text{higher weight when reward estimate is wrong}}\left [\underbrace {\nabla_{\theta}\log\pi (y_{w}\mid x)}_{\text{increase likelihood of} y_{w}}-\underbrace {\nabla_{\theta}\log\pi (y_{l}\mid x)}_{\text{decrease likelihood of} y_{l}}\right]\right]\\
     u&=\beta\log\frac {\pi_\theta (y_l|x)}{\pi_\mathrm {ref}(y_l|x)}-\beta\log\frac {\pi_\theta (y_w|x)}{\pi_\mathrm {ref}(y_w|x)}
     \end {align*}
     $$
@@ -4482,7 +4482,7 @@ $$
     - 对于对象 $A_i$ 和 $A_j$：
 
       $$
-      P (A_i \text { 击败} A_j) = \frac {\pi_i}{\pi_i + \pi_j}
+      P (A_i \text{ 击败} A_j) = \frac {\pi_i}{\pi_i + \pi_j}
       $$
 
     - 其中 $\pi_i$ 和 $\pi_j$ 分别是 $A_i$ 和 $A_j$ 的能力值

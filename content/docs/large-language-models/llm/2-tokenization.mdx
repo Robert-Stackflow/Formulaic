@@ -159,7 +159,7 @@ description: 介绍 Transformer 输入表示的分词方法（Tokenization）及
 
 - 在构建词表时，WordPiece 每次选择合并两个子词 $A$ 和 $B$，使合并后的子词 $AB$ 最大化语言模型的序列概率，即最大化互信息：
   $$
-  \text {score}(A, B) = \frac {P (AB)}{P (A) P (B)}
+  \text{score}(A, B) = \frac {P (AB)}{P (A) P (B)}
   $$
 - 直观理解：如果 `e` 和 `d` 在语料中经常连续出现（如 `ed` 表示过去时后缀），合并它们可以增加整个语料的序列概率，从而更符合语言模型的统计规律。
 
@@ -187,7 +187,7 @@ description: 介绍 Transformer 输入表示的分词方法（Tokenization）及
   - 其损失为：
 
     $$
-    \text {Loss} = - \sum_{i=1}^{N} \log \left (\sum_{x \in S (x_i)} p (x) \right)
+    \text{Loss} = - \sum_{i=1}^{N} \log \left (\sum_{x \in S (x_i)} p (x) \right)
     $$
 
   - 含义如下：
