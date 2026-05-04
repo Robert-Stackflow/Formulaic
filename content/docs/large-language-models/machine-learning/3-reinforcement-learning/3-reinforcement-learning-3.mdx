@@ -1,0 +1,1478 @@
+---
+title: 强化学习（三）
+description: 介绍强化学习的基本范式、核心概念及相关技术，并系统梳理强化学习算法体系
+---
+
+## 二、经典强化学习
+
+### 2.7 策略梯度
+
+#### 2.7.1 策略梯度方法
+
+- 类似于函数逼近价值函数和动作值函数，可以直接对策略进行逼近，即 $\pi_{\theta}(s,a)=\mathbb {P}[a|s,\theta]$
+  - 基于价值的：学习价值函数，隐式的策略 —— 先学 “好不好”，再推 “怎么选”
+
+    $$
+    \pi (s)=\arg\max_a Q (s,a)
+    $$
+    - $\arg\max$**不可微**
+    - 连续动作空间无法枚举
+    - 随机策略不自然
+
+  - 基于策略的：学习参数化策略，没有价值函数 —— 直接学 “怎么选”
+
+    $$
+    \pi_\theta (s,a)=\mathbb {P}[a|s,\theta]
+    $$
+    - 给定状态 $s$，策略网络直接输出动作分布
+    - 更好的收敛性质，但是通常收敛到局部最优解
+    - 在高维或连续动作空间中更有效
+    - 可以学习随机策略
+    - 代价：目标函数复杂，梯度估计方差大，评估策略通常不高效
+
+  - Actor-Critic：学习价值函数和策略
+    - Actor：学策略 $\pi_\theta$
+    - Critic：学价值 $V$ 或 $Q$，指导 Actor
+
+- 策略目标函数的关键
+  - 如何评估策略 $\pi_{\theta}$​ 的质量？什么叫 “一个策略是好的”？
+  - $J (\theta)$ 是一个标量函数，输入是策略参数 $\theta$，输出是 “这个策略有多好”
+  - 在 Episodic 环境（任务有明确终止，如游戏、对话生成）中，从固定起点 $s_0$ 出发，看期望总回报（REINFORCE 方法）
+
+    $$
+    J (\theta) = V^{\pi_{\theta}}(s_0) = \mathbb {E}_{\pi_{\theta}}[v_0]=\mathbb {E}_{\pi_{\theta}} \left [\displaystyle\sum_{t=0}^{T-1} \gamma^t R_t \,\Big|\, s_0 \right]
+    $$
+
+  - 在连续环境（连续任务，如机器人控制、推荐系统）中，使用值函数的平均值
+
+    $$
+        J_{avV}(\theta)=\displaystyle\sum_sd^{\pi_\theta}(s) V^{\pi_\theta}(s)
+    $$
+
+  - 在连续环境中，使用每个时间步的平均奖励
+
+    $$
+    J_{avR}(\theta)=\displaystyle\sum_sd^{\pi_\theta}(s)\displaystyle\sum_a\pi_\theta (s,a)\mathcal {R}_s^a
+    $$
+
+  - 其中，$d^{\pi_\theta}(s)$ 是 $\pi_\theta$ 的稳态概率分布，表示 “长期来看，策略的平均表现”
+
+- 对策略目标函数 $J (\theta)$ 使用梯度上升法
+  - 如果一个动作导致了高回报，就提高它的概率；如果导致低回报，就降低它的概率
+  - 因此，我们要做的不是最小化损失，而是**最大化收益**：
+
+    $$
+    \Delta\theta=\alpha\nabla_\theta J (\theta)\\
+    \theta \leftarrow \theta+\alpha \nabla_\theta J (\theta)
+    $$
+
+  - 工程上一般使用梯度下降方法，因此可以定义损失：
+
+    $$
+    \mathcal {L}(\theta)
+    =
+    -\mathbb {E}
+    \left [\log \pi_\theta (a|s)
+    \cdot \hat A (s,a)
+    \right]
+    $$
+
+  - 策略梯度为
+
+    $$
+          \nabla_\theta J (\theta)=
+          \begin {pmatrix}
+          \frac {\partial J (\theta)}{\partial\theta_1} \\
+          \vdots \\
+          \frac {\partial J (\theta)}{\partial\theta_n}
+          \end {pmatrix}
+    $$
+
+  - 通过有限差分计算梯度：对于每个维度 $k\in [1,n]$，估计目标函数的 k 阶偏导数
+
+    $$
+    \frac {\partial J (\theta)}{\partial\theta_k}\approx\frac {J (\theta+\epsilon\mathbf {u}_k)-J (\theta)}{\epsilon}
+    $$
+
+- 策略目标无法直接求解
+  - 考虑最直观的 Episodic 目标
+
+    $$
+    J (\theta)=\mathbb {E}_{\tau\sim\pi_\theta}\left [R (\tau)\right]
+    $$
+    - $\tau=(s_0,a_0,s_1,a_1,\dots)$ 是一条完整轨迹
+    - $R (\tau)=\sum_{t=0}^{T-1}\gamma^t R_t$
+
+  - 积分得到
+
+    $$
+    J (\theta)=\sum_\tau P (\tau|\theta) R (\tau)
+    $$
+
+  - 直接求导
+
+    $$
+    \nabla_\theta J (\theta)=\sum_\tau R (\tau)\nabla_\theta P (\tau|\theta)
+    $$
+
+  - 问题是轨迹概率是什么？
+
+    $$
+    P (\tau|\theta)=\rho (s_0)\prod_{t=0}^{T-1}\pi_\theta (a_t|s_t),P (s_{t+1}|s_t,a_t)
+    $$
+    - $\pi_\theta$：我们控制
+    - $P (s'|s,a)$​：环境给的，未知、不可导
+
+  - 如果强制求导，有
+
+    $$
+    \nabla_\theta P (\tau|\theta)
+    =
+    \nabla_\theta
+    \left (\rho (s_0)
+    \prod_t
+    \pi_\theta (a_t|s_t)
+    P (s_{t+1}|s_t,a_t)
+    \right)
+    $$
+
+  - 环境转移概率不可导，且夹在乘积里，无法直接拿出来
+
+    $$
+    \nabla_\theta P (s_{t+1}|s_t,a_t)=0
+    $$
+
+  - 同时，状态分布 $d^{\pi_\theta}(s)$ 依赖 $\theta$
+
+    $$
+    \begin {align*}
+    J (\theta)&=\sum_s d^{\pi_\theta}(s)\sum_a\pi_\theta (a|s) r (s,a)\\
+    \nabla_\theta J (\theta)
+    &=
+    \sum_s
+    \underbrace {\nabla_\theta d^{\pi_\theta}(s)}_{\text{极其复杂}}
+    \sum_a\pi_\theta (a|s) r (s,a)
+    +
+    \sum_s d^{\pi_\theta}(s)\sum_a\nabla_\theta\pi_\theta (a|s) r (s,a)
+    \end {align*}
+    $$
+
+  - 这里的 $\nabla_\theta d^{\pi_\theta}(s)$ 等价于 “策略参数变化，未来所有状态分布如何改变”，而这是一个**无限时序、递归依赖、不可显式计算**的对象
+  - 因此，**直接对策略目标函数求梯度是行不通的**
+
+- 策略梯度定理（Policy Gradient Theorem）
+  - 根据上述推导，如果我不知道环境怎么转移，但我知道：在状态 $s$ 下选了动作 $a$，最后赢了还是输了，我能不能合理地调整这个动作的概率？
+  - 似然比（Likelihood ratios）—— 把 “概率的梯度” 变成 “概率 × 可计算的量”
+
+    $$
+    \begin {align*}
+          \nabla_\theta\pi_\theta (s,a) & =\pi_\theta (s,a)\frac {\nabla_\theta\pi_\theta (s,a)}{\pi_\theta (s,a)} \\
+          & =\pi_\theta (s,a)\nabla_\theta\log\pi_\theta (s,a)\\
+          \end {align*}
+    $$
+
+  - Score 函数即为 $\nabla_\theta\log\pi_\theta (s,a)$
+  - 回到刚刚的公式：
+
+    $$
+    \nabla_\theta J (\theta)=\sum_\tau R (\tau)\nabla_\theta P (\tau|\theta)
+    $$
+
+  - 代入：
+
+    $$
+    \nabla_\theta P (\tau|\theta)=P (\tau|\theta)\nabla_\theta\log P (\tau|\theta)
+    $$
+
+  - 于是：
+
+    $$
+    \nabla_\theta J (\theta)=\mathbb {E}_{\tau\sim\pi_\theta}\left [R (\tau)\nabla_\theta\log P (\tau|\theta)\right]
+    $$
+
+  - 再看 $\log P (\tau|\theta)$
+
+    $$
+    \log P (\tau|\theta)
+    =
+
+    \log\rho (s_0)
+    +
+    \sum_t
+    \log\pi_\theta (a_t|s_t)
+    +
+    \sum_t
+    \log P (s_{t+1}|s_t,a_t)
+    $$
+
+  - 对 $\theta$ 求导，得到
+
+    $$
+    \nabla_\theta\log P (\tau|\theta)
+    =\sum_t
+    \nabla_\theta\log\pi_\theta (a_t|s_t)
+    $$
+
+  - 上式中，初始分布 $\rho$ 不依赖 $\theta$，环境转移概率不依赖 $\theta$，全部消失
+  - 其本质在于：改变策略，只能通过 “改变动作选择概率” 来影响未来
+  - 策略不会直接控制环境，只能控制 $\pi_\theta (a|s)$，所有未来的改变，都会被 “压缩” 进：$\nabla_\theta\log\pi_\theta (a_t|s_t)$
+
+- 对于任意可微策略和任意策略目标函数，策略梯度为
+
+  $$
+  \nabla_\theta J (\theta)=\mathbb {E}_{\tau\sim\pi_\theta}\left [R (\tau)\nabla_\theta\log\pi_\theta (a_t|s_t)\right]
+  $$
+  - $R (\tau)$ 可以选 $Q^{\pi_\theta}(s,a)$
+  - 梯度中没有 $\nabla_\theta d^{\pi_\theta}(s)$，不需要对状态分布求导，这是策略梯度能成立的关键原因
+  - $J (\theta)$ 本身不可直接计算，只能用采样估计
+  - 上式子正是 $J (\theta)$ 的蒙特卡洛估计形式
+
+#### 2.7.2 REINFORCE 算法（蒙特卡洛策略梯度）
+
+- REINFORCE 是策略梯度的**最原始实现**
+- 具体过程，在时间步 $t$：
+  - 在状态 $s_t$
+  - 随机选了一个动作 $a_t$
+  - 整条轨迹结束后，计算整条轨迹的真实总回报 $G_t$ 作为 $Q_{\pi_\theta}(s,a)$​ 的无偏估计
+
+    $$
+    \begin {align*}
+    G_t&=\sum_{k=t}^{T-1}\gamma^{k-t} r_k\\
+    \mathbb {E}[G_t|s_t,a_t]&=Q^{\pi_\theta}(s_t,a_t)
+    \end {align*}
+    $$
+    - “如果这个动作带来了高回报，就提高它被选中的概率”
+    - 如果 $G_t$ 大 → 提高 $a_t$ 在 $s_t$ 被选中的概率
+    - 如果 $G_t$​ 小 → 降低它的概率
+
+  - 更新公式：“奖励 × 调整方向”
+
+    $$
+    \Delta\theta_{t}= \alpha\nabla_\theta\log\pi_\theta (s_t,a_t) G_t
+    $$
+
+- REINFORCE 无偏，但是方差极大；收敛慢，对长序列极不稳定
+  - 用作权重的总回报 $v_t$ 同时包含了当前动作 $a_t$ 的因果影响，以及大量由未来状态转移和未来随机动作引入、但与 $a_t$ 无关的随机性
+  - 为什么不用 TD？不用 $Q$​？—— REINFORCE 的目标是保证无偏
+
+#### 2.7.3 优势函数
+
+- 由于我们不能穷举所有状态 / 动作，通常用采样估计期望值
+  - $\hat {g} = \frac {1}{N} \sum_{i=1}^N \nabla_\theta \log \pi_\theta (a_i|s_i) \cdot R_i$
+  - 这就是**无基线策略梯度估计**，但它存在**高方差问题**
+  - $R_i$​（奖励总回报）可能受未来长序列动作影响，变动范围大
+  - 在实际中，使用状态值函数作为采样近似代替 $R$
+  - $\nabla_\theta \log \pi_\theta (a_i|s_i)$ 的值乘上一个波动剧烈的 $R_i$​ 会造成不稳定
+  - 当 $R$ 本身变动大，梯度估计的方差也大，会导致训练过程不稳定（更新方向不一致，收敛慢或震荡）
+- REINFORCE 存在高方差问题
+  - $R$​ 是从整个轨迹累积下来的，它同时包含了 “这个状态下动作的影响”+“后面所有随机性” 的噪声
+  - 例如，在某个状态 $s_t$ 随机选择了动作 $a_t$，则 $R_t$ 包含了后续奖励的总和；即使 $a_t$ 本身并不重要，更新的梯度里也会因为包含后续随机事件带来的波动而无法准确学习到动作 $a_t$​ 的准确性
+  - 如，在 $s_3$ 选了一个 “无关紧要” 的动作，后面 $s_7$ 因为环境随机性中了大奖，那么 REINFORCE 会：把 $s_3$ 的动作 狠狠奖励一顿
+- 引入基线函数（baseline）
+  - 有些状态就是 “天生收益高”，比如游戏开始后就得高分，那再高的 $R$ 也未必说明这个动作好
+  - 因此需要考虑：这一步选这个动作，**是比平常好，还是比平常差？**
+  - 而基线就是用来 “减去平均值”，消除状态本身引起的高回报偏差，即把回报改为：
+
+    $$
+    G_t \longrightarrow G_t - B (s_t)
+    $$
+
+  - 其中 $B (s_t)$ 表示 “在这个状态下的平均水平”
+  - 如此，更新梯度时只依赖相对表现，消除了很多不相关的噪声
+
+- 被选择的基线函数 $B (s)$ 要避免引入额外偏差以保证无偏性，同时减少方差而不改变期望，即满足
+
+  $$
+    \begin {align*}
+   \mathbb {E}_{\pi_\theta}\left [\nabla_\theta\log\pi_\theta (s,a) B (s)\right] & =\displaystyle\sum_{s\in S} d^{\pi_\theta}(s)\displaystyle\sum_a\nabla_\theta\pi_\theta (s,a) B (s) \\
+    & =\displaystyle\sum_{s} d^{\pi_\theta} B (s)\nabla_\theta\displaystyle\sum_{a}\pi_\theta (s,a) \\
+    & =0
+    \end {align*}
+  $$
+
+- 如果 baseline 只依赖状态，那么最自然的选项便是 $V_\pi (s)$，即 “这一步动作带来的真实收益” 减去 “在当前策略 $\pi$​ 下对动作分布的期望收益”
+
+  $$
+  V_\pi (s) = \mathbb {E}_{a \sim \pi (\cdot|s)}[Q_\pi (s,a)]
+  $$
+
+- 因此 $B (s)=V^{\pi_\theta}(s)$，则有优势函数 $A^{\pi_\theta}(s,a)$
+
+  $$
+    \begin {align*}
+    A^{\pi_\theta}(s,a) & =Q^{\pi_\theta}(s,a)-V^{\pi_\theta}(s) \\
+    \nabla_\theta J (\theta) & =\mathbb {E}_{\pi_\theta}\left [\nabla_\theta\log\pi_\theta (s,a)\right.A^{\pi_\theta}(s,a)]
+    \end {align*}
+  $$
+
+- 引入优势函数后，REINFORCE → Advantage REINFORCE
+- 优势函数（Advantage Function）
+  - 定义：优势函数 $A_t$ 衡量当前动作 $a_t$ 相对于当前策略下平均动作的优势
+  - 实际上表示在状态 $s$ 下，选取动作 $a$ 相对于其他情况的优势
+  - 优势函数可以显著减少策略梯度的方差，在后续 Actor–Critic 框架中，优势函数通常由 Critic 估计
+
+    $$
+    \begin {align*}
+      V_v (s) & \approx V^{\pi_\theta}(s) \\
+      Q_w (s,a) & \approx Q^{\pi_\theta}(s,a) \\
+      A (s,a) & =Q_w (s,a)-V_v (s)
+      \end {align*}
+    $$
+
+- 引入优势函数后，解决了 REINFORCE 算法中的高方差问题
+- 但是在 REINFORCE 算法中，必须跑完整条轨迹才能更新，这在长 episode、连续任务、实时系统中几乎不可接受
+- 而真 TD 误差 $\delta^{\pi_\theta}$ 正好是优势函数的无偏估计，因此可以使用 TD 误差替换 REINFORCE 中的回报
+
+  $$
+  \begin {align*}
+    \delta^{\pi_\theta}&=r+\gamma V^{\pi_\theta}(s^{\prime})-V^{\pi_\theta}(s)\\
+    \mathbb {E}_{\pi_\theta}\left [\delta^{\pi_\theta}|s,a\right] & =\mathbb {E}_{\pi_\theta}\left [r+\gamma V^{\pi_\theta}(s^{\prime})|s,a\right]-V^{\pi_\theta}(s) \\
+    & =Q^{\pi_\theta}(s,a)-V^{\pi_\theta}(s) \\
+    & =A^{\pi_\theta}(s,a)\\
+    \nabla_\theta J (\theta) & =\mathbb {E}_{\pi_\theta}\left [\nabla_\theta\log\pi_\theta (s,a)\right.\delta^{\pi_\theta}]\\
+    \Delta\theta&=\alpha\nabla_\theta\log\pi_\theta (s,a)\delta
+    \end {align*}
+  $$
+  - 该等式成立的前提是 $V (s)$ 为真实价值函数；在实际 Actor–Critic 中，使用 $V_w$ 近似，从而引入偏差但换取低方差与在线性
+  - 因此在实际情况，可以使用估计 TD 误差 $\delta_v=r+\gamma V_v (s^{\prime})-V_v (s)$​
+  - TD 误差本身并不等同于优势函数，而是一个以优势函数为条件期望的随机样本；当 $V_w\to V^{\pi}$ 时，该估计在期望意义下趋于无偏
+
+- 广义优势估计（Generalized Advantage Estimation, GAE）
+  - 公式定义：
+
+    $$
+    A_t^{\text{GAE}(\gamma, \lambda)} = \displaystyle\sum_{l=0}^{\infty} (\gamma \lambda)^l \delta_{t+l}
+    $$
+
+  - 或递推形式：
+
+    $$
+    A_t^{\text{GAE}(\gamma, \lambda)} = \delta_t + \gamma \lambda A_{t+1}^{\text{GAE}(\gamma, \lambda)}
+    $$
+
+  - 其中：
+    - $\delta_t = R_t + \gamma V (s_{t+1}) - V (s_t)$：一步 TD 误差
+    - $\gamma$：折扣因子，控制未来奖励的重要性
+    - $\lambda$：平滑参数，控制 TD 误差的加权衰减
+    - $l$：从当前时间步 $t$​ 开始累积 TD 误差的步数
+
+- 从 TD (0) 到 GAE (λ) 的几种不同的优势函数
+  - TD (0)
+    - 一步回报
+
+      $$
+      G_t^{(1)} = R_t + \gamma V (s_{t+1})
+      $$
+
+    - TD 误差
+
+      $$
+      \delta_t = R_t + \gamma V (s_{t+1}) - V (s_t)
+      $$
+
+    - 最小方差、最大偏差、信用只分配给下一步
+
+  - n-step TD：延长信用分配
+    - n-step 回报
+
+      $$
+      G_t^{(n)}=\sum_{k=0}^{n-1}\gamma^k r_{t+k}-\gamma^n V (s_{t+n})
+      $$
+
+    - n-step 优势
+
+      $$
+      \begin {align*}
+      A_t^{(n)}
+      &= G_t^{(n)} - V (s_t) \\
+      &=
+      \left (R_t + \gamma r_{t+1} + \cdots + \gamma^{n-1} r_{t+n-1}
+      + \gamma^n V (s_{t+n})
+        \right)
+      - V (s_t)\\
+      &=\sum_{k=0}^{n-1}\gamma^k r_{t+k}
+      + \gamma^n V (s_{t+n})
+      - V (s_t)
+        \end {align*}
+      $$
+
+    - n-step 优势 = n 个 TD 误差的折扣和
+      - $A_t^{(n)}$
+      - TD 误差展开
+
+        $$
+        \begin {align*}
+        \delta_t &= R_t + \gamma V (s_{t+1}) - V (s_t) \\
+        \gamma\delta_{t+1}
+        &= \gamma r_{t+1} + \gamma^2 V (s_{t+2}) - \gamma V (s_{t+1}) \\
+        \gamma^2\delta_{t+2}
+        &= \gamma^2 r_{t+2} + \gamma^3 V (s_{t+3}) - \gamma^2 V (s_{t+2}) \\
+        &\vdots \\
+        \gamma^{n-1}\delta_{t+n-1}
+        &= \gamma^{n-1} r_{t+n-1}
+        +* \gamma^n V (s_{t+n})
+        - \gamma^{n-1} V (s_{t+n-1})
+          \end {align*}
+        $$
+
+      - TD 误差求和
+
+        $$
+        \sum_{l=0}^{n-1}\gamma^l \delta_{t+l}
+        =\sum_{k=0}^{n-1}\gamma^k r_{t+k}
+        + \gamma^n V (s_{t+n})
+        - V (s_t)
+        $$
+
+      - 从而得到关键恒等式
+
+        $$
+        A_t^{(n)}=\sum_{l=0}^{n-1}\gamma^l \delta_{t+l}
+        $$
+
+    - TD (0) 的直接推广、n 控制 “向未来看多远”、n 越大 → 偏差 ↓ 方差 ↑
+
+  - TD (λ)：对所有 n-step 的加权平均
+    - λ - 回报
+
+      $$
+      G_t^{(\lambda)}
+        =
+        (1-\lambda)\sum_{n=1}^{\infty}
+        \lambda^{n-1} G_t^{(n)}
+      $$
+
+    - λ - 优势
+
+      $$
+      \begin {align*}
+      A_t^{(\lambda)}
+      &= G_t^{(\lambda)} - V (s_t) \\
+      &= (1-\lambda)\sum_{n=1}^{\infty}\lambda^{n-1}
+      \big (G_t^{(n)} - V (s_t)\big) \\
+      &= (1-\lambda)\sum_{n=1}^{\infty}\lambda^{n-1}
+      A_t^{(n)}
+      \end {align*}
+      $$
+
+    - TD (λ) 不是一种新回报，而是所有 n-step 的融合
+
+  - GAE (λ)：把 TD (λ)“改写” 为 TD 误差的折扣和
+    - 定义 TD 误差
+
+      $$
+      \delta_t = R_t + \gamma V (s_{t+1}) - V (s_t)
+      $$
+
+    - 广义优势估计
+
+      $$
+      A_t^{\text{GAE}(\lambda)}
+        =
+        \sum_{l=0}^{\infty}
+        (\gamma\lambda)^l
+        \delta_{t+l}
+      $$
+
+    - 等价关系推导
+      - 将”n-step 优势 = n 个 TD 误差的折扣和 “代入 λ - 优势
+
+        $$
+        A_t^{(\lambda)}
+        =(1-\lambda)
+        \sum_{n=1}^{\infty}
+        \lambda^{n-1}
+        \sum_{l=0}^{n-1}
+        \gamma^l \delta_{t+l}
+        $$
+
+      - 交换求和顺序，原结构中，外层对 n 求和，内层对 l=0,…,n−1；改为外层对 l 求和，内层对 n ≥ l+1 求和
+
+        $$
+        \begin {align*}
+        A_t^{(\lambda)}
+        &=
+        (1-\lambda)
+        \sum_{l=0}^{\infty}
+        \gamma^l \delta_{t+l}
+        \sum_{n=l+1}^{\infty}
+        \lambda^{n-1}
+        \end {align*}
+        $$
+
+      - 计算内层级数
+
+        $$
+        \sum_{n=l+1}^{\infty}\lambda^{n-1}=\lambda^l \sum_{k=0}^{\infty}\lambda^k=\frac {\lambda^l}{1-\lambda}
+        $$
+
+      - 代回去得到
+
+        $$
+        \begin {align*}
+        A_t^{(\lambda)}
+        &=
+        (1-\lambda)
+        \sum_{l=0}^{\infty}
+        \gamma^l \delta_{t+l}
+        \cdot
+        \frac {\lambda^l}{1-\lambda} \\
+        &=
+        \sum_{l=0}^{\infty}
+        (\gamma\lambda)^l
+        \delta_{t+l}
+        \end {align*}
+        $$
+
+      - 由此可得
+
+        $$
+        A_t^{\text{GAE}(\lambda)}
+        \equiv
+        A_t^{(\lambda)}
+        =
+        G_t^{(\lambda)} - V (s_t)
+        $$
+
+    - GAE (λ) 不是一种 “近似 TD (λ)” 的方法，它就是 TD (λ) 在 Actor–Critic 中的优势形式重写
+    - 但在实现时
+      - 由于 GAE (λ) 是无限求和，因此会截断有限 horizon，“截断的 GAE (λ)” ≠ 理论上的无限和
+      - TD (λ) / GAE (λ) 里的回报，并不是真实 return，而是 “bootstrapping 估计”，包含一定偏差
+      - λ 一般用于控制是否更信任价值函数，还是更信任真实奖励序列
+
+#### 2.7.4 Actor-Critic 算法
+
+- 通过引入真 TD 误差作为优势函数的无偏估计量（TD 误差在期望意义下等于优势函数，因此可作为其在线估计），REINFORCE 算法得到了极大改进，其不再需要完整回合，方差大幅下降，而且在线、持续学习成为可能
+- 然而，在 REINFORCE 算法中，$G_t$ 来自真实轨迹，无需额外模型，那么 TD 误差中的价值函数 $V_t (s)$ 由谁提供？
+  - 它不是环境给的，也不是 “天然存在” 的
+  - 倘若使用真值 $V_t (s)$，需要知道 $P (s'|s,a)$​，也即需要知道完整 MDP，这显然不现实
+    - 真实状态价值函数
+
+      $$
+      V^\pi (s) = \mathbb {E}_{\tau\sim\pi}\left [\sum_{k\ge t}\gamma^{k-t} r_k \;\bigg|\; s_t=s\right]
+      $$
+
+    - 期望展开后有
+
+      $$
+      V^\pi (s) = \sum_a \pi (a|s)\sum_{s'} P (s'|s,a)\Big (r (s,a,s') + \gamma V^\pi (s') \Big)
+      $$
+
+    - 真实价值 $V^\pi (s)$ 是对未来所有可能路径的加权平均，权重就是转移概率 P
+    - 不知道 P，就不可能算出真实的期望
+
+  - 那么只能自己学习一个价值函数 $V_{\mathbf {w}}(s)$—— 用一个函数逼近器，在线估计
+  - 由此，Critic 模型正式登场
+
+- Actor-Critic 架构
+  - 使用 Critic 去估计状态价值函数 $V^{\pi_\theta}(s)$，Actor 根据 Critic 的估计更新策略
+  - Critic 更新价值函数的参数 $\mathbf {w}$，即
+
+    $$
+    V_{\mathbf {w}}(s)\approx V^{\pi_\theta}(s)
+    $$
+
+  - 此时的 $\delta_t$ 不再是 “真优势”，而是 “估计的优势”
+  - 自此，Actor 更新策略的参数 $\theta$，根据 Critic 建议的方向
+
+- 如何学习 Critic 模型
+  - 首先，Critic 的优化目标是最小化均方误差损失：
+
+    $$
+    \mathcal {L}(w) = \frac {1}{2}\big (V_w (s_t) - V^\pi (s_t)\big)^2
+    $$
+
+  - 根据贝尔曼方程，真实价值满足：
+
+    $$
+    V^\pi (s_t) = \mathbb {E}\big [r_t + \gamma V^\pi (s_{t+1})\big]
+    $$
+
+  - 用采样值代替期望，构造 TD 目标：
+
+    $$
+    y_t = r_t + \gamma V_w (s_{t+1})
+    $$
+
+  - 定义 TD 误差：
+
+    $$
+    \delta_t = y_t - V_w (s_t) = r_t + \gamma V_w (s_{t+1}) - V_w (s_t)
+    $$
+
+  - 损失函数可写为 TD 误差的平方：
+
+    $$
+    \mathcal {L}(w) = \frac {1}{2}\delta_t^2
+    $$
+
+  - 对参数 w 求梯度：
+
+    $$
+    \nabla_w \mathcal {L}(w)
+    = \delta_t \cdot \nabla_w \delta_t
+    = \delta_t \cdot \nabla_w\big (r_t + \gamma V_w (s_{t+1}) - V_w (s_t)\big)
+    $$
+
+  - 由于 TD 目标中 $V_w (s_{t+1})$ 不参与当前步梯度计算（semi-gradient 设定），仅对 $V_w (s_t)$ 求导：
+
+    $$
+    \nabla_w \mathcal {L}(w) = -\delta_t \cdot \nabla_w V_w (s_t)
+    $$
+
+  - 执行梯度下降更新：
+
+    $$
+    \mathbf {w} \leftarrow \mathbf {w} - \beta \nabla_w \mathcal {L}(w)
+    $$
+
+  - 代入梯度后得到最终更新形式：
+
+    $$
+    \mathbf {w}\leftarrow\mathbf {w}+\beta\delta_t\nabla_\mathbf {w} V_\mathbf {w}(s_t)
+    $$
+
+  - 即通过 TD 误差来更新参数，进而逼近 $V_{\pi_\theta}(s)$
+
+- 算法流程
+  - Critic 使用线性函数逼近器，使用 TD (0) 逼近
+
+    $$
+    V_{\mathbf {w}}(s)=\mathbf {\phi}(s)^\top\mathbf {w}
+    $$
+
+  - 初始化策略参数 $\theta$ 和价值函数参数 $\mathbf {w}$
+  - 循环更新
+    1. 从起始状态 $s_0$ 开始
+    2. 根据策略 $\pi_\theta$ 选择动作 $a_t$
+    3. 执行动作 $a_t$，观察奖励 $r_{t}$ 和下一状态 $s_{t+1}$
+    4. 更新价值函数
+
+       $$
+       \begin {align*}
+       \delta
+       &=r_{t}+\gamma V_{\mathbf {w}}(s_{t+1})-V_{\mathbf {w}}(s_t)\\
+       \mathbf {w}
+       &\leftarrow
+       \mathbf {w}+\beta\delta\mathbf {\phi}(s_t)
+       \end {align*}
+       $$
+
+    5. 更新策略
+
+       $$
+       \theta\leftarrow
+       \theta+\alpha\nabla_\theta\log\pi_\theta (a_t\vert s_t)\delta_t
+       $$
+
+    6. 将状态更新为 $s_{t+1}$，$t\leftarrow t+1$
+    7. 重复直到达到终止状态
+
+- 误区澄清
+  - 在纯 V-critic Actor-Critic 中，Critic 并不直接为 Actor 提供动作区分信号，而动作区分完全由 $\nabla_\theta \log \pi_\theta (a|s)$ 提供
+  - 状态价值函数 $V_w (s)$​ 仅作为 baseline 使用，而真正驱动策略更新的是 TD 误差
+
+    $$
+    \delta_t = r_{t+1} + \gamma V_w (s_{t+1}) - V_w (s_t)
+    $$
+
+  - 它是对优势函数 $A^\pi (s_t,a_t)$ 的在线估计
+
+#### 2.7.5 几种 AC 算法的对比
+
+| 维度              |**V-critic**                      |**Q-critic**                  |**Advantage-critic**          |
+| ----------------- | ---------------------------------- | ------------------------------ | ------------------------------ |
+| Critic 估计对象   | 状态价值函数                       | 动作价值函数                   | 优势函数                       |
+|                   | $V_w (s)$                           | $Q_w (s,a)$                     | $A_w (s,a)$                     |
+| 是否显式区分动作  | 不区分                             | 区分                           | 区分                           |
+| Actor 使用的信号  | TD 误差                            | $Q$ 值                         | 优势值                         |
+|                   | $\delta_t$                         | $Q_w (s_t,a_t)$                 | $A_w (s_t,a_t)$                 |
+| 策略梯度形式      | $\nabla_\theta\log\pi\cdot\delta_t$ | $\nabla_\theta\log\pi\cdot Q_w$ | $\nabla_\theta\log\pi\cdot A_w$ |
+| 是否天然 baseline | 是                                 | 否                             | 是                             |
+| 方差              | 中                                 | 高                             | 最低                           |
+| 兼容函数逼近      | 不适用                             | 有条件                         | 标准成立                       |
+| 典型算法          | A2C（V 版）                        | NAC                            | A2C / A3C / PPO                |
+
+- V-critic Actor–Critic
+  - Critic 的估计目标：使用函数逼近器估计状态价值函数
+
+    $$
+    V_w (s)\approx V^{\pi}(s)
+    $$
+
+- Actor 使用的核心信号
+  - TD 误差作为优势函数的在线估计
+
+    $$
+    \delta_t
+    =r_{t+1}
+    +
+    \gamma V_w (s_{t+1})
+    -
+    V_w (s_t)
+    $$
+    - 在 $V_w \to V^{\pi}$ 收敛时，有
+
+      $$
+        \mathbb {E}[\delta_t \mid s_t,a_t]
+        =
+        A^{\pi}(s_t,a_t)
+      $$
+
+  - Critic 参数更新（TD (0)，半梯度）：最小化 TD 误差平方的半梯度下降
+
+    $$
+    w
+    \leftarrow
+    w
+    +
+    \beta
+    \delta_t
+    \nabla_w V_w (s_t)
+    $$
+
+  - Actor 参数更新：使用 TD 误差调制策略梯度
+
+    $$
+    \theta
+    \leftarrow
+    \theta
+    +
+    \alpha
+    \nabla_\theta
+    \log
+    \pi_\theta (a_t|s_t)
+    ;
+    \delta_t
+    $$
+
+  - 关键性质
+    - Critic 不显式区分动作，**不显式表示优势**，只是 “间接提供一个 noisy 的优势样本”
+    - 动作区分完全由 $\nabla_\theta \log \pi_\theta (a|s)$ 提供
+    - TD 误差决定更新幅度与方向稳定性
+    - 不满足兼容函数逼近定理，但实践中稳定高效
+
+- Q-critic Actor–Critic
+  - Critic 的估计目标：使用函数逼近器估计动作价值函数
+
+    $$
+    Q_w (s,a)\approx Q^{\pi}(s,a)
+    $$
+
+  - Actor 使用的信号：直接使用动作价值作为回报估计
+
+    $$
+    Q_w (s_t,a_t)
+    $$
+
+  - Actor 参数更新（原始形式）：策略梯度以 $Q$ 值作为权重
+
+    $$
+    \theta
+    \leftarrow
+    \theta
+    +
+    \alpha
+    \nabla_\theta
+    \log
+    \pi_\theta (a_t|s_t)
+    Q_w (s_t,a_t)
+    $$
+
+  - 主要问题
+    - $Q_w (s,a)$ 本身是回报期望，未减 baseline
+    - 更新方差较大，稳定性较差
+  - 常见改进思路：引入状态相关 baseline，该形式自然过渡到 Advantage-critic
+
+    $$
+    \nabla_\theta
+    \log
+    \pi_\theta (a|s)
+    \big (Q_w (s,a)-b (s)
+    \big)
+    $$
+
+  - 理论上可构造兼容形式，但很少直接使用
+
+- Advantage-critic Actor–Critic
+  - Critic 的估计目标：直接估计优势函数
+
+    $$
+    \begin {align*}
+    A_w (s,a)&\approx A^{\pi}(s,a)\\
+    A_w (s,a)
+    &= Q_w (s,a)-
+    V_w (s)
+    \end {align*}
+    $$
+
+  - Actor 使用的信号：使用去除 baseline 后的动作优势
+
+    $$
+    A_w (s_t,a_t)
+    $$
+
+  - Actor 参数更新（标准形式）：策略梯度直接乘以优势函数
+
+    $$
+    \theta
+    \leftarrow
+    \theta
+    +
+    \alpha
+    \nabla_\theta
+    \log
+    \pi_\theta (a_t|s_t)
+    ;
+    A_w (s_t,a_t)
+    $$
+
+  - 优势函数满足（相比 Q-critic，方差显著降低）：
+
+    $$
+    \mathbb {E}_{a\sim\pi}[A_{\pi}(s,a)] = 0
+    $$
+
+  - 兼容函数逼近条件
+    - 若 Critic 采用
+
+      $$
+      A_w (s,a)
+      =
+
+      \nabla_\theta
+      \log
+      \pi_\theta (a|s)^\top
+      w
+      $$
+
+    - 且 $w$ 最小化
+
+      $$
+      \mathbb {E}_{\pi_\theta}
+      \left [
+      \big (A^{\pi}(s,a)-A_w (s,a)
+      \big)^2
+      \right]
+      $$
+
+    - 则策略梯度无偏
+
+      $$
+      \nabla_\theta J (\theta)
+      =
+      
+      \mathbb {E}_{\pi_\theta}
+      \left [
+      \nabla_\theta
+      \log
+      \pi_\theta (a|s)
+      A_w (s,a)
+      \right]
+      $$
+
+  - A2C、A3C、PPO 等算法的核心形式
+
+### 2.8 基于模型的强化学习
+
+#### 2.8.1 基于模型的强化学习
+
+- 什么是基于模型的强化学习
+  - 从经历中直接学习环境的模型
+  - 通过规划来学习策略或价值函数
+  - 价值 / 策略 -- 采取动作 --> 经历 -- 模型学习 --> 模型 -- 规划 --> 价值 / 策略
+  - 样本效率较高，但累积近似误差后模型误差会被放大
+- 什么是模型
+  - 模型是一个 MDP 过程的表示 $\mathcal {M}=\langle\mathcal {S},\mathcal {A},\mathcal {P},\mathcal {R}\rangle$，以 $\eta$ 参数化
+  - 假设状态空间和动作空间是已知的，那么 $\mathcal {M}=\langle\mathcal {P}_\eta,\mathcal {R}_\eta\rangle$
+  - 其中 $\mathcal {P}_\eta\approx\mathcal {P}$ 且 $\mathcal {R}_\eta\approx\mathcal {R}$
+  - 通常假设状态转移和奖励是条件独立的，即
+
+    $$
+    \mathbb {P}[s^{\prime},r^{\prime}|s,a]=\mathbb {P}[s^{\prime}|s,a]\mathbb {P}[r^{\prime}|s,a]
+    $$
+
+  - 从而把问题拆成两个监督学习问题
+
+- 模型学习
+  - 从经历中估计模型 $\mathcal {M}_\eta$
+  - 监督学习问题
+
+    $$
+        \begin {align*}
+        S_{1},A_{1} & \to R_{2},S_{2} \\
+        S_{2},A_{2} & \to R_{3},S_{3} \\
+        & \vdots \\
+        S_{T-1},A_{T-1} & \to R_{T},S_{T}
+        \end {align*}
+    $$
+
+  - 学习 $s,a\rightarrow r$ 是一个回归问题
+  - 学习 $s,a\rightarrow s^{\prime}$ 是一个密度估计 / 回归问题
+  - 寻找参数 $\eta$ 最小化经验损失
+  - 基于模型的强化学习的效果受限于估计得到的模型，当模型是不正确的，规划过程会得到一个次优策略
+  - 学习到模型后，采用规划方法来学习策略或价值函数
+    - 动态规划
+    - Sample-Based Planning：先从模型中采样，然后使用采样数据通过 Model-Free 方法进行学习
+
+- 然而，规划会累积模型的误差
+  - 单步误差：小
+  - 但多步 rollout：误差指数级累积
+  - 最终得到的策略是 在 “幻想环境” 里最优
+  - 因此，Dyna 要 “短规划”，MCTS 要 “从当前状态局部搜索”，Dreamer / MuZero 要用 value 网络兜底
+
+#### 2.8.2 Dyna-Q
+
+- 结合学习和规划
+  - 真实环境 → Q-learning（真实更新）
+  - 真实环境 → 模型学习
+  - 模型 → 模拟经验 → Q-learning（规划更新）
+  - **模型不是用来直接算最优策略的，而是用来 “生成假数据”**
+  - 用 Q-learning 既学真实经验，也学模型生成的经验
+  - Dyna-Q = Model-Free 更新 + Model-Based 数据来源
+- Dyna-Q 算法
+  - 初始化：Q 值初始化为某个值（通常为零），并且模型也被初始化为空
+  - 与环境交互：执行动作并观察环境的反馈（即状态转移和奖励），然后更新 Q 值并拟合模型
+  - 规划（内部模拟）：使用当前的环境模型模拟一系列可能的状态转移和奖励，并通过这些模拟进行 Q 值更新
+  - 重复：交替进行环境交互和规划，逐渐改进 Q 值
+
+  ```py
+  initialize Q(s, a) arbitrarily
+  initialize model (state, action, reward, next_state) arbitrarily
+  
+  for each episode:
+      initialize state s
+      while s is not terminal:
+          choose action a using policy derived from Q (e.g., ε-greedy)
+          take action a, observe reward r, and next state s'
+          update Q(s, a) using Q-learning update rule
+          update model with (s, a, r, s')
+  
+          # Perform planning step (simulate interactions)
+          for i = 1 to N:
+              randomly choose a state-action pair (s, a)
+              get (r, s') from model
+              update Q(s, a) using Q-learning update rule
+  ```
+
+#### 2.8.3 Dyna-Q+
+
+- 在**非平稳环境**中（环境奖励 / 转移发生变化）：
+  - 模型是 “记忆性的”，但环境可能变了
+  - 普通 Dyna-Q 可能不再探索曾经 “失败过” 的动作
+  - 导致策略对环境变化反应迟钝
+  - Dyna-Q+ 通过**鼓励重新探索**来解决该问题
+- 核心思想：探索奖励（Time-based Exploration Bonus）
+  - 在规划阶段，对**长期未被访问的状态–动作对**给予额外奖励
+  - 使得即便某些动作过去回报较差，也会在规划中再次被考虑
+- 关键机制
+  - 对每个状态–动作对 $(s,a)$ 维护一个计时变量 $\tau (s,a)$，表示自上一次真实执行 $(s,a)$ 以来经过的时间步数
+  - 在规划（模拟）时，对模型奖励进行修正（把探索从真实交互，移至规划阶段）：
+
+    $$
+    r^+(s,a) = r_{model}(s,a) + \kappa \sqrt {\tau (s,a)}
+    $$
+    - $r_{model}(s,a)$：模型中存储的奖励
+    - $\kappa > 0$：探索奖励强度超参数
+    - $\tau (s,a)$​ 越大，探索奖励越高
+
+- 探索奖励是平方根形式
+  - 源自**乐观探索（optimism under uncertainty）**的下界思想
+  - 在基于不确定性的探索方法（如 UCB、多臂老虎机与 PAC-MDP 分析）中，奖励或价值的不确定性通常满足：
+
+    $$
+    \text{uncertainty} \propto \sqrt {\text{time since last observation}}
+    $$
+
+  - 或更常见地：
+
+    $$
+    \sqrt {\frac {\log t}{N (s,a)}}
+    $$
+
+  - 该平方根形式可视为**由集中不等式（如 Hoeffding / Azuma）导出的置信区间宽度**，反映了 “观测越久远，估计越不可靠，但不确定性增长是次线性的”
+  - 如果使用线性时间奖励，将导致：
+    - 探索奖励无限增长：长期未访问的动作会获得过大的虚假优势，破坏价值尺度
+    - 规划阶段被探索奖励主导：智能体会周期性 “强制性” 回到某些劣质状态，仅因为它们 “太久没来”
+  - 而对数形式 $\log \tau$ 增长过慢，在稀疏或非平稳环境中可能不足以驱动再探索
+  - 平方根形式则保证 $\sqrt {\tau}$​ 随时间增长，但**边际增益递减**
+
+```py
+initialize Q(s, a) arbitrarily
+initialize model[s, a] = (r, s') arbitrarily
+initialize τ(s, a) = 0 for all s, a
+
+for each episode:
+    initialize state s
+    while s is not terminal:
+        # 行为策略（如 ε-greedy）
+        choose action a from s using policy derived from Q
+
+        # 与真实环境交互
+        take action a, observe reward r and next state s'
+
+        # Q-Learning 更新（真实经验）
+        Q[s, a] ← Q[s, a] + α * (r + γ * max_a' Q[s', a'] − Q[s, a])
+
+        # 更新模型
+        model[s, a] ← (r, s')
+
+        # 更新时间计数
+        τ[s, a] ← 0
+        for all (ŝ, â) ≠ (s, a):
+            τ[ŝ, â] ← τ[ŝ, â] + 1
+
+        # 规划阶段（Planning）
+        for i = 1 to N:
+            randomly sample a previously observed state-action pair (ŝ, â)
+            (r_model, ŝ') = model[ŝ, â]
+
+            # 探索奖励（Dyna-Q+ 的关键）
+            r_plus = r_model + κ * sqrt(τ[ŝ, â])
+
+            # 使用修正奖励进行 Q-Learning 更新
+            Q[ŝ, â] ← Q[ŝ, â] + α * (r_plus + γ * max_a Q[ŝ', a] − Q[ŝ, â])
+
+        s ← s'
+```
+
+#### 2.8.4 基于模拟的搜索
+
+- 搜索方法（search-based methods）是基于模型的吗
+  - 搜索方法（search-based methods）并非独立于基于模型的强化学习范式
+  - 相反，它们是基于模型方法中 “通过显式前瞻规划进行决策” 的一类代表
+  - 区别仅在于模型是否需要从数据中学习，以及模型在决策过程中被使用的方式
+- 基本思想
+  - 把 “规划” 从全局问题，变成了 “局部决策问题”
+  - 传统 DP / 值迭代：解整个状态空间，不现实
+  - 前向搜索：只关心当前状态 $s_t$，从 $s_t$ 往前模拟
+  - 不同于采样随机选择状态和动作，通过前向搜索算法通过前瞻选择最佳的动作
+  - 以当前状态 $s_t$ 为根节点，构造搜索树，无需解决整个 MDP，而是只关注子 MDP
+- 前向搜索范式
+  - 基于 Sample-Based Planning
+  - 使用模型从当前状态开始模拟若干个经历
+
+    $$
+    \{s_t^k,A_t^k,R_{t+1}^k,...,S_T^k\}_{k=1}^K\sim\mathcal {M}_\nu
+    $$
+
+  - 应用 Model-Free 强化学习去评估经历
+    - 蒙特卡洛控制 --> 蒙特卡洛树搜索（Monte Carlo Tree Search, MCTS）
+    - SARSA --> 时序差分树搜索（Temporal Difference Tree Search, TDTS）
+
+- 简单的蒙特卡洛搜索
+  - 从根节点 $s_t$ 开始，对于每一个动作 $a_t$
+    - 基于固定的策略，模拟 $K$ 次经历
+    - 进行蒙特卡洛评估：
+
+      $$
+      Q (s_{t},a)=\frac {1}{K}\displaystyle\sum_{k=1}^{K} G_{t}\xrightarrow {P} q_{\pi}(s_{t},a)
+      $$
+
+  - 选择当前的真实动作：$a_t=\arg\displaystyle\max_{a} Q (s_t,a)$​
+  - 不共享子结构，计算浪费
+
+- 蒙特卡洛树搜索
+  - 动态评估状态，不像 DP 一样探索整个状态空间
+  - 使用采样来打破维数诅咒
+
+    $$
+    Q (s,a)=\frac {1}{N (s,a)}\sum_{k=1}^{K}\sum_{u=t}^{T}\mathbf {1}(S_{u},A_{u}=s,a) G_{u}\overset {P}{\operatorname*{\operatorname*{\operatorname*{\to}}}} q_{\pi}(s,a)
+    $$
+
+  - **选择（Selection）**：平衡探索 / 利用
+  - **扩展（Expansion）**：只扩必要节点
+  - **模拟（Simulation）**：rollout
+  - **回溯（Backup）**：更新统计量
+
+- TD 树搜索
+  - 模拟从当前状态 $s_t$ 开始的 episodes
+  - 估计动作 - 价值函数 $Q (s, a)$
+  - 通过 Sarsa 更新动作 - 价值
+
+  $$
+       \Delta Q (S, A) = \alpha \left (R + \gamma Q (S', A') - Q (S, A) \right)
+  $$
+  - 根据动作 - 价值函数 $Q (s, a)$ 选择动作
+    - 例如：$\epsilon$- 贪婪策略
+  - 可能使用函数逼近来表示 $Q (s, a)$
+
+- Dyna-2
+  - 规划 = 临时修正价值函数
+  - 长期记忆
+    - 智能体从环境中通过真实交互获得的一般领域知识，即适用于所有或大部分 episodes 的知识
+    - 通过时序差分（TD）学习更新
+  - 短期记忆
+    - 智能体从模拟经验中获得的特定局部知识，即仅适用于当前特定情境的知识
+    - 通过 TD 搜索更新；TD 搜索是模拟的经验更新过程，其中智能体使用它所学到的环境模型来生成虚拟的状态转移和奖励，然后基于这些模拟的经验进行更新
+  - 价值函数是长期记忆和短期记忆的加权总和
+
+    $$
+        V (s) = V_{\text{long}}(s) + V_{\text{short}}(s)
+    $$
+
+  - 模拟经验通过模型生成，允许智能体进行规划而不依赖于与环境的每一步交互
+
+### 2.9 探索与利用
+
+#### 2.9.1 基本概念
+
+- 探索（Exploration）：尝试新的动作，获得更多信息，以发现更好的策略
+  - 简单探索（Heuristic Exploration）：不显式建模不确定性，通过随机性 “强行探索”，如 $\epsilon$ 贪心，Softmax，高斯噪声
+  - 面对不确定性时保持乐观：评估不确定性，倾向于选择不确定性最高的状态 / 动作，如 Upper Confidence Bound（UCB）、乐观初始化、探索奖励
+  - 信息状态搜索：将 Agent 的信息作为其状态的一部分，动作选择过程结合了前瞻性搜索，显式评估获取信息的长期价值
+  - 从启发式随机探索，到基于置信界的乐观原则，再到以信息为状态的贝叶斯方法，探索策略逐步从经验技巧走向严格的决策理论
+- 利用（Exploitation）：选择当前最好的动作，以获得最大的奖励
+
+#### 2.9.2 Regret：探索质量的度量标准
+
+##### 2.9.2.1 Regret 的定义
+
+- 以多臂老虎机（Multi-Armed Bandit）为例：
+  - 动作值：$Q (a)=\mathbb {E}[r|a]$
+  - 最优价值：$V^*=Q (a^*)=\max_{a} Q (a)$
+- 即时 Regret：指在某个时间步 $t$，Agent 由于选择了次优动作而错失的最大累积奖励
+
+  $$
+  I_t=\mathbb {E}[V^*-Q (a_t)]
+  $$
+
+- 累积 Regret
+  - 衡量整个学习过程中因探索造成的总代价
+  - 最大累积奖励 = 最小累积 Regret
+
+  $$
+  L_t=\mathbb {E}\left [\sum_{\tau=1}^tV^*-Q (a_\tau)\right]
+  $$
+
+- Regret 如何计算
+
+  $$
+      \begin {align*}
+      L_{t} & =\mathbb {E}\left [\sum_{\tau=1}^tV^*-Q (a_\tau)\right] \\
+      & =\sum_{a}\mathbb {E}\left [N_t (a)\right](V^*-Q (a)) \\
+      & =\sum_{a}\mathbb {E}\left [N_t (a)\right]\Delta_a
+      \end {align*}
+  $$
+  - $N_t (a)$：动作 $a$ 被选择的次数
+  - $\Delta_a$ 表示动作 $a$ 与最优动作 $a^*$ 之间的差异（Gap）
+
+##### 2.9.2.2 各种策略的 Regret
+
+- 贪心策略（Greedy）
+  - 动作值函数估计：
+
+    $$
+    \hat {Q}_{t}(a)=\frac {1}{N_{t}(a)}\sum_{\tau=1}^{t} r_{\tau}\mathbf {1}(a_{\tau}=a)
+    $$
+
+  - 动作选择规则：
+
+    $$
+    a_t=\arg\max_a \hat {Q}_t (a)
+    $$
+
+  - Regret 行为：
+    - 完全不探索，一旦早期采样噪声导致某个次优动作被高估，将**永久锁死**
+    - 以正概率选不到最优动作
+    - 累积 Regret 为**线性增长**：
+
+      $$
+      L_t=\Theta (t)
+      $$
+
+- 随机策略（Uniform Random）
+  - 动作值函数估计：
+
+    $$
+    \hat {Q}_{t}(a)=\frac {1}{N_{t}(a)}\sum_{\tau=1}^{t} r_{\tau}\mathbf {1}(a_{\tau}=a)
+    $$
+
+  - 动作选择：
+
+    $$
+    \pi (a)=\frac {1}{|\mathcal {A}|},\quad \forall a
+    $$
+
+  - Regret 行为：
+    - 每个动作被等概率选择，最优动作无法被集中利用
+    - 单步期望 Regret 为常数：
+
+      $$
+      I_t=\mathbb {E}[V^*-Q (a_t)]>0
+      $$
+
+    - 累积 Regret 为**线性增长**
+
+- $\epsilon$- 贪心策略（固定 $\epsilon$）
+  - 动作选择规则：
+
+    $$
+    a_t=
+    \begin {cases}
+    \arg\max_a \hat {Q}_t (a), & \text{with prob.} 1-\epsilon \\
+    \text{uniform random}, & \text{with prob.} \epsilon
+    \end {cases}
+    $$
+
+  - 单步 Regret 下界：
+
+    $$
+    I_t\ge \frac {\epsilon}{|\mathcal {A}|}\sum_{a}\Delta_a
+    $$
+
+  - Regret 行为：
+    - 即使估计已充分收敛，仍以固定概率探索
+    - 次优动作被无限次选择
+    - 累积 Regret 为**线性增长**
+
+- 衰减 $\epsilon$- 贪心策略（Decaying $\epsilon$）
+  - 典型 $\epsilon$ 序列：
+
+    $$
+    \begin {align*}
+    & c>0 \\
+    & d=\min_{a:\Delta_a>0}\Delta_a \\
+    & \epsilon_t=\min\left\{1,\frac {c|\mathcal {A}|}{d^2 t}\right\}
+    \end {align*}
+    $$
+
+  - Regret 行为：
+    - 初期充分探索，后期逐渐趋向贪心
+    - 可实现**对数阶累积 Regret**：
+
+      $$
+      L_t=O (\log t)
+      $$
+
+  - 局限性：需要事先知道 Gap 下界 $d$，实际问题中通常不可得
+
+- Softmax / Boltzmann 探索
+  - 动作选择概率：
+
+    $$
+    \pi (a)=\frac {\exp (\hat {Q}_t (a)/\tau)}{\sum_{a'}\exp (\hat {Q}_t (a')/\tau)}
+    $$
+
+  - 温度参数 $\tau$：
+    - $\tau\to 0$：趋近贪心
+    - $\tau\to \infty$：趋近随机
+  - Regret 特性：
+    - 探索强度随价值差异自适应变化
+    - 理论 Regret 分析复杂，通常无最优保证
+    - 实践中常配合温度衰减使用
+
+- Gaussian Noise（连续动作）
+  - 动作选择：
+
+    $$
+    a_t=\mu (s_t)+\mathcal {N}(0,\sigma_t^2)
+    $$
+
+  - Regret 行为：
+    - 本质是连续动作空间下的随机探索
+    - 探索强度由 $\sigma_t$ 控制
+    - 若 $\sigma_t$ 不衰减 → 线性 Regret
+    - 若 $\sigma_t$ 合理衰减 → 可获得亚线性 Regret（缺乏严格最优性保证）
+
+##### 2.9.2.3 Regret 下界
+
+- 渐近总 Regret 下界（Lai–Robbins Lower Bound）
+  - 对于任意**一致有效（uniformly good）**的策略，其累积 Regret 不可能低于对数阶：
+
+    $$
+        \lim_{t\to\infty} L_t
+        \ge
+        \log t
+        \sum_{a:\Delta_a>0}
+        \frac {\Delta_a}{KL (\mathcal {R}^a \,\|\, \mathcal {R}^{a^*})}
+    $$
+
+  - 含义：
+    - $\log t$ 是不可避免的时间尺度
+    - 常数项由**Gap $\Delta_a$**与**分布可区分性（KL）**决定
+
+- 为什么至少是 $\log t$
+  - 要确认某个动作 $a$ 是次优的，必须以高置信度区分：
+
+    $$
+    \mathcal {R}^a \neq \mathcal {R}^{a^*}
+    $$
+
+  - 根据大数定律与信息论极限，区分两个分布至少需要由以下公式决定的次数的采样：
+
+    $$
+    \Omega\!\left (\frac {\log t}{KL (\mathcal {R}^a\|\mathcal {R}^{a^*})}\right)
+    $$
+
+  - 因此：**每个次优动作都必须被探索至少对数次**，“几乎不探索” 的策略在统计意义上不可能可靠
+
+- 对探索频率的约束
+  - 对任意 $\Delta_a>0$ 的动作：
+
+    $$
+    \mathbb {E}[N_t (a)]
+    \gtrsim
+    \frac {\log t}{KL (\mathcal {R}^a\|\mathcal {R}^{a^*})}
+    $$
+
+  - 否则，策略无法以足够高概率确认该动作是次优
+
+- 与贪心策略的对比
+  - 纯贪心策略：早期估计错误概率不随 $t$ 消失，某些次优动作可能被**采样次数有限甚至为常数**，导致：
+
+    $$
+    L_t=\Theta (t)
+    $$
+
+  - 因此贪心策略**违背 Lai–Robbins 条件**，无法达到对数 Regret 下界
+
+- KL 散度的角色
+  - $KL (\mathcal {R}^a\|\mathcal {R}^{a^*})$：
+    - 衡量两个奖励分布的 “可区分性”
+    - KL 越小 → 分布越相似 → 越难分辨 → 需要更多探索
+  - 极端情况：
+    - $\Delta_a$ 很小且 KL 很小
+    - 即使是最优策略，也必须付出大量探索成本
+- 二臂赌博机（2-armed bandit）示例
+  - 设两个动作：
+    - $a^*$：均值 $\mu^*$
+    - $a$：均值 $\mu=\mu^*-\Delta$
+  - 若奖励为高斯分布（方差 $\sigma^2$）：
+
+    $$
+    KL (\mathcal {N}(\mu,\sigma^2)\|\mathcal {N}(\mu^*,\sigma^2))
+    =
+    \frac {\Delta^2}{2\sigma^2}
+    $$
+
+  - Regret 下界变为：
+
+    $$
+    \lim_{t\to\infty} L_t
+    \ge
+    \frac {2\sigma^2}{\Delta}\log t
+    $$
+
+  - Gap 越小 → 问题越难
+  - 噪声越大 → 探索成本越高
+
+- 对数阶 Regret 是多臂赌博机问题的**信息论极限**
+- UCB、Thompson Sampling 等算法：在常数因子意义下逼近该下界
+- 任何声称 “几乎不探索却能长期最优” 的算法：在随机环境中必然不成立
+
+#### 2.9.3 面对不确定性时保持乐观
+
+##### 2.9.3.1 Upper Confidence Bound（UCB）算法
+
+- 在选择动作时，考虑**估计均值 + 不确定性上界**
+- 对于每个动作值，估计上置信界 $\hat {U_t}(a)$，则 $Q (a)\le \hat {Q_t}(a)+\hat {U_t}(a)$ 出现的可能性较大
+- UCB 值的计算
+
+  $$
+  Q_t (a)+c\sqrt {\frac {\ln t}{N_t (a)}}
+  $$
+
+- 选择具有最大 UCB 值的动作：
+
+  $$
+  a_t = \arg\max_a
+  \left (\hat {Q}_t (a) + c\sqrt {\frac {\log t}{N_t (a)}}
+  \right)
+  $$
+
+- 其中 $Q_t (a)$ 是动作 $a$ 的平均奖励，$N_t (a)$ 是动作 $a$ 被选择的次数，$c$​ 是一个探索参数
+- UCB1 的 Regret 上界：
+
+  $$
+  L_t \le 8 \log t \sum_{a:\Delta_a>0} \Delta_a
+  $$
+
+##### 2.9.3.2 Hoeffding’s Inequality
+
+- 对于独立同分布的随机变量，其均值的估计值与真实均值之间的差异是以高概率收敛的
+
+  $$
+        \begin {align*}
+        \mathbb {P}\left [\mathbb {E}\left [X\right]>\overline {X}_t+u\right]&\leq e^{-2tu^2}\\
+        \mathbb {P}\left [Q (a)>\hat {Q}_t (a)+U_t (a)\right]&\leq e^{-2N_t (a) U_t (a)^2}=p\\
+        U_t (a) & =\sqrt {\frac {-\log p}{2N_t (a)}}
+        \end {align*}
+  $$
+
+- 取 $p=t^{-4}$，则
+
+  $$
+  U_t (a)=\sqrt {\frac {2\log t}{N_t (a)}}
+  $$
+
+- 此即，UCB1
+- 动作选择
+
+  $$
+  a_t=\underset {a}{\operatorname*{\operatorname*{argmax}}} Q (a)+\sqrt {\frac {2\log t}{N_t (a)}}
+  $$
+
+- 对数渐进总 Regret
+
+  $$
+  \displaystyle\lim_{t\to\infty} L_t\leq8\log t\displaystyle\sum_{a|\Delta_a>0}\Delta_a
+  $$
+
+##### 2.9.3.3 贝叶斯方法
+
+- 基本思想
+  - 假设已知奖励 $\mathcal {R}$ 的先验概率分布 $p [\mathcal {R}]$
+  - 然后计算在历史 $h_r=a_1,r_1,\cdots,a_{t-1},r_{t-1}$ 下的后验概率分布 $p [\mathcal {R}|h_t]$
+  - 利用后验概率指导探索
+- 贝叶斯 UCB
+- 概率匹配
+  - 选择动作 $a$ 满足：$\pi (a\mid h_t)=\mathbb {P}\left [Q (a)>Q (a^{\prime}),\forall a^{\prime}\neq a\mid h_t\right]$
+  - 将不确定性表示为概率分布，不确定的动作有更高的概率成为最大
+
+##### 2.9.3.4 Thompson Sampling 算法
+
+- 按照成为最优动作的概率来选择动作
+
+  $$
+  \begin {align*}
+  \pi (a\mid h_t)&=\mathbb {E}_{\mathcal {R}|h_t}\left [\mathbf {1}(a=\operatorname*{argmax}_{a} Q (a))\right]\\
+  &=\mathbb {P}\left (a = \arg\max_{a'} Q (a') \mid h_t
+  \right)
+  \end {align*}
+  $$
+
+- 算法流程
+  - 从后验分布中采样一个奖励分布 $\mathcal {R}$
+  - 计算状态值函数 $Q (a)=\mathbb {E}[\mathcal {R}_a]$，选择最大的动作 $a_t=\displaystyle\operatorname*{argmax}_{a} Q (a)$
+  - 更新后验分布
+  - 重复以上步骤
+
+#### 2.9.4 信息状态搜索
+
+- 探索的本质不是 “随机”，而是：
+  - 探索是为了获取信息，而信息具有长期价值
+  - 那么如何定量信息的价值，量化该信息能够带来多少长期价值
+  - 获取信息后长期奖励 - 即时奖励
+  - 如果知道信息的价值，就可以最佳地权衡探索和利用
+- 信息状态空间
+  - 历史：$h_t = (a_1,r_1,\dots,a_{t-1},r_{t-1})$
+  - 每一步均有其信息状态 $\tilde {s}$：$\tilde {s}$​ 是历史信息的统计，总结目前积累的所有信息
+
+    $$
+    \tilde {s}=f (h_t)
+    $$
+
+  - 信息状态空间是一个 MDP，即 $\mathcal {M}= \langle \mathcal {\tilde {S}}, \mathcal {A}, \mathcal {\tilde {P}}, \mathcal {R}, \gamma \rangle$
+    - 状态：信息状态 $\tilde {s}$
+    - 动作：选择动作 $a$
+    - 状态转移：$\mathcal {\tilde {P}}(\tilde {s}^{\prime}|\tilde {s},a)$
+    - 信息奖励函数：$\mathcal {\tilde {R}}$
+    - 折扣因子：$\gamma$
+  - 这是一个无限 MDP 问题，状态空间巨大（甚至无限），完全刻画探索–利用权衡
+
+- 如何解决信息状态空间的 MDP 问题
+  - Model-Free 强化学习（在信念空间）
+  - 贝叶斯 Model-Based 强化学习
+    - 贝叶斯适应强化学习
+    - Gittins Index（bandit 场景最优解）

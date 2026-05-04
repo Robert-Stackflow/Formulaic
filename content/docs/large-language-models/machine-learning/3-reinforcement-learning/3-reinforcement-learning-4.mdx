@@ -1,0 +1,1114 @@
+---
+title: 强化学习（四）
+description: 介绍强化学习的基本范式、核心概念及相关技术，并系统梳理强化学习算法体系
+---
+
+## 三、深度强化学习
+
+- 为什么深度 RL 会不稳定
+  - 所有深度 RL 算法几乎都是函数逼近 + Bootstrapping + Off-policy
+  - 函数逼近：神经网络本身是 “全局耦合” 的
+    - 在表格 RL 中：更新 $Q (s,a)$ 只影响一个格子
+    - 在深度 RL 中：更新参数 $\theta$，所有状态–动作的估计都会发生变化
+    - 结果：一个样本的误差 → 在整个状态空间 “扩散”，局部错误可能被放大
+  - Bootstrapping：目标本身在动
+  - Off-policy：数据分布 ≠ 当前策略分布
+    - 在 DQN /replay buffer 中：数据来自旧策略、探索策略、甚至完全不同策略，但更新目标是当前参数对应的策略
+    - 导致梯度方向系统性偏差、在函数逼近下无法保证收敛
+  - 分布漂移（Non-stationarity）
+    - 在监督学习中：数据分布固定
+    - 在 RL 中：模型一更新，数据分布就变，Actor 变 → 状态访问频率变 → Critic 学习目标变
+  - 为了解决这些问题，一系列的措施
+
+    | 技巧           | 本质作用                 |
+    | -------------- | ------------------------ |
+    | Target Network | 冻结 bootstrap 目标      |
+    | Replay Buffer  | 打破时间相关性、平滑分布 |
+    | Double DQN     | 减少自举高估             |
+    | Clipped PPO    | 限制策略更新幅度         |
+    | Entropy bonus  | 防止过早塌缩             |
+    | SAC soft value | 平滑价值面               |
+
+- 为什么策略迭代有时比值迭代快
+
+### 3.1 值函数方法（DQN）
+
+- 表格型 Q-learning 假设 $Q (s,a)$ 可枚举，但当状态空间巨大（图像、连续状态）时，表格法不可行
+- 核心思想 —— 用**神经网络**逼近 Q 函数：
+
+  $$
+    Q (s,a; \theta) \approx Q^*(s,a)
+  $$
+  - 其中 $\theta$ 是网络参数，输入是状态 $s$，输出是每个动作 $a$ 对应的估计价值
+
+- DQN 的学习目标：
+  - Bellman 最优方程：
+
+    $$
+    Q^*(s,a)=\mathbb {E}\big [r+\gamma\max_{a'} Q^*(s',a')\big]
+    $$
+
+  - 用当前网络近似，得到 TD 目标：
+
+    $$
+    y_t=R_t+\gamma\max_{a'} Q (s_{t+1},a';\theta)
+    $$
+
+  - 用均方误差拟合：
+
+    $$
+    \mathcal {L}(\theta)=\mathbb {E}\big [(y_t-Q (s_t,a_t;\theta))^2\big]
+    $$
+
+  - 均方误差中，目标 $y_t$ 和被更新的 $Q (\cdot;\theta)$**用的是同一套参数**，导致一系列问题
+    - 时序相关性：连续样本高度相关、SGD 假设 i.i.d. 被破坏
+    - 目标非平稳：$y_t$ 依赖 $\theta$，学习目标在 “追着自己跑”
+    - max 运算导致高估偏差
+
+      $$
+      \mathbb {E}[\max Q] \ge \max \mathbb {E}[Q]
+      $$
+
+- 经验回放（Experience Replay）
+  - 回放池 $\mathcal {D}$​
+
+    $$
+    \mathcal {D}={(s_t,a_t,R_t,s_{t+1})}
+    $$
+
+  - 每次训练随机采样小批量数据，而不是用最新的数据
+
+    $$
+    (s,a,r,s')\sim \mathcal {D}
+    $$
+
+  - 打破时序相关性；提高数据利用率；近似 i.i.d. 分布
+
+- 目标网络（Target Network）
+  - 维护一套冻结参数
+
+    $$
+    Q (s,a;\theta^-)
+    $$
+
+  - TD 目标改为：
+
+    $$
+    y_t=R_t+\gamma\max_{a'} Q (s_{t+1},a';\theta^-)
+    $$
+
+  - 每隔固定步数，将主网络参数 $\theta$ 复制给目标网络：
+
+    $$
+    \theta^- \leftarrow \theta
+    $$
+
+  - 让目标在一段时间内固定，避免 “自己追自己”
+
+- 损失函数：
+
+  $$
+  \mathcal {L}(\theta)
+  =\mathbb {E}_{(s,a,r,s')\sim\mathcal {D}}
+  \Big [
+  \big (r+\gamma\max_{a'} Q (s',a';\theta^-)
+  -Q (s,a;\theta)
+  \big)^2
+  \Big]\\
+  \theta\leftarrow\theta-\alpha\nabla_\theta\mathcal {L}(\theta)
+  $$
+
+- DQN 的本质与缺点
+  - DQN = off-policy + TD 控制 + 值函数方法，逼近 Bellman 最优算子的不动点
+  - 缺点：仅适用于**离散动作空间**，max 运算不可微，连续动作 → 无法直接扩展，目标偏差大时不稳定
+  - 将 Q-Critic Actor-Critic 中的 Actor 做出如下改动
+    - 把随机策略变成确定策略：不再采样，永远选 Q 最大的动作
+    - Actor 不再有参数：没有 $\theta$，策略完全由 Q 决定
+    - Actor 更新消失，只剩 Critic
+    - 也即：把 $\pi_\theta (a|s)$ 限制为 $\delta (a=\arg\max Q)$
+  - 如此得到的正是 Q-learning / DQN，由此可见，DQN 是 Q-critic 没有 Actor 的极限情况
+  - 通过引入可学习的 Actor，在连续空间中不可解析不可微的 max 运算变为了间接逼近极大化的参数化网络
+- Double DQN
+  - DQN 中，由同一个网络选择动作并评估动作，Double DQN 对其进行拆分
+  - 主网络选动作：
+
+    $$
+    a^*=\arg\max_a Q (s',a;\theta)
+    $$
+
+  - 目标网络评估：
+
+    $$
+    y=r+\gamma Q (s',a^*;\theta^-)
+    $$
+
+  - 减少 max 带来的系统性高估
+
+- Dueling DQN
+  - 将 Q 函数分解为
+
+    $$
+    Q (s,a)=V (s)+A (s,a)
+    $$
+
+  - 网络输出一个 $V (s)$ 和一组 $A (s,a)$
+  - 常见归一化形式
+
+    $$
+    Q (s,a)=V (s)+\Big (A (s,a)-\frac {1}{|\mathcal {A}|}\sum_{a'} A (s,a')\Big)
+    $$
+
+  - 有些状态下：动作不重要，而是状态本身就好 / 坏，提高了泛化性与学习效率
+
+- Prioritized Experience Replay
+  - TD 误差
+
+    $$
+    \delta_i = y_i - Q (s_i,a_i)
+    $$
+
+  - 采样概率
+
+    $$
+    P (i)\propto|\delta_i|^\alpha
+    $$
+
+  - 重要性采样修正：
+
+    $$
+    w_i=\left (\frac {1}{N\cdot P (i)}\right)^\beta
+    $$
+
+  - 多学 “学得不好的样本”、加速收敛、提高样本效率
+
+### 3.2 Actor-Critic
+
+#### 3.2.1 AC 方法
+
+- 核心思想 —— 将策略和价值函数结合在一起训练：
+  - **Actor**：表示策略函数 $\pi_\theta (a|s)$，负责从状态 $s$ 中选择动作 $a$
+  - **Critic**：表示价值函数 $V_w (s)$ 或 $Q_w (s,a)$，负责评估当前策略的表现，提供策略改进的学习信号
+  - 相比于传统的**策略梯度方法（如 REINFORCE）**，AC 方法引入 Critic 来降低策略梯度的方差，从而提升学习效率和稳定性
+- 策略更新（Actor）：使用策略梯度（REINFORCE）更新策略网络参数 $\theta$：
+
+  $$
+    \nabla_\theta J (\theta) \approx \nabla_\theta \log \pi_\theta (a_t|s_t) \cdot A (s_t, a_t)
+  $$
+
+- 其中 $A (s,a)$ 是优势函数，估计该动作是否比平均值更好，常用：
+
+  $$
+    A (s_t, a_t) = R_t + \gamma V_w (s_{t+1}) - V_w (s_t)
+  $$
+
+- 价值函数更新（Critic）：通过 TD 误差更新价值网络参数 $w$：
+
+  $$
+  \delta_t = R_t + \gamma V_w (s_{t+1}) - V_w (s_t) \\
+    w \leftarrow w - \alpha \nabla_w \delta_t^2\\
+    w \leftarrow w + \alpha \cdot \delta_t \cdot \nabla_w V_w (s_t)
+  $$
+
+#### 3.2.2 A2C 方法（Advantage Actor-Critic）
+
+- A2C 是**A3C 的同步版本**，是对标准 Actor–Critic 的工程化改进
+- 核心思想
+  - 使用**多个并行环境（workers）**同时采样
+  - 在每一轮中**同步**汇总所有 worker 的梯度
+  - 再统一更新一套共享的 Actor / Critic 参数
+  - 本质仍是**单策略、单价值函数的 on-policy AC**
+- 优势函数（常用 n-step TD Advantage）
+  - 为了进一步降低偏差与方差折中，常用 $n$ 步回报：
+
+    $$
+    G_t^{(n)} = \sum_{k=0}^{n-1}\gamma^k r_{t+k} + \gamma^n V_w (s_{t+n})
+    $$
+
+  - 对应优势函数：
+
+    $$
+    A_t = G_t^{(n)} - V_w (s_t)
+    $$
+
+- Actor 更新（策略梯度）
+
+  $$
+  \nabla_\theta J (\theta)
+  \approx
+  \frac {1}{N}\sum_{i=1}^N
+  \nabla_\theta \log \pi_\theta (a_t^{(i)}|s_t^{(i)}) \cdot A_t^{(i)}
+  $$
+  - $N$ 为并行环境数量
+  - 梯度来自多个 worker 的平均
+
+- Critic 更新（价值函数回归）
+
+  $$
+  L_V (w) = \frac {1}{2}\big (G_t^{(n)} - V_w (s_t)\big)^2\\
+  w \leftarrow w - \alpha \nabla_w L_V (w)
+  $$
+
+- 特点总结
+  - 同步更新，**实现简单、数值稳定**
+  - 易于 GPU 加速
+  - 相比 A3C：吞吐量略低，但工程上更常用
+  - PPO、IMPALA 等方法的 “基础版本”
+- n 步回报与 TD (λ) 的区别
+  - TD (λ) 定义的是**λ- 回报（λ-return）**：TD (λ) = 所有 n-step 回报的指数加权平均
+
+    $$
+    \begin {align*}
+    G_t^{(n)}
+    &=\sum_{k=0}^{n-1}\gamma^k r_{t+k}
+    +
+    \gamma^n V (s_{t+n})\\
+    G_t^{(\lambda)}
+    &=(1-\lambda)\sum_{n=1}^{\infty}
+    \lambda^{n-1} G_t^{(n)}
+    \end {align*}
+    $$
+
+  - n-step：实现简单、批量计算友好、易并行（A2C/A3C）
+  - TD (λ)：需要 eligibility trace 或等价实现、并行环境下实现复杂、GPU 上不如 n-step 友好
+  - 因此 A2C 选择了 TD (λ) 的 “离散近似版本”
+
+#### 3.2.3 A3C 方法（Asynchronous Advantage Actor-Critic）
+
+- A3C 是**第一个成功的大规模并行深度强化学习算法**
+- 核心思想
+  - 使用**多个异步 worker**
+  - 每个 worker：
+    - 拥有**独立的环境实例**
+    - 使用**共享的全局参数副本**
+    - 独立采样、独立计算梯度
+  - 梯度**异步**推送到全局网络（无锁更新）
+- 异步机制的作用
+  - 打破样本间的时间相关性
+  - 不依赖经验回放（Replay Buffer）
+  - 天然具备探索多样性（不同 worker 处于不同状态分布）
+- 优势函数（n-step TD，与 A2C 相同）
+
+  $$
+  A_t = \sum_{k=0}^{n-1}\gamma^k r_{t+k}\gamma^n V_w (s_{t+n}) V_w (s_t)
+  $$
+
+- Actor 更新（每个 worker 独立计算，梯度直接异步累加到全局参数）
+
+  $$
+  \nabla_\theta J (\theta)
+  \approx
+  \nabla_\theta \log \pi_\theta (a_t|s_t)\cdot A_t
+  $$
+
+- Critic 更新（同样是异步更新）
+
+  $$
+  L_V (w)=\frac {1}{2}(G_t^{(n)}-V_w (s_t))^2
+  $$
+
+- 关键工程特征
+  - 不需要同步 barrier
+  - 更新是**Hogwild-style**（无锁）
+  - CPU 多线程友好（A3C 诞生于 GPU 尚不成熟时期）
+- 局限性
+  - 异步带来梯度噪声
+  - GPU 利用率较低
+  - 在现代硬件下常被 A2C / PPO 替代
+
+### 3.3 信赖域方法
+
+#### 3.3.1 TRPO：KL 约束的信赖域策略优化
+
+- 为什么要信赖域
+  - 最原始的策略梯度中隐含一个极强但通常不成立的假设：一小步参数更新 ⇒ 一小步策略变化 ⇒ 性能单调改善
+  - 但神经网络参数空间 ≠ 策略分布空间，参数的一小步可能导致 $\pi (a|s)$​ 剧烈改变；一次 “好梯度”，也许会直接把策略推到灾难区
+  - 信赖域方法（Trust Region Methods）则把 “更新幅度” 从参数空间搬到策略空间，在优化策略时，限制新旧策略的差异以确保学习稳定性
+- Trust Region Policy Optimization（TRPO）
+  - 基于 KL 散度约束的新旧策略差异，进行更新
+  - 保证每次更新策略不会偏离当前策略太远
+- Proximal Policy Optimization（PPO）
+  - 用裁剪目标函数（Clipped Objective）替代严格的 KL 散度约束
+  - 简化实现，计算效率更高，常用于实际应用
+- TRPO 算法原理
+  - 在优化策略时，采用信赖域的概念，确保更新后的新策略与旧策略之间的差异（通常用 KL 散度衡量）在一定范围内，防止策略更新过快导致性能下降或失效
+  - 策略优化目标：在策略 $\pi_\theta$ 的参数空间中最大化累计奖励的期望，即
+
+    $$
+    \mathbb {E}_{s \sim \rho^\pi, a \sim \pi_\theta} [r (s, a)]
+    $$
+
+  - 信赖域约束（从策略梯度的重要性采样形式而来）
+
+    $$
+    \begin {align*}
+        \max_{\theta} &\quad \mathbb {E}_{s \sim \rho^\pi} \left [\frac {\pi_\theta (a|s)}{\pi_{\theta_{\text{old}}}(a|s)} A^{\pi_{\theta_{\text{old}}}}(s, a) \right]\\
+        \text{subject to} &\quad \mathbb {E}_{s \sim \rho^\pi} \left [D_{\text{KL}}(\pi_\theta (\cdot|s) \parallel \pi_{\theta_{\text{old}}}(\cdot|s)) \right] \leq \delta
+        \end {align*}
+    $$
+
+  - 约束的是策略分布，不是参数；是期望 KL，不是逐样本；$\delta$ 是 “允许的最大策略变化”
+  - 优势函数
+
+    $$
+    A^{\pi_{\theta_{\text{old}}}}(s, a) = Q^{\pi_{\theta_{\text{old}}}}(s, a) - V^{\pi_{\theta_{\text{old}}}}(s)
+    $$
+
+  - 需要显式计算费舍尔信息矩阵和逆矩阵
+    - 在 $\theta_{\text{old}}$ 附近，对 KL 做二阶展开：
+
+      $$
+      \begin {align*}
+      D_{\mathrm {KL}}
+      &\approx
+      \frac {1}{2}
+      (\theta-\theta_{\text{old}})^T
+      F
+      (\theta-\theta_{\text{old}})\\
+      F
+      &=
+      \mathbb {E}
+      \big [
+      \nabla_\theta \log \pi
+      \nabla_\theta \log \pi^T
+      \big]
+      \end {align*}
+      $$
+
+    - 即在 Fisher 度量下，走一小步最优方向，但代价是需要近似求逆 $F^{-1}$，实现复杂、算力重
+    - 通过二次规划（Quadratic Programming, QP）解决优化问题，计算复杂度较高
+
+#### 3.3.2 PPO：TRPO 的一阶近似
+
+##### 3.3.2.1 损失函数
+
+- TRPO 很对，但工程代价太高，PPO 对此做出了改进，不要显式 KL 约束，不要二阶优化
+- **a. 策略损失（Policy Loss）**：通过对比新旧策略的比率 $R_t$ 和优势函数 $A_t$ 计算：
+  - 利用重要性采样（importance sampling）来估计在当前策略下的回报
+    - 新旧策略比率：其中 $\pi_{\theta}$ 是当前策略，$\pi_{\text{old}}$ 是旧策略
+
+      $$
+      R_t (\theta) = \frac {\pi_{\theta}(a_t | s_t)}{\pi_{\text{old}}(a_t | s_t)}
+      $$
+      - $R_t=1$：没变
+      - $R_t>1$：新策略更偏向该动作
+      - $R_t<1$：新策略压低该动作概率
+
+    - 可以使用对数计算
+
+      $$
+      R_t (\theta) = \exp (\log \pi_\theta (a_t | s_t) - \log \pi_{\text{old}}(a_t | s_t))
+      $$
+
+    - 无截断损失项
+
+      $$
+      \mathcal {L}(\theta) = R_t (\theta) \cdot \text{A}_t
+      $$
+
+  - 裁剪策略（Clipped Objective）：限制策略更新的幅度来保证训练稳定性，具体形式为：
+
+    $$
+    \mathcal {L}_{\text{clip}}(\theta) = \mathbb {E}_t \left [\min \left ( R_t (\theta) A_t, \text{clip}(R_t (\theta), 1-\epsilon, 1+\epsilon) A_t \right) \right]
+    $$
+    - $\epsilon$ 是一个超参数，通常取 0.1 到 0.2，用于控制裁剪范围
+    - $\text{clip}(R_t, 1-\epsilon, 1+\epsilon)$​​ 限制了策略比率的变化幅度，确保新策略不会偏离旧策略太远
+      - 优势为正：不允许概率提升超过 $1+\epsilon$
+      - 优势为负：不允许概率下降超过 $1-\epsilon$
+    - 通过取最小值，算法在优势函数为正或负的情况下都能防止过度优化
+    - 通常来说，策略损失取 $\mathcal {L}_{\text{PG}}(\theta) = - \min \left (\mathcal {L}(\theta), \mathcal {L}_{clip}(\theta) \right)$
+
+- **b. 值函数损失（Value Function Loss）**：值函数的损失通过最小化预测值 $V_{\phi}(s_t)$ 与实际折扣回报 $\hat {R}_t$ 之间的误差来优化：
+
+  $$
+  \mathcal {L}_{\text{value}}(\phi) = \mathbb {E}_t \left [\left ( V_{\phi}(s_t) - \hat {R}_t \right)^2 \right]
+  $$
+  - 同样也可以通过裁剪策略计算值函数损失
+  - PPO 的 Actor 稳定，高度依赖一个 “不过拟合 / 不偏置” 的 Critic
+
+- **c. 熵奖励**：防止策略塌缩
+
+  $$
+  \mathcal {H}(\pi)=-\sum_a \pi (a|s)\log\pi (a|s)
+  $$
+  - 抵消裁剪带来的 “保守性”
+  - 延缓确定性策略过早出现
+
+- **d. 总损失函数**：PPO 的总损失函数包括策略损失、值函数损失和熵奖励（用于增加探索）：
+
+  $$
+      \mathcal {L}_{\text{PPO}}(\theta, \phi) = \mathcal {L}_{\text{PG}}(\theta) - c_1 \mathcal {L}_{\text{value}}(\phi) + c_2 \mathcal {H}(\pi_{\theta})
+  $$
+  - $c_1$ 和 $c_2$ 是权重系数，用于平衡各个损失项
+  - $\mathcal {H}(\pi_{\theta})=-\sum_a\pi_{\theta}(a\vert s_t)\log\pi_{\theta}(a\vert s_t)$ 是策略的熵，鼓励策略的多样性，从而促进探索
+
+- **e. KL 惩罚项**（可选）：在损失函数中加入一个 KL 惩罚项，用来监控新旧策略的 KL 散度：
+
+  $$
+      L^{\text{KL}} = \mathbb {E} \left [L^{\text{CLIP}}(\theta) - \beta D_{\text{KL}}(\pi_{\theta_{\text{old}}} \| \pi_{\theta}) \right]
+  $$
+  - 其中 $\beta$ 是 KL 散度的惩罚系数
+
+##### 3.3.2.2 具体步骤
+
+- 采集数据
+  - 使用当前策略 $\pi_{\theta}$ 与环境交互，采集一批轨迹数据，包括状态 $s_t$、动作 $a_t$、奖励 $R_t$、下一状态 $s_{t+1}$
+  - 记录旧策略的概率分布 $\pi_{\text{old}}(a_t|s_t)$
+- 计算奖励和优势函数
+  - 计算折扣累计回报 $R_t$（未来奖励的总和）
+  - 计算优势函数 $A_t$
+- 更新网络参数
+  - 更新策略网络：计算策略比率 $R_t (\theta)$ 和裁剪后的策略损失 $\mathcal {L}_{\text{PG}}(\theta)$
+  - 更新值函数网络：使用均方误差损失 $\mathcal {L}_{\text{value}}(\phi)$ 最小化值函数预测 $V_{\phi}(s_t)$ 和折扣回报 $\hat {R}_t$ 之间的差异
+  - 总损失函数：总损失函数 $\mathcal {L}_{\text{PPO}}(\theta, \phi)$ 结合策略损失、值函数损失和熵正则项
+- 执行梯度更新：使用优化器对策略网络参数 $\theta$ 和值函数网络参数 $\phi$ 执行梯度下降更新：
+
+  $$
+    \theta \leftarrow \theta - \eta \nabla_{\theta} \mathcal {L}_{\text{PPO}}(\theta, \phi)\\
+    \phi \leftarrow \phi - \eta \nabla_{\phi} \mathcal {L}_{\text{PPO}}(\theta, \phi)
+  $$
+
+### 3.4 连续控制方法
+
+离散动作空间中的 DQN 依赖 max 运算来求解最优动作，该运算不可微。当动作空间连续时，无法直接应用该策略。
+
+DDPG、TD3 和 SAC 通过引入可学习的策略网络（Actor）直接处理连续动作，避免了显式的最大化运算。
+
+#### 3.4.1 DDPG 方法
+
+- 深度确定性策略梯度（Deep Deterministic Policy Gradient, DDPG）是将确定性策略梯度定理扩展到深度学习领域的方法，用于处理连续控制问题。
+- 核心思想：
+  - 维护两个网络：Actor 网络 $\mu_\theta (s)$ 产生确定性动作，Critic 网络 $Q_w (s,a)$ 评估状态 - 动作对的价值
+  - Actor 通过最大化 Critic 提供的 Q 值来更新，Critic 通过 TD 误差来更新
+  - 通过目标网络和经验回放稳定训练
+- 确定性策略梯度定理：
+  - 随机策略梯度：
+
+    $$
+    \nabla_\theta J (\theta) = \mathbb {E}_{s\sim\rho^\pi} \left [\nabla_a Q (s,a) |_{a=\mu_\theta (s)} \nabla_\theta \mu_\theta (s) \right]
+    $$
+
+  - 其中 $\mu_\theta (s)$ 是确定性策略，而非从分布采样，梯度可以直接流经 Critic
+  - 直观解释：通过链式法则，Q 值关于动作的导数告诉我们 "在当前状态下应该如何改变动作以增加价值"，策略网络据此调整其参数
+
+- Critic 的更新：
+  - Critic 估计的是状态 - 动作对的价值函数 $Q_w (s,a) \approx Q^\mu (s,a)$
+  - 使用 TD 目标（带目标网络 $\theta^-$）：
+
+    $$
+    y_t = R_t + \gamma Q_{w'}(s_{t+1}, \mu_{\theta'}(s_{t+1}))
+    $$
+
+  - 其中 $w'$ 和 $\theta'$ 分别是 Critic 和 Actor 的目标网络参数
+  - 最小化 TD 误差：
+
+    $$
+    \mathcal {L}_Q (w) = \mathbb {E}_{(s,a,r,s')\sim\mathcal {D}} \left [\big ( y_t - Q_w (s,a) \big)^2 \right]
+    $$
+
+- Actor 的更新：
+  - 使用确定性策略梯度，沿着 Critic 的梯度方向更新 Actor：
+
+    $$
+    \nabla_\theta \mathcal {L}_\mu (\theta) = -\mathbb {E}_{s\sim\mathcal {D}} \left [\nabla_a Q_w (s,a) |_{a=\mu_\theta (s)} \nabla_\theta \mu_\theta (s) \right]
+    $$
+
+  - 或简化为：
+
+    $$
+    \theta \leftarrow \theta + \alpha \mathbb {E}_{s\sim\mathcal {D}} \left [\nabla_\theta \mu_\theta (s) \nabla_a Q_w (s,a) |_{a=\mu_\theta (s)} \right]
+    $$
+
+- 目标网络和缓慢更新：
+  - 维护一套冻结的目标网络参数 $\theta'$ 和 $w'$，每隔 $C$ 步进行软更新：
+
+    $$
+    \theta' \leftarrow \tau \theta + (1-\tau) \theta'\\
+    w' \leftarrow \tau w + (1-\tau) w'
+    $$
+
+  - 其中 $\tau \ll 1$（通常 $\tau=0.001$），使目标网络平缓变化，提高稳定性
+
+- 经验回放：使用重放缓冲区 $\mathcal {D}$ 存储 $(s_t, a_t, R_t, s_{t+1})$，从中随机采样进行训练，打破数据时序相关性
+- DDPG 的特点：
+  - 优点：适用于连续动作空间，off-policy 学习效率高，通过确定性策略梯度直接优化 Actor
+  - 缺点：Critic 学习不稳定时容易导致价值高估，确定性策略容易过早收敛到局部最优
+
+#### 3.4.2 TD3 方法
+
+- 双延迟深度确定性策略梯度（Twin Delayed DDPG, TD3）针对 DDPG 的价值高估问题进行了改进
+- DDPG 存在的问题：
+  - Critic 网络使用单一 Q 网络估计目标值，当网络学习不完美时，往往高估 Q 值
+  - 这导致 Actor 学习偏向高估的动作，形成恶性循环，最终学到次优策略
+- TD3 的三个关键改进：
+  - 双 Q 网络（Clipped Double Q）：
+    - 维护两个独立的 Critic 网络 $Q_{w_1}$ 和 $Q_{w_2}$，分别有参数 $w_1$ 和 $w_2$
+    - 取两个网络的最小值作为目标（相比 DDPG 的单网络更保守）：
+
+      $$
+      y_t = R_t + \gamma \min (Q_{w_1'}(s_{t+1}, \tilde {a}_{t+1}), Q_{w_2'}(s_{t+1}, \tilde {a}_{t+1}))
+      $$
+
+    - 其中 $\tilde {a}_{t+1} = \mu_{\theta'}(s_{t+1}) + \text{clip}(\epsilon, -c, c)$，$\epsilon \sim \mathcal {N}(0, \sigma^2)$ 是策略平滑化噪声
+    - 通过最小值运算显式地对抗价值高估
+
+  - 延迟策略更新（Delayed Policy Update）：
+    - 每隔 $d$ 步才更新一次 Actor，而 Critic 每步都更新
+    - Actor 更新的标志是 Critic 已经更新得相对稳定，减少基于不可靠 Critic 反馈的策略更新
+
+      $$
+      \text{if} \text{step} \mod d = 0 \text{then update} \theta \text{else only update} w_1, w_2
+      $$
+
+  - 目标策略平滑化（Target Policy Smoothing）：
+    - 在目标 Q 值计算中，动作添加噪声而非硬性选择最优动作：
+
+      $$
+      \tilde {a}_{t+1} = \text{clip}(\mu_{\theta'}(s_{t+1}) + \text{clip}(\epsilon, -c, c), a_{\min}, a_{\max})
+      $$
+
+    - 避免 Q 网络在动作空间中的尖峰（sharp peaks），提高泛化能力
+    - 相当于对目标策略的高斯平滑化近似
+
+- 损失函数：
+  - Critic 损失（每步更新，两个网络）：
+
+    $$
+    \mathcal {L}_{Q}(w_i) = \mathbb {E}_{(s,a,r,s')\sim\mathcal {D}} \left [\big ( y_t - Q_{w_i}(s,a) \big)^2 \right], \quad i=1,2
+    $$
+
+  - Actor 损失（每 $d$ 步更新）：
+
+    $$
+    \mathcal {L}_\mu (\theta) = -\mathbb {E}_{s\sim\mathcal {D}} \left [Q_{w_1}(s, \mu_\theta (s)) \right]
+    $$
+
+  - 注意这里使用第一个 Critic 网络；也可平均两个网络
+
+- 目标网络更新：与 DDPG 相同，使用软更新
+
+  $$
+  \theta' \leftarrow \tau \theta + (1-\tau) \theta', \quad w_i' \leftarrow \tau w_i + (1-\tau) w_i'
+  $$
+
+- TD3 的优势：
+  - 通过双 Q 网络和最小值运算明确对抗价值高估
+  - 延迟策略更新让 Actor 基于更稳定的 Critic 反馈进行学习
+  - 目标策略平滑化提高学习的平稳性和泛化
+  - 实验证明比 DDPG 获得更稳定、更高的收益
+
+#### 3.4.3 SAC 方法
+
+- 最大熵强化学习（Soft Actor-Critic, SAC）通过在奖励中加入策略熵项，鼓励探索的同时学习鲁棒策略
+- 最大熵 RL 的目标：
+  - 标准 RL 目标：最大化累计折扣奖励 $J (\pi) = \mathbb {E}[\sum_{t=0}^{\infty} \gamma^t r (s_t, a_t)]$
+  - 最大熵目标：同时最大化奖励和策略的熵，平衡开采和探索
+
+    $$
+    J (\pi) = \mathbb {E}_{\pi} \left [\sum_{t=0}^{\infty} \gamma^t (r (s_t, a_t) + \alpha \mathcal {H}(\pi (\cdot|s_t))) \right]
+    $$
+
+  - 其中 $\mathcal {H}(\pi) = -\mathbb {E}_{a\sim\pi}[\log\pi (a|s)]$ 是策略的熵，$\alpha$ 是温度参数，控制探索与开采的权衡
+  - 直觉：鼓励策略保持高熵（多样性），避免陷入确定性的次优行为
+
+- Soft Q 函数和贝尔曼方程：
+  - 定义 Soft Q 函数（包含熵奖励）：
+
+    $$
+    Q^\pi (s,a) = \mathbb {E} \left [r (s,a) + \gamma \mathbb {E}_{s'\sim P (s'|s,a)} \big [V^\pi (s') \big] \right]
+    $$
+
+  - 其中 Soft V 函数为：
+
+    $$
+    V^\pi (s) = \mathbb {E}_{a\sim\pi (\cdot|s)} \left [Q^\pi (s,a) - \alpha \log \pi (a|s) \right]
+    $$
+
+  - Soft Bellman 方程：
+
+    $$
+    V^\pi (s) = \mathbb {E}_{a\sim\pi (\cdot|s)} \left [Q^\pi (s,a) - \alpha \log \pi (a|s) \right]
+    $$
+
+    $$
+    Q^\pi (s,a) = r (s,a) + \gamma \mathbb {E}_{s'\sim P (s'|s,a)} \left [V^\pi (s') \right]
+    $$
+
+- SAC 的网络结构和更新规则：
+  - SAC 维护三个网络：策略网络 $\pi_\theta (a|s)$、两个 Q 网络 $Q_{\phi_1}$ 和 $Q_{\phi_2}$（借鉴 TD3 的双 Q 思想）以及两个对应的目标网络
+  - Critic 更新（Q 网络）：
+    - 计算 soft 目标值，使用目标策略网络从下一状态采样动作并计算 V 值：
+
+      $$
+      V (s') = \mathbb {E}_{a'\sim\pi_\theta (a'|s')} \left [\min (Q_{\phi_1'}(s',a'), Q_{\phi_2'}(s',a')) - \alpha \log \pi_\theta (a'|s') \right]
+      $$
+
+    - Q 值的 soft TD 目标：
+
+      $$
+      y = r + \gamma V (s')
+      $$
+
+    - 最小化 Critic 损失：
+
+      $$
+      \mathcal {L}_{Q_i}(\phi_i) = \mathbb {E}_{(s,a,r,s')\sim\mathcal {D}} \left [\big ( Q_{\phi_i}(s,a) - y \big)^2 \right], \quad i=1,2
+      $$
+
+  - Actor 更新：
+    - 重参数化技巧（Reparameterization Trick）：策略网络输出高斯分布的均值和标准差
+
+      $$
+      a = \mu_\theta (s) + \sigma_\theta (s) \odot \epsilon, \quad \epsilon \sim \mathcal {N}(0, I)
+      $$
+
+    - 允许梯度通过采样操作反向传播
+    - Actor 目标：最大化 Q 值同时最大化熵
+
+      $$
+      \mathcal {L}_\pi (\theta) = \mathbb {E}_{s\sim\mathcal {D}, a\sim\pi_\theta (\cdot|s)} \left [\alpha \log \pi_\theta (a|s) - Q_{\phi_1}(s,a) \right]
+      $$
+
+    - 或等价地（使用价值函数形式）：
+
+      $$
+      \mathcal {L}_\pi (\theta) = \mathbb {E}_{s\sim\mathcal {D}} \left [D_{\text{KL}} \left (\pi_\theta (\cdot|s) \big\| \frac {\exp (Q_{\phi_1}(s,\cdot))}{\mathcal {Z}(s)} \right) \right]
+      $$
+
+    - 该形式说明策略向 "Q 加权的 Boltzmann 分布" 靠近
+
+- 自动温度调整（Automatic Entropy Tuning）：
+  - 温度参数 $\alpha$ 决定探索程度，固定值往往不适应不同阶段
+  - SAC 学习 $\alpha$ 的对数值 $\log\alpha$，使其自动调整
+  - 设定目标熵 $\bar {\mathcal {H}} = -\dim (a)$（动作空间维数的负值），目标是平均熵等于目标熵
+  - 温度损失：
+
+    $$
+    \mathcal {L}_\alpha (\alpha) = \mathbb {E}_{a\sim\pi_\theta (\cdot|s)} \left [-\alpha (\log \pi_\theta (a|s) + \bar {\mathcal {H}}) \right]
+    $$
+
+    $$
+    \alpha \leftarrow \alpha - \beta \nabla_\alpha \mathcal {L}_\alpha
+    $$
+
+  - 梯度迭代使 $\alpha$ 自动调整，确保策略熵接近目标值
+
+- **目标网络更新**：与 DDPG/TD3 相同，使用软更新
+
+$$
+\phi_i' \leftarrow \tau \phi_i + (1-\tau) \phi_i'
+$$
+
+- SAC 的特点：
+  - 优点：通过熵正则化提高探索，自动温度调整适应不同任务，双 Q 网络降低价值高估，算法稳定且样本高效
+  - 缺点：需要维护更多网络（Actor + 双 Q + 温度参数），计算开销相对较大；超参数较多（$\tau$、初始 $\alpha$、目标熵等）
+  - 适用场景：对样本效率有高要求，或需要多模态策略的任务
+
+### 3.5 深度 Model-Based 强化学习
+
+- 深度学习时代的 Model-Based 方法结合了深度神经网络，在高维状态空间（如图像）和复杂控制任务中实现了突破性进展
+  - AlphaZero（通过蒙特卡罗树搜索和自对弈实现超人表现）
+  - World Models（学习可视化潜空间模型）
+  - MuZero（隐式学习模型而不显式建模）
+
+#### 3.5.1 AlphaZero
+
+- AlphaZero 的核心思想
+  - 结合深度神经网络、蒙特卡罗树搜索（MCTS）和自对弈学习
+  - 在围棋、国际象棋、日本将棋等棋类游戏中实现了超越人类职业棋手的性能
+  - 与 AlphaGo 不同，AlphaZero 不使用人类棋谱数据，完全通过自对弈从零学习
+- 环境模型与规划
+  - 显式模型：棋类游戏的确定性环境模型（状态转移、奖励规则）完全已知
+  - 规划方法：蒙特卡罗树搜索（MCTS）
+    - 基于当前状态，通过模拟棋局来估计每步动作的价值
+    - 在树中增量构建搜索树，逐渐精化对最优动作的估计
+- 神经网络架构
+  - 双头网络
+    - 策略头：输出动作概率分布 $\pi_\theta (a|s)$，指导 MCTS 的动作选择
+    - 价值头：输出状态价值 $V_\theta (s)$，用作 MCTS 的 rollout 结束点的价值估计
+  - 神经网络作为 MCTS 的先验和评估器，减少所需的搜索步数
+- 自对弈与学习
+  - 初始化：随机初始化神经网络参数
+  - 自对弈过程
+    - 当前最强模型与自己对弈
+    - 每步使用 MCTS（以神经网络为先验）选择动作
+    - 完成一局后，根据游戏结果得到奖励（胜利 +1，失败 -1，平手 0）
+  - 数据采集：从自对弈中收集轨迹 $(s_t, \pi_t^{MCTS}, z_t)$
+    - $\pi_t^{MCTS}$：MCTS 搜索后的访问概率（更准确的策略）
+    - $z_t$：游戏最终结果的蒙特卡罗回报（真实奖励信号）
+  - 参数更新：最小化损失函数
+
+    $$
+    \mathcal {L} = (z - V_\theta (s))^2 - \pi^{MCTS} \log \pi_\theta (s) + c \|\theta\|^2
+    $$
+    - 第一项：价值预测误差
+    - 第二项：策略与 MCTS 分布的 KL 散度（负号表示最大化）
+    - 第三项：L2 正则化
+
+- AlphaZero 的特点
+  - 优点：完全自动化学习无需人类知识；搜索加神经网络结合实现最优性；泛化能力强（一个框架适用多个游戏）
+  - 缺点：需要完全已知的环境模型；计算开销巨大（需大量自对弈和搜索）；难以扩展到信息不完全、随机的真实环境
+  - 适用场景：完全信息博弈、确定性环境、有明确奖励信号的任务
+
+#### 3.5.2 World Models
+
+- 动机
+  - 许多高维控制任务中（如视觉导航、Atari 游戏），直接在原始像素空间学习模型困难且计算昂贵
+  - World Models 通过学习一个低维潜在表示，在潜空间中建模环境动态，降低建模难度
+- 模型架构
+  - 三个主要组件
+    - VAE 编码器：将高维观测（图像）编码到低维连续潜向量 $z_t \in \mathbb {R}^{32}$
+
+      $$
+      z_t \sim q_\phi (z_t | o_t)
+      $$
+
+      其中 $o_t$ 是原始观测，$\phi$ 是编码器参数
+
+    - RNN 动态模型：在潜空间中预测下一个潜状态
+
+      $$
+      \hat {z}_{t+1} = f_\psi (z_t, a_t, h_t)
+      $$
+
+      其中 $h_t$ 是 RNN 的隐状态，$\psi$ 是 RNN 参数
+
+    - VAE 解码器：将潜向量解码回观测空间进行重构
+
+      $$
+      \hat {o}_{t+1} = g_\phi (z_{t+1})
+      $$
+
+  - 奖励预测：单独的小网络预测奖励
+
+    $$
+    \hat {r}_{t+1} = r_\omega (z_t, a_t)
+    $$
+
+- 学习过程
+  - 第一阶段：模型学习（无监督）
+    - 从真实交互轨迹中收集数据
+    - 训练 VAE 使重构误差 $\|o_t - \hat {o}_t\|^2$ 最小化
+    - 训练 RNN 使潜空间预测误差 $\|z_{t+1} - \hat {z}_{t+1}\|^2$ 最小化
+    - 训练奖励预测器使 $\mathbb {E}[(r_{t+1} - \hat {r}_{t+1})^2]$ 最小化
+  - 第二阶段：控制学习（基于学到的模型）
+    - 在学到的模型中进行 "幻想"rollout，生成虚拟轨迹
+    - 使用 Model-Free 方法（如 CEM、进化策略）在虚拟轨迹上学习策略
+- World Models 的特点
+  - 优点：通过潜空间降低建模复杂性；VAE 提供的随机性增加探索；分离感知和动态，模块化设计清晰
+  - 缺点：潜空间学习质量决定了后续控制性能；RNN 的循环结构学习困难，长期预测误差累积严重；VAE 的随机性可能干扰精确预测
+  - 适用场景：高维视觉观测、需要紧凑表示的任务、样本数据有限的环境
+
+#### 3.5.3 MuZero
+
+- MuZero 的核心创新
+  - 不直接建模真实环境模型 $\mathcal {M}=\langle\mathcal {P}, \mathcal {R}\rangle$，而是学习一个抽象模型
+  - 仅学习对规划有用的信息：价值相关的状态表示和转移
+  - "世界模型可以是隐式的"（Don't model pixels，model value）
+- 问题设置与对比
+  - 传统 Model-Based：学习 $s_t \to r_{t+1}, s_{t+1}$ （显式完整模型）
+  - MuZero：学习 $s_t \to r_{t+1}, v_{t+1}$ 和隐式状态转移（仅保留价值相关信息）
+- 网络架构
+  - 三个核心网络
+    - 表示函数（Representation）：从原始观测 $o_t$ 生成初始隐状态 $s_0$
+
+      $$
+      s_0 = h_\theta (o_t)
+      $$
+
+    - 动力函数（Dynamics）：在隐状态空间中预测转移和奖励
+
+      $$
+      r_k, s_k = g_\theta (s_{k-1}, a_k)
+      $$
+
+      其中 $k$ 表示规划步骤（0 到 H-1），仅预测奖励不预测观测
+
+    - 预测函数（Prediction）：从隐状态估计策略和价值
+
+      $$
+      \pi_k, v_k = f_\theta (s_k)
+      $$
+
+  - 联合学习：$\theta$ 在所有网络间共享参数，形成一个紧凑的隐式模型
+
+- 规划与学习
+  - 蒙特卡罗树搜索（MCTS）规划
+    - 在学到的隐式模型中进行 H 步前向规划
+    - 使用神经网络提供的策略 $\pi_k$ 和价值 $v_k$ 指导搜索
+    - 在叶节点处，价值由 $v_H$ 估计而不是 rollout
+  - 损失函数（联合优化）
+
+    $$
+    \mathcal {L}(\theta) = \sum_{k=0}^{H-1} \left [(z - v_k)^2 - \pi^{MCTS}_k \log \pi_k + \lambda (\hat {r}_k - r_k)^2 \right]
+    $$
+    - 第一项：价值预测损失（$z$ 是 MC 回报或 TD 目标）
+    - 第二项：策略蒸馏损失（将 MCTS 策略蒸馏到神经网络）
+    - 第三项：奖励预测损失（权重 $\lambda$，通常很小）
+
+  - 训练流程
+    - 与环境交互收集轨迹
+    - 对每个轨迹步 $t$ 和规划深度 $k$，计算上述损失
+    - 参数 $\theta$ 通过梯度下降更新
+
+- MuZero 与 AlphaZero 的对比
+  - AlphaZero：显式模型（确定性环境），针对完全信息游戏优化
+  - MuZero：隐式模型（学什么由规划目标决定），适应更广泛的环境（随机、部分可观测）
+- MuZero 的特点
+  - 优点：隐式建模避免了学习无关细节（如精确像素重构）；样本效率高（规划 + 值函数兼顾探索与利用）；泛化性强（无需环境假设）
+  - 缺点：训练复杂度高（需同时优化表示、动力、预测三个函数）；超参数众多（规划深度 H、奖励权重 λ 等）；可解释性弱（隐式模型难以理解）
+  - 适用场景：高维随机环境、样本有限的任务、不需要观测重构的控制问题
+
+#### 3.5.4 深度 Model-Based 方法的共同特点与局限
+
+- 共同特点
+  - 样本效率：相比 Model-Free，通过规划重用数据，样本效率更高
+  - 泛化：学到的模型可用于多个目标或任务（迁移学习）
+  - 可解释性：AlphaZero 的 MCTS 搜索过程可视化；World Models 的潜空间有可解释性
+- 共同局限
+  - 模型误差与累积：规划越深，模型误差累积越严重
+  - 计算开销：MCTS 搜索、RNN 前向推理、多网络训练都很昂贵
+  - 环境依赖：AlphaZero 需完全已知模型；World Models 依赖潜空间质量；MuZero 需大量计算
+  - 从象征到现实的鸿沟：高维复杂环境（如机器人操纵）中仍面临挑战
+
+## 四、强化学习与大语言模型
+
+### 4.1 RLHF 范式
+
+- RLHF 的流程
+  - SFT 监督微调阶段：得到 $\pi^{SFT}$
+  - 奖励建模阶段
+    - 根据 Bradley-Terry（BT）模型，偏好分布 $p^*$ 可以建模为
+
+      $$
+      p^*(y_1\succ y_2\mid x)=\frac {\exp\left (r^*(x,y_1)\right)}{\exp\left (r^*(x,y_1)\right)+\exp\left (r^*(x,y_2)\right)}
+      $$
+
+    - 假设从偏好分布 $p^*$ 采样得到数据集（人类偏好反馈数据集）$\mathcal {D}={x^{(i)},y_w^{(i)},y_l^{(i)}}^N_{i=1}$
+    - 可以通过最大似然估计奖励模型 $r_\phi (x,y)$ 的参数
+
+      $$
+      \mathcal {L}_{R}(r_{\phi},\mathcal {D})=-\mathbb {E}_{(x,y_{w},y_{l})\sim\mathcal {D}}\left [\log\sigma (r_{\phi}(x,y_{w})-r_{\phi}(x,y_{l}))\right]
+      $$
+
+    - 通常，奖励模型从 $\pi^{SFT}$ 初始化，并在最后加一层线性层来生成标量奖励
+    - 为了降低方差，可以正则化奖励，如 $\mathbb {E}_{x,y\sim\mathcal {D}}\left [r_{\phi}(x,y)\right]$
+
+    ![奖励模型建模](/img/llm/奖励模型建模阶段.png)
+
+  - 强化学习阶段
+    - 利用奖励模型为 LLM 提供反馈，目标为最大化奖励，建模为
+
+      $$
+      \max_{\pi_{\theta}}\mathbb {E}_{x\sim\mathcal {D},y\sim\pi_{\theta}(y|x)}\left [r_{\phi}(x,y)\right]-\beta\mathbb {D}_{\mathrm {KL}}\left [\pi_{\theta}(y\mid x)\parallel\pi_{\mathrm {ref}}(y\mid x)\right]
+      $$
+
+    - $\beta$ 用于控制策略模型和参考模型之间的偏差
+    - 策略模型和参考模型均使用 $\pi^{SFT}$ 初始化
+    - 由于该目标不可微分，可以通过以下奖励函数建模
+
+      $$
+      r (x,y)=r_{\phi}(x,y)-\beta (\log\pi_{\theta}(y\mid x)-\log\pi_{\mathrm {ref}}(y\mid x))
+      $$
+
+    ![强化学习阶段](/img/llm/强化学习阶段.png)
+
+### 4.2 直接偏好优化（DPO）
+
+- 直接偏好优化的公式推导
+  - 最大化奖励建模的最优解形式如下
+
+    $$
+    \begin {align*}
+    \text{Objective Function}&=\max_{\pi_\theta}\mathbb {E}_{x\sim\mathcal {D},y\sim\pi_\theta (y|x)}\left [r_\phi (x,y)\right]-\beta\mathbb {D}_{KL}\left [\pi_\theta (y|x)\parallel\pi_{\mathrm {ref}}(y|x)\right] \\
+    & =\max_\pi\mathbb {E}_{x\sim\mathcal {D}}\mathbb {E}_{y\sim\pi (y|x)}\left [r (x,y)-\beta\log\frac {\pi (y|x)}{\pi_{\mathrm {ref}}(y|x)}\right] \\
+    & =\min_\pi\mathbb {E}_{x\sim\mathcal {D}}\mathbb {E}_{y\sim\pi (y|x)}\left [\log\frac {\pi (y|x)}{\pi_{\mathrm {ref}}(y|x)}-\frac {1}{\beta} r (x,y)\right] \\
+    & =\min_\pi\mathbb {E}_{x\sim\mathcal {D}}\mathbb {E}_{y\sim\pi (y|x)}\left [\log\frac {\pi (y|x)}{\frac {1}{Z (x)}\pi_{\mathrm {ref}}(y|x)\exp\left (\frac {1}{\beta} r (x,y)\right)}-\log Z (x)\right]\\
+    \pi_r (y\mid x)&=\frac {1}{Z (x)}\pi_{\mathrm {ref}}(y\mid x)\exp\left (\frac {1}{\beta} r (x,y)\right)\\
+    Z (x)&=\sum_{y}\pi_{\mathrm {ref}}(y\mid x)\exp\left (\frac {1}{\beta} r (x,y)\right)
+    \end {align*}
+    $$
+    - 其中 $Z (x)$ 为配分函数
+
+  - 对上式两边取对数，得到奖励函数（也即 BT 模型中的 “能力”）
+
+    $$
+    r (x,y)=\beta\log\frac {\pi_{r}(y\mid x)}{\pi_{\mathrm {ref}}(y\mid x)}+\beta\log Z (x)
+    $$
+
+  - 代入 BT 模型
+
+    $$
+    \begin {align*}
+    p^{*}(y_{1}\succ y_{2}|x) & =\frac {\exp\left (\beta\log\frac {\pi^*(y_1|x)}{\pi_{\mathrm {ref}}(y_1|x)}+\beta\log Z (x)\right)}{\exp\left (\beta\log\frac {\pi^*(y_1|x)}{\pi_{\mathrm {ref}}(y_1|x)}+\beta\log Z (x)\right)+\exp\left (\beta\log\frac {\pi^*(y_2|x)}{\pi_{\mathrm {ref}}(y_2|x)}+\beta\log Z (x)\right)} \\
+    & =\frac {1}{1+\exp\left (\beta\log\frac {\pi^*(y_2|x)}{\pi_{\mathrm {ref}}(y_2|x)}-\beta\log\frac {\pi^*(y_1|x)}{\pi_{\mathrm {ref}}(y_1|x)}\right)} \\
+    & =\sigma\left (\beta\log\frac {\pi^*(y_1|x)}{\pi_{\mathrm {ref}}(y_1|x)}-\beta\log\frac {\pi^*(y_2|x)}{\pi_{\mathrm {ref}}(y_2|x)}\right)\\
+    &=\sigma\left (r (x,y_1)-r (x,y_2)\right)
+    \end {align*}
+    $$
+
+  - 制定最大似然目标
+
+    $$
+    \begin {align*}
+    \mathcal {L}_R (r_\phi,\mathcal {D}) & =-\mathbb {E}_{(x,y_w,y_l)\sim\mathcal {D}}\left [\log\sigma\left (r_\phi (x,y_w)-r_\phi (x,y_l)\right)\right] \\
+    & =-\mathbb {E}_{(x,y_w,y_l)\sim\mathcal {D}}\left [\log\sigma\left (\beta\log\frac {\pi_\theta (y_w|x)}{\pi_{\mathrm {ref}}(y_w|x)}-\beta\log\frac {\pi_\theta (y_l|x)}{\pi_{\mathrm {ref}}(y_l|x)}\right)\right] \\
+    & =\mathcal {L}_{\mathrm {DPO}}(\pi_\theta;\pi_{\mathrm {ref}})
+    \end {align*}
+    $$
+
+  - 分析该损失函数的梯度
+
+    $$
+    \begin {align*}
+    \nabla_{\theta}\mathcal {L}_{\mathrm {DPO}}(\pi_{\theta};\pi_{\mathrm {ref}})&=-\mathbb {E}_{(x,y_{w},y_{l})\sim\mathcal {D}}\left [\frac {\sigma^{\prime}\left (u\right)}{\sigma\left (u\right)}\nabla_{\theta}\left (u\right)\right] \\
+    & = -\beta\mathbb {E}_{(x,y_{w},y_{l})\sim\mathcal {D}}\left [\underbrace {\sigma (\hat {r}_{\theta}(x,y_{l})-\hat {r}_{\theta}(x,y_{w}))}_{\text{higher weight when reward estimate is wrong}}\left [\underbrace {\nabla_{\theta}\log\pi (y_{w}\mid x)}_{\text{increase likelihood of} y_{w}}-\underbrace {\nabla_{\theta}\log\pi (y_{l}\mid x)}_{\text{decrease likelihood of} y_{l}}\right]\right]\\
+    u&=\beta\log\frac {\pi_\theta (y_l|x)}{\pi_\mathrm {ref}(y_l|x)}-\beta\log\frac {\pi_\theta (y_w|x)}{\pi_\mathrm {ref}(y_w|x)}
+    \end {align*}
+    $$
+
+  - 其中隐式奖励模型：
+
+    $$
+    \hat {r}_{\theta}(x,y)=\beta\log\frac {\pi_{\theta}(y|x)}{\pi_{\mathrm {ref}}(y|x)}
+    $$
+
+  - 当真实参考分布不可用时，可以采用偏好对的最大似然估计：
+
+    $$
+    \pi_{\mathrm {ref}}=\arg\max_\pi\mathbb {E}_{x,y_w\thicksim\mathcal {D}}\left [\log\pi (y_w\mid x)\right]
+    $$
+
+- Bradley-Terry 模型
+  - 建模成对比较数据的概率模型，通常用来预测多个对象之间的相对优劣（如排名、胜率等）
+  - 假设有 $n$ 个对象 $A_1, A_2, \dots, A_n$，每个对象 $A_i$ 都有一个正的能力值（或评分） $\pi_i > 0$
+    - Bradley-Terry 模型定义了两两比较中对象获胜的概率
+    - 对于对象 $A_i$ 和 $A_j$：
+
+      $$
+      P (A_i \text{ 击败} A_j) = \frac {\pi_i}{\pi_i + \pi_j}
+      $$
+
+    - 其中 $\pi_i$ 和 $\pi_j$ 分别是 $A_i$ 和 $A_j$ 的能力值
+
+  - 对于 $A_i$ 和 $A_j$，如果已知 $A_i$ 和 $A_j$ 比赛了 $n_{ij}$ 次，且 $A_i$ 赢了 $w_{ij}$ 次，则其获胜的概率可以用最大似然估计（MLE）求解，似然函数为：
+
+    $$
+    L (\pi_1, \pi_2, \dots, \pi_n) = \prod_{i < j} \left (\frac {\pi_i}{\pi_i + \pi_j} \right)^{w_{ij}} \left (\frac {\pi_j}{\pi_i + \pi_j} \right)^{l_{ij}}
+    $$
+    - 其中 $l_{ij} = n_{ij} - w_{ij}$ 为 $A_j$ 胜利的次数
+
+  - 对数似然函数：
+
+    $$
+    \log L = \sum_{i < j} w_{ij} \log \pi_i - (w_{ij} + l_{ij}) \log (\pi_i + \pi_j)
+    $$
+
+- Plackett-Luce 模型
+  - 将 BT 模型推广至建模排序数据
+  - 给定一组对象 $\{A_1, A_2, \dots, A_n\}$，Plackett-Luce 模型定义了以下排序概率：
+    - 假设 $\sigma = (\sigma_1, \sigma_2, \dots, \sigma_n)$ 是对象的一个排序（即 $\sigma_1$ 是第 1 名，$\sigma_2$ 是第 2 名，依此类推），
+    - 排序 $\sigma$ 的概率为：
+
+      $$
+      P (\sigma) = \prod_{j=1}^n \frac {\pi_{\sigma_j}}{\sum_{k=j}^n \pi_{\sigma_k}},
+      $$
+
+    - 其中，$\pi_{\sigma_j}$ 是对象 $\sigma_j$​ 的能力值，分母表示从剩余未排序对象中选择当前对象的概率
+
+  - 最大似然估计（MLE）：给定观测到的排序数据 $\{\sigma^{(1)}, \sigma^{(2)}, \dots, \sigma^{(m)}\}$，
+    - 似然函数为：
+
+      $$
+      L (\pi_1, \pi_2, \dots, \pi_n) = \prod_{i=1}^m P (\sigma^{(i)}),
+      $$
+
+    - 对似然函数取对数后，通过优化算法（如梯度下降）求解
+
+### 4.3 RLOO
+
+- 与 PPO 的区别
+  - RLOO 将**整个模型补全**视为单一动作，而常规 PPO 将**每个补全 token**视为单独的动作
+  - 在 PPO 中，只有 EOS token 获得真正的奖励，奖励非常稀疏
+  - 常规 PPO 会将奖励归因于 EOS token，而 RLOO 会将 EOS 奖励归因于整个补全
+
+### 4.4 组相对策略优化（GRPO）
+
+- 在 LLM 环境中，奖励模型通常只为最后一个标记分配奖励分数，这可能会使训练针对每个标记都准确的价值函数变得复杂
+
+  ![PPO vs GRPO](/img/llm/PPO-vs-GRPO.png)
+
+- GRPO 目标函数
+
+  $$
+  \mathcal {J}_{\mathrm {GRPO}}(\theta)=\mathbb {E}\left [q\sim P (Q),\{o_i\}_{i=1}^G\sim\pi_{\theta_{ad}}(O|q)\right]\left [\frac {1}{G}\sum_{i=1}^G\frac {1}{|o_i|}\sum_{t=1}^{|o_i|}\left\{\min\left [\frac {\pi_\theta (o_{i,t}|q,o_{i,<t})}{\pi_{\theta_{ad}}(o_{i,t}|q,o_{i,<t})}\hat {A}_{i,t},\operatorname {clip}\left (\frac {\pi_\theta (o_{i,t}|q,o_{i,<t})}{\pi_{\theta_{ad}}(o_{i,t}|q,o_{i,<t})},1-\epsilon,1+\epsilon\right)\hat {A}_{i,t}\right]-\beta D_{KL}\left [\pi_\theta\parallel\pi_{\mathrm {ref}}\right]\right\}\right]
+  $$
+
+- KL 散度的无偏估计
+
+  $$
+  \mathrm {D}_{KL}\left [\pi_{\theta}||\pi_{ref}\right]=\frac {\pi_{ref}(o_{i,t}|q,o_{i,<t})}{\pi_{\theta}(o_{i,t}|q,o_{i,<t})}-\log\frac {\pi_{ref}(o_{i,t}|q,o_{i,<t})}{\pi_{\theta}(o_{i,t}|q,o_{i,<t})}-1
+  $$
+
+- 优势函数
+
+  $$
+  \hat {A}_{i,t}=\widetilde {r_{i}}=\frac {r_{i}-\mathrm {mean}(\mathbf {r})}{\mathrm {std}(\mathbf {r})}
+  $$
+
+## 五、问题思考
+
+### 5.1 强化学习亟待解决的问题
+
+- 样本效率低下
+  - 语言和视觉任务涉及庞大而复杂的状态 - 动作空间，这使得强化学习智能体难以学习有效的策略
+  - 智能体必须理解任务并将其与相应的状态联系起来，这需要更广泛的交互
+- 奖励函数设计
+  - 在语言和视觉任务中，设计有效的奖励函数尤其具有挑战性。这些函数必须捕捉微妙的语言细微差别和复杂的视觉特征，这大大增加了本已困难的过程的复杂性。
+  - 在这些领域中，将奖励与高级任务目标相结合通常需要领域专业知识和大量的反复试验
+- 泛化
+  - 强化学习代理通常会过度拟合训练数据，尤其是在基于视觉的环境中，导致在有干预（例如添加噪音）的状态下部署时性能不佳。代理必须学习对此类干预具有鲁棒性的不变特征，从而能够在不同的语言环境和视觉场景中实现泛化。 然而，这些领域的复杂性使得提取此类特征并适应新环境特别具有挑战性
+- 自然语言理解
+  - 深度强化学习在自然语言处理和理解场景中面临困难，其中人类语言的细微差别和复杂性带来了独特的挑战，而当前的强化学习方法无法充分解决这些挑战
+- 奖励黑客（Reward Hacking）
+  - 当强化学习（RL）代理利用奖励函数中的缺陷或模糊性来获得高额奖励，而没有真正学习或完成预期任务时，奖励黑客就会发生
+  - 奖励黑客行为的存在是因为强化学习环境通常不完美，并且准确设计奖励函数从根本上来说是一项重大挑战
+  - 解决方法
+    - **动态调整奖励函数**：通过持续监控智能体行为，动态更新奖励函数，防止固定奖励机制被智能体利用
+    - **引入对抗训练**：训练额外的判别器或模型检测奖励黑客行为，限制智能体对奖励函数漏洞的利用
+    - **多层次奖励建模**：将 PRM 与结果奖励模型结合，通过最终目标奖励约束中间奖励优化，防止中间步骤过拟合
+- 奖励稀疏（Reward Sparsity）
+  - 智能体在环境中执行动作后，很少或者根本得不到有意义的奖励信号
+  - 奖励信号的缺乏使得学习过程变得非常困难，因为强化学习算法需要通过奖励信号来引导策略的改进
+  - 使用过程奖励模型 PRM 可以提供更密集的奖励信号，能够指导长程任务的中间优化
+- 语言模型的应用已从语言建模转向任务解决，从基本的文本分类和情感分析到复杂的高级任务**规划和决策**
+
+### 5.2 LLM 代理亟待解决的问题
+
+- 上下文长度有限
+  - 上下文容量有限，限制了包含历史信息、详细说明、API 调用上下文和响应
+  - 系统的设计必须适应这种有限的通信带宽，而从过去的错误中学习的自我反思等机制将从长或无限的上下文窗口中受益匪浅
+  - 尽管向量存储和检索可以提供对更大知识池的访问，但它们的表示能力不如全注意力机制那么强大
+- 长期规划和任务分解的挑战
+  - 长期规划和有效探索解决方案空间仍然具有挑战性。 LLMs 当遇到意外错误时，很难调整计划，这使得它们与从试错中学习的人相比不太稳健
+- 自然语言接口的可靠性
+  - 当前的代理系统依赖自然语言作为 LLMs 与外部组件（例如内存和工具）之间的接口。
+  - 然而，模型输出的可靠性值得怀疑，因为 LLMs 可能会出现格式错误，并且偶尔会表现出叛逆行为（例如拒绝遵循指令）
+  - 因此，大部分论文中的工作都专注于解析模型输出
+
+## 学习资源
+
+- 文档资源
+  - [Spinning Up documentation](https://spinningup.openai.com/en/latest/index.html)：OpenAI 制作的深度强化学习教育资源
+  - [Sutton & Barto's Introduction to Reinforcement Learning](http://incompleteideas.net/book/RLbook2020.pdf)：Sutton & Barto 撰写，强化学习的标准的入门教材
+  - [RL Slides by David Silver](https://www.davidsilver.uk/teaching/)：David Silver 的强化学习课程配套 PPT
+  - [CS 285](https://rail.eecs.berkeley.edu/deeprlcourse/)：伯克利大学的强化学习课程
+- 视频资源
+  - [RL Course by David Silver](https://www.youtube.com/watch?v=2pWv7GOvuf0&list=PLqYmG7hTraZDM-OYHWgPebj2MfCFzFObQ)：David Silver 的强化学习课程
+- 博客
+  - [Reinforcement-Learning | Lil'Log](https://lilianweng.github.io/tags/reinforcement-learning/)：Lil 的强化学习博客
+  - [Deep Reinforcement Learning Explained](https://torres.ai/deep-reinforcement-learning-explained-series/)：Jordi Torries 的强化学习博客
+  - [Deep Reinforcement Learning & Meta-Learning Series](https://medium.com/@jonathan-hui/rl-deep-reinforcement-learning-series-833319a95530)：Jonathan Hui 的强化学习系列博客
+  - [What is Reinforcement Learning?](https://newfacade.github.io/notes-on-reinforcement-learning/01-intro.html)：New Facade 的强化学习手册
+- 框架
+  - [CleanRL](https://github.com/vwxyzjn/cleanrl)：强化学习算法的单文件实现
+  - [Stable-Baselines3 Docs](https://stable-baselines3.readthedocs.io/en/master/)：Stable-Baselines3 的文档 I

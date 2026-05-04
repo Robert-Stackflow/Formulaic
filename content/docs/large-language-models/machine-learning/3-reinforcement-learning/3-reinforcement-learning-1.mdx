@@ -1,0 +1,1097 @@
+---
+title: 强化学习（一）
+description: 介绍强化学习的基本范式、核心概念及相关技术，并系统梳理强化学习算法体系
+---
+
+## 一、强化学习的基本范式与概念
+
+### 1.1 强化学习组成部分
+
+- 强化学习的目标：最大化未来累计奖励
+  - 某次行动可能会产生长期后果
+  - 奖励可能会延迟
+  - 牺牲眼前的回报来获得更多可能会更好的长期奖励
+- 在强化学习中，时间步 $t$ 发生的事情
+  - Agent
+    - 执行动作 $A_t$
+    - 接收到观察 $O_t$
+    - 接收到奖励 $R_t$
+  - 环境
+    - 接收到动作 $A_t$
+    - 给出观察 $O_t$
+    - 给出奖励 $R_t$
+    - 下一个时间步
+  - 历史序列 $H_t=O_1,R_1,A_1,\cdots,A_{t-1},O_t,R_t$
+  - 状态 $S_t=f (H_t)$
+    - 环境的状态 $S_t^e$
+    - Agent 的状态 $S_t^a$
+- 强化学习 Agent 具有的组件
+  - 策略
+    - Agent 的行为函数，从状态到行动的映射
+    - 确定性：$a=\pi (s)$
+    - 概率分布：$\pi (a|s)=P [A_t=a|S_t=s]$
+  - 价值函数
+    - 对未来价值的预测，衡量状态 / 行动的好坏
+    - $v_{\pi}(s)=\mathbb {E}_{\pi}[R_{t+1}+\gamma R_{t+2}+\gamma^2R_{t+3}+\dots|S_t=s]$
+  - 模型
+    - Agent 对环境的表示，预测环境下一步会做什么
+    - $\mathcal {P}$ 预测下一个状态：$\mathcal {P}_{ss^{\prime}}^a =\mathbb {P}[S_{t+1}=s^{\prime}\mid S_t=s,A_t=a]$
+    - $\mathcal {R}$ 预测下一个即时奖励：$\mathcal {R}_s^a =\mathbb {E}\left [R_{t+1}\mid S_t=s,A_t=a\right]$
+
+### 1.2 强化学习分类
+
+#### 1.2.1 基于价值与基于策略
+
+- 基于价值函数：隐式策略，有价值函数
+  - Q-Learning、Sarsa
+  - **投资顾问**：假如你想理财，不知道具体怎么投资，投资顾问帮你分析每种投资方式的「回报潜力」（即价值）。然后，你选择回报潜力最高的投资方式。顾问的目标是不断提高其估算价值的准确性
+- 基于策略：有策略，无价值函数
+  - 策略梯度（Policy Gradients）方法，如 PPO、Actor-Critic
+  - **厨师学徒**：假如你想成为厨师，最好的办法是直接模仿和优化你的烹饪方法，而不是先学理论（价值函数）再去试验。通过尝试，你会直接调整策略，例如切菜快一点、火候控制得更精准，从而做出更好的菜
+- Actor-Critic：有策略，有价值函数
+  - 团队合作的过程：**Actor 是厨师学徒**，试着做菜（决策）；**Critic 是美食评论家**，评价菜的好坏并给出建议（价值评估）
+
+#### 1.2.2 Model-Free 与 Model-Based
+
+- Model-Free：策略 / 价值函数，无模型
+  - 不对环境进行建模，直接与真实环境进行交互来学习到最优策略
+  - 泛化性优于 Model-Based
+  - **盲目尝试的冒险家**： 假设你第一次去一个迷宫探险，不熟悉地形，也没有地图，你只能靠反复尝试不同的路径，逐步摸索出哪条路是最好的。你不关心迷宫的结构，只关注行动的效果，例如「向左」可以减少时间，「向右」会遇到障碍
+- Model-Based：策略 / 价值函数，有模型
+  - 根据环境中的经验，构建一个虚拟世界，同时真实环境和虚拟世界中学习
+  - Model-Based 通常更样本高效，但对模型误差敏感
+  - 构建环境模型：学会一个函数，能够预测当前状态下的**环境动态**，即**状态转移**和**奖励函数**
+  - **理性计划的探险家**： 假设你去迷宫探险，但这次你拿到了一张迷宫的地图（即环境模型）。在出发前，你可以先研究地图，推测出最短路径或者避开障碍的路线，然后按计划行动。即使还没进入迷宫，你就能做出不错的决策
+
+#### 1.2.3 在线学习与离线学习（Online 与 Offline）
+
+- 在线学习
+  - 在**在线学习**中，**策略网络**会实时与环境进行交互，采集新的数据（状态、动作、奖励等），然后利用这些新数据进行策略更新
+  - 每次更新策略后，下一轮的数据采集会基于当前的更新后的策略进行，这种交互是**动态的**
+- 离线学习
+  - 在**离线学习**中，数据已经**预先采集**好，存储在固定的数据集中
+  - 策略更新时**不再与环境交互**，而是基于静态数据集进行训练
+  - 这种方式类似于**监督学习**，目标是最小化策略和标签之间的差异
+
+#### 1.2.4 在策略与离策略（On-Policy 与 Off-Policy）
+
+- **On/Off Policy 与 Online/Offline**决定了训练数据的来源与使用方式
+
+| 类别     | On-policy Learning                              | Off-policy Learning                                          |
+| -------- | ----------------------------------------------- | ------------------------------------------------------------ |
+| 学习目标 | 直接学习当前执行的策略 $\pi$ 的价值或改进 $\pi$ | 学习目标策略 $\pi$ 的价值，但经验来自另一个行为策略 $\mu$    |
+| 行为策略 | 行为策略和目标策略一致 $\mu = \pi$              | 行为策略和目标策略可能不同 $\mu\ neq \pi$，也可能是 $\pi_{old}$ |
+| 数据来源 | 从当前策略 $\pi$ 采样的交互经验（行动和状态）   | 从其他策略 $\mu$ 或环境采样的经验数据                        |
+| 形象描述 | 在岗位上工作时学习技能                          | 通过观察别人工作而学习技能                                   |
+| 优点     | 学习和执行策略一致，简单直观                    | 可以探索最优策略 $\pi^*$，学习灵活                           |
+| 缺点     | 受限于当前策略 $\pi$，可能收敛到次优策略        | 需要重要性采样或其他机制解决策略差异引发的偏差               |
+| 例子     | SARSA、SARSA (λ)                                 | Q-learning、Off-Policy Q (λ)                                  |
+
+### 1.3 强化学习常见概念
+
+#### 1.3.1 偏差与方差（Bias 与 Variance）
+
+- 简单直觉区别：偏差告诉你模型有没有 “学对”，方差告诉你模型有没有 “学稳”；我们希望模型低偏差、低方差，但往往需要在两者之间做权衡
+- 数学公式理解（期望均方误差（MSE）分解）：
+
+$$
+\mathbb {E}[(\hat {f}(x) - f (x))^2] = \underbrace {[\mathbb {E}[\hat {f}(x)] - f (x)]^2}_{\text{Bias}^2} + \underbrace {\mathbb {E}[(\hat {f}(x) - \mathbb {E}[\hat {f}(x)])^2]}_{\text{Variance}} + \underbrace {\sigma^2}_{\text{不可约误差}}
+$$
+
+- 其中：
+  - $f (x)$：真实函数
+  - $\hat {f}(x)$：模型预测值
+  - $\mathbb {E}[\hat {f}(x)]$​：在不同训练集上的平均预测
+
+| 项目       | 偏差（Bias）                                       | 方差（Variance）                                           | 不可约误差                                             |
+| ---------- | -------------------------------------------------- | ---------------------------------------------------------- | ------------------------------------------------------ |
+| 定义       | 平均预测值 vs 真值之间的差，表示模型结构本身的能力 | 模型在不同训练数据上的输出波动，反映其对训练数据的敏感程度 | 来自数据本身的噪声或环境的随机性，无法通过任何模型消除 |
+| 靶心图例子 | 飞镖总是集中在靶心左下角，系统性偏离               | 飞镖落得很散，有时东有时西，不稳定                         | 飞镖围绕靶心附近随机分布，即使瞄得准也有误差           |
+| 通俗解释   | 算法是否 “学得准”                                   | 算法是否 “学得稳”                                           | 世界本身是否 “稳定可预测”                               |
+| 理想状态   | 偏差低（拟合好）                                   | 方差低（不敏感）                                           | 越低越好，但不可避免，无法消除                         |
+
+#### 1.3.2 学习与规划（Learning 与 Planning）
+
+- 学习 ——MC、TD
+  - 环境初始是未知的
+  - Agent 与环境交互后改进策略
+- 规划 —— 动态规划
+  - 环境模型是已知的
+  - Agent 基于模型执行行动（没有任何外部交互）后改进策略
+  - 又名深思熟虑、推理、内省、沉思、思考、寻找
+
+#### 1.3.3 探索与利用（Exploration 与 Exploitation）
+
+- 探索
+  - 尝试新的动作，找到关于环境的更多信息
+  - 可能带来更高长期回报的策略、动作或状态，帮助智能体避免陷入局部最优解
+  - **过度探索**：智能体会浪费大量时间尝试不太可能带来高回报的动作，无法充分利用已知的信息
+- 利用
+  - 基于已有知识选择最优动作，以最大化当前的即时回报
+  - **过度利用**：智能体可能停留在次优的策略上（局部最优解），无法发现更高回报的选择
+- Trade-Off
+  - 采用上置信界（Upper Confidence Bound, UCB）
+    - 同时考虑动作的预期回报和不确定性（置信区间）
+    - 高不确定性和高回报的动作会被优先选择，特别适用于多臂赌博机（Multi-Armed Bandit）问题
+  - 采用 $\epsilon-$​ 贪心
+    - 以 $\epsilon$ 的概率进行探索（随机选择动作）
+    - 以 $1-\epsilon$ 的概率进行利用（选择当前最优动作）
+    - 一般设置初始 $\epsilon$​ 较大（偏向探索），然后逐渐减小（偏向利用）
+
+#### 1.3.4 预测与控制（Prediction 与 Control）
+
+- 预测：评估未来
+  - 给定一个策略（policy），评估该策略在未来的表现
+    - 目标：计算每个状态的价值（Value），即该策略从当前状态开始执行后，期望获得的累计回报
+    - 输入：已知的策略 $\pi (s, a)$，表示在每个状态下选择某动作的概率
+    - 输出：状态值函数 $V^\pi (s)$ 或状态 - 动作值函数 $Q^\pi (s, a)$
+      - $V^\pi (s)$：遵循策略 $\pi$ 时，从状态 $s$ 开始的期望总回报
+      - $Q^\pi (s, a)$：遵循策略 $\pi$ 时，在状态 $s$ 执行动作 $a$​ 后的期望总回报
+    - 这是一个评估任务，因为策略已经固定
+  - 假设你有一个固定的策略（比如在迷宫中选择路径的方法），**Prediction**的任务是告诉你如果执行这个策略，每个状态的长期收益会是多少
+- 控制：优化未来
+  - 寻找一个最优策略，使得未来的累计回报最大化
+    - 目标：找到最佳策略 $\pi^*$，使得每个状态的价值 $V^{\pi^*}(s)$ 或 $Q^{\pi^*}(s, a)$ 达到最大
+    - 核心问题：需要探索状态和动作的组合，确定哪个策略可以实现最优回报
+  - 假设你不知道在迷宫中最优的行走策略，**Control**的任务是通过试验和学习找到最短路径策略，从而最大化你的目标（如最快到达出口）
+
+#### 1.3.5 损失与目标（Loss 与 Objective）
+
+- 在所有机器学习问题中，本质只有一句话：选参数，使某个标量目标函数最优
+- 损失与目标
+  - 监督学习的目标是最小化损失（Loss）
+  - 强化学习（策略梯度）的目标是最大化期望回报
+  - 这二者数学上是完全等价的
+- 强化学习中的目标有什么不同？
+  - 强化学习中，没有 “标签”，没人告诉” 正确动作 “，只有环境会给出奖励
+  - 强化学习中，回报来自 “未来”，而不是立即计算出的误差
+    - 监督学习：“这一次预测错了多少？”
+    - 强化学习：“这个动作，会不会让未来一整串奖励变好？”
+  - 所以强化学习中的目标 $J (\theta)$​ 一般是期望、长期、关于整条轨迹
+    - 与监督学习不同，强化学习的标签（未来回报）本身依赖于策略的执行
+    - 这造成了 "自举（Bootstrapping）" 现象：用当前估计去估计未来
+
+### 1.4 强化学习外延
+
+#### 1.4.1 逆向强化学习（Inverse Reinforcement Learning, IRL）
+
+- 核心目标是从专家的行为中**推断潜在的奖励函数**
+- 传统强化学习的逆过程
+  - 传统强化学习的目标是根据已知的奖励函数找到最优策略
+  - 逆向强化学习则是通过观察专家的最优策略或行为来推断背后的奖励函数
+- 实际应用例子
+  - **自动驾驶**：不直接指定 "安全" 的奖励（例如 "不碰撞 + 10 分"），而是从人类驾驶员的决策中学习，推断其隐含的安全成本、舒适度权衡、风险厌恶程度等
+  - **机器人学习**：观察人类整理房间的方式，推断背后的偏好（易碎物品要轻放 > 整齐排列 > 节省时间），而非事先编码
+  - **LLM 对齐**：RLHF 中，通过人类的偏好对比（"生成 A 比生成 B 好"）推断隐含的价值观（"有用性 > 无害性 > 诚实性" 的权重），而不需要为每个维度指定确切奖励
+- 为什么 IRL 重要
+  - 很多实际任务中，**奖励函数难以精确定义**，但容易通过示范获得
+  - IRL 使得系统能 "自动学习" 人类的隐含目标，而非盲目执行
+  - 在人机交互场景中，避免了指定奖励函数的 "赫尔姆斯之舵困境"（目标定得太窄可能导致意想不到的行为）
+
+### 1.5 强化学习算法体系
+
+```text
+强化学习
+├── [1] 已知MDP（Dynamic Programming）
+│   ├── Prediction: 策略评估（Policy Evaluation）
+│   └── Control
+│       ├── 策略迭代（Policy Iteration）
+│       └── 价值迭代（Value Iteration）
+│
+├── [2] 未知MDP（Sampling Backup）
+│   ├── 基于模型（Model-Based RL）
+│   │   ├── 环境模型学习
+│   │   └── 结合DP方法进行规划
+│   │       └── 例如：Dyna-Q
+│   │
+│   └── 不基于模型（Model-Free RL）
+│       ├── Prediction
+│       │   ├── MC方法（Monte Carlo）
+│       │   └── TD方法（Temporal-Difference）
+│       │       └── TD(0), TD(λ)
+│       │
+│       └── Control
+│           ├── On-Policy
+│           │   ├── Sarsa
+│           │   └── Sarsa(λ)
+│           │
+│           └── Off-Policy
+│               ├── Q-learning（最经典）
+│               └── Expected Sarsa
+│
+├── [3] 深度强化学习（Deep RL）
+│   ├── 基于值函数
+│   │   └── DQN, Double DQN, Dueling DQN
+│   ├── 基于策略梯度
+│   │   └── REINFORCE, PPO, A2C, A3C
+│   └── Actor-Critic 架构（值函数+策略）
+│       └── DDPG, TD3, SAC
+│
+├── [4] Offline RL（脱离环境，离线数据上训练）
+│   └── BC（行为克隆）、BCQ、CQL 等
+│
+└── [5] Online RL（与环境交互）
+    └── 几乎所有经典算法（Q-Learning、DQN、PPO等）
+```
+
+## 二、经典强化学习
+
+### 2.1 马尔可夫链
+
+#### 2.1.1 马尔可夫随机过程
+
+- 马尔可夫状态
+
+  $$
+  P [S_{t+1}|S_t]=P [S_{t+1}|S_1,\cdots,S_t]
+  $$
+  - 基于现在，未来独立于过去：$H_{1:t}\rightarrow S_t\rightarrow H_{t+1:\infty}$
+  - 一旦有了当前状态，历史可以被抛弃
+  - 当前状态是未来的充分统计数据
+
+- 马尔可夫随机过程（Markov Processes）
+  - 马尔可夫随机过程由二元组 $(\mathcal {S},\mathcal {P})$ 组成
+    - $\mathcal {S}$：状态空间（所有可能状态的集合）
+    - $\mathcal {P}$：状态转移概率矩阵，定义从当前状态 $s_t$ 转移到下一个状态 $s_{t+1}$ 的概率 $P (s_{t+1}|s_t)$
+
+      $$
+      \mathcal {P}_{ss^{'}}=P [S_{t+1}=S^{'}|S_t=s]
+      $$
+
+#### 2.1.2 马尔可夫奖励过程
+
+- 马尔可夫奖励过程（Markov Reward Processes）由四元组 $(\mathcal {S},\mathcal {P},\mathcal {R},\gamma)$​ 组成
+  - $\mathcal {S}$：状态空间（所有可能状态的集合）
+  - $\mathcal {P}$：状态转移概率矩阵，定义从当前状态 $s_t$ 转移到下一个状态 $s_{t+1}$ 的概率 $P (s_{t+1}|s_t)$
+  - $\mathcal {R}$：奖励函数，$\mathcal {R}_s=\mathbb {E}[R_{t+1}|S_t=s]$
+  - $\gamma$：折扣因子，$\gamma\in [0,1]$​，用于衡量未来奖励的当前价值
+    - 当前获得的奖励 $R$ 在 $k+1$ 个时间步后的价值为 $\gamma^{k} R$
+    - $\gamma\rightarrow0$ 时，趋近于” 近视 “评估（Mypoic）
+    - $\gamma\rightarrow1$​ 时，趋近于” 远视 “评估（Far-Sighted）
+  - 采用折扣因子的原因
+    - 便于数学上的收敛计算
+    - 折扣因子限制了回报的累积，确保问题可解并且奖励是有限的
+    - 折扣因子通过对未来奖励进行加权，隐式表达了这种不确定性
+    - 在金融或经济领域，折扣因子反映了**时间价值**的概念，即立即获得的奖励比未来的同样奖励更有价值
+    - 人类和动物普遍更倾向于即时奖励而非延迟奖励，即 “即时满足倾向”
+    - 在某些特殊情况下，可以使用不折扣的马尔可夫过程，例如：
+      - **所有序列都终止**：如果问题设计保证智能体的每条路径最终都会结束，例如迷宫求解任务，回报的总和是有限的，无需引入折扣因子
+      - **特定目标任务**：例如以目标状态为重点的问题，可能不关注时间步长
+    - 未折扣的过程更适用于有界问题，而在无界问题中通常会引入折扣因子
+- 值函数 $V (s)$
+  - 从时间步 $t$ 开始的总折扣奖励值 / 回报（Return）：
+
+    $$
+    G_t=R_{t+1}+\gamma R_{t+2}+\dots=\displaystyle\sum_{k=0}^{\infty}\gamma^{k} R_{t+k+1}
+    $$
+
+  - 值函数则表示从当前状态 $s$ 开始的期望累计回报，评估状态的长期价值
+
+    $$
+    V (s)=\mathbb {E}[G_t|S_t=s]
+    $$
+
+  - 据此，值函数可以划分为两部分：即时奖励 $R_{t+1}$ 与折扣后的 $\gamma V (S_{t+1})$
+
+    $$
+    V (s)=\mathbb {E}[G_t|S_t=s]=\mathbb {E}[R_{t+1}+\gamma V (S_{t+1})|S_t=s]
+    $$
+
+- 贝尔曼方程（Bellman Equation）
+  - 定义策略 $\pi$ 下价值函数和动作值函数的递归关系
+  - $v=\mathcal {R}+\gamma\mathcal {P} v$，其中
+
+    $$
+    \begin {bmatrix}
+    v (1) \\
+    \vdots \\
+    v (n)
+    \end {bmatrix}=
+    \begin {bmatrix}
+    \mathcal {R}_{1} \\
+    \vdots \\
+    \mathcal {R}_{n}
+    \end {bmatrix}+\gamma
+    \begin {bmatrix}
+    \mathcal {P}_{11} & \ldots & \mathcal {P}_{1n} \\
+    \vdots \\
+    \mathcal {P}_{11} & \ldots & \mathcal {P}_{nn}
+    \end {bmatrix}
+    \begin {bmatrix}
+    v (1) \\
+    \vdots \\
+    v (n)
+    \end {bmatrix}
+    $$
+
+  - $v=\mathcal {R}+\gamma\mathcal {P} v\Rightarrow (I-\gamma\mathcal {P}) v=\mathcal {R}\Rightarrow v=(I-\gamma\mathcal {P})^{-1}\mathcal {R}$
+
+- 贝尔曼方程的计算复杂度
+  - 对于 $n$ 个状态，该方程的计算复杂度是 $O (n^3)$
+  - 对于小的马尔可夫链，可以利用该公式计算
+  - 对于较大的马尔可夫链，则需要使用一些迭代的方法，如动态规划、蒙特卡洛方法、时间差分学习
+
+#### 2.1.3 马尔可夫决策过程
+
+- 马尔可夫决策过程（Markov Decision Process）是具有动作的马尔可夫奖励过程
+- 马尔可夫奖励过程由五元组 $(\mathcal {S},\mathcal {A},\mathcal {P},\mathcal {R},\gamma)$​ 组成
+  - $\mathcal {S}$​：状态空间（所有可能状态的集合）
+  - $\mathcal {A}$：动作空间（所有可能动作的集合）
+  - $\mathcal {P}$：状态转移概率矩阵，定义从当前状态 $s_t$**执行动作 $a$**转移到下一个状态 $s_{t+1}$ 的概率
+
+    $$
+    \mathcal {P}_{ss^{'}}^{a}=P [S_{t+1}=S^{'}|S_t=s,A_t=a]
+    $$
+
+  - $\mathcal {R}$：奖励函数
+
+    $$
+    \mathcal {R}_s^a=\mathbb {E}[R_{t+1}|S_t=s,A_t=a]
+    $$
+
+  - $\gamma$：折扣因子，$\gamma\in [0,1]$​，用于衡量未来奖励的当前价值
+
+- 策略：给定状态时，动作的概率分布
+
+  $$
+  \pi (a|s)=P [A_t=a|S_t=s]
+  $$
+  - 策略完整定义了 Agent 的行动，智能体在每个时间步会依据它选择动作
+  - 在标准 MDP 中，策略是时间无关的，不会随着时间变化，只要状态相同，选择的行动均相同
+  - $A_t\sim \pi (\cdot|S_t),\forall t>0$，即在任何时间步 $t > 0$，动作 $A_t$ 都是根据相同的策略 $\pi$ 从状态 $S_t$ 中抽样的
+
+- 给定 $\mathcal {M}=(\mathcal {S},\mathcal {A},\mathcal {P},\mathcal {R},\gamma)$ 和策略 $\pi$
+  - 马尔可夫过程：$(\mathcal {S},\mathcal {P}^{\pi})$
+  - 马尔可夫奖励过程：$(\mathcal {S},\mathcal {P}^{\pi},\mathcal {R}^{\pi},\gamma)$
+  - 策略诱导的状态转移概率：在状态 $s$ 下，策略 $\pi$ 可能会以不同概率选择不同动作，而每个动作又有不同的状态转移概率，**所以最终的状态转移概率是对所有动作的加权平均**
+
+    $$
+    \mathcal {P}_{s,s^{'}}^{\pi}=\displaystyle\sum_{a}\pi (a|s)\mathcal {P}_{ss^{'}}^{a}
+    $$
+
+  - 策略诱导的奖励函数：策略 $\pi$​ 可能选择不同的动作，每个动作带来不同的奖励，**所以总体奖励是对动作奖励的加权平均**
+
+    $$
+    \mathcal {R}_{s}^{\pi}=\displaystyle\sum_{a}\pi (a|s)\mathcal {R}_{s}^{a}
+    $$
+
+- 值函数 $V_\pi (s)$
+
+  $$
+  \begin {align*}
+  V_{\pi}(s)&=\mathbb {E}_{\pi}[G_t|S_t=s]\\
+  &=\mathbb {E}_{\pi}[R_{t+1}+\gamma V_{\pi}(S_{t+1})|S_t=s]\\
+  &=\mathbb {E}_\pi [R_{t+1} \mid S_t = s]
+  + \gamma \mathbb {E}_\pi [G_{t+1} \mid S_t = s]
+  \end {align*}
+  $$
+  - 对「动作」做全期望展开
+
+    $$
+    \mathbb {E}_\pi [\cdot \mid S_t = s]
+    = \sum_a \pi (a|s)\mathbb {E}[\cdot \mid S_t = s, A_t = a]
+    $$
+
+  - 由此，即时奖励为：
+
+    $$
+    \mathbb {E}_\pi [R_{t+1} \mid S_t = s]
+    =\sum_a \pi (a|s)\mathbb {E}[R_{t+1} \mid S_t = s, A_t = a]
+    =\sum_a \pi (a|s)\mathcal {R}_s^a
+    $$
+
+  - 对未来奖励做全期望展开
+
+    $$
+    \begin {align*}
+    \mathbb {E}_\pi [G_{t+1}\mid S_t=s]
+    &=\sum_a \pi (a|s)\mathbb {E}\left [G_{t+1}\mid S_t=s, A_t=a\right]\\
+    \mathbb {E}\left [G_{t+1}\mid S_t=s, A_t=a\right]&=\sum_{s'}
+    \mathcal {P}_{ss'}^a\mathbb {E}\left [G_{t+1}\mid S_{t+1}=s'\right]\\
+    V_\pi (s')&=\mathbb {E}_\pi\left [G_{t+1}\mid S_{t+1}=s'\right]\\
+    \mathbb {E}\left [G_{t+1}\mid S_t=s, A_t=a\right]&=\sum_{s'}\mathcal {P}_{ss'}^a V_\pi (s')\\
+    \mathbb {E}_\pi [G_{t+1}\mid S_t=s]&=\sum_a \pi (a|s)
+    \sum_{s'} \mathcal {P}_{ss'}^aV_\pi (s')
+    \end {align*}
+    $$
+
+  - 最终得到完整的贝尔曼期望方程：当前状态 $s$ 的价值是，在策略 $\pi$ 下对所有动作和后续状态的加权期望
+
+    $$
+    \begin {align*}
+    V_\pi (s)&= \mathbb {E}_\pi [R_{t+1} \mid S_t = s]
+    + \gamma \mathbb {E}_\pi [G_{t+1} \mid S_t = s]\\
+    &=\sum_a \pi (a|s)
+    \Big [\mathcal {R}_s^a
+    +
+    \gamma \sum_{s'} \mathcal {P}_{ss'}^a V_\pi (s')
+    \Big]\\&=
+    \mathcal {R}_s^\pi
+    +
+    \gamma \sum_{s'} \mathcal {P}_{ss'}^\pi V_\pi (s')
+    \end {align*}
+    $$
+    - 实际上，上式中的 $\mathcal {R}_s^a+\gamma \displaystyle\sum_{s'} \mathcal {P}_{ss'}^a V_\pi (s')$ 即为动作值函数
+
+  - 贝尔曼期望方程：当前状态 $s$ 的价值是，在策略 $\pi$ 下对所有动作和后续状态的加权期望
+
+    $$
+    \begin {align*}
+    V_{\pi}(s)&=\displaystyle\sum_{a}\pi (a|s) q_{\pi}(s,a)\\
+    &=\displaystyle\sum_{a}\pi (a|s)\displaystyle\sum_{s^{\prime}}\mathcal {P}_{ss^{\prime}}^a\left (\mathcal {R}_{ss^{\prime}}^a+\gamma V_\pi (s^{\prime})\right)\\
+    &=\displaystyle\sum_{a}\pi (a|s)\left (\mathcal {R}_s^a+\gamma\displaystyle\sum_{s^{\prime}}\mathcal {P}_{ss^{\prime}}^aV_\pi (s^{\prime})\right)\\
+    \end {align*}
+    $$
+
+  - 贝尔曼期望方程的矩阵形式
+
+    $$
+    v_\pi=\mathcal {R}^\pi+\gamma\mathcal {P}^\pi v_\pi\\
+    v_\pi=(I-\gamma\mathcal {P}^\pi)^{-1}\mathcal {R}^\pi
+    $$
+
+- 动作值函数 $q_{\pi}(s,a)$
+
+  $$
+  \begin {align*}
+  q_{\pi}(s,a)&=\mathbb {E}_{\pi}[G_t|S_t=s,A_t=a]\\&=\mathbb {E}_{\pi}[R_{t+1}+\gamma q_{\pi}(S_{t+1},A_{t+1})|S_t=s,A_t=a]
+  \end {align*}
+  $$
+  - 表示从当前状态 $s$ 开始选择动作 $a$ 的期望累计回报，即评估在状态 $s$ 下选择特定动作 $a$ 的价值 —— 从某个状态–动作对开始的期望回报
+  - 在选择动作 $a$ 后，会按照策略 $\pi$ 来选择后续动作，即
+
+    $$
+    q_\pi (s,a)
+    =\mathbb {E}
+    \big [\text{当前奖励}
+    +
+    \gamma \times
+    \text{下一步按}\pi\text{选动作的} q
+    \big]
+    $$
+
+  - 贝尔曼期望方程：
+
+    $$
+    \begin {align*}
+    q_\pi (s,a)&=\mathcal {R}_s^a+\gamma\displaystyle\sum_{s^{\prime}}\mathcal {P}_{ss^{\prime}}^aV_\pi (s^{\prime})\\
+    &=\mathcal {R}_s^a+\gamma\displaystyle\sum_{s^{\prime}}\mathcal {P}_{ss^{\prime}}^a\displaystyle\sum_{a^{\prime}}\pi (a^{\prime}|s^{\prime}) q_\pi (s^{\prime},a^{\prime})
+    \end {align*}
+    $$
+
+  - 全期望展开的中间过程推导：
+
+    $$
+    \begin {align*}
+    \mathbb {E}_\pi\left [q_\pi (S_{t+1},A_{t+1})
+    \mid S_{t+1}
+    \right]&=\sum_{a'} \pi (a'|S_{t+1}) q_\pi (S_{t+1},a')\\
+    q_\pi (s, a) &= \mathbb {E}[R_t + \gamma \displaystyle\sum_{a'} \pi (a'|S_{t+1}) q_\pi (S_{t+1}, a') \,|\, S_t = s, A_t = a]
+    \end {align*}
+    $$
+
+- 为什么 $q_\pi$ 里动作的期望在 “下一步” 才出现，而 $v_\pi$ 是在” 当前步 “- 状态值函数中：条件里只有状态，当前动作 $A_t$ 未知，必须立刻对 $A_t$ 按策略取期望，因此有 $\displaystyle\sum_a\pi (a\vert s)$
+  - 动作值函数中：条件里已经给定了动作，当前动作 $A_t$ 是确定的，不需要也不能再对当前动作取期望，所以当前步没有 $\displaystyle\sum_a\pi (a\vert s)$ ；而在下一步时间 $t+1$，状态 $S_{t+1}$ 是随机的，动作 $A_{t+1}$ 再次由策略决定，因此 $A_{t+1}\sim\pi (\cdot\vert S_{t+1})$，这时又不知道动作是什么了，因此取期望 $\displaystyle\sum_{a'} \pi (a'|S_{t+1}) q_\pi (S_{t+1},a')$，动作期望自然出现在 “下一步”
+  - 数学上来讲，**期望一定是对 “未知的随机变量” 取的**
+  - 当前动作在状态值函数中未知，要取期望，在动作值函数中已知，不要取期望
+  - 下一步动作在两者里都是未知的，都要取期望
+
+#### 2.1.4 最优化问题
+
+- 在 “最优” 问题里，动作不再是随机选的，而是由我们主动选最好的那个
+- 最优值函数
+  - $v_{*}(s)=\displaystyle\max_{\pi} v_{\pi}(s)$
+  - $q_{*}(s,a)=\displaystyle\max_{\pi} q_{\pi}(s,a)$
+  - 以动作值函数为例，在最优化问题里关心的是：从 $(s,a)$ 出发，之后永远 “选得最优”，能拿到的最大期望回报
+  - 因此，相比随机选择动作，此处直接选择最好的动作，所以期望变为了 $\text{max}$ 函数
+  - 当求得最优值函数时，即称 MDP 问题被解决
+- 最优策略
+  - 称 $\pi \geq \pi^\prime \iff v_\pi (s) \geq v_{\pi^\prime}(s), \, \forall s$，来定义策略的优劣
+  - 对于任何 MDP，均存在最优策略 $\pi_{*}$，使得 $\pi^* \geq \pi, \, \forall \pi$
+  - $v_{\pi_*}(s) = v_*(s), \, \forall s$ 且 $q_{\pi_*}(s,a) = q_*(s,a), \, \forall s$​
+- 根据最优动作值函数得到最优策略：
+
+  $$
+    \pi^*(a|s) =
+    \begin {cases}
+    1, & \text{如果} a = \arg\displaystyle\max_{a \in A} q^*(s, a), \\
+    0, & \text{否则}.
+    \end {cases}
+  $$
+
+- 最优值函数的推导：在状态 $s$ 下，选择能带来最大长期回报的动作
+
+  $$
+  \begin {align*}
+      v_*(s)&= \max_\pi \mathbb E_\pi [G_t \mid s]\\
+      &=\displaystyle\max_a q_*(s,a)\\
+    &=\displaystyle\max_a [\mathcal {R}_s^a+\gamma\displaystyle\sum_{s^{\prime}}\mathcal {P}_{ss^{\prime}}^aV_*(s^{\prime})]
+    \end {align*}
+  $$
+
+- 最优动作值函数的推导：采取动作 $a$ 后的回报等于即时奖励加下一个状态中最优动作的价值
+
+  $$
+  \begin {align*}
+  q_*(s,a)&=\max_\pi
+  \displaystyle\mathbb {E}_\pi
+  \left [R_{t+1} + \gamma G_{t+1}
+  \mid s,a
+  \right]\\
+  \max_\pi \mathbb {E}_\pi [G_{t+1}\mid S_{t+1}]&=\max_{a'} q_*(S_{t+1},a')\\
+  q_*(s,a)&=\mathcal {R}_s^a+\gamma\sum_{s'}\mathcal {P}_{ss'}^a\max_{a'} q_*(s',a')
+  \end {align*}
+  $$
+
+- 最优动作值函数与最优状态值函数的关系
+
+  $$
+    \begin {align*}
+      q_*(s,a)&=\mathcal {R}_s^a+\gamma\displaystyle\sum_{s^{\prime}}\mathcal {P}_{ss^{\prime}}^aV_*(s^{\prime})\\
+    \end {align*}
+  $$
+
+- 对于状态值函数，不能 “直接” 从定义推出 Bellman 最优方程，必须借助最优动作值函数或最优性原理
+  - 想当然地，根据状态值函数的基本定义，可能会得到：
+
+    $$
+    \begin {align*}
+    V_*(s)
+    &= \max_\pi \mathbb E_\pi
+    \left [R_{t+1} + \gamma G_{t+1}
+    \mid S_t = s
+    \right] \\
+    &\stackrel {?}{=}
+    \max_a
+    \Big [
+    \mathcal R_s^a
+    +
+    \gamma \sum_{s'} \mathcal P_{ss'}^a V_*(s')
+    \Big]
+    \end {align*}
+    $$
+
+  - 关键障碍是 max 不能直接穿过期望符号，更不能把策略的 max 变为对动作的 max
+
+    $$
+    \max_\pi \mathbb E_\pi [\cdot]\neq\mathbb {E}[\max_\pi \cdot]
+    $$
+
+  - 而真正的关键是贝尔曼最优性原理（Principle of Optimality）：一条最优路径的任意后缀，仍然是最优的
+  - 即，**未来也必须继续是最优的**
+  - 引入动作值函数后，$q_*(s,a)$ 强制把第一个动作固定，消除了 “当前动作” 的随机性，因此
+
+    $$
+    V_*(s) = \max_a q_*(s,a)
+    $$
+
+  - 借由最优动作值函数，可以推导出最优状态值函数
+
+- 为什么不是 “先期望再取 max”？
+  - 期望和 max 的先后关系
+
+    $$
+    \max_a \mathbb {E}[\cdot]\neq\mathbb {E}[\max_a \cdot]
+    $$
+
+  - Bellman 最优方程做的是对动作取 max，同时对环境转移概率取期望
+
+    $$
+    \displaystyle\max_{a'}\mathbb {E}_{S'}[\cdot]
+    $$
+
+  - 根据最优性原理，在任意状态 $S^{\prime}$，最优策略都会选：
+
+    $$
+    a' = \arg\max_{a'} q_*(s',a')
+    $$
+
+- 最优化问题的贝尔曼方程没有封闭解
+  - 一般的最优化 Bellman 方程没有解析（封闭）解，只能通过数值或迭代方法求解
+
+    $$
+    V_*(s)=\max_a
+    \Big [
+    \mathcal R_s^a
+    +
+    \gamma
+    \sum_{s'} \mathcal P_{ss'}^a V_*(s')
+    \Big]
+    $$
+    - 上述贝尔曼最优方程中，未知量 $V_*$ 出现在右边，同时右边还包含 max （非线性）和期望（线性）
+    - 因此，这是一个非线性不光滑的函数不动点方程
+
+  - 策略评估问题 VS 最优化问题
+    - 策略评估问题有封闭解，只要矩阵 $I - \gamma P_\pi$ 可逆
+
+      $$
+      \begin {align*}
+      V_\pi &= R_\pi + \gamma P_\pi V_\pi\\
+      (I - \gamma P_\pi) V_\pi &= R_\pi \\
+      V_\pi &= (I - \gamma P_\pi)^{-1} R_\pi
+      \end {align*}
+      $$
+
+    - 而最优控制问题中的 max 函数导致其不再是矩阵方程，而是一个分段定义的非线性方程；它涉及到所有状态和动作的最大值操作（非线性），而且是一个多变量的递归方程组（每个状态的值依赖于其他状态的值）
+
+  - 然而，最优化问题还是能够通过迭代方法 “解决”
+    - 这是由于贝尔曼最优算子拥有两个关键性质
+
+      $$
+      (T_* V)(s)=\max_a
+      \Big [\mathcal R_s^a + \gamma \sum_{s'} \mathcal P_{ss'}^a V (s')
+      \Big]
+      $$
+
+    - 压缩映射（$\gamma < 1$）：$|T_* V - T_* W|*\infty\le\gamma |V - W|*\infty$，存在唯一不动点
+    - 迭代必然收敛：$V_{k+1} = T_* V_k\longrightarrow V_*$，这就是值迭代（Value Iteration）
+
+  - 这也导出了为什么强化学习问题必须近似
+    - 因为在大状态空间中，无法存储 $V_*$，无法枚举所有动作，无法解矩阵方程
+    - 为此，动态规划使用表格迭代，TD/ Q-learning 使用随机逼近，深度强化学习使用函数逼近
+  - 贝尔曼最优方程的迭代解方法
+    - 值迭代
+    - 策略迭代
+    - Q-Learning
+    - SARSA
+
+#### 2.1.5 算子与不动点
+
+- 算子
+  - 设，$\mathcal V$ 是一个函数空间（例如所有 $V:\mathcal S\to\mathbb R$），$\mathcal V$ 上定义了某种范数 $|\cdot|$
+  - 算子（Operator）定义为：
+
+    $$
+    T:\mathcal V \to \mathcal V
+    $$
+
+  - 算子是 “以函数为输入、以函数为输出的映射”
+  - 在 MDP 中，状态空间：$\mathcal S$，价值函数空间：$\mathcal V={V\mid V:\mathcal S\to\mathbb R}$，所有 Bellman 算子，都是在这个空间上定义的映射
+
+- 策略 Bellman 算子 $T_\pi$
+  - 给定一个**固定策略**$\pi$​，定义：
+
+    $$
+    (T_\pi V)(s)=\sum_a \pi (a|s)
+    \sum_{s'} P (s'|s,a)
+    \big [R (s,a) + \gamma V (s') \big]
+    $$
+
+  - 假设以后一直按 $\pi$ 行动，对 $V$ 做一次 Bellman 更新
+
+- 最优 Bellman 算子 $T_*$​
+  - 定义
+
+    $$
+    (T_* V)(s)=\max_a
+    \sum_{s'} P (s'|s,a)
+    \big [R (s,a) + \gamma V (s') \big]
+    $$
+
+  - 不依赖具体策略，直接对动作取最大
+  - 假设未来每一步都采取最优动作，对 $V$​ 做一次更新
+
+- 不动点（Fixed Point）
+  - 设 $T:\mathcal V\to\mathcal V$ 是一个算子，如果存在 $V^*\in\mathcal V$​，使得
+
+    $$
+    T (V^*) = V^*
+    $$
+
+  - 则称，$V^* \text{是算子} T \text{的不动点}$
+  - 策略评估的不动点：$V^\pi = T_\pi V^\pi$，即在策略 $\pi$ 下，自洽的价值函数
+  - 最优控制的不动点：$V^* = T_* V^*$​，即最优价值函数必须满足 Bellman 最优方程
+
+- 不动点迭代
+  - 给定算子 $T$，定义迭代序列：
+
+    $$
+    V_{k+1} = T (V_k), \quad k=0,1,2,\dots
+    $$
+
+  - 若 $\lim_{k\to\infty} V_k = V^*$，且 $V^*$ 满足 $T (V^*)=V^*$，则称该过程为**不动点迭代**
+  - 在 MDP 中，当 $\gamma\in (0,1)$ 时，$T_\pi$ 和 $T_*$ 都是**压缩映射**，故不动点存在且唯一，任意初值迭代都收敛
+
+#### 2.1.6 马尔可夫过程扩展
+
+- （完全可观察）马尔可夫决策过程 MDP：$O_t=S_t^a=S_t^e$，Agent 直接观察环境的状态
+- 部分可观察马尔可夫决策过程（POMDP, Partially Observable MDP）：Agent 无法直接观察到完整的环境状态，而是通过观测 $o_t$ 获取部分信息，必须构造自己的状态表示
+- 连续状态和动作空间：状态和动作空间是连续的，可以使用函数逼近方法（如深度强化学习）解决
+
+### 2.2 动态规划
+
+#### 2.2.1 动态规划定义
+
+- 动态规划不是 RL 特有的，它解决的是一类问题：**序列决策 + 最优性 + 可分解结构**，而 MDP 问题刚好满足两个关键条件
+  - 最优子结构（Optimal Substructure）：从当前状态开始的最优决策 = 当前一步最优 + 后续状态仍然最优，这也正是贝尔曼最优原理
+  - 重叠子问题（Overlapping Subproblems）：不同轨迹会反复到达同一个状态，所以「状态价值」值得缓存和反复使用，这就是为什么用**值函数**而不是直接枚举轨迹
+  - 因此引入动态规划解决已知的 MDP 问题（即状态转移概率矩阵和奖励函数已知）
+- 动态规划方法的特点
+  - Model-based
+    - 动态规划假设 MDP 的转移概率 $P (s'|s, a)$ 和奖励函数 $R (s, a)$​​ 是完全已知的；而我们需要解决的是 Planning，也即如何解决 MDP 问题
+    - 动态规划的更新式为 $\displaystyle\sum_{s'} P (s'|s,a)\big [\cdots\big]$
+    - **必须知道整个转移分布**，不能靠采样
+  - 确定性
+    - 值函数和策略的更新是基于精确的数学计算，不依赖于采样数据
+    - 动态规划不引入方差，所以 DP 是 RL 的 “理想上限”
+    - 因此，TD / Q-learning 的本质是在不知道模型时，用采样近似 DP
+  - 预测 / 控制问题
+    - 对于 Prediction：预测固定策略的价值函数 —— 策略评估
+    - 对于 Control：在给定 MDP 中，能做到的最好事情是什么；可获得最大回报是什么；最好的策略是什么；最优价值函数
+- 动态规划的目标
+  - 动态规划的目标是求解最优策略 $\pi^*$，即找到一种策略使得累积期望奖励（或价值）最大化
+  - 价值函数（Value Function）：
+    - 状态价值函数 $V^\pi (s)$：在策略 $\pi$ 下，从状态 $s$ 开始的累积期望奖励
+
+      $$
+      V^\pi (s) = \mathbb {E}^\pi \left [\displaystyle\sum_{t=0}^\infty \gamma^t R (s_t, a_t) \big| s_0 = s \right]
+      $$
+
+    - 状态 - 动作价值函数 $Q^\pi (s, a)$：在策略 $\pi$ 下，从状态 $s$ 执行动作 $a$ 开始的累积期望奖励
+
+      $$
+      Q^\pi (s, a) = \mathbb {E}^\pi \left [R (s, a) + \gamma V^\pi (s') \big| s, a \right]
+      $$
+
+  - 设 $V^*(s)$ 是最优价值函数，最优策略 $\pi^*$ 满足：
+
+    $$
+    V^*(s) = \displaystyle\max_a \mathbb {E}_{\pi^*} \left [R (s, a) + \gamma V^*(s') \right]
+    $$
+
+#### 2.2.2 策略评估
+
+- 策略评估（Policy Evaluation）
+  - 目标：给定一个策略 $\pi$，计算其对应的状态价值函数 $V^\pi (s)$​，评估该策略到底有多么好
+  - 本质：用不动点迭代，求算子 $T_\pi$ 的不动点
+
+    $$
+    V_{k+1} = T_\pi V_k
+    $$
+
+  - 方法：通过**贝尔曼期望方程**（Bellman Expectation Equation）迭代计算：
+
+    $$
+    \begin {align*}
+    V_\pi (s) &= \mathbb E_\pi [G_t \mid S_t=s]\\
+    &= \displaystyle\sum_{a} \pi (a|s) \displaystyle\sum_{s'} P (s'|s, a) \big [R (s, a) + \gamma V_\pi (s') \big]
+    \end {align*}
+    $$
+
+  - 迭代方式:
+    1. 初始 $V_0 (s) = 0$（或任意值）
+    2. 逐步更新（其中 $s^{'}$ 是 $s$ 的后继状态）
+
+       $$
+       V_{k+1}(s) = \displaystyle\sum_{a} \pi (a|s) \displaystyle\sum_{s'} P (s'|s, a) \big [R (s, a) + \gamma V_k (s') \big]
+       $$
+    - Synchronous 备份：每次更新时，对于所有状态 $s\in S$，使用 $v_k (s^{'})$ 更新 $v_{k+1}(s)$​
+    - 改进
+      - In-Place Dynamic Programming
+      - Prioritised sweeping
+      - Real-time dynamic programming
+      - Full-Width Backups
+      - Sample Backups
+
+- 策略评估过程中，虽然能够利用当前价值函数和贪婪原则得到好的策略，但是策略评估的策略始终是初始被评估策略，不会更新
+- 即更好的策略并不会对价值函数的迭代造成反馈，所以称为**策略评估**
+
+#### 2.2.3 策略迭代
+
+- 在 “评估当前策略” 和 “改进当前策略” 之间来回摆动
+- 本质：在 “策略诱导的 Bellman 算子” 序列中，不断切换算子，逼近最优算子 $T_*$ 的不动点
+- 策略改进（Policy Improvement）
+  - 目标：基于当前策略的价值函数 $V^\pi (s)$，改进策略 $\pi$
+  - 实际上，不必等到价值函数收敛，即可得到最优策略
+  - 方法：利用贪婪原则（Greedy Principle）更新策略：
+
+    $$
+    \begin {align*}
+        \pi'(s) &= \arg\displaystyle\max_a q_{\pi}(s,a) = \arg\displaystyle\max_a \displaystyle\sum_{s'} P (s'|s, a) \big [R (s, a) + \gamma V_\pi (s') \big]\\
+        q_{\pi}(s,\pi^{\prime}(s))&=\displaystyle\max_a q_{\pi}(s,a)\ge q_{\pi}(s,\pi (s))=v_{\pi}(s)\\
+        v_{\pi}(s)& \leq q_\pi (s,\pi^{\prime}(s))=\mathbb {E}_{\pi^{\prime}}\left [R_{t+1}+\gamma v_\pi (S_{t+1})\mid S_t=s\right] \\
+        &\leq\mathbb {E}_{\pi^{\prime}}\left [R_{t+1}+\gamma q_\pi (S_{t+1},\pi^{\prime}(S_{t+1}))\mid S_t=s\right] \\
+        &\leq\mathbb {E}_{\pi^{\prime}}\left [R_{t+1}+\gamma R_{t+2}+\gamma^2q_\pi (S_{t+2},\pi^{\prime}(S_{t+2}))\mid S_t=s\right] \\
+        &\leq\mathbb {E}_{\pi^{\prime}}\left [R_{t+1}+\gamma R_{t+2}+...\mid S_t=s\right]=v_{\pi^{\prime}}(s)
+        \end {align*}
+    $$
+
+- 策略迭代（Policy Iteration）
+  - 目标：反复进行 “策略评估” 和 “策略改进”，直至收敛到最优策略 $\pi^*$
+  - 过程：
+    - 初始随机策略 $\pi_0$
+    - 策略评估：计算 $V_{\pi_k}(s)$，即
+
+      $$
+      V_{\pi_k} = T_{\pi_k} V_{\pi_k}
+      $$
+
+    - 策略改进：得到新策略 $\pi_{k+1}$，即
+
+      $$
+      \pi_{k+1}(s)=\arg\displaystyle\max_a\sum_{s'} P (s'|s,a)\big [R (s,a) + \gamma V_{\pi_k}(s') \big]
+      $$
+
+    - 重复，直至策略不再变化（即使价值函数未完全收敛，只要策略稳定就可停止）
+
+  - 与简单的策略评估不同，策略迭代会在**更新后的新策略**上进行策略评估
+  - 最终达到最优策略
+
+    $$
+    \begin {align*}
+    q_{\pi}(s,\pi^{\prime}(s))&=\displaystyle\max_a q_{\pi}(s,a)= q_{\pi}(s,\pi (s))=v_{\pi}(s)\\
+        \text{Bellman Optimality Equation:} v_{\pi}(s)&=\displaystyle\max_a q_{\pi}(s,a)\rightarrow v_{\pi}(s)=v_{*}(s)
+        \end {align*}
+    $$
+
+  - 策略评估得到价值函数不一定需要收敛，可以提前停止吗
+    - 迭代 K 步
+    - 策略迭代通常需要**更少次的外循环**，但每次策略评估本身可能较耗时
+    - 价值迭代
+
+#### 2.2.4 价值迭代
+
+- 把「评估 + 改进」**压缩成一步**
+- 本质：直接对最优 Bellman 算子做不动点迭代
+
+  $$
+  V_{k+1} = T_* V_k
+  $$
+
+- 价值迭代（Value Iteration）
+  - 目标：直接通过更新价值函数来找到最优值函数 $V_*(s)$，进而推导出最优策略
+  - 方法：基于**贝尔曼最优方程**（Bellman Optimality Equation）迭代：
+
+    $$
+    \begin {align*}
+    V_{k+1}(s) &= \displaystyle\max_{a} \displaystyle\sum_{s'} P (s'|s, a) \big [R (s, a) + \gamma V_k (s') \big]\\ &=\max_{a} R (s,a)+\gamma\displaystyle\sum_{s'} P (s'|s, a) V_k (s')\\
+    v_{k+1}&=\max_{a}\mathcal {{R}}^a+\gamma\mathcal {P}^av_k
+    \end {align*}
+    $$
+
+  - 终止条件：当 $V_{k+1}(s)$ 与 $V_k (s)$ 的变化小于阈值 $\epsilon$​ 时停止
+  - 与策略迭代不同，没有显式策略
+  - 中间价值函数可能并没有对应的策略；而策略迭代中价值函数是根据特定策略计算得到的
+
+| 问题类型         | 贝尔曼方程     | 算法     | 功能                                  | 算法复杂度                                                 |
+| ---------------- | -------------- | -------- | ------------------------------------- | ---------------------------------------------------------- |
+| 预测问题         | 贝尔曼期望方程 | 策略评估 | 计算给定策略的状态价值函数 $v_\pi (s)$ | 每次迭代 $O (mn^2)$，其中 $n$ 是状态数，$m$ 是动作数        |
+| 控制问题（期望） | 贝尔曼期望方程 | 策略迭代 | 求解最优策略 $\pi^*$ 和 $v_*(s)$      | 每次策略评估 $O (mn^2)$，策略改进 $O (mn)$                   |
+| 控制问题（最优） | 贝尔曼最优方程 | 价值迭代 | 求解最优策略 $\pi^*$ 和 $v_*(s)$      | 每次迭代 $O (mn^2)$，基于动作值函数时，每次迭代 $O (m^2n^2)$ |
+
+### 2.3 蒙特卡洛方法
+
+#### 2.3.1 蒙特卡洛方法
+
+- 基本思想
+  - 显然，动态规划用于解决已知的 MDP 问题（Model-Based）
+
+    $$
+    \displaystyle\sum_{s'} P (s'|s,a)\big [\cdots\big]
+    $$
+
+  - 在现实问题中，转移概率未知，奖励函数未知，只能与环境交互，得到**样本轨迹**
+  - 问题变成：如果我只看到一条一条完整轨迹，能不能估计价值函数？
+  - 那么如何解决未知的 MDP（Model-Free）
+    - Model-Free Prediction：评估值函数，如蒙特卡洛方法、时间差分学习 TD
+    - Model-Free Control：优化值函数，如 On-Policy 蒙特卡洛方法、On-Policy 时间差分学习
+
+- 蒙特卡洛方法（Monte Carlo Methods）的特点
+  - **蒙特卡洛方法 = 用完整回报直接逼近期望值函数**
+  - 核心思想：基于一个朴素的假设 —— 价值函数等于回报的**期望**，然后用样本均值近似期望
+    - 不需要 Bellman 方程
+    - 不需要模型
+    - 仅仅依赖大数定律
+  - 模型无关（Model-Free）：不需要知道 MDP 的状态转移概率 $P (s', r\mid s, a)$​ 或奖励函数，仅从采样的交互数据中学习
+  - 直接从完整的经验片段（episode）中学习：使用整个回合的经验来更新估计，即从起点到终点的所有交互，而不是依赖于部分的价值函数估计
+
+#### 2.3.2 蒙特卡洛策略评估
+
+- 蒙特卡洛策略评估
+  - 目标和 DP 完全一致：给定策略 $\pi$，估计 $V_\pi (s)$
+  - 但是 DP 使用贝尔曼期望方程，MC 使用完整 episode 的回报
+  - 实现步骤
+    - 收集经验片段：运行策略 $\pi$，采样多个完整片段 $S_1,A_1,R_2,\cdots,S_k$​，直到回合结束
+    - 计算回报：在每个时间步 $t$，计算从 $t$ 开始到回合结束的折扣回报 $G_t$
+    - 更新价值函数，将每次访问状态 $s$ 时的 $G_t$ 取平均，作为 $v_{\pi}(s)$​​ 的估计
+  - 使用经验回报的样本均值替代期望回报
+
+    $$
+    v_{\pi}(s)\approx \frac {1}{N (s)} \displaystyle\sum_{i=1}^{N (s)} G_t^{(i)}
+    $$
+    - 其中 $N (s)$ 是状态 $s$ 在采样中被访问的次数，$G_t^{(i)}$ 是状态 $s$ 的第 $i$​ 次回报
+
+  - 必须要等到一个 episode 结束，才可以进行估计更新
+    - 因为 MC 的目标是**真实回报**，在 episode 没结束前，$G_t$ 还不确定，后续奖励还未知
+    - 所以 MC 天然适用于 episodic 任务
+  - 如何对同一个状态进行计数
+    - First-Visit：在一个 episode 中，只记录某个状态第一次出现时的回报 —— 每个 episode 对同一状态只贡献一次
+    - Every-Visit：在一个 episode 中，记录某个状态每次出现时的回报 —— 更快利用数据，在期望意义下仍然无偏
+    - 两者在样本无限时收敛到同一结果
+
+- 无偏性：样本均值满足大数定律：
+
+  $$
+  \frac {1}{N} \sum_{i=1}^N G_t^{(i)} \xrightarrow {a.s.} \mathbb {E}[G_t]
+  $$
+
+- 增量蒙特卡洛
+  - 直接保存所有 $G_t$ 不现实，因此使用增量更新
+  - Online：每次进行采样时，逐步更新价值估计，$\mu_k=\mu_{k-1}+\frac {1}{k}(x_k-\mu_{k-1})$
+  - 对于每个回报为 $G_t$ 的状态 $S_t$
+
+    $$
+        \begin {align*}
+        N (S_t)&\gets N (S_t)+1\\
+        V (S_t)&\gets V (S_t)+\frac {1}{N (S_t)}(G_t-V (S_t))
+        \end {align*}
+    $$
+
+  - 对于非平稳问题，当环境或策略在变时，旧数据权重指数衰减，但是不再严格无偏
+
+    $$
+    V (S_t)\leftarrow V (S_t)+\alpha\left (G_t-V (S_t)\right)
+    $$
+
+#### 2.3.3 蒙特卡洛控制
+
+- 在 MC 方法基础上加入策略改进，完成控制任务（学习策略）
+- 必然基于动作值函数
+  - 利用价值函数基于贪心方法进行策略改进需要 MDP 模型，而利用动作值函数则是 Model-Free
+
+    $$
+        \begin {align*}
+        \pi^{\prime}(s)&=\underset {a}{\operatorname*{\operatorname*{argmax}}} R_s^a+P_{ss^{\prime}}^aV (s^{\prime})\\
+        \pi^{\prime}(s)&=\underset {a}{\operatorname*{\operatorname*{\arg\max}}} Q (s,a)
+        \end {align*}
+    $$
+
+  - 其中，$Q (s,a)$ 本身就是
+
+    $$
+    Q^\pi (s,a) = \mathbb {E}[G_t \mid s,a]
+    $$
+
+  - 不需要知道 $P (s'|s,a)$，所以 MC Control **必然是基于动作值函数**
+
+- On-Policy 蒙特卡洛控制（Monte-Carlo Control）
+  - 一边用当前策略采样，一边评估该策略，再用贪婪原则改进策略
+  - 这和 DP 的策略迭代在逻辑上完全一致，只是 DP：精确期望，而 MC：样本估计
+  - 之前的纯贪婪方法不再适用，因为初期 $Q$ 不准，贪婪会 “锁死” 在次优动作，其他动作永远不被尝试
+  - 采用 $\epsilon$- 贪心策略：$1-\epsilon$ 的概率选择贪心动作保证利用（Exploit），$\epsilon$ 的概率选择随机动作保证探索（Explore），即
+
+    $$
+        \pi (a|s)=\left\{\begin {array}
+        {ll}\epsilon/m+1-\epsilon & \mathrm {if}\quad a^*=\arg\max Q (s,a) \\
+        \epsilon/m & \mathrm {otherwise}
+        \end {array}\right.
+    $$
+
+  - $\epsilon$- 贪心策略的证明
+
+    $$
+    \begin {align*}
+        v_{\pi^\prime}(s)=q_\pi (s,\pi^{\prime}(s)) & =\sum_{a}\pi^{\prime}(a|s) q_\pi (s,a) \\
+        & =\epsilon/m\sum_{a} q_\pi (s,a)+(1-\epsilon)\max_{a} q_\pi (s,a) \\
+        & \geq\epsilon/m\sum_{a} q_\pi (s,a)+(1-\epsilon)\sum_{a}\frac {\pi (a|s)-\epsilon/m}{1-\epsilon} q_\pi (s,a) \\
+        & =\sum_{a}\pi (a|s) q_\pi (s,a)=v_\pi (s)
+        \end {align*}
+    $$
+
+  - “贪心动作的 q 值 ≥ π(a|s) 加权的平均 q 值” 的证明
+
+    $$
+    (1-\epsilon)\max_a q_\pi (s,a)\ge (1-\epsilon)\sum_a\frac {\pi (a|s)-\epsilon/m}{1-\epsilon} q_\pi (s,a)
+    $$
+    - 上式等价于证明
+
+      $$
+      \max_a q_\pi (s,a)\ge\sum_a\frac {\pi (a|s)-\epsilon/m}{1-\epsilon} q_\pi (s,a)
+      $$
+
+    - 由于原策略 $\pi$ 是 ε- 贪心的，有
+
+      $$
+      \pi (a|s)\ge \epsilon/m \quad \forall a
+      $$
+
+    - 下面证明以下是一个合法的概率分布
+
+      $$
+      \tilde\pi (a|s)\triangleq\frac {\pi (a|s)-\epsilon/m}{1-\epsilon}
+      $$
+
+    - 证明其非负性与归一性：
+
+      $$
+      \begin {align*}
+      \text{非负性}&:\tilde\pi (a|s)\ge 0\\
+      \text{归一性}&:\sum_a\tilde\pi (a|s)=\frac {\sum_a\pi (a|s)-\sum_a\epsilon/m}{1-\epsilon}=\frac {1-\epsilon}{1-\epsilon}=1
+      \end {align*}
+      $$
+
+    - 对任意函数 $f (a)$ 和任意概率分布 $p (a)$，都有一个基本不等式：
+
+      $$
+      \max_a f (a)\ge\sum_a p (a) f (a)
+      $$
+      - 每一项 $f (a)\le \max_a f (a)$，对它们做加权平均，结果不可能超过最大值
+
+    - 应用 $f (a)=q_\pi (s,a)$，$p (a)=\tilde\pi (a|s)$
+
+      $$
+      \max_a q_\pi (s,a)\ge\sum_a \tilde\pi (a|s) q_\pi (s,a)
+      $$
+
+- 算法流程
+  1. 初始化：
+     - 动作价值函数 $Q (s, a) = 0$
+     - 计数器 $N (s, a) = 0$
+     - 初始策略 $\pi$ 为随机策略
+  2. 循环直到收敛（**对于每个 episode**）：
+     1. 根据当前策略 $\pi$ 执行一次完整的轨迹 $S_1, A_1, R_2, S_2, A_2, R_3, \ldots, S_T$。
+     2. 对轨迹中的每个状态 - 动作对 $(s, a)$：
+        - 计算从该状态起始的回报 $G_t$
+        - 更新计数器 $N (s, a)$：
+
+          $$
+          N (s, a) \leftarrow N (s, a) + 1
+          $$
+
+        - 更新动作价值函数：
+
+          $$
+          Q (s, a) \leftarrow Q (s, a) + \frac {1}{N (s, a)} \left [G_t - Q (s, a) \right]
+          $$
+
+     3. 更新策略为 $\epsilon$- 贪婪策略：
+        - 以 $1 - \epsilon$​ 概率选择贪婪动作
+        - 以 $\epsilon$ 概率随机探索
+
+- MC Control 算法为什么能收敛 ——Greedy in the Limit with Infinite Exploration（GLIE）
+  - 无限探索：确保每个状态 - 动作对 $(s,a)$ 都被反复采样
+
+    $$
+    \sum_t \mathbb I {(s_t,a_t)=(s,a)} = \infty
+    $$
+
+  - 极限贪婪：确保策略收敛至贪婪策略
+
+    $$
+    \epsilon_t \to 0
+    $$
+
+  - 取 $\epsilon=\frac {1}{N (s, a)}$​
+    - 初期 $\epsilon$ 大 → 多探索
+    - 后期 $\epsilon$​ 小 → 多利用
+    - 且满足：
+
+      $$
+      \sum_t \epsilon_t = \infty, \quad \epsilon_t \to 0
+      $$
+
+  - 在 GLIE 条件下
+
+    $$
+    Q (s,a) \xrightarrow {a.s.} q^*(s,a),\quad \pi \to \pi^*
+    $$
