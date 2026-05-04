@@ -9,53 +9,18 @@ import {
   Users,
   MessageSquareIcon,
 } from "lucide-react";
-import { pvConfig } from "@/config/pv";
+import { fetchPVData, type PVData } from "@/lib/api/pv";
+import { fetchLastCommit, type CommitInfo } from "@/lib/api/github";
+import {
+  listenGiscusMetadata,
+  type DiscussionData,
+} from "@/lib/api/giscus";
 
 interface PageInfoCardProps {
   owner: string;
   repo: string;
   filePath: string;
   pageUrl: string;
-}
-
-interface CommitInfo {
-  sha: string;
-  message: string;
-  author: string;
-  date: string;
-}
-
-interface PVData {
-  page_pv: number;
-  page_uv: number;
-  site_pv: number;
-  site_uv: number;
-}
-
-interface DiscussionData {
-  totalCommentCount: number;
-}
-
-/**
- * 将 UTC 时间字符串转为 本地时区 的 YYYY-MM-DD HH:mm:ss 格式
- * @param {string|Date} utcDate - GitHub 等返回的 UTC 时间字符串（如 2025-12-25T10:00:00Z）
- * @returns {string} 本地时间格式化字符串
- */
-function formatLocalDateTime(utcDate: string | Date): string {
-  const date = new Date(utcDate);
-
-  if (isNaN(date.getTime())) {
-    return "无效日期";
-  }
-
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  const hours = String(date.getHours()).padStart(2, "0");
-  const minutes = String(date.getMinutes()).padStart(2, "0");
-  const seconds = String(date.getSeconds()).padStart(2, "0");
-
-  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
 }
 
 export function PageInfoCard({
@@ -75,53 +40,15 @@ export function PageInfoCard({
     const fetchData = async () => {
       try {
         // Fetch commit info
-        const commitResponse = await fetch(
-          `https://api.github.com/repos/${owner}/${repo}/commits?path=${filePath}&page=1&per_page=1`,
-        );
-
-        if (commitResponse.ok) {
-          const commitData = await commitResponse.json();
-          if (commitData && commitData.length > 0) {
-            const commit = commitData[0];
-            setCommitInfo({
-              sha: commit.sha.substring(0, 7),
-              message: commit.commit.message.split("\n")[0],
-              author: commit.committer.login,
-              date: formatLocalDateTime(commit.commit.author.date),
-            });
-          }
+        const commit = await fetchLastCommit(owner, repo, filePath);
+        if (commit) {
+          setCommitInfo(commit);
         }
 
         // Fetch PV data
-        // 需要设置 x-bsz-referer 为 Referer, pageURL 不包含域名部分, 不能直接使用，需要用 window.location.origin
-        const pvResponse = await fetch(pvConfig.apiUrl, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${pvConfig.token}`,
-            "x-bsz-referer": window.location.origin,
-          },
-        });
-
-        if (pvResponse.ok) {
-          const pvResult = await pvResponse.json();
-          if (pvResult.success && pvResult.data) {
-            setPvData(pvResult.data);
-          }
-        }
-        
-        // Fetch discussion data
-        const discussionResponse = await fetch(
-          `https://giscus.app/api/discussions?repo=${owner}/${repo}&term=${encodeURIComponent(pageUrl)}&category=General&number=0&strict=false&last=15`,
-        );
-
-        if (discussionResponse.ok) {
-          const discussionResult = await discussionResponse.json();
-          if (discussionResult && discussionResult.discussion) {
-            setDiscussionData({
-              totalCommentCount:
-                discussionResult.discussion.totalCommentCount || 0,
-            });
-          }
+        const pv = await fetchPVData();
+        if (pv) {
+          setPvData(pv);
         }
       } catch (error) {
         console.error("Error fetching page info:", error);
@@ -132,6 +59,15 @@ export function PageInfoCard({
 
     fetchData();
   }, [owner, repo, filePath]);
+
+  // Listen for Giscus metadata events
+  useEffect(() => {
+    const cleanup = listenGiscusMetadata(pageUrl, (data) => {
+      setDiscussionData(data);
+    });
+
+    return cleanup;
+  }, [pageUrl]);
 
   if (loading) {
     return (

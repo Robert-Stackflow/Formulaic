@@ -20,6 +20,9 @@ export const giscusConfig = {
   // 是否启用反应
   reactionsEnabled: true,
 
+  // 是否发送元数据（用于获取评论数等信息）
+  emitMetadata: true,
+
   // 输入框位置
   inputPosition: "bottom" as const,
 

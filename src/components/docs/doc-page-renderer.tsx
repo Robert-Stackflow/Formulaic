@@ -168,6 +168,7 @@ export function DocPageRenderer({ source, slug }: DocPageRendererProps) {
           categoryId={giscusConfig.categoryId}
           mapping={giscusConfig.mapping}
           reactionsEnabled={giscusConfig.reactionsEnabled}
+          emitMetadata={giscusConfig.emitMetadata}
           inputPosition={giscusConfig.inputPosition}
           lang={giscusConfig.lang}
           loading={giscusConfig.loading}
