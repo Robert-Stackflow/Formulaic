@@ -1,0 +1,533 @@
+---
+title: 策略梯度
+description: 介绍策略梯度方法的基本原理，REINFORCE 算法以及优势函数等内容
+---
+
+## 2.7.1 策略梯度方法
+
+- 类似于函数逼近价值函数和动作值函数，可以直接对策略进行逼近，即 $\pi_{\theta}(s,a)=\mathbb {P}[a|s,\theta]$
+  - 基于价值的：学习价值函数，隐式的策略 —— 先学 “好不好”，再推 “怎么选”
+
+    $$
+    \pi (s)=\arg\max_a Q (s,a)
+    $$
+    - $\arg\max$**不可微**
+    - 连续动作空间无法枚举
+    - 随机策略不自然
+
+  - 基于策略的：学习参数化策略，没有价值函数 —— 直接学 “怎么选”
+
+    $$
+    \pi_\theta (s,a)=\mathbb {P}[a|s,\theta]
+    $$
+    - 给定状态 $s$，策略网络直接输出动作分布
+    - 更好的收敛性质，但是通常收敛到局部最优解
+    - 在高维或连续动作空间中更有效
+    - 可以学习随机策略
+    - 代价：目标函数复杂，梯度估计方差大，评估策略通常不高效
+
+  - Actor-Critic：学习价值函数和策略
+    - Actor：学策略 $\pi_\theta$
+    - Critic：学价值 $V$ 或 $Q$，指导 Actor
+
+- 策略目标函数的关键
+  - 如何评估策略 $\pi_{\theta}$​ 的质量？什么叫 “一个策略是好的”？
+  - $J (\theta)$ 是一个标量函数，输入是策略参数 $\theta$，输出是 “这个策略有多好”
+  - 在 Episodic 环境（任务有明确终止，如游戏、对话生成）中，从固定起点 $s_0$ 出发，看期望总回报（REINFORCE 方法）
+
+    $$
+    J (\theta) = V^{\pi_{\theta}}(s_0) = \mathbb {E}_{\pi_{\theta}}[v_0]=\mathbb {E}_{\pi_{\theta}} \left [\displaystyle\sum_{t=0}^{T-1} \gamma^t R_t \,\Big|\, s_0 \right]
+    $$
+
+  - 在连续环境（连续任务，如机器人控制、推荐系统）中，使用值函数的平均值
+
+    $$
+        J_{avV}(\theta)=\displaystyle\sum_sd^{\pi_\theta}(s) V^{\pi_\theta}(s)
+    $$
+
+  - 在连续环境中，使用每个时间步的平均奖励
+
+    $$
+    J_{avR}(\theta)=\displaystyle\sum_sd^{\pi_\theta}(s)\displaystyle\sum_a\pi_\theta (s,a)\mathcal {R}_s^a
+    $$
+
+  - 其中，$d^{\pi_\theta}(s)$ 是 $\pi_\theta$ 的稳态概率分布，表示 “长期来看，策略的平均表现”
+
+- 对策略目标函数 $J (\theta)$ 使用梯度上升法
+  - 如果一个动作导致了高回报，就提高它的概率；如果导致低回报，就降低它的概率
+  - 因此，我们要做的不是最小化损失，而是**最大化收益**：
+
+    $$
+    \Delta\theta=\alpha\nabla_\theta J (\theta)\\
+    \theta \leftarrow \theta+\alpha \nabla_\theta J (\theta)
+    $$
+
+  - 工程上一般使用梯度下降方法，因此可以定义损失：
+
+    $$
+    \mathcal {L}(\theta)
+    =
+    -\mathbb {E}
+    \left [\log \pi_\theta (a|s)
+    \cdot \hat A (s,a)
+    \right]
+    $$
+
+  - 策略梯度为
+
+    $$
+    \nabla_\theta J (\theta)=
+    \begin {pmatrix}
+    \frac {\partial J (\theta)}{\partial\theta_1} \\
+    \vdots \\
+    \frac {\partial J (\theta)}{\partial\theta_n}
+    \end {pmatrix}
+    $$
+
+  - 通过有限差分计算梯度：对于每个维度 $k\in [1,n]$，估计目标函数的 k 阶偏导数
+
+    $$
+    \frac {\partial J (\theta)}{\partial\theta_k}\approx\frac {J (\theta+\epsilon\mathbf {u}_k)-J (\theta)}{\epsilon}
+    $$
+
+- 策略目标无法直接求解
+  - 考虑最直观的 Episodic 目标
+
+    $$
+    J (\theta)=\mathbb {E}_{\tau\sim\pi_\theta}\left [R (\tau)\right]
+    $$
+    - $\tau=(s_0,a_0,s_1,a_1,\dots)$ 是一条完整轨迹
+    - $R (\tau)=\sum_{t=0}^{T-1}\gamma^t R_t$
+
+  - 积分得到
+
+    $$
+    J (\theta)=\sum_\tau P (\tau|\theta) R (\tau)
+    $$
+
+  - 直接求导
+
+    $$
+    \nabla_\theta J (\theta)=\sum_\tau R (\tau)\nabla_\theta P (\tau|\theta)
+    $$
+
+  - 问题是轨迹概率是什么？
+
+    $$
+    P (\tau|\theta)=\rho (s_0)\prod_{t=0}^{T-1}\pi_\theta (a_t|s_t),P (s_{t+1}|s_t,a_t)
+    $$
+    - $\pi_\theta$：我们控制
+    - $P (s'|s,a)$​：环境给的，未知、不可导
+
+  - 如果强制求导，有
+
+    $$
+    \nabla_\theta P (\tau|\theta)
+    =
+    \nabla_\theta
+    \left (\rho (s_0)
+    \prod_t
+    \pi_\theta (a_t|s_t)
+    P (s_{t+1}|s_t,a_t)
+    \right)
+    $$
+
+  - 环境转移概率不可导，且夹在乘积里，无法直接拿出来
+
+    $$
+    \nabla_\theta P (s_{t+1}|s_t,a_t)=0
+    $$
+
+  - 同时，状态分布 $d^{\pi_\theta}(s)$ 依赖 $\theta$
+
+    $$
+    \begin {align*}
+    J (\theta)&=\sum_s d^{\pi_\theta}(s)\sum_a\pi_\theta (a|s) r (s,a)\\
+    \nabla_\theta J (\theta)
+    &=
+    \sum_s
+    \underbrace {\nabla_\theta d^{\pi_\theta}(s)}_{\text{极其复杂}}
+    \sum_a\pi_\theta (a|s) r (s,a)
+    +
+    \sum_s d^{\pi_\theta}(s)\sum_a\nabla_\theta\pi_\theta (a|s) r (s,a)
+    \end {align*}
+    $$
+
+  - 这里的 $\nabla_\theta d^{\pi_\theta}(s)$ 等价于 “策略参数变化，未来所有状态分布如何改变”，而这是一个**无限时序、递归依赖、不可显式计算**的对象
+  - 因此，**直接对策略目标函数求梯度是行不通的**
+
+- 策略梯度定理（Policy Gradient Theorem）
+  - 根据上述推导，如果我不知道环境怎么转移，但我知道：在状态 $s$ 下选了动作 $a$，最后赢了还是输了，我能不能合理地调整这个动作的概率？
+  - 似然比（Likelihood ratios）—— 把 “概率的梯度” 变成 “概率 × 可计算的量”
+
+    $$
+    \begin {align*}
+    \nabla_\theta\pi_\theta (s,a) & =\pi_\theta (s,a)\frac {\nabla_\theta\pi_\theta (s,a)}{\pi_\theta (s,a)} \\
+    & =\pi_\theta (s,a)\nabla_\theta\log\pi_\theta (s,a)\\
+    \end {align*}
+    $$
+
+  - Score 函数即为 $\nabla_\theta\log\pi_\theta (s,a)$
+  - 回到刚刚的公式：
+
+    $$
+    \nabla_\theta J (\theta)=\sum_\tau R (\tau)\nabla_\theta P (\tau|\theta)
+    $$
+
+  - 代入：
+
+    $$
+    \nabla_\theta P (\tau|\theta)=P (\tau|\theta)\nabla_\theta\log P (\tau|\theta)
+    $$
+
+  - 于是：
+
+    $$
+    \nabla_\theta J (\theta)=\mathbb {E}_{\tau\sim\pi_\theta}\left [R (\tau)\nabla_\theta\log P (\tau|\theta)\right]
+    $$
+
+  - 再看 $\log P (\tau|\theta)$
+
+    $$
+    \log P (\tau|\theta)
+    =
+    \log\rho (s_0)
+    +
+    \sum_t
+    \log\pi_\theta (a_t|s_t)
+    +
+    \sum_t
+    \log P (s_{t+1}|s_t,a_t)
+    $$
+
+  - 对 $\theta$ 求导，得到
+
+    $$
+    \nabla_\theta\log P (\tau|\theta)
+    =\sum_t
+    \nabla_\theta\log\pi_\theta (a_t|s_t)
+    $$
+
+  - 上式中，初始分布 $\rho$ 不依赖 $\theta$，环境转移概率不依赖 $\theta$，全部消失
+  - 其本质在于：改变策略，只能通过 “改变动作选择概率” 来影响未来
+  - 策略不会直接控制环境，只能控制 $\pi_\theta (a|s)$，所有未来的改变，都会被 “压缩” 进：$\nabla_\theta\log\pi_\theta (a_t|s_t)$
+
+- 对于任意可微策略和任意策略目标函数，策略梯度为
+
+  $$
+  \nabla_\theta J (\theta)=\mathbb {E}_{\tau\sim\pi_\theta}\left [R (\tau)\nabla_\theta\log\pi_\theta (a_t|s_t)\right]
+  $$
+  - $R (\tau)$ 可以选 $Q^{\pi_\theta}(s,a)$
+  - 梯度中没有 $\nabla_\theta d^{\pi_\theta}(s)$，不需要对状态分布求导，这是策略梯度能成立的关键原因
+  - $J (\theta)$ 本身不可直接计算，只能用采样估计
+  - 上式子正是 $J (\theta)$ 的蒙特卡洛估计形式
+
+## 2.7.2 REINFORCE 算法（蒙特卡洛策略梯度）
+
+- REINFORCE 是策略梯度的**最原始实现**
+- 具体过程，在时间步 $t$：
+  - 在状态 $s_t$
+  - 随机选了一个动作 $a_t$
+  - 整条轨迹结束后，计算整条轨迹的真实总回报 $G_t$ 作为 $Q_{\pi_\theta}(s,a)$​ 的无偏估计
+
+    $$
+    \begin {align*}
+    G_t&=\sum_{k=t}^{T-1}\gamma^{k-t} r_k\\
+    \mathbb {E}[G_t|s_t,a_t]&=Q^{\pi_\theta}(s_t,a_t)
+    \end {align*}
+    $$
+    - “如果这个动作带来了高回报，就提高它被选中的概率”
+    - 如果 $G_t$ 大 → 提高 $a_t$ 在 $s_t$ 被选中的概率
+    - 如果 $G_t$​ 小 → 降低它的概率
+
+  - 更新公式：“奖励 × 调整方向”
+
+    $$
+    \Delta\theta_{t}= \alpha\nabla_\theta\log\pi_\theta (s_t,a_t) G_t
+    $$
+
+- REINFORCE 无偏，但是方差极大；收敛慢，对长序列极不稳定
+  - 用作权重的总回报 $v_t$ 同时包含了当前动作 $a_t$ 的因果影响，以及大量由未来状态转移和未来随机动作引入、但与 $a_t$ 无关的随机性
+  - 为什么不用 TD？不用 $Q$​？—— REINFORCE 的目标是保证无偏
+
+## 2.7.3 优势函数
+
+- 由于我们不能穷举所有状态 / 动作，通常用采样估计期望值
+  - $\hat {g} = \frac {1}{N} \sum_{i=1}^N \nabla_\theta \log \pi_\theta (a_i|s_i) \cdot R_i$
+  - 这就是**无基线策略梯度估计**，但它存在**高方差问题**
+  - $R_i$​（奖励总回报）可能受未来长序列动作影响，变动范围大
+  - 在实际中，使用状态值函数作为采样近似代替 $R$
+  - $\nabla_\theta \log \pi_\theta (a_i|s_i)$ 的值乘上一个波动剧烈的 $R_i$​ 会造成不稳定
+  - 当 $R$ 本身变动大，梯度估计的方差也大，会导致训练过程不稳定（更新方向不一致，收敛慢或震荡）
+- REINFORCE 存在高方差问题
+  - $R$​ 是从整个轨迹累积下来的，它同时包含了 “这个状态下动作的影响”+“后面所有随机性” 的噪声
+  - 例如，在某个状态 $s_t$ 随机选择了动作 $a_t$，则 $R_t$ 包含了后续奖励的总和；即使 $a_t$ 本身并不重要，更新的梯度里也会因为包含后续随机事件带来的波动而无法准确学习到动作 $a_t$​ 的准确性
+  - 如，在 $s_3$ 选了一个 “无关紧要” 的动作，后面 $s_7$ 因为环境随机性中了大奖，那么 REINFORCE 会：把 $s_3$ 的动作 狠狠奖励一顿
+- 引入基线函数（baseline）
+  - 有些状态就是 “天生收益高”，比如游戏开始后就得高分，那再高的 $R$ 也未必说明这个动作好
+  - 因此需要考虑：这一步选这个动作，**是比平常好，还是比平常差？**
+  - 而基线就是用来 “减去平均值”，消除状态本身引起的高回报偏差，即把回报改为：
+
+    $$
+    G_t \longrightarrow G_t - B (s_t)
+    $$
+
+  - 其中 $B (s_t)$ 表示 “在这个状态下的平均水平”
+  - 如此，更新梯度时只依赖相对表现，消除了很多不相关的噪声
+
+- 被选择的基线函数 $B (s)$ 要避免引入额外偏差以保证无偏性，同时减少方差而不改变期望，即满足
+
+  $$
+  \begin {align*}
+  \mathbb {E}_{\pi_\theta}\left [\nabla_\theta\log\pi_\theta (s,a) B (s)\right] & =\displaystyle\sum_{s\in S} d^{\pi_\theta}(s)\displaystyle\sum_a\nabla_\theta\pi_\theta (s,a) B (s) \\
+  & =\displaystyle\sum_{s} d^{\pi_\theta} B (s)\nabla_\theta\displaystyle\sum_{a}\pi_\theta (s,a) \\
+  & =0
+  \end {align*}
+  $$
+
+- 如果 baseline 只依赖状态，那么最自然的选项便是 $V_\pi (s)$，即 “这一步动作带来的真实收益” 减去 “在当前策略 $\pi$​ 下对动作分布的期望收益”
+
+  $$
+  V_\pi (s) = \mathbb {E}_{a \sim \pi (\cdot|s)}[Q_\pi (s,a)]
+  $$
+
+- 因此 $B (s)=V^{\pi_\theta}(s)$，则有优势函数 $A^{\pi_\theta}(s,a)$
+
+  $$
+  \begin {align*}
+  A^{\pi_\theta}(s,a) & =Q^{\pi_\theta}(s,a)-V^{\pi_\theta}(s) \\
+  \nabla_\theta J (\theta) & =\mathbb {E}_{\pi_\theta}\left [\nabla_\theta\log\pi_\theta (s,a)\right.A^{\pi_\theta}(s,a)]
+  \end {align*}
+  $$
+
+- 引入优势函数后，REINFORCE → Advantage REINFORCE
+- 优势函数（Advantage Function）
+  - 定义：优势函数 $A_t$ 衡量当前动作 $a_t$ 相对于当前策略下平均动作的优势
+  - 实际上表示在状态 $s$ 下，选取动作 $a$ 相对于其他情况的优势
+  - 优势函数可以显著减少策略梯度的方差，在后续 Actor–Critic 框架中，优势函数通常由 Critic 估计
+
+    $$
+    \begin {align*}
+    V_v (s) & \approx V^{\pi_\theta}(s) \\
+    Q_w (s,a) & \approx Q^{\pi_\theta}(s,a) \\
+    A (s,a) & =Q_w (s,a)-V_v (s)
+    \end {align*}
+    $$
+
+- 引入优势函数后，解决了 REINFORCE 算法中的高方差问题
+- 但是在 REINFORCE 算法中，必须跑完整条轨迹才能更新，这在长 episode、连续任务、实时系统中几乎不可接受
+- 而真 TD 误差 $\delta^{\pi_\theta}$ 正好是优势函数的无偏估计，因此可以使用 TD 误差替换 REINFORCE 中的回报
+
+  $$
+  \begin {align*}
+  \delta^{\pi_\theta}&=r+\gamma V^{\pi_\theta}(s^{\prime})-V^{\pi_\theta}(s)\\
+  \mathbb {E}_{\pi_\theta}\left [\delta^{\pi_\theta}|s,a\right] & =\mathbb {E}_{\pi_\theta}\left [r+\gamma V^{\pi_\theta}(s^{\prime})|s,a\right]-V^{\pi_\theta}(s) \\
+  & =Q^{\pi_\theta}(s,a)-V^{\pi_\theta}(s) \\
+  & =A^{\pi_\theta}(s,a)\\
+  \nabla_\theta J (\theta) & =\mathbb {E}_{\pi_\theta}\left [\nabla_\theta\log\pi_\theta (s,a)\right.\delta^{\pi_\theta}]\\
+  \Delta\theta&=\alpha\nabla_\theta\log\pi_\theta (s,a)\delta
+  \end {align*}
+  $$
+  - 该等式成立的前提是 $V(s)$ 为真实价值函数；在实际 Actor–Critic 中，使用 $V_w$ 近似，从而引入偏差但换取低方差与在线性
+  - 因此在实际情况，可以使用估计 TD 误差 $\delta_v=r+\gamma V_v (s^{\prime})-V_v (s)$​
+  - TD 误差本身并不等同于优势函数，而是一个以优势函数为条件期望的随机样本；当 $V_w\to V^{\pi}$ 时，该估计在期望意义下趋于无偏
+
+- 广义优势估计（Generalized Advantage Estimation, GAE）
+  - 公式定义：
+
+    $$
+    A_t^{\text{GAE}(\gamma, \lambda)} = \displaystyle\sum_{l=0}^{\infty} (\gamma \lambda)^l \delta_{t+l}
+    $$
+
+  - 或递推形式：
+
+    $$
+    A_t^{\text{GAE}(\gamma, \lambda)} = \delta_t + \gamma \lambda A_{t+1}^{\text{GAE}(\gamma, \lambda)}
+    $$
+
+  - 其中：
+    - $\delta_t = R_t + \gamma V (s_{t+1}) - V (s_t)$：一步 TD 误差
+    - $\gamma$：折扣因子，控制未来奖励的重要性
+    - $\lambda$：平滑参数，控制 TD 误差的加权衰减
+    - $l$：从当前时间步 $t$​ 开始累积 TD 误差的步数
+
+- 从 TD (0) 到 GAE (λ) 的几种不同的优势函数
+  - TD (0)
+    - 一步回报
+
+      $$
+      G_t^{(1)} = R_t + \gamma V (s_{t+1})
+      $$
+
+    - TD 误差
+
+      $$
+      \delta_t = R_t + \gamma V (s_{t+1}) - V (s_t)
+      $$
+
+    - 最小方差、最大偏差、信用只分配给下一步
+
+  - n-step TD：延长信用分配
+    - n-step 回报
+
+      $$
+      G_t^{(n)}=\sum_{k=0}^{n-1}\gamma^k r_{t+k}-\gamma^n V (s_{t+n})
+      $$
+
+    - n-step 优势
+
+      $$
+      \begin {align*}
+      A_t^{(n)}
+      &= G_t^{(n)} - V (s_t) \\
+      &=
+      \left (R_t + \gamma r_{t+1} + \cdots + \gamma^{n-1} r_{t+n-1}
+      + \gamma^n V (s_{t+n})
+        \right)
+      - V (s_t)\\
+      &=\sum_{k=0}^{n-1}\gamma^k r_{t+k}
+      + \gamma^n V (s_{t+n})
+      - V (s_t)
+        \end {align*}
+      $$
+
+    - n-step 优势 = n 个 TD 误差的折扣和
+      - $A_t^{(n)}$
+      - TD 误差展开
+
+        $$
+        \begin {align*}
+        \delta_t &= R_t + \gamma V (s_{t+1}) - V (s_t) \\
+        \gamma\delta_{t+1}
+        &= \gamma r_{t+1} + \gamma^2 V (s_{t+2}) - \gamma V (s_{t+1}) \\
+        \gamma^2\delta_{t+2}
+        &= \gamma^2 r_{t+2} + \gamma^3 V (s_{t+3}) - \gamma^2 V (s_{t+2}) \\
+        &\vdots \\
+        \gamma^{n-1}\delta_{t+n-1}
+        &= \gamma^{n-1} r_{t+n-1}
+        +* \gamma^n V (s_{t+n})
+        - \gamma^{n-1} V (s_{t+n-1})
+          \end {align*}
+        $$
+
+      - TD 误差求和
+
+        $$
+        \sum_{l=0}^{n-1}\gamma^l \delta_{t+l}
+        =\sum_{k=0}^{n-1}\gamma^k r_{t+k}
+        + \gamma^n V (s_{t+n})
+        - V (s_t)
+        $$
+
+      - 从而得到关键恒等式
+
+        $$
+        A_t^{(n)}=\sum_{l=0}^{n-1}\gamma^l \delta_{t+l}
+        $$
+
+    - TD (0) 的直接推广、n 控制 “向未来看多远”、n 越大 → 偏差 ↓ 方差 ↑
+
+  - TD (λ)：对所有 n-step 的加权平均
+    - λ - 回报
+
+      $$
+      G_t^{(\lambda)}=(1-\lambda)\sum_{n=1}^{\infty}\lambda^{n-1} G_t^{(n)}
+      $$
+
+    - λ - 优势
+
+      $$
+      \begin {align*}
+      A_t^{(\lambda)}
+      &= G_t^{(\lambda)} - V (s_t) \\
+      &= (1-\lambda)\sum_{n=1}^{\infty}\lambda^{n-1}
+      \big (G_t^{(n)} - V (s_t)\big) \\
+      &= (1-\lambda)\sum_{n=1}^{\infty}\lambda^{n-1}
+      A_t^{(n)}
+      \end {align*}
+      $$
+
+    - TD (λ) 不是一种新回报，而是所有 n-step 的融合
+
+  - GAE (λ)：把 TD (λ)“改写” 为 TD 误差的折扣和
+    - 定义 TD 误差
+
+      $$
+      \delta_t = R_t + \gamma V (s_{t+1}) - V (s_t)
+      $$
+
+    - 广义优势估计
+
+      $$
+      A_t^{\text{GAE}(\lambda)}
+      =
+      \sum_{l=0}^{\infty}
+      (\gamma\lambda)^l
+      \delta_{t+l}
+      $$
+
+    - 等价关系推导
+      - 将”n-step 优势 = n 个 TD 误差的折扣和 “代入 λ - 优势
+
+        $$
+        A_t^{(\lambda)}
+        =(1-\lambda)
+        \sum_{n=1}^{\infty}
+        \lambda^{n-1}
+        \sum_{l=0}^{n-1}
+        \gamma^l \delta_{t+l}
+        $$
+
+      - 交换求和顺序，原结构中，外层对 n 求和，内层对 l=0,…,n−1；改为外层对 l 求和，内层对 n ≥ l+1 求和
+
+        $$
+        \begin {align*}
+        A_t^{(\lambda)}
+        &=
+        (1-\lambda)
+        \sum_{l=0}^{\infty}
+        \gamma^l \delta_{t+l}
+        \sum_{n=l+1}^{\infty}
+        \lambda^{n-1}
+        \end {align*}
+        $$
+
+      - 计算内层级数
+
+        $$
+        \sum_{n=l+1}^{\infty}\lambda^{n-1}=\lambda^l \sum_{k=0}^{\infty}\lambda^k=\frac {\lambda^l}{1-\lambda}
+        $$
+
+      - 代回去得到
+
+        $$
+        \begin {align*}
+        A_t^{(\lambda)}
+        &=
+        (1-\lambda)
+        \sum_{l=0}^{\infty}
+        \gamma^l \delta_{t+l}
+        \cdot
+        \frac {\lambda^l}{1-\lambda} \\
+        &=
+        \sum_{l=0}^{\infty}
+        (\gamma\lambda)^l
+        \delta_{t+l}
+        \end {align*}
+        $$
+
+      - 由此可得
+
+        $$
+        A_t^{\text{GAE}(\lambda)}
+        \equiv
+        A_t^{(\lambda)}
+        =
+        G_t^{(\lambda)} - V (s_t)
+        $$
+
+    - GAE (λ) 不是一种 “近似 TD (λ)” 的方法，它就是 TD (λ) 在 Actor–Critic 中的优势形式重写
+    - 但在实现时
+      - 由于 GAE (λ) 是无限求和，因此会截断有限 horizon，“截断的 GAE (λ)” ≠ 理论上的无限和
+      - TD (λ) / GAE (λ) 里的回报，并不是真实 return，而是 “bootstrapping 估计”，包含一定偏差
+      - λ 一般用于控制是否更信任价值函数，还是更信任真实奖励序列

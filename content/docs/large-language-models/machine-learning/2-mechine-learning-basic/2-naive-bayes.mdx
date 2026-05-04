@@ -1,0 +1,173 @@
+---
+title: 朴素贝叶斯理论
+description: 介绍朴素贝叶斯分类器的基本概念、查询似然模型、基于翻译的语言模型及基于 KL 距离模型等内容
+---
+
+## 2.1 基本概念
+
+- 以文本分类任务为例
+  - 形式化定义：给定文档空间 $X$，类别集合 $C=\{c_1,\cdots,c_j\}$，则训练集 $D={\langle d,c\rangle \in X\times C}$，需要学习一个算法，得到分类器 $\gamma:X\rightarrow C$，确定文档 $d$ 最可能属于的类别
+
+  - 文本的表示可以用 One-Hot 编码或 TF-IDF 表示
+
+### 2.1.1 One-Hot 表示
+
+- 相互独立地表示语料中的每个词，将每个词表示为一个稀疏向量，其维度是词典大小
+- 不考虑单词之间的关联，不能表示词语的重要性，语义信息被全部丢失
+
+### 2.1.2 TF - IDF
+
+- TF-IDF 全称为（Term Frequency-Inverse Document Frequency，词频 - 逆文档频率）
+
+$$
+TF-IDF (t,d,D)=TF (t,d)\cdot IDF (t,D)
+$$
+
+- 衡量一个词语在文档中的重要性，来评估该词对于整个文档集合的区分能力
+- 缺点：忽略了词语的语义信息，不能捕捉上下文关系
+- 词频（TF，Term Frequency）：一个词语在文档中出现的频率，表示词语在单个文档中的相对重要性，未考虑在整个文档集合中的普遍性
+  $$
+  TF (t,d)=\frac {f_t}{N}
+  $$
+- 逆文档频率（IDF，Inverse Document Frequency）
+  - 一个词语在整个文档集合中的重要性，其中 $|d\in D:t\in d|$ 表示包含词语 $t$ 的文档数
+  - 若一个词在多个文档中都频繁出现，其区分能力较低，其 IDF 值也较低
+    $$
+    IDF (t,D)=\log\frac {|D|}{1+|d\in D:t\in d|}
+    $$
+
+## 2.2 朴素贝叶斯分类器
+
+- 文档 $d$ 的类别是 $c$ 的概率公式是一个多项式模型
+
+  $$
+  P (c\mid d)=P (d\mid c) P (c)/P (d)\propto P (d\mid c) P (c)=P (c)\prod_{1\leq k\leq n_{d}} P (t_{k}\mid c)
+  $$
+
+### 2.2.1 查询似然模型（Query Likelihood Model，QLM）
+
+$$
+\begin {align*}
+RSV (Q,D)&=P (Q|D)=P (Q|M_D)=P (q_1q_2\cdots q_m|M_D)\\
+&=P (q_1|M_D)\cdots P (q_m|M_D)=\Pi_{w\in Q} P (w|M_D)^{c (w,Q)}
+\end {align*}
+$$
+
+- 即需要估计文档 $D$ 的一元模型 $M_D$，即求 $P (w|M_D)$
+- 平滑技术
+  - Jelinek-Mercer 平滑：$p (w|D)=\lambda P_{ML}(w|D)+(1-\lambda) P (w|C)$
+  - $p (w|D)=\frac {c (w,D)+\mu P (w|C)}{|D|+\mu}$
+  - $p (w|D)=\frac {max (c (w,D)-\delta,0)}{|D|}+\frac {\delta|D|_{\mu}}{|D|} p (w|C)$
+- 缺点：无法解决词语失配问题，如查询中用词和文档中用词不一致
+
+### 2.2.2 基于翻译的语言模型
+
+$$
+P (Q|D)=\Pi_i P (q_i|D)=\Pi_i\sum_jP (q_i|w_j) P (w_j|M_D)
+$$
+
+- 其中，$P (q_i|w_j)$ 为翻译概率，可以通过同近义词构造
+
+### 2.2.3 基于 KL 距离（相对熵）模型
+
+- KL 距离定义
+
+  $$
+  D_{KL}(P\|Q)=\sum_{x\in\mathcal {X}} P (x)\log\frac {P (x)}{Q (x)}
+  $$
+
+- 文档打分公式
+
+  $$
+  Score (Q,D)=\log\frac {P (Q\mid M_D)}{P (Q\mid M_C)}
+  $$
+
+  其中
+  - $M_D$：文档 $D$ 的语言模型
+  - $M_C$：集合语料的背景模型
+  - $P (Q\mid M_D)$：文档 $D$ 的查询似然模型
+
+- 将查询视作词袋后的展开
+
+  $$
+  Score (Q,D)
+  =\sum_{q_i\in Q} tf (q_i,Q)\cdot \frac {P (q_i\mid M_D)}{P (q_i\mid M_C)}
+  $$
+
+  进一步可写成（使用查询模型 $M_Q$）：
+
+  $$
+  Score (Q,D)\propto
+  \sum_{q_i\in Q} P (q_i\mid M_Q)\cdot
+  \frac {P (q_i\mid M_D)}{P (q_i\mid M_C)}
+  $$
+
+  继续变形：
+
+  $$
+  \begin {align*}
+  &=\sum_{q_i\in Q} P (q_i\mid M_Q)\cdot\frac {P (q_i\mid M_D)}{P (q_i\mid M_Q)}
+  -\sum_{q_i\in Q} P (q_i\mid M_Q)\cdot\frac {P (q_i\mid M_C)}{P (q_i\mid M_Q)}\\
+  &=-KL (M_Q,M_D) + KL (M_Q,M_C)
+  \end {align*}
+  $$
+
+- 与文档相关的部分
+  $$
+  -KL (M_Q,M_D)
+  =\sum_{q_i\in Q} P (q_i\mid M_Q)\log P (q_i\mid M_D)
+  -\sum_{q_i\in Q} P (q_i\mid M_Q)\log P (q_i\mid M_Q)
+  $$
+- 去掉与文档无关的常数后，最终可用于排序的得分
+
+  $$
+  Score (Q,D)\propto
+  \sum_{q_i\in Q} P (q_i\mid M_Q)\log P (q_i\mid M_D)
+  $$
+
+### 2.2.4 朴素贝叶斯分类的目标
+
+朴素贝叶斯分类的目标是找到具有最大后验概率的类别：
+
+$$
+c_{\mathrm {map}}
+=\arg\max_{c\in\mathbb {C}} \hat {P}(c\mid d)
+=\arg\max_{c\in\mathbb {C}} \hat {P}(c)\prod_{k=1}^{n_d}\hat {P}(t_k\mid c)
+$$
+
+利用对数将小概率连乘转为求和：
+
+$$
+c_{\mathrm {map}}
+=\arg\max_{c\in\mathbb {C}}
+\left [\log\hat {P}(c)+\sum_{k=1}^{n_d}\log\hat {P}(t_k\mid c)
+\right]
+$$
+
+利用极大似然估计法从训练数据估计参数：
+
+- 先验概率
+
+  $$
+  \hat {P}(c)=\frac {N_c}{N}
+  $$
+
+- 条件概率
+  $$
+  \hat {P}(t\mid c)=\frac {T_{ct}}{\sum_{t'\in V} T_{ct'}}
+  $$
+
+其中
+
+- $T_{ct}$ 为类别 $c$ 中词 $t$ 的出现次数
+- 词的出现位置相互独立，即 $\hat {P}(t_{k_1}\mid c)=\hat {P}(t_{k_2}\mid c)$（若两者为相同词）
+
+零概率问题：若词 $t$ 未出现在类别 $c$ 中，则 $\hat {P}(t\mid c)=0$
+
+为避免此问题，引入加一平滑：
+
+$$
+\hat {P}(t\mid c)=\frac {T_{ct}+1}{\sum_{t'\in V}(T_{ct'}+1)}
+$$
+
+词汇表大小为 $|V|=B$，分母等价于 $\sum_{t'\in V} T_{ct'} + B$

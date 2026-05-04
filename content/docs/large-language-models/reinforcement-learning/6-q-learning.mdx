@@ -1,0 +1,160 @@
+---
+title: Q-Learning
+description: 介绍 Q-Learning 算法的基本原理，重要性采样以及从算子与不动点的角度看强化学习等内容
+---
+
+- Q-learning 是一种 off-policy 的 TD 控制算法，通过 “假设下一步采取最优动作（max）”，来直接学习最优动作价值函数 $Q^*$，与实际行为策略无关
+- 基本思想
+  - Off-Policy 学习
+  - 希望观察他人的行为 / 利用旧策略来学习
+  - 希望遵循探索性策略来学习最优策略
+  - 希望遵循一个策略来学习多个策略
+
+## 2.5.1 重要性采样
+
+- 离策略学习
+  - 目标策略 $\pi$：用于更新值函数的策略，即 $\pi^*(s) = \displaystyle\arg\max_a Q (s,a)$
+  - 行为策略 $\mu$：实际选择动作的策略，在当前状态下，下一步动作从行为策略采样，即 $A_{t+1}\sim \mu (\cdot|S_t)$
+  - 目标：学习最优策略 $\pi^*$，即 $q_*(s,a)$
+- 重要性采样（Importance Sampling）
+  - 如果你想估计：
+
+    $$
+    \mathbb {E}_{X \sim P}[f (X)]
+    $$
+
+  - 但你手头的数据却来自另一个分布 $Q$，怎么办？
+  - 数学技巧：如何估计另一个分布的期望
+
+    $$
+    \begin {align*}
+    \mathbb {E}_{X\sim P}[f (X)] & =\sum P (X) f (X) \\
+    & =\sum Q (X)\frac {P (X)}{Q (X)} f (X) \\
+    & =\mathbb {E}_{X\sim Q}\left [\frac {P (X)}{Q (X)} f (X)\right]
+    \end {align*}
+    $$
+
+  - 用 $Q$ 采样，但用 $\frac {P}{Q}$ 修正偏差
+
+- 离策略蒙特卡洛：利用从 $\mu$ 得到的回报来评估 $\pi$
+
+  $$
+  G_t^{\pi/\mu}=\frac {\pi (A_t|S_t)}{\mu (A_t|S_t)}\frac {\pi (A_{t+1}|S_{t+1})}{\mu (A_{t+1}|S_{t+1})}\ldots\frac {\pi (A_T|S_T)}{\mu (A_T|S_T)} G_t\\
+  V (S_t)\leftarrow V (S_t)+\alpha\left (G_t^{\pi/\mu}-V (S_t)\right)
+  $$
+  - 缺点：方差过大；如果 $\mu$ 为 0 该方法失效
+  - 若存在状态–动作对 $(s,a)$，使得 $\mu (a|s)=0$ 且 $\pi (a|s)>0$
+  - 则重要性采样比率 $\frac {\pi (a|s)}{\mu (a|s)}$ 将变为无穷大，导致估计不稳定
+  - 这是 Support mismatch (支持集不重叠) 问题：目标策略选择了行为策略从未选择过的动作，无法通过行为策略的数据来估计目标策略的价值
+
+- 离策略 TD 学习：基于重要性采样，给 TD 目标添加权重，即 $R+\gamma V (S^\prime)$
+
+  $$
+  V (S_{t}) \leftarrow V (S_{t})+
+  \alpha\left (\frac {\pi (A_{t}|S_{t})}{\mu (A_{t}|S_{t})}\left (R_{t+1}+\gamma V (S_{t+1})\right)-V (S_{t})\right)
+  $$
+  - 依然存在高方差和支持集不重叠问题
+
+- 为什么二者需要重要性采样？
+  - 只要你的更新目标里包含 “对目标策略 $\pi$ 下动作的期望”，而你的数据来自另一个策略 $\mu$​，就必须使用重要性采样
+  - Q-learning 之所以不需要重要性采样，是因为它根本不在估计任何策略的期望，而是在逼近 Bellman 最优算子
+  - 离策略 MC 的目标是从行为策略 $\mu$ 中采样轨迹，来评估并改进某个目标策略 $\pi$ 的价值
+
+## 2.5.2 Q-Learning 的实现
+
+- Q-Learning 的关键突破：**完全绕开重要性采样**
+  - Q-learning 根本不在做策略评估，没有 $\pi$，没有对动作分布取期望
+  - Q-Learning 学的是什么？不是 $q_\pi$，而是最优动作价值函数
+  - 考虑动作值函数 $Q (s,a)$，不需要重要性采样
+  - 不存在用 $\mu$ 的分布去估计 $\pi$​ 的期望
+  - Q-Learning 直接对 Bellman 最优方程进行随机近似，不涉及对目标策略期望的估计，因此不需要重要性采样
+- Q-Learning（SARSAMAX）的推导过程：
+  - Q-Learning 更新的是 Bellman 最优算子
+
+    $$
+    \begin {align*}
+    Q^*(s,a)
+    &=\max_\pi
+    \mathbb {E}_\pi
+    \Big [\sum_{k=0}^\infty \gamma^k R_{t+k+1}
+    \mid S_t=s,A_t=a
+    \Big]\\
+    &=\mathbb {E}
+    \left [R_{t+1}
+    +
+    \gamma \max_{a'} Q^*(S_{t+1},a')
+    \right]
+    \end {align*}
+    $$
+
+  - 和 TD / SARSA 一样，样本近似期望（TD-Target 与行为策略 $\mu$ 无关）：
+
+    $$
+    R_{t+1}+\gamma \max_{a'} Q (S_{t+1},a')
+    $$
+
+  - TD 误差（Q-learning）：
+
+    $$
+    \delta_t^{\text{QL}}=R_{t+1}+\gamma \max_{a'} Q (S_{t+1},a')-Q (S_t,A_t)
+    $$
+
+  - 更新规则：
+
+    $$
+    Q (S_t,A_t)\leftarrow Q (S_t,A_t)+\alpha\left ({\color {red} R_{t+1}+\gamma\max_{a'} Q (S_{t+1}, a')} -Q (S_t,A_t)\right)
+    $$
+
+  - 这一更新规则本质上是在最小化如下**均方 TD 误差**：
+
+    $$
+    \begin {align*}
+    \mathcal {L}&=\Big (y_t^{QL}-Q (s_t,a_t)\Big)^2\\
+    A'&\triangleq\arg\max_{a'} Q (S_{t+1},a')\\
+    y_t^{QL}&=R_{t+1}+\gamma Q (S_{t+1},A')\\
+    & =R_{t+1}+\gamma Q (S_{t+1},\arg\max_{a^{\prime}} Q (S_{t+1},a^{\prime})) \\
+    &=R_{t+1}+\gamma\max_{a'} Q (s_{t+1},a')\\
+    \end {align*}
+    $$
+
+  - 其中 $A'$**并非环境中实际执行的动作**，而是由当前动作价值函数在下一个状态上给出的记号性贪婪选择
+  - 在上述公式中可以看到，Q-Learning 更新时用的是 $\displaystyle\max_{a'} Q (S_{t+1},a')$，而不是从行为策略中采样的动作，与行为策略完全无关；即行为 ≠ 目标，故 Q-Learning 是 off-policy 的
+  - 在 Q-Learning 中，目标策略 $\pi$ 是隐式的，其选取贪婪策略
+
+    $$
+    \pi (S_{t+1})=\arg\displaystyle\max_{a^{\prime}} Q (S_{t+1},a^{\prime})
+    $$
+
+- 综上所述，Q-learning = off-policy + TD + max-backup + 学最优动作价值函数，它假装未来会完美贪心，从而忽略探索的风险
+- 当状态–动作空间巨大或连续时，无法再用表格存储 $Q (s,a)$，于是将其替换为**参数化函数逼近**：
+
+  $$
+  Q (s,a)\approx Q_\theta (s,a)
+  $$
+
+- 在这种情况下，Q-learning 的更新不再是 “直接改表格”，而是对参数 $\theta$ 做梯度下降：
+
+  $$
+  \theta \leftarrow
+  \theta
+  -\alpha\nabla_\theta
+  \Big (y_t^{QL}
+  -Q_\theta (s_t,a_t)
+  \Big)^2
+  $$
+
+- 这一步**并没有改变 Q-learning 的本质假设**：
+  - TD 目标仍然来自一步 bootstrap
+  - 下一状态价值仍然通过 $\displaystyle\max_{a'} Q (\cdot,a')$ 给出
+  - 行为策略仍可包含探索，但目标值函数始终对应最优贪心策略
+  - 而 DQN 所做的事，正是将 $Q (s,a)$ 替换为 深度神经网络 $Q_\theta (s,a)$，并配合经验回放、目标网络等工程机制，但这些机制并未改变 Q-learning 的 “off-policy + TD + max-backup” 核心结构
+
+  | 类别                              | Full Backup (DP)                                                                                                                 | Sample Backup (TD)                                                                                        |
+  | --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+  | Bellman 期望方程（$v_\pi (s)$）    | Iterative Policy Evaluation<br/>$V (s) \leftarrow \mathbb {E}[R + \gamma V (S') \mid s]$                                            | TD Learning<br/> $V (S) \stackrel {\alpha}{\leftarrow} R + \gamma V (S')$                                    |
+  | Bellman 期望方程（$q_\pi (s, a)$） | Q-Policy Iteration<br/>$Q (s, a) \leftarrow \mathbb {E}[R + \gamma Q (S', A') \mid s, a]$                                           | SARSA<br/>$Q (S, A) \stackrel {\alpha}{\leftarrow} R + \gamma Q (S', A')$                                    |
+  | Bellman 最优方程（$q_*(s, a)$）   | Q-Value Iteration<br/>$Q (s, a) \leftarrow \mathbb {E} \left [R + \gamma \displaystyle\max_{a' \in A} Q (S', a') \mid s, a \right]$ | Q-Learning <br/>$Q (S, A) \stackrel {\alpha}{\leftarrow} R + \gamma \displaystyle\max_{a' \in A} Q (S', a')$ |
+
+  ![DP 与 TD 的关系](/img/llm/DP与TD的关系.png)
+
+## 2.5.3 从算子与不动点的角度看强化学习

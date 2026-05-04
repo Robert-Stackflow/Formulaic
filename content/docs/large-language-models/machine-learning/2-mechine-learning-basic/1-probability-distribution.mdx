@@ -1,0 +1,64 @@
+---
+title: 概率分布
+description: 介绍概率分布的基本概念，包括联合概率分布、边缘概率分布、条件概率分布、全概率公式、贝叶斯公式及极大后验假设等内容
+---
+
+## 联合概率分布
+
+- 简单定义：两个事件共同发生的概率，即 $P (AB)$ 或 $P (A,B)$ 或 $P (A\cap B)$
+
+- 严格定义：对于多维随机变量 $X_1,\cdots,X_n$，可以用联合概率分布 $P (X_1,\cdots,X_n)$ 描述其各个状态的概率，即联合概率分布，是一个定义在所有变量状态空间的笛卡尔乘积上的函数：
+  $$
+    P (X_1,\cdots,X_n):\oplus_{i=1}^n\Omega_{x_i}\rightarrow [0,1]
+  $$
+- 且所有函数值之和为 1，即 $\sum_{X_1,\cdots,X_n} P (X_1,\cdots,X_n)=1$
+
+## 边缘概率分布
+
+- 仅与单个随机变量有关的概率称为边缘概率
+- 边缘化（Marginalization）：在联合概率中，在最终结果中将不需要的事件合并成该事件的全概率
+
+  $$
+  P (X=a)=\sum_bP (X=a,Y=b)
+  $$
+
+## 条件概率分布
+
+- 在条件 $Y=b$ 成立的情况下，$X=a$ 发生的概率，记作 $P (X=a|Y=b)$ 或 $P (a|b)$
+
+  $$
+  P (X=a|Y=b)=\frac {P (X=a,Y=b)}{P (Y=b)}\\
+  \sum_aP (X=a|Y=b)=1
+  $$
+
+## 全概率公式
+
+$$
+Pr (X=x)=\sum_yPr (X=x,Y=y)=\sum_yPr (X=x|Y=y) Pr (Y=y)
+$$
+
+- 统计独立性：当且仅当 $P (A\cap B)=P (A) P (B)$ 时，$P (A|B)=P (A)$ 且 $P (B|A)=P (B)$
+- 条件独立性：若 $P (A|B\cap C)=P (A|C)$ 或者 $P (B\cap C)=0$
+
+## 贝叶斯公式
+
+$$
+P (A|B)=\frac {P (A,B)}{P (B)}=\frac {P (B|A) P (A)}{P (B)}
+$$
+
+- $P (Y)$ 称为先验概率，$P (Y|X)$ 称为后验（条件）概率，$P (X,Y)$ 称为联合概率
+- $P (A_i|B)=\frac {P (B|A_i) P (A_i)}{\sum_jP (B|A_j) P (A_j)}$，其中 $A_1,\cdots,A_n$ 为 $A$ 的完备事件组
+- $P (A|B,C)=\frac {P (A) P (B|A) P (C|A,B)}{P (B) P (C|B)}$
+
+## 极大后验假设
+
+$$
+h_{MAP}=\arg\max_{h\in H} P (h|D)=\arg\max_{h\in H}\frac {P (D|h) P (h)}{P (D)}=\arg\max_{h\in H} P (D|h) P (h)
+$$
+
+- 在候选假设集合 $H$ 中，找到给定数据 $D$ 时可能性最大的假设 $h$，$h$ 即称为极大后验假设（MAP）
+  > 其中，$P (D)$ 是不依赖于 $h$ 的常量
+- 假设 $H$ 中每个假设有相同的先验概率，则简化为只考虑 $P (D|h)$，称为给定 $h$ 时数据 $D$ 的似然度，而称下列公式为极大似然假设
+  $$
+  h_{ML}=\displaystyle\arg\max_{h\in H} P (D|h)
+  $$

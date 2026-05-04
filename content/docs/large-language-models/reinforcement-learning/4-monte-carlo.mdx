@@ -1,0 +1,219 @@
+---
+title: 蒙特卡洛方法
+description: 介绍蒙特卡洛方法在强化学习中的应用，包括蒙特卡洛方法的定义、蒙特卡洛预测、蒙特卡洛控制以及蒙特卡洛方法的优缺点等内容
+---
+
+## 2.3.1 蒙特卡洛方法
+
+- 基本思想
+  - 显然，动态规划用于解决已知的 MDP 问题（Model-Based）
+
+    $$
+    \displaystyle\sum_{s'} P (s'|s,a)\big [\cdots\big]
+    $$
+
+  - 在现实问题中，转移概率未知，奖励函数未知，只能与环境交互，得到**样本轨迹**
+  - 问题变成：如果我只看到一条一条完整轨迹，能不能估计价值函数？
+  - 那么如何解决未知的 MDP（Model-Free）
+    - Model-Free Prediction：评估值函数，如蒙特卡洛方法、时间差分学习 TD
+    - Model-Free Control：优化值函数，如 On-Policy 蒙特卡洛方法、On-Policy 时间差分学习
+
+- 蒙特卡洛方法（Monte Carlo Methods）的特点
+  - **蒙特卡洛方法 = 用完整回报直接逼近期望值函数**
+  - 核心思想：基于一个朴素的假设 —— 价值函数等于回报的**期望**，然后用样本均值近似期望
+    - 不需要 Bellman 方程
+    - 不需要模型
+    - 仅仅依赖大数定律
+  - 模型无关（Model-Free）：不需要知道 MDP 的状态转移概率 $P (s', r\mid s, a)$​ 或奖励函数，仅从采样的交互数据中学习
+  - 直接从完整的经验片段（episode）中学习：使用整个回合的经验来更新估计，即从起点到终点的所有交互，而不是依赖于部分的价值函数估计
+
+## 2.3.2 蒙特卡洛策略评估
+
+- 蒙特卡洛策略评估
+  - 目标和 DP 完全一致：给定策略 $\pi$，估计 $V_\pi (s)$
+  - 但是 DP 使用贝尔曼期望方程，MC 使用完整 episode 的回报
+  - 实现步骤
+    - 收集经验片段：运行策略 $\pi$，采样多个完整片段 $S_1,A_1,R_2,\cdots,S_k$​，直到回合结束
+    - 计算回报：在每个时间步 $t$，计算从 $t$ 开始到回合结束的折扣回报 $G_t$
+    - 更新价值函数，将每次访问状态 $s$ 时的 $G_t$ 取平均，作为 $v_{\pi}(s)$​​ 的估计
+  - 使用经验回报的样本均值替代期望回报
+
+    $$
+    v_{\pi}(s)\approx \frac {1}{N (s)} \displaystyle\sum_{i=1}^{N (s)} G_t^{(i)}
+    $$
+    - 其中 $N (s)$ 是状态 $s$ 在采样中被访问的次数，$G_t^{(i)}$ 是状态 $s$ 的第 $i$​ 次回报
+
+  - 必须要等到一个 episode 结束，才可以进行估计更新
+    - 因为 MC 的目标是**真实回报**，在 episode 没结束前，$G_t$ 还不确定，后续奖励还未知
+    - 所以 MC 天然适用于 episodic 任务
+  - 如何对同一个状态进行计数
+    - First-Visit：在一个 episode 中，只记录某个状态第一次出现时的回报 —— 每个 episode 对同一状态只贡献一次
+    - Every-Visit：在一个 episode 中，记录某个状态每次出现时的回报 —— 更快利用数据，在期望意义下仍然无偏
+    - 两者在样本无限时收敛到同一结果
+
+- 无偏性：样本均值满足大数定律：
+
+  $$
+  \frac {1}{N} \sum_{i=1}^N G_t^{(i)} \xrightarrow {a.s.} \mathbb {E}[G_t]
+  $$
+
+- 增量蒙特卡洛
+  - 直接保存所有 $G_t$ 不现实，因此使用增量更新
+  - Online：每次进行采样时，逐步更新价值估计，$\mu_k=\mu_{k-1}+\frac {1}{k}(x_k-\mu_{k-1})$
+  - 对于每个回报为 $G_t$ 的状态 $S_t$
+
+    $$
+        \begin {align*}
+        N (S_t)&\gets N (S_t)+1\\
+        V (S_t)&\gets V (S_t)+\frac {1}{N (S_t)}(G_t-V (S_t))
+        \end {align*}
+    $$
+
+  - 对于非平稳问题，当环境或策略在变时，旧数据权重指数衰减，但是不再严格无偏
+
+    $$
+    V (S_t)\leftarrow V (S_t)+\alpha\left (G_t-V (S_t)\right)
+    $$
+
+## 2.3.3 蒙特卡洛控制
+
+- 在 MC 方法基础上加入策略改进，完成控制任务（学习策略）
+- 必然基于动作值函数
+  - 利用价值函数基于贪心方法进行策略改进需要 MDP 模型，而利用动作值函数则是 Model-Free
+
+    $$
+        \begin {align*}
+        \pi^{\prime}(s)&=\underset {a}{\operatorname*{\operatorname*{argmax}}} R_s^a+P_{ss^{\prime}}^aV (s^{\prime})\\
+        \pi^{\prime}(s)&=\underset {a}{\operatorname*{\operatorname*{\arg\max}}} Q (s,a)
+        \end {align*}
+    $$
+
+  - 其中，$Q (s,a)$ 本身就是
+
+    $$
+    Q^\pi (s,a) = \mathbb {E}[G_t \mid s,a]
+    $$
+
+  - 不需要知道 $P (s'|s,a)$，所以 MC Control **必然是基于动作值函数**
+
+- On-Policy 蒙特卡洛控制（Monte-Carlo Control）
+  - 一边用当前策略采样，一边评估该策略，再用贪婪原则改进策略
+  - 这和 DP 的策略迭代在逻辑上完全一致，只是 DP：精确期望，而 MC：样本估计
+  - 之前的纯贪婪方法不再适用，因为初期 $Q$ 不准，贪婪会 “锁死” 在次优动作，其他动作永远不被尝试
+  - 采用 $\epsilon$- 贪心策略：$1-\epsilon$ 的概率选择贪心动作保证利用（Exploit），$\epsilon$ 的概率选择随机动作保证探索（Explore），即
+
+    $$
+        \pi (a|s)=\left\{\begin {array}
+        {ll}\epsilon/m+1-\epsilon & \mathrm {if}\quad a^*=\arg\max Q (s,a) \\
+        \epsilon/m & \mathrm {otherwise}
+        \end {array}\right.
+    $$
+
+  - $\epsilon$- 贪心策略的证明
+
+    $$
+    \begin {align*}
+        v_{\pi^\prime}(s)=q_\pi (s,\pi^{\prime}(s)) & =\sum_{a}\pi^{\prime}(a|s) q_\pi (s,a) \\
+        & =\epsilon/m\sum_{a} q_\pi (s,a)+(1-\epsilon)\max_{a} q_\pi (s,a) \\
+        & \geq\epsilon/m\sum_{a} q_\pi (s,a)+(1-\epsilon)\sum_{a}\frac {\pi (a|s)-\epsilon/m}{1-\epsilon} q_\pi (s,a) \\
+        & =\sum_{a}\pi (a|s) q_\pi (s,a)=v_\pi (s)
+        \end {align*}
+    $$
+
+  - “贪心动作的 q 值 ≥ π(a|s) 加权的平均 q 值” 的证明
+
+    $$
+    (1-\epsilon)\max_a q_\pi (s,a)\ge (1-\epsilon)\sum_a\frac {\pi (a|s)-\epsilon/m}{1-\epsilon} q_\pi (s,a)
+    $$
+    - 上式等价于证明
+
+      $$
+      \max_a q_\pi (s,a)\ge\sum_a\frac {\pi (a|s)-\epsilon/m}{1-\epsilon} q_\pi (s,a)
+      $$
+
+    - 由于原策略 $\pi$ 是 ε- 贪心的，有
+
+      $$
+      \pi (a|s)\ge \epsilon/m \quad \forall a
+      $$
+
+    - 下面证明以下是一个合法的概率分布
+
+      $$
+      \tilde\pi (a|s)\triangleq\frac {\pi (a|s)-\epsilon/m}{1-\epsilon}
+      $$
+
+    - 证明其非负性与归一性：
+
+      $$
+      \begin {align*}
+      \text{非负性}&:\tilde\pi (a|s)\ge 0\\
+      \text{归一性}&:\sum_a\tilde\pi (a|s)=\frac {\sum_a\pi (a|s)-\sum_a\epsilon/m}{1-\epsilon}=\frac {1-\epsilon}{1-\epsilon}=1
+      \end {align*}
+      $$
+
+    - 对任意函数 $f (a)$ 和任意概率分布 $p (a)$，都有一个基本不等式：
+
+      $$
+      \max_a f (a)\ge\sum_a p (a) f (a)
+      $$
+      - 每一项 $f (a)\le \max_a f (a)$，对它们做加权平均，结果不可能超过最大值
+
+    - 应用 $f (a)=q_\pi (s,a)$，$p (a)=\tilde\pi (a|s)$
+
+      $$
+      \max_a q_\pi (s,a)\ge\sum_a \tilde\pi (a|s) q_\pi (s,a)
+      $$
+
+- 算法流程
+  1. 初始化：
+     - 动作价值函数 $Q (s, a) = 0$
+     - 计数器 $N (s, a) = 0$
+     - 初始策略 $\pi$ 为随机策略
+  2. 循环直到收敛（**对于每个 episode**）：
+     1. 根据当前策略 $\pi$ 执行一次完整的轨迹 $S_1, A_1, R_2, S_2, A_2, R_3, \ldots, S_T$。
+     2. 对轨迹中的每个状态 - 动作对 $(s, a)$：
+        - 计算从该状态起始的回报 $G_t$
+        - 更新计数器 $N (s, a)$：
+
+          $$
+          N (s, a) \leftarrow N (s, a) + 1
+          $$
+
+        - 更新动作价值函数：
+
+          $$
+          Q (s, a) \leftarrow Q (s, a) + \frac {1}{N (s, a)} \left [G_t - Q (s, a) \right]
+          $$
+
+     3. 更新策略为 $\epsilon$- 贪婪策略：
+        - 以 $1 - \epsilon$​ 概率选择贪婪动作
+        - 以 $\epsilon$ 概率随机探索
+
+- MC Control 算法为什么能收敛 ——Greedy in the Limit with Infinite Exploration（GLIE）
+  - 无限探索：确保每个状态 - 动作对 $(s,a)$ 都被反复采样
+
+    $$
+    \sum_t \mathbb I {(s_t,a_t)=(s,a)} = \infty
+    $$
+
+  - 极限贪婪：确保策略收敛至贪婪策略
+
+    $$
+    \epsilon_t \to 0
+    $$
+
+  - 取 $\epsilon=\frac {1}{N (s, a)}$​
+    - 初期 $\epsilon$ 大 → 多探索
+    - 后期 $\epsilon$​ 小 → 多利用
+    - 且满足：
+
+      $$
+      \sum_t \epsilon_t = \infty, \quad \epsilon_t \to 0
+      $$
+
+  - 在 GLIE 条件下
+
+    $$
+    Q (s,a) \xrightarrow {a.s.} q^*(s,a),\quad \pi \to \pi^*
+    $$

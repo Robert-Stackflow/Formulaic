@@ -1,0 +1,484 @@
+---
+title: 马尔可夫决策过程
+description: 介绍马尔可夫决策过程的基本概念、组成部分、值函数、贝尔曼方程以及最优化问题
+---
+
+## 2.1.1 马尔可夫随机过程
+
+- 马尔可夫状态
+
+  $$
+  P [S_{t+1}|S_t]=P [S_{t+1}|S_1,\cdots,S_t]
+  $$
+  - 基于现在，未来独立于过去：$H_{1:t}\rightarrow S_t\rightarrow H_{t+1:\infty}$
+  - 一旦有了当前状态，历史可以被抛弃
+  - 当前状态是未来的充分统计数据
+
+- 马尔可夫随机过程（Markov Processes）
+  - 马尔可夫随机过程由二元组 $(\mathcal {S},\mathcal {P})$ 组成
+    - $\mathcal {S}$：状态空间（所有可能状态的集合）
+    - $\mathcal {P}$：状态转移概率矩阵，定义从当前状态 $s_t$ 转移到下一个状态 $s_{t+1}$ 的概率 $P (s_{t+1}|s_t)$
+
+      $$
+      \mathcal {P}_{ss^{'}}=P [S_{t+1}=S^{'}|S_t=s]
+      $$
+
+## 2.1.2 马尔可夫奖励过程
+
+- 马尔可夫奖励过程（Markov Reward Processes）由四元组 $(\mathcal {S},\mathcal {P},\mathcal {R},\gamma)$​ 组成
+  - $\mathcal {S}$：状态空间（所有可能状态的集合）
+  - $\mathcal {P}$：状态转移概率矩阵，定义从当前状态 $s_t$ 转移到下一个状态 $s_{t+1}$ 的概率 $P (s_{t+1}|s_t)$
+  - $\mathcal {R}$：奖励函数，$\mathcal {R}_s=\mathbb {E}[R_{t+1}|S_t=s]$
+  - $\gamma$：折扣因子，$\gamma\in [0,1]$​，用于衡量未来奖励的当前价值
+    - 当前获得的奖励 $R$ 在 $k+1$ 个时间步后的价值为 $\gamma^{k} R$
+    - $\gamma\rightarrow0$ 时，趋近于” 近视 “评估（Mypoic）
+    - $\gamma\rightarrow1$​ 时，趋近于” 远视 “评估（Far-Sighted）
+  - 采用折扣因子的原因
+    - 便于数学上的收敛计算
+    - 折扣因子限制了回报的累积，确保问题可解并且奖励是有限的
+    - 折扣因子通过对未来奖励进行加权，隐式表达了这种不确定性
+    - 在金融或经济领域，折扣因子反映了**时间价值**的概念，即立即获得的奖励比未来的同样奖励更有价值
+    - 人类和动物普遍更倾向于即时奖励而非延迟奖励，即 “即时满足倾向”
+    - 在某些特殊情况下，可以使用不折扣的马尔可夫过程，例如：
+      - **所有序列都终止**：如果问题设计保证智能体的每条路径最终都会结束，例如迷宫求解任务，回报的总和是有限的，无需引入折扣因子
+      - **特定目标任务**：例如以目标状态为重点的问题，可能不关注时间步长
+    - 未折扣的过程更适用于有界问题，而在无界问题中通常会引入折扣因子
+- 值函数 $V (s)$
+  - 从时间步 $t$ 开始的总折扣奖励值 / 回报（Return）：
+
+    $$
+    G_t=R_{t+1}+\gamma R_{t+2}+\dots=\displaystyle\sum_{k=0}^{\infty}\gamma^{k} R_{t+k+1}
+    $$
+
+  - 值函数则表示从当前状态 $s$ 开始的期望累计回报，评估状态的长期价值
+
+    $$
+    V (s)=\mathbb {E}[G_t|S_t=s]
+    $$
+
+  - 据此，值函数可以划分为两部分：即时奖励 $R_{t+1}$ 与折扣后的 $\gamma V (S_{t+1})$
+
+    $$
+    V (s)=\mathbb {E}[G_t|S_t=s]=\mathbb {E}[R_{t+1}+\gamma V (S_{t+1})|S_t=s]
+    $$
+
+- 贝尔曼方程（Bellman Equation）
+  - 定义策略 $\pi$ 下价值函数和动作值函数的递归关系
+  - $v=\mathcal {R}+\gamma\mathcal {P} v$，其中
+
+    $$
+    \begin {bmatrix}
+    v (1) \\
+    \vdots \\
+    v (n)
+    \end {bmatrix}=
+    \begin {bmatrix}
+    \mathcal {R}_{1} \\
+    \vdots \\
+    \mathcal {R}_{n}
+    \end {bmatrix}+\gamma
+    \begin {bmatrix}
+    \mathcal {P}_{11} & \ldots & \mathcal {P}_{1n} \\
+    \vdots \\
+    \mathcal {P}_{11} & \ldots & \mathcal {P}_{nn}
+    \end {bmatrix}
+    \begin {bmatrix}
+    v (1) \\
+    \vdots \\
+    v (n)
+    \end {bmatrix}
+    $$
+
+  - $v=\mathcal {R}+\gamma\mathcal {P} v\Rightarrow (I-\gamma\mathcal {P}) v=\mathcal {R}\Rightarrow v=(I-\gamma\mathcal {P})^{-1}\mathcal {R}$
+
+- 贝尔曼方程的计算复杂度
+  - 对于 $n$ 个状态，该方程的计算复杂度是 $O (n^3)$
+  - 对于小的马尔可夫链，可以利用该公式计算
+  - 对于较大的马尔可夫链，则需要使用一些迭代的方法，如动态规划、蒙特卡洛方法、时间差分学习
+
+## 2.1.3 马尔可夫决策过程
+
+- 马尔可夫决策过程（Markov Decision Process）是具有动作的马尔可夫奖励过程
+- 马尔可夫奖励过程由五元组 $(\mathcal {S},\mathcal {A},\mathcal {P},\mathcal {R},\gamma)$​ 组成
+  - $\mathcal {S}$​：状态空间（所有可能状态的集合）
+  - $\mathcal {A}$：动作空间（所有可能动作的集合）
+  - $\mathcal {P}$：状态转移概率矩阵，定义从当前状态 $s_t$**执行动作 $a$**转移到下一个状态 $s_{t+1}$ 的概率
+
+    $$
+    \mathcal {P}_{ss^{'}}^{a}=P [S_{t+1}=S^{'}|S_t=s,A_t=a]
+    $$
+
+  - $\mathcal {R}$：奖励函数
+
+    $$
+    \mathcal {R}_s^a=\mathbb {E}[R_{t+1}|S_t=s,A_t=a]
+    $$
+
+  - $\gamma$：折扣因子，$\gamma\in [0,1]$​，用于衡量未来奖励的当前价值
+
+- 策略：给定状态时，动作的概率分布
+
+  $$
+  \pi (a|s)=P [A_t=a|S_t=s]
+  $$
+  - 策略完整定义了 Agent 的行动，智能体在每个时间步会依据它选择动作
+  - 在标准 MDP 中，策略是时间无关的，不会随着时间变化，只要状态相同，选择的行动均相同
+  - $A_t\sim \pi (\cdot|S_t),\forall t>0$，即在任何时间步 $t > 0$，动作 $A_t$ 都是根据相同的策略 $\pi$ 从状态 $S_t$ 中抽样的
+
+- 给定 $\mathcal {M}=(\mathcal {S},\mathcal {A},\mathcal {P},\mathcal {R},\gamma)$ 和策略 $\pi$
+  - 马尔可夫过程：$(\mathcal {S},\mathcal {P}^{\pi})$
+  - 马尔可夫奖励过程：$(\mathcal {S},\mathcal {P}^{\pi},\mathcal {R}^{\pi},\gamma)$
+  - 策略诱导的状态转移概率：在状态 $s$ 下，策略 $\pi$ 可能会以不同概率选择不同动作，而每个动作又有不同的状态转移概率，**所以最终的状态转移概率是对所有动作的加权平均**
+
+    $$
+    \mathcal {P}_{s,s^{'}}^{\pi}=\displaystyle\sum_{a}\pi (a|s)\mathcal {P}_{ss^{'}}^{a}
+    $$
+
+  - 策略诱导的奖励函数：策略 $\pi$​ 可能选择不同的动作，每个动作带来不同的奖励，**所以总体奖励是对动作奖励的加权平均**
+
+    $$
+    \mathcal {R}_{s}^{\pi}=\displaystyle\sum_{a}\pi (a|s)\mathcal {R}_{s}^{a}
+    $$
+
+- 值函数 $V_\pi (s)$
+
+  $$
+  \begin {align*}
+  V_{\pi}(s)&=\mathbb {E}_{\pi}[G_t|S_t=s]\\
+  &=\mathbb {E}_{\pi}[R_{t+1}+\gamma V_{\pi}(S_{t+1})|S_t=s]\\
+  &=\mathbb {E}_\pi [R_{t+1} \mid S_t = s]
+  + \gamma \mathbb {E}_\pi [G_{t+1} \mid S_t = s]
+  \end {align*}
+  $$
+  - 对「动作」做全期望展开
+
+    $$
+    \mathbb {E}_\pi [\cdot \mid S_t = s]
+    = \sum_a \pi (a|s)\mathbb {E}[\cdot \mid S_t = s, A_t = a]
+    $$
+
+  - 由此，即时奖励为：
+
+    $$
+    \mathbb {E}_\pi [R_{t+1} \mid S_t = s]
+    =\sum_a \pi (a|s)\mathbb {E}[R_{t+1} \mid S_t = s, A_t = a]
+    =\sum_a \pi (a|s)\mathcal {R}_s^a
+    $$
+
+  - 对未来奖励做全期望展开
+
+    $$
+    \begin {align*}
+    \mathbb {E}_\pi [G_{t+1}\mid S_t=s]
+    &=\sum_a \pi (a|s)\mathbb {E}\left [G_{t+1}\mid S_t=s, A_t=a\right]\\
+    \mathbb {E}\left [G_{t+1}\mid S_t=s, A_t=a\right]&=\sum_{s'}
+    \mathcal {P}_{ss'}^a\mathbb {E}\left [G_{t+1}\mid S_{t+1}=s'\right]\\
+    V_\pi (s')&=\mathbb {E}_\pi\left [G_{t+1}\mid S_{t+1}=s'\right]\\
+    \mathbb {E}\left [G_{t+1}\mid S_t=s, A_t=a\right]&=\sum_{s'}\mathcal {P}_{ss'}^a V_\pi (s')\\
+    \mathbb {E}_\pi [G_{t+1}\mid S_t=s]&=\sum_a \pi (a|s)
+    \sum_{s'} \mathcal {P}_{ss'}^aV_\pi (s')
+    \end {align*}
+    $$
+
+  - 最终得到完整的贝尔曼期望方程：当前状态 $s$ 的价值是，在策略 $\pi$ 下对所有动作和后续状态的加权期望
+
+    $$
+    \begin {align*}
+    V_\pi (s)&= \mathbb {E}_\pi [R_{t+1} \mid S_t = s]
+    + \gamma \mathbb {E}_\pi [G_{t+1} \mid S_t = s]\\
+    &=\sum_a \pi (a|s)
+    \Big [\mathcal {R}_s^a
+    +
+    \gamma \sum_{s'} \mathcal {P}_{ss'}^a V_\pi (s')
+    \Big]\\&=
+    \mathcal {R}_s^\pi
+    +
+    \gamma \sum_{s'} \mathcal {P}_{ss'}^\pi V_\pi (s')
+    \end {align*}
+    $$
+    - 实际上，上式中的 $\mathcal {R}_s^a+\gamma \displaystyle\sum_{s'} \mathcal {P}_{ss'}^a V_\pi (s')$ 即为动作值函数
+
+  - 贝尔曼期望方程：当前状态 $s$ 的价值是，在策略 $\pi$ 下对所有动作和后续状态的加权期望
+
+    $$
+    \begin {align*}
+    V_{\pi}(s)&=\displaystyle\sum_{a}\pi (a|s) q_{\pi}(s,a)\\
+    &=\displaystyle\sum_{a}\pi (a|s)\displaystyle\sum_{s^{\prime}}\mathcal {P}_{ss^{\prime}}^a\left (\mathcal {R}_{ss^{\prime}}^a+\gamma V_\pi (s^{\prime})\right)\\
+    &=\displaystyle\sum_{a}\pi (a|s)\left (\mathcal {R}_s^a+\gamma\displaystyle\sum_{s^{\prime}}\mathcal {P}_{ss^{\prime}}^aV_\pi (s^{\prime})\right)\\
+    \end {align*}
+    $$
+
+  - 贝尔曼期望方程的矩阵形式
+
+    $$
+    v_\pi=\mathcal {R}^\pi+\gamma\mathcal {P}^\pi v_\pi\\
+    v_\pi=(I-\gamma\mathcal {P}^\pi)^{-1}\mathcal {R}^\pi
+    $$
+
+- 动作值函数 $q_{\pi}(s,a)$
+
+  $$
+  \begin {align*}
+  q_{\pi}(s,a)&=\mathbb {E}_{\pi}[G_t|S_t=s,A_t=a]\\&=\mathbb {E}_{\pi}[R_{t+1}+\gamma q_{\pi}(S_{t+1},A_{t+1})|S_t=s,A_t=a]
+  \end {align*}
+  $$
+  - 表示从当前状态 $s$ 开始选择动作 $a$ 的期望累计回报，即评估在状态 $s$ 下选择特定动作 $a$ 的价值 —— 从某个状态–动作对开始的期望回报
+  - 在选择动作 $a$ 后，会按照策略 $\pi$ 来选择后续动作，即
+
+    $$
+    q_\pi (s,a)
+    =\mathbb {E}
+    \big [\text{当前奖励}
+    +
+    \gamma \times
+    \text{下一步按}\pi\text{选动作的} q
+    \big]
+    $$
+
+  - 贝尔曼期望方程：
+
+    $$
+    \begin {align*}
+    q_\pi (s,a)&=\mathcal {R}_s^a+\gamma\displaystyle\sum_{s^{\prime}}\mathcal {P}_{ss^{\prime}}^aV_\pi (s^{\prime})\\
+    &=\mathcal {R}_s^a+\gamma\displaystyle\sum_{s^{\prime}}\mathcal {P}_{ss^{\prime}}^a\displaystyle\sum_{a^{\prime}}\pi (a^{\prime}|s^{\prime}) q_\pi (s^{\prime},a^{\prime})
+    \end {align*}
+    $$
+
+  - 全期望展开的中间过程推导：
+
+    $$
+    \begin {align*}
+    \mathbb {E}_\pi\left [q_\pi (S_{t+1},A_{t+1})
+    \mid S_{t+1}
+    \right]&=\sum_{a'} \pi (a'|S_{t+1}) q_\pi (S_{t+1},a')\\
+    q_\pi (s, a) &= \mathbb {E}[R_t + \gamma \displaystyle\sum_{a'} \pi (a'|S_{t+1}) q_\pi (S_{t+1}, a') \,|\, S_t = s, A_t = a]
+    \end {align*}
+    $$
+
+- 为什么 $q_\pi$ 里动作的期望在 “下一步” 才出现，而 $v_\pi$ 是在” 当前步 “- 状态值函数中：条件里只有状态，当前动作 $A_t$ 未知，必须立刻对 $A_t$ 按策略取期望，因此有 $\displaystyle\sum_a\pi (a\vert s)$
+  - 动作值函数中：条件里已经给定了动作，当前动作 $A_t$ 是确定的，不需要也不能再对当前动作取期望，所以当前步没有 $\displaystyle\sum_a\pi (a\vert s)$ ；而在下一步时间 $t+1$，状态 $S_{t+1}$ 是随机的，动作 $A_{t+1}$ 再次由策略决定，因此 $A_{t+1}\sim\pi (\cdot\vert S_{t+1})$，这时又不知道动作是什么了，因此取期望 $\displaystyle\sum_{a'} \pi (a'|S_{t+1}) q_\pi (S_{t+1},a')$，动作期望自然出现在 “下一步”
+  - 数学上来讲，**期望一定是对 “未知的随机变量” 取的**
+  - 当前动作在状态值函数中未知，要取期望，在动作值函数中已知，不要取期望
+  - 下一步动作在两者里都是未知的，都要取期望
+
+## 2.1.4 最优化问题
+
+- 在 “最优” 问题里，动作不再是随机选的，而是由我们主动选最好的那个
+- 最优值函数
+  - $v_{*}(s)=\displaystyle\max_{\pi} v_{\pi}(s)$
+  - $q_{*}(s,a)=\displaystyle\max_{\pi} q_{\pi}(s,a)$
+  - 以动作值函数为例，在最优化问题里关心的是：从 $(s,a)$ 出发，之后永远 “选得最优”，能拿到的最大期望回报
+  - 因此，相比随机选择动作，此处直接选择最好的动作，所以期望变为了 $\text{max}$ 函数
+  - 当求得最优值函数时，即称 MDP 问题被解决
+- 最优策略
+  - 称 $\pi \geq \pi^\prime \iff v_\pi (s) \geq v_{\pi^\prime}(s), \, \forall s$，来定义策略的优劣
+  - 对于任何 MDP，均存在最优策略 $\pi_{*}$，使得 $\pi^* \geq \pi, \, \forall \pi$
+  - $v_{\pi_*}(s) = v_*(s), \, \forall s$ 且 $q_{\pi_*}(s,a) = q_*(s,a), \, \forall s$​
+- 根据最优动作值函数得到最优策略：
+
+  $$
+    \pi^*(a|s) =
+    \begin {cases}
+    1, & \text{如果} a = \arg\displaystyle\max_{a \in A} q^*(s, a), \\
+    0, & \text{否则}.
+    \end {cases}
+  $$
+
+- 最优值函数的推导：在状态 $s$ 下，选择能带来最大长期回报的动作
+
+  $$
+  \begin {align*}
+      v_*(s)&= \max_\pi \mathbb E_\pi [G_t \mid s]\\
+      &=\displaystyle\max_a q_*(s,a)\\
+    &=\displaystyle\max_a [\mathcal {R}_s^a+\gamma\displaystyle\sum_{s^{\prime}}\mathcal {P}_{ss^{\prime}}^aV_*(s^{\prime})]
+    \end {align*}
+  $$
+
+- 最优动作值函数的推导：采取动作 $a$ 后的回报等于即时奖励加下一个状态中最优动作的价值
+
+  $$
+  \begin {align*}
+  q_*(s,a)&=\max_\pi
+  \displaystyle\mathbb {E}_\pi
+  \left [R_{t+1} + \gamma G_{t+1}
+  \mid s,a
+  \right]\\
+  \max_\pi \mathbb {E}_\pi [G_{t+1}\mid S_{t+1}]&=\max_{a'} q_*(S_{t+1},a')\\
+  q_*(s,a)&=\mathcal {R}_s^a+\gamma\sum_{s'}\mathcal {P}_{ss'}^a\max_{a'} q_*(s',a')
+  \end {align*}
+  $$
+
+- 最优动作值函数与最优状态值函数的关系
+
+  $$
+    \begin {align*}
+      q_*(s,a)&=\mathcal {R}_s^a+\gamma\displaystyle\sum_{s^{\prime}}\mathcal {P}_{ss^{\prime}}^aV_*(s^{\prime})\\
+    \end {align*}
+  $$
+
+- 对于状态值函数，不能 “直接” 从定义推出 Bellman 最优方程，必须借助最优动作值函数或最优性原理
+  - 想当然地，根据状态值函数的基本定义，可能会得到：
+
+    $$
+    \begin {align*}
+    V_*(s)
+    &= \max_\pi \mathbb E_\pi
+    \left [R_{t+1} + \gamma G_{t+1}
+    \mid S_t = s
+    \right] \\
+    &\stackrel {?}{=}
+    \max_a
+    \Big [
+    \mathcal R_s^a
+    +
+    \gamma \sum_{s'} \mathcal P_{ss'}^a V_*(s')
+    \Big]
+    \end {align*}
+    $$
+
+  - 关键障碍是 max 不能直接穿过期望符号，更不能把策略的 max 变为对动作的 max
+
+    $$
+    \max_\pi \mathbb E_\pi [\cdot]\neq\mathbb {E}[\max_\pi \cdot]
+    $$
+
+  - 而真正的关键是贝尔曼最优性原理（Principle of Optimality）：一条最优路径的任意后缀，仍然是最优的
+  - 即，**未来也必须继续是最优的**
+  - 引入动作值函数后，$q_*(s,a)$ 强制把第一个动作固定，消除了 “当前动作” 的随机性，因此
+
+    $$
+    V_*(s) = \max_a q_*(s,a)
+    $$
+
+  - 借由最优动作值函数，可以推导出最优状态值函数
+
+- 为什么不是 “先期望再取 max”？
+  - 期望和 max 的先后关系
+
+    $$
+    \max_a \mathbb {E}[\cdot]\neq\mathbb {E}[\max_a \cdot]
+    $$
+
+  - Bellman 最优方程做的是对动作取 max，同时对环境转移概率取期望
+
+    $$
+    \displaystyle\max_{a'}\mathbb {E}_{S'}[\cdot]
+    $$
+
+  - 根据最优性原理，在任意状态 $S^{\prime}$，最优策略都会选：
+
+    $$
+    a' = \arg\max_{a'} q_*(s',a')
+    $$
+
+- 最优化问题的贝尔曼方程没有封闭解
+  - 一般的最优化 Bellman 方程没有解析（封闭）解，只能通过数值或迭代方法求解
+
+    $$
+    V_*(s)=\max_a
+    \Big [
+    \mathcal R_s^a
+    +
+    \gamma
+    \sum_{s'} \mathcal P_{ss'}^a V_*(s')
+    \Big]
+    $$
+    - 上述贝尔曼最优方程中，未知量 $V_*$ 出现在右边，同时右边还包含 max （非线性）和期望（线性）
+    - 因此，这是一个非线性不光滑的函数不动点方程
+
+  - 策略评估问题 VS 最优化问题
+    - 策略评估问题有封闭解，只要矩阵 $I - \gamma P_\pi$ 可逆
+
+      $$
+      \begin {align*}
+      V_\pi &= R_\pi + \gamma P_\pi V_\pi\\
+      (I - \gamma P_\pi) V_\pi &= R_\pi \\
+      V_\pi &= (I - \gamma P_\pi)^{-1} R_\pi
+      \end {align*}
+      $$
+
+    - 而最优控制问题中的 max 函数导致其不再是矩阵方程，而是一个分段定义的非线性方程；它涉及到所有状态和动作的最大值操作（非线性），而且是一个多变量的递归方程组（每个状态的值依赖于其他状态的值）
+
+  - 然而，最优化问题还是能够通过迭代方法 “解决”
+    - 这是由于贝尔曼最优算子拥有两个关键性质
+
+      $$
+      (T_* V)(s)=\max_a
+      \Big [\mathcal R_s^a + \gamma \sum_{s'} \mathcal P_{ss'}^a V (s')
+      \Big]
+      $$
+
+    - 压缩映射（$\gamma < 1$）：$|T_* V - T_* W|*\infty\le\gamma |V - W|*\infty$，存在唯一不动点
+    - 迭代必然收敛：$V_{k+1} = T_* V_k\longrightarrow V_*$，这就是值迭代（Value Iteration）
+
+  - 这也导出了为什么强化学习问题必须近似
+    - 因为在大状态空间中，无法存储 $V_*$，无法枚举所有动作，无法解矩阵方程
+    - 为此，动态规划使用表格迭代，TD/ Q-learning 使用随机逼近，深度强化学习使用函数逼近
+  - 贝尔曼最优方程的迭代解方法
+    - 值迭代
+    - 策略迭代
+    - Q-Learning
+    - SARSA
+
+## 2.1.5 算子与不动点
+
+- 算子
+  - 设，$\mathcal V$ 是一个函数空间（例如所有 $V:\mathcal S\to\mathbb R$），$\mathcal V$ 上定义了某种范数 $|\cdot|$
+  - 算子（Operator）定义为：
+
+    $$
+    T:\mathcal V \to \mathcal V
+    $$
+
+  - 算子是 “以函数为输入、以函数为输出的映射”
+  - 在 MDP 中，状态空间：$\mathcal S$，价值函数空间：$\mathcal V={V\mid V:\mathcal S\to\mathbb R}$，所有 Bellman 算子，都是在这个空间上定义的映射
+
+- 策略 Bellman 算子 $T_\pi$
+  - 给定一个**固定策略**$\pi$​，定义：
+
+    $$
+    (T_\pi V)(s)=\sum_a \pi (a|s)
+    \sum_{s'} P (s'|s,a)
+    \big [R (s,a) + \gamma V (s') \big]
+    $$
+
+  - 假设以后一直按 $\pi$ 行动，对 $V$ 做一次 Bellman 更新
+
+- 最优 Bellman 算子 $T_*$​
+  - 定义
+
+    $$
+    (T_* V)(s)=\max_a
+    \sum_{s'} P (s'|s,a)
+    \big [R (s,a) + \gamma V (s') \big]
+    $$
+
+  - 不依赖具体策略，直接对动作取最大
+  - 假设未来每一步都采取最优动作，对 $V$​ 做一次更新
+
+- 不动点（Fixed Point）
+  - 设 $T:\mathcal V\to\mathcal V$ 是一个算子，如果存在 $V^*\in\mathcal V$​，使得
+
+    $$
+    T (V^*) = V^*
+    $$
+
+  - 则称，$V^* \text{是算子} T \text{的不动点}$
+  - 策略评估的不动点：$V^\pi = T_\pi V^\pi$，即在策略 $\pi$ 下，自洽的价值函数
+  - 最优控制的不动点：$V^* = T_* V^*$​，即最优价值函数必须满足 Bellman 最优方程
+
+- 不动点迭代
+  - 给定算子 $T$，定义迭代序列：
+
+    $$
+    V_{k+1} = T (V_k), \quad k=0,1,2,\dots
+    $$
+
+  - 若 $\lim_{k\to\infty} V_k = V^*$，且 $V^*$ 满足 $T (V^*)=V^*$，则称该过程为**不动点迭代**
+  - 在 MDP 中，当 $\gamma\in (0,1)$ 时，$T_\pi$ 和 $T_*$ 都是**压缩映射**，故不动点存在且唯一，任意初值迭代都收敛
+
+## 2.1.6 马尔可夫过程扩展
+
+- （完全可观察）马尔可夫决策过程 MDP：$O_t=S_t^a=S_t^e$，Agent 直接观察环境的状态
+- 部分可观察马尔可夫决策过程（POMDP, Partially Observable MDP）：Agent 无法直接观察到完整的环境状态，而是通过观测 $o_t$ 获取部分信息，必须构造自己的状态表示
+- 连续状态和动作空间：状态和动作空间是连续的，可以使用函数逼近方法（如深度强化学习）解决

@@ -1,0 +1,154 @@
+---
+title: 信赖域方法
+description: 介绍信赖域方法在强化学习中的应用，包括 TRPO 和 PPO 算法的核心思想、损失函数的定义与计算方法，以及它们在强化学习中的应用和实现细节
+---
+
+## 3.3.1 TRPO：KL 约束的信赖域策略优化
+
+- 为什么要信赖域
+  - 最原始的策略梯度中隐含一个极强但通常不成立的假设：一小步参数更新 ⇒ 一小步策略变化 ⇒ 性能单调改善
+  - 但神经网络参数空间 ≠ 策略分布空间，参数的一小步可能导致 $\pi (a|s)$ 剧烈改变；一次 “好梯度”，也许会直接把策略推到灾难区
+  - 信赖域方法（Trust Region Methods）则把 “更新幅度” 从参数空间搬到策略空间，在优化策略时，限制新旧策略的差异以确保学习稳定性
+- Trust Region Policy Optimization（TRPO）
+  - 基于 KL 散度约束的新旧策略差异，进行更新
+  - 保证每次更新策略不会偏离当前策略太远
+- Proximal Policy Optimization（PPO）
+  - 用裁剪目标函数（Clipped Objective）替代严格的 KL 散度约束
+  - 简化实现，计算效率更高，常用于实际应用
+- TRPO 算法原理
+  - 在优化策略时，采用信赖域的概念，确保更新后的新策略与旧策略之间的差异（通常用 KL 散度衡量）在一定范围内，防止策略更新过快导致性能下降或失效
+  - 策略优化目标：在策略 $\pi_\theta$ 的参数空间中最大化累计奖励的期望，即
+
+    $$
+    \mathbb {E}_{s \sim \rho^\pi, a \sim \pi_\theta} [r (s, a)]
+    $$
+
+  - 信赖域约束（从策略梯度的重要性采样形式而来）
+
+    $$
+    \begin {align*}
+    \max_{\theta} &\quad \mathbb {E}_{s \sim \rho^\pi} \left [\frac {\pi_\theta (a|s)}{\pi_{\theta_{\text{old}}}(a|s)} A^{\pi_{\theta_{\text{old}}}}(s, a) \right]\\
+    \text{subject to} &\quad \mathbb {E}_{s \sim \rho^\pi} \left [D_{\text{KL}}(\pi_\theta (\cdot|s) \parallel \pi_{\theta_{\text{old}}}(\cdot|s)) \right] \leq \delta
+    \end {align*}
+    $$
+
+  - 约束的是策略分布，不是参数；是期望 KL，不是逐样本；$\delta$ 是 “允许的最大策略变化”
+  - 优势函数
+
+    $$
+    A^{\pi_{\theta_{\text{old}}}}(s, a) = Q^{\pi_{\theta_{\text{old}}}}(s, a) - V^{\pi_{\theta_{\text{old}}}}(s)
+    $$
+
+  - 需要显式计算费舍尔信息矩阵和逆矩阵
+    - 在 $\theta_{\text{old}}$ 附近，对 KL 做二阶展开：
+
+      $$
+      \begin {align*}
+      D_{\mathrm {KL}}
+      &\approx
+      \frac {1}{2}
+      (\theta-\theta_{\text{old}})^T
+      F
+      (\theta-\theta_{\text{old}})\\
+      F
+      &=
+      \mathbb {E}
+      \big [
+      \nabla_\theta \log \pi
+      \nabla_\theta \log \pi^T
+      \big]
+      \end {align*}
+      $$
+
+    - 即在 Fisher 度量下，走一小步最优方向，但代价是需要近似求逆 $F^{-1}$，实现复杂、算力重
+    - 通过二次规划（Quadratic Programming, QP）解决优化问题，计算复杂度较高
+
+## 3.3.2 PPO：TRPO 的一阶近似
+
+### 3.3.2.1 损失函数
+
+- TRPO 很对，但工程代价太高，PPO 对此做出了改进，不要显式 KL 约束，不要二阶优化
+- **a. 策略损失（Policy Loss）**：通过对比新旧策略的比率 $R_t$ 和优势函数 $A_t$ 计算：
+  - 利用重要性采样（importance sampling）来估计在当前策略下的回报
+    - 新旧策略比率：其中 $\pi_{\theta}$ 是当前策略，$\pi_{\text{old}}$ 是旧策略
+
+      $$
+      R_t (\theta) = \frac {\pi_{\theta}(a_t | s_t)}{\pi_{\text{old}}(a_t | s_t)}
+      $$
+      - $R_t=1$：没变
+      - $R_t>1$：新策略更偏向该动作
+      - $R_t<1$：新策略压低该动作概率
+
+    - 可以使用对数计算
+
+      $$
+      R_t (\theta) = \exp (\log \pi_\theta (a_t | s_t) - \log \pi_{\text{old}}(a_t | s_t))
+      $$
+
+    - 无截断损失项
+
+      $$
+      \mathcal {L}(\theta) = R_t (\theta) \cdot \text{A}_t
+      $$
+
+  - 裁剪策略（Clipped Objective）：限制策略更新的幅度来保证训练稳定性，具体形式为：
+
+    $$
+    \mathcal {L}_{\text{clip}}(\theta) = \mathbb {E}_t \left [\min \left ( R_t (\theta) A_t, \text{clip}(R_t (\theta), 1-\epsilon, 1+\epsilon) A_t \right) \right]
+    $$
+    - $\epsilon$ 是一个超参数，通常取 0.1 到 0.2，用于控制裁剪范围
+    - $\text{clip}(R_t, 1-\epsilon, 1+\epsilon)$​​ 限制了策略比率的变化幅度，确保新策略不会偏离旧策略太远
+      - 优势为正：不允许概率提升超过 $1+\epsilon$
+      - 优势为负：不允许概率下降超过 $1-\epsilon$
+    - 通过取最小值，算法在优势函数为正或负的情况下都能防止过度优化
+    - 通常来说，策略损失取 $\mathcal {L}_{\text{PG}}(\theta) = - \min \left (\mathcal {L}(\theta), \mathcal {L}_{clip}(\theta) \right)$
+
+- **b. 值函数损失（Value Function Loss）**：值函数的损失通过最小化预测值 $V_{\phi}(s_t)$ 与实际折扣回报 $\hat {R}_t$ 之间的误差来优化：
+
+  $$
+  \mathcal {L}_{\text{value}}(\phi) = \mathbb {E}_t \left [\left ( V_{\phi}(s_t) - \hat {R}_t \right)^2 \right]
+  $$
+  - 同样也可以通过裁剪策略计算值函数损失
+  - PPO 的 Actor 稳定，高度依赖一个 “不过拟合 / 不偏置” 的 Critic
+
+- **c. 熵奖励**：防止策略塌缩
+
+  $$
+  \mathcal {H}(\pi)=-\sum_a \pi (a|s)\log\pi (a|s)
+  $$
+  - 抵消裁剪带来的 “保守性”
+  - 延缓确定性策略过早出现
+
+- **d. 总损失函数**：PPO 的总损失函数包括策略损失、值函数损失和熵奖励（用于增加探索）：
+
+  $$
+      \mathcal {L}_{\text{PPO}}(\theta, \phi) = \mathcal {L}_{\text{PG}}(\theta) - c_1 \mathcal {L}_{\text{value}}(\phi) + c_2 \mathcal {H}(\pi_{\theta})
+  $$
+  - $c_1$ 和 $c_2$ 是权重系数，用于平衡各个损失项
+  - $\mathcal {H}(\pi_{\theta})=-\sum_a\pi_{\theta}(a\vert s_t)\log\pi_{\theta}(a\vert s_t)$ 是策略的熵，鼓励策略的多样性，从而促进探索
+
+- **e. KL 惩罚项**（可选）：在损失函数中加入一个 KL 惩罚项，用来监控新旧策略的 KL 散度：
+
+  $$
+      L^{\text{KL}} = \mathbb {E} \left [L^{\text{CLIP}}(\theta) - \beta D_{\text{KL}}(\pi_{\theta_{\text{old}}} \| \pi_{\theta}) \right]
+  $$
+  - 其中 $\beta$ 是 KL 散度的惩罚系数
+
+### 3.3.2.2 具体步骤
+
+- 采集数据
+  - 使用当前策略 $\pi_{\theta}$ 与环境交互，采集一批轨迹数据，包括状态 $s_t$、动作 $a_t$、奖励 $R_t$、下一状态 $s_{t+1}$
+  - 记录旧策略的概率分布 $\pi_{\text{old}}(a_t|s_t)$
+- 计算奖励和优势函数
+  - 计算折扣累计回报 $R_t$（未来奖励的总和）
+  - 计算优势函数 $A_t$
+- 更新网络参数
+  - 更新策略网络：计算策略比率 $R_t (\theta)$ 和裁剪后的策略损失 $\mathcal {L}_{\text{PG}}(\theta)$
+  - 更新值函数网络：使用均方误差损失 $\mathcal {L}_{\text{value}}(\phi)$ 最小化值函数预测 $V_{\phi}(s_t)$ 和折扣回报 $\hat {R}_t$ 之间的差异
+  - 总损失函数：总损失函数 $\mathcal {L}_{\text{PPO}}(\theta, \phi)$ 结合策略损失、值函数损失和熵正则项
+- 执行梯度更新：使用优化器对策略网络参数 $\theta$ 和值函数网络参数 $\phi$ 执行梯度下降更新：
+
+  $$
+    \theta \leftarrow \theta - \eta \nabla_{\theta} \mathcal {L}_{\text{PPO}}(\theta, \phi)\\
+    \phi \leftarrow \phi - \eta \nabla_{\phi} \mathcal {L}_{\text{PPO}}(\theta, \phi)
+  $$

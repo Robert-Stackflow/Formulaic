@@ -1,0 +1,163 @@
+---
+title: 动态规划
+description: 介绍动态规划在强化学习中的应用，包括动态规划的定义、策略评估、策略迭代和价值迭代等内容
+---
+
+## 2.2.1 动态规划定义
+
+- 动态规划不是 RL 特有的，它解决的是一类问题：**序列决策 + 最优性 + 可分解结构**，而 MDP 问题刚好满足两个关键条件
+  - 最优子结构（Optimal Substructure）：从当前状态开始的最优决策 = 当前一步最优 + 后续状态仍然最优，这也正是贝尔曼最优原理
+  - 重叠子问题（Overlapping Subproblems）：不同轨迹会反复到达同一个状态，所以「状态价值」值得缓存和反复使用，这就是为什么用**值函数**而不是直接枚举轨迹
+  - 因此引入动态规划解决已知的 MDP 问题（即状态转移概率矩阵和奖励函数已知）
+- 动态规划方法的特点
+  - Model-based
+    - 动态规划假设 MDP 的转移概率 $P (s'|s, a)$ 和奖励函数 $R (s, a)$​​ 是完全已知的；而我们需要解决的是 Planning，也即如何解决 MDP 问题
+    - 动态规划的更新式为 $\displaystyle\sum_{s'} P (s'|s,a)\big [\cdots\big]$
+    - **必须知道整个转移分布**，不能靠采样
+  - 确定性
+    - 值函数和策略的更新是基于精确的数学计算，不依赖于采样数据
+    - 动态规划不引入方差，所以 DP 是 RL 的 “理想上限”
+    - 因此，TD / Q-learning 的本质是在不知道模型时，用采样近似 DP
+  - 预测 / 控制问题
+    - 对于 Prediction：预测固定策略的价值函数 —— 策略评估
+    - 对于 Control：在给定 MDP 中，能做到的最好事情是什么；可获得最大回报是什么；最好的策略是什么；最优价值函数
+- 动态规划的目标
+  - 动态规划的目标是求解最优策略 $\pi^*$，即找到一种策略使得累积期望奖励（或价值）最大化
+  - 价值函数（Value Function）：
+    - 状态价值函数 $V^\pi (s)$：在策略 $\pi$ 下，从状态 $s$ 开始的累积期望奖励
+
+      $$
+      V^\pi (s) = \mathbb {E}^\pi \left [\displaystyle\sum_{t=0}^\infty \gamma^t R (s_t, a_t) \big| s_0 = s \right]
+      $$
+
+    - 状态 - 动作价值函数 $Q^\pi (s, a)$：在策略 $\pi$ 下，从状态 $s$ 执行动作 $a$ 开始的累积期望奖励
+
+      $$
+      Q^\pi (s, a) = \mathbb {E}^\pi \left [R (s, a) + \gamma V^\pi (s') \big| s, a \right]
+      $$
+
+  - 设 $V^*(s)$ 是最优价值函数，最优策略 $\pi^*$ 满足：
+
+    $$
+    V^*(s) = \displaystyle\max_a \mathbb {E}_{\pi^*} \left [R (s, a) + \gamma V^*(s') \right]
+    $$
+
+## 2.2.2 策略评估
+
+- 策略评估（Policy Evaluation）
+  - 目标：给定一个策略 $\pi$，计算其对应的状态价值函数 $V^\pi (s)$​，评估该策略到底有多么好
+  - 本质：用不动点迭代，求算子 $T_\pi$ 的不动点
+
+    $$
+    V_{k+1} = T_\pi V_k
+    $$
+
+  - 方法：通过**贝尔曼期望方程**（Bellman Expectation Equation）迭代计算：
+
+    $$
+    \begin {align*}
+    V_\pi (s) &= \mathbb E_\pi [G_t \mid S_t=s]\\
+    &= \displaystyle\sum_{a} \pi (a|s) \displaystyle\sum_{s'} P (s'|s, a) \big [R (s, a) + \gamma V_\pi (s') \big]
+    \end {align*}
+    $$
+
+  - 迭代方式:
+    1. 初始 $V_0 (s) = 0$（或任意值）
+    2. 逐步更新（其中 $s^{'}$ 是 $s$ 的后继状态）
+
+       $$
+       V_{k+1}(s) = \displaystyle\sum_{a} \pi (a|s) \displaystyle\sum_{s'} P (s'|s, a) \big [R (s, a) + \gamma V_k (s') \big]
+       $$
+    - Synchronous 备份：每次更新时，对于所有状态 $s\in S$，使用 $v_k (s^{'})$ 更新 $v_{k+1}(s)$​
+    - 改进
+      - In-Place Dynamic Programming
+      - Prioritised sweeping
+      - Real-time dynamic programming
+      - Full-Width Backups
+      - Sample Backups
+
+- 策略评估过程中，虽然能够利用当前价值函数和贪婪原则得到好的策略，但是策略评估的策略始终是初始被评估策略，不会更新
+- 即更好的策略并不会对价值函数的迭代造成反馈，所以称为**策略评估**
+
+## 2.2.3 策略迭代
+
+- 在 “评估当前策略” 和 “改进当前策略” 之间来回摆动
+- 本质：在 “策略诱导的 Bellman 算子” 序列中，不断切换算子，逼近最优算子 $T_*$ 的不动点
+- 策略改进（Policy Improvement）
+  - 目标：基于当前策略的价值函数 $V^\pi (s)$，改进策略 $\pi$
+  - 实际上，不必等到价值函数收敛，即可得到最优策略
+  - 方法：利用贪婪原则（Greedy Principle）更新策略：
+
+    $$
+    \begin {align*}
+        \pi'(s) &= \arg\displaystyle\max_a q_{\pi}(s,a) = \arg\displaystyle\max_a \displaystyle\sum_{s'} P (s'|s, a) \big [R (s, a) + \gamma V_\pi (s') \big]\\
+        q_{\pi}(s,\pi^{\prime}(s))&=\displaystyle\max_a q_{\pi}(s,a)\ge q_{\pi}(s,\pi (s))=v_{\pi}(s)\\
+        v_{\pi}(s)& \leq q_\pi (s,\pi^{\prime}(s))=\mathbb {E}_{\pi^{\prime}}\left [R_{t+1}+\gamma v_\pi (S_{t+1})\mid S_t=s\right] \\
+        &\leq\mathbb {E}_{\pi^{\prime}}\left [R_{t+1}+\gamma q_\pi (S_{t+1},\pi^{\prime}(S_{t+1}))\mid S_t=s\right] \\
+        &\leq\mathbb {E}_{\pi^{\prime}}\left [R_{t+1}+\gamma R_{t+2}+\gamma^2q_\pi (S_{t+2},\pi^{\prime}(S_{t+2}))\mid S_t=s\right] \\
+        &\leq\mathbb {E}_{\pi^{\prime}}\left [R_{t+1}+\gamma R_{t+2}+...\mid S_t=s\right]=v_{\pi^{\prime}}(s)
+        \end {align*}
+    $$
+
+- 策略迭代（Policy Iteration）
+  - 目标：反复进行 “策略评估” 和 “策略改进”，直至收敛到最优策略 $\pi^*$
+  - 过程：
+    - 初始随机策略 $\pi_0$
+    - 策略评估：计算 $V_{\pi_k}(s)$，即
+
+      $$
+      V_{\pi_k} = T_{\pi_k} V_{\pi_k}
+      $$
+
+    - 策略改进：得到新策略 $\pi_{k+1}$，即
+
+      $$
+      \pi_{k+1}(s)=\arg\displaystyle\max_a\sum_{s'} P (s'|s,a)\big [R (s,a) + \gamma V_{\pi_k}(s') \big]
+      $$
+
+    - 重复，直至策略不再变化（即使价值函数未完全收敛，只要策略稳定就可停止）
+
+  - 与简单的策略评估不同，策略迭代会在**更新后的新策略**上进行策略评估
+  - 最终达到最优策略
+
+    $$
+    \begin {align*}
+    q_{\pi}(s,\pi^{\prime}(s))&=\displaystyle\max_a q_{\pi}(s,a)= q_{\pi}(s,\pi (s))=v_{\pi}(s)\\
+        \text{Bellman Optimality Equation:} v_{\pi}(s)&=\displaystyle\max_a q_{\pi}(s,a)\rightarrow v_{\pi}(s)=v_{*}(s)
+        \end {align*}
+    $$
+
+  - 策略评估得到价值函数不一定需要收敛，可以提前停止吗
+    - 迭代 K 步
+    - 策略迭代通常需要**更少次的外循环**，但每次策略评估本身可能较耗时
+    - 价值迭代
+
+## 2.2.4 价值迭代
+
+- 把「评估 + 改进」**压缩成一步**
+- 本质：直接对最优 Bellman 算子做不动点迭代
+
+  $$
+  V_{k+1} = T_* V_k
+  $$
+
+- 价值迭代（Value Iteration）
+  - 目标：直接通过更新价值函数来找到最优值函数 $V_*(s)$，进而推导出最优策略
+  - 方法：基于**贝尔曼最优方程**（Bellman Optimality Equation）迭代：
+
+    $$
+    \begin {align*}
+    V_{k+1}(s) &= \displaystyle\max_{a} \displaystyle\sum_{s'} P (s'|s, a) \big [R (s, a) + \gamma V_k (s') \big]\\ &=\max_{a} R (s,a)+\gamma\displaystyle\sum_{s'} P (s'|s, a) V_k (s')\\
+    v_{k+1}&=\max_{a}\mathcal {{R}}^a+\gamma\mathcal {P}^av_k
+    \end {align*}
+    $$
+
+  - 终止条件：当 $V_{k+1}(s)$ 与 $V_k (s)$ 的变化小于阈值 $\epsilon$​ 时停止
+  - 与策略迭代不同，没有显式策略
+  - 中间价值函数可能并没有对应的策略；而策略迭代中价值函数是根据特定策略计算得到的
+
+| 问题类型         | 贝尔曼方程     | 算法     | 功能                                  | 算法复杂度                                                 |
+| ---------------- | -------------- | -------- | ------------------------------------- | ---------------------------------------------------------- |
+| 预测问题         | 贝尔曼期望方程 | 策略评估 | 计算给定策略的状态价值函数 $v_\pi (s)$ | 每次迭代 $O (mn^2)$，其中 $n$ 是状态数，$m$ 是动作数        |
+| 控制问题（期望） | 贝尔曼期望方程 | 策略迭代 | 求解最优策略 $\pi^*$ 和 $v_*(s)$      | 每次策略评估 $O (mn^2)$，策略改进 $O (mn)$                   |
+| 控制问题（最优） | 贝尔曼最优方程 | 价值迭代 | 求解最优策略 $\pi^*$ 和 $v_*(s)$      | 每次迭代 $O (mn^2)$，基于动作值函数时，每次迭代 $O (m^2n^2)$ |

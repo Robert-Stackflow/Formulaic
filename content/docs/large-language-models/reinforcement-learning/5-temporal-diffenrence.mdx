@@ -1,13 +1,9 @@
 ---
-title: 强化学习（二）
-description: 介绍强化学习的基本范式、核心概念及相关技术，并系统梳理强化学习算法体系
+title: 时间差分学习
+description: 介绍时间差分学习的基本概念，自举、蒙特卡洛方法与 TD 方法的对比，TD (λ) 的基本思想以及前向 / 后向 TD (λ) 的等价性等内容
 ---
 
-## 二、经典强化学习
-
-### 2.4 时间差分学习（TD）
-
-#### 2.4.1 时间差分学习
+## 2.4.1 时间差分学习
 
 - TD 方法的基本思想
   - TD 学习是在 “没有模型” 的情况下，用一次真实转移来近似 Bellman 期望算子
@@ -33,7 +29,7 @@ description: 介绍强化学习的基本范式、核心概念及相关技术，�
     $$
     - 其中，$V (S_{t+1})$ 即用当前的价值函数取估计下一个状态的价值 —— 这就是 Bootstrap
     - TD 目标：$R_{t+1}+\gamma V (S_{t+1})$，即预估的回报
-    - TD 误差：$\delta_t=R_{t+1}+\gamma V (S_{t+1})-V (S_t)$，表示当前估计 $V (S_{t})$​ 和 “更好的估计目标” 差多少
+    - TD 误差：$\delta_t=R_{t+1}+\gamma V (S_{t+1})-V (S_t)$，表示当前估计 $V(S_{t})$​ 和 “更好的估计目标” 差多少
       - $\delta_t>0$：实际比你想的好，低估了
       - $\delta_t<0$：实际比你想的差，高估了
       - $\delta_t=0$​：贝尔曼一致
@@ -98,20 +94,20 @@ description: 介绍强化学习的基本范式、核心概念及相关技术，�
 | 是否需要完整回合   | 不需要               | 需要           | 不需要         |
 | 是否需要环境模型   | 是                   | 否             | 否             |
 
-#### 2.4.2 TD ($\lambda$)
+## 2.4.2 TD ($\lambda$)
 
-##### 2.4.2.1 TD ($\lambda$) 的基本思想
+### 2.4.2.1 TD ($\lambda$) 的基本思想
 
 - TD (λ) 是 TD 和 MC 的 “加权平均”，使用**资格迹（eligibility traces）**累积影响
 - TD (λ) 的基本思想
   - 让 TD 目标猜测未来 $n$ 步
 
     $$
-          \begin {align*}
-            (TD)\quad n=1\quad & G_{t}^{(1)}=R_{t+1}+\gamma V (S_{t+1}) \\
-            n=2\quad & G_{t}^{(2)}=R_{t+1}+\gamma R_{t+2}+\gamma^{2} V (S_{t+2}) \\
-            (MC)\quad n=\infty\quad & G_{t}^{(\infty)}=R_{t+1}+\gamma R_{t+2}+...+\gamma^{T-1} R_{T}
-          \end {align*}
+    \begin {align*}
+    (TD)\quad n=1\quad & G_{t}^{(1)}=R_{t+1}+\gamma V (S_{t+1}) \\
+    n=2\quad & G_{t}^{(2)}=R_{t+1}+\gamma R_{t+2}+\gamma^{2} V (S_{t+2}) \\
+    (MC)\quad n=\infty\quad & G_{t}^{(\infty)}=R_{t+1}+\gamma R_{t+2}+...+\gamma^{T-1} R_{T}
+    \end {align*}
     $$
 
   - $n$ 步回报
@@ -136,7 +132,7 @@ description: 介绍强化学习的基本范式、核心概念及相关技术，�
     - 当前 TD 误差，应该影响哪些过去状态？
     - 用**资格迹**实现在线更新，无需等 episode 结束
 
-##### 2.4.2.2 前向 TD ($\lambda$​)
+### 2.4.2.2 前向 TD ($\lambda$​)
 
 - 引入 $\lambda$，合并来自所有不同时间步的信息
 - $\lambda$- 回报
@@ -158,7 +154,7 @@ description: 介绍强化学习的基本范式、核心概念及相关技术，�
 
   ![前向 TD (λ)](/img/llm/前向TD%28λ%29.png)
 
-##### 2.4.2.3 后向 TD ($\lambda$)
+### 2.4.2.3 后向 TD ($\lambda$)
 
 - 资格迹（Eligibility traces）
   - 资格迹是 “Bellman 误差的时间传播核”
@@ -171,18 +167,18 @@ description: 介绍强化学习的基本范式、核心概念及相关技术，�
 
   $$
   \begin {cases}
-        \mathbb {E}_t (s) = \gamma \lambda \mathbb {E}_{t-1}(s), & \text{for} s \ne S_t \\
-        \mathbb {E}_t (S_t) = \gamma \lambda \mathbb {E}_{t-1}(S_t) + 1, & \text{for} s = S_t \\
-        \Rightarrow \mathbb {E}_t (s) = \gamma \lambda \mathbb {E}_{t-1}(s) + \mathbf {1}(S_t = s)
-        \end {cases}
+  \mathbb {E}_t (s) = \gamma \lambda \mathbb {E}_{t-1}(s), & \text{for} s \ne S_t \\
+  \mathbb {E}_t (S_t) = \gamma \lambda \mathbb {E}_{t-1}(S_t) + 1, & \text{for} s = S_t \\
+  \Rightarrow \mathbb {E}_t (s) = \gamma \lambda \mathbb {E}_{t-1}(s) + \mathbf {1}(S_t = s)
+  \end {cases}
   $$
 
 - 资格迹记录了最近哪些状态或动作对当前学习目标的重要性，资格迹通过控制 “谁被更新” 和 “更新多少”，提供**更新范围的衰减机制**
 - 资格迹值越高，说明状态越 “新鲜”，该状态的价值函数（或动作值函数）就越需要根据当前的强化信号（如奖励）进行更新：
 
   $$
-        \delta_t=R_{t+1}+\gamma V (S_{t+1})-V (S_t)\\
-        V (S_t)\gets V (S_t)+\alpha\delta_t \mathbb {E}_t (s)
+  \delta_t=R_{t+1}+\gamma V (S_{t+1})-V (S_t)\\
+  V (S_t)\gets V (S_t)+\alpha\delta_t \mathbb {E}_t (s)
   $$
 
 - 当前 TD 误差不仅更新 $S_t$，还**按资格迹大小，回传给过去的状态**
@@ -190,7 +186,7 @@ description: 介绍强化学习的基本范式、核心概念及相关技术，�
   - 当 $\lambda=0$ 时，$\mathbb {E}_t (s)=\mathbf {1}(S_t=s)$，仅有当前状态被更新，退化为 $\text{TD}(0)$
   - 当 $\lambda=1$ 时，$\mathbb {E}_t (s)=\displaystyle\sum_{k=0}^{\infty}\gamma^k1 (S_{t+k}=s)$，退化为 MC 或称为 $\text{TD}(1)$
 
-##### 2.4.2.4 前向 / 后向 / MC/TD 的等价性
+### 2.4.2.4 前向 / 后向 / MC/TD 的等价性
 
 - 前向与后向的等价性
   - 前向混合目标：
@@ -325,7 +321,7 @@ description: 介绍强化学习的基本范式、核心概念及相关技术，�
   - TD (λ) 的前后向等价，本质上就是 “TD 误差 → 回报” 的推广版 MC 推导
   - MC 不是特例，**MC 是 TD (λ) 在 λ=1 时的极限情形**
 
-##### 2.4.2.5 离线与在线
+### 2.4.2.5 离线与在线
 
 - 离线与在线
   - “离线” 不是指不能边走边学，而是指：某个状态 $S_t$ 的更新，要等到未来奖励都出现后，才能算清楚它应该更新多少
@@ -381,7 +377,7 @@ description: 介绍强化学习的基本范式、核心概念及相关技术，�
   | TD ($\lambda$) | $\lambda$ - 回报 $G_t^\lambda$                      | 控制偏差 - 方差平衡       |            |
   | Q-learning      | $R_{t+1} + \gamma \max_{a'} \hat {q}(S_{t+1}, a')$   | off-policy 学习，学习更快 |            |
 
-#### 2.4.3 TD 控制（SARSA）
+## 2.4.3 TD 控制（SARSA）
 
 - 基本思想
   - On-Policy 的 TD 控制（SARSA）
@@ -447,7 +443,7 @@ description: 介绍强化学习的基本范式、核心概念及相关技术，�
 - SARSA 的收敛性：SARSA 收敛于最优动作值函数，即 $Q (s,a)\rightarrow q_*(s,a)$，当满足
   - GLIE 性质
 
-#### 2.4.4 SARSA ($\lambda$)
+## 2.4.4 SARSA ($\lambda$)
 
 - 引入资格迹，考虑多步回报
 
@@ -497,7 +493,7 @@ description: 介绍强化学习的基本范式、核心概念及相关技术，�
 
     - 由于需要计算 $n$- 步回报，前瞻性 SARSA ($\lambda$) 必须等待整个回合结束才能更新动作值函数
     - 无法在线更新
-    - SARSA (λ) ≈ 用**λ- 回报**更新动作价值函数
+    - SARSA (λ) ≈ 用**λ-回报**更新动作价值函数
 
   - 后瞻性 SARSA ($\lambda$​)
     - 从 “过去的状态 - 动作对对当前 TD 误差的影响” 的视角出发
@@ -519,420 +515,3 @@ description: 介绍强化学习的基本范式、核心概念及相关技术，�
   - 在线实现是近似
   - Exact Online SARSA (1) 才严格等价
 - 总而言之，SARSA 是：on-policy + TD + 动作价值函数 + 样本 Bellman 期望更新；用真实执行的下一步动作，学习真实执行策略的价值
-
-### 2.5 Q-Learning
-
-- Q-learning 是一种 off-policy 的 TD 控制算法，通过 “假设下一步采取最优动作（max）”，来直接学习最优动作价值函数 $Q^*$，与实际行为策略无关
-- 基本思想
-  - Off-Policy 学习
-  - 希望观察他人的行为 / 利用旧策略来学习
-  - 希望遵循探索性策略来学习最优策略
-  - 希望遵循一个策略来学习多个策略
-
-#### 2.5.1 重要性采样
-
-- 离策略学习
-  - 目标策略 $\pi$：用于更新值函数的策略，即 $\pi^*(s) = \displaystyle\arg\max_a Q (s,a)$
-  - 行为策略 $\mu$：实际选择动作的策略，在当前状态下，下一步动作从行为策略采样，即 $A_{t+1}\sim \mu (\cdot|S_t)$
-  - 目标：学习最优策略 $\pi^*$，即 $q_*(s,a)$
-- 重要性采样（Importance Sampling）
-  - 如果你想估计：
-
-    $$
-    \mathbb {E}_{X \sim P}[f (X)]
-    $$
-
-  - 但你手头的数据却来自另一个分布 $Q$，怎么办？
-  - 数学技巧：如何估计另一个分布的期望
-
-    $$
-    \begin {align*}
-        \mathbb {E}_{X\sim P}[f (X)] & =\sum P (X) f (X) \\
-         & =\sum Q (X)\frac {P (X)}{Q (X)} f (X) \\
-         & =\mathbb {E}_{X\sim Q}\left [\frac {P (X)}{Q (X)} f (X)\right]
-        \end {align*}
-    $$
-
-  - 用 $Q$ 采样，但用 $\frac {P}{Q}$ 修正偏差
-
-- 离策略蒙特卡洛：利用从 $\mu$ 得到的回报来评估 $\pi$
-
-  $$
-        G_t^{\pi/\mu}=\frac {\pi (A_t|S_t)}{\mu (A_t|S_t)}\frac {\pi (A_{t+1}|S_{t+1})}{\mu (A_{t+1}|S_{t+1})}\ldots\frac {\pi (A_T|S_T)}{\mu (A_T|S_T)} G_t\\
-        V (S_t)\leftarrow V (S_t)+\alpha\left (G_t^{\pi/\mu}-V (S_t)\right)
-  $$
-  - 缺点：方差过大；如果 $\mu$ 为 0 该方法失效
-  - 若存在状态–动作对 $(s,a)$，使得 $\mu (a|s)=0$ 且 $\pi (a|s)>0$
-  - 则重要性采样比率 $\frac {\pi (a|s)}{\mu (a|s)}$ 将变为无穷大，导致估计不稳定
-  - 这是 Support mismatch (支持集不重叠) 问题：目标策略选择了行为策略从未选择过的动作，无法通过行为策略的数据来估计目标策略的价值
-
-- 离策略 TD 学习：基于重要性采样，给 TD 目标添加权重，即 $R+\gamma V (S^\prime)$
-
-  $$
-      V (S_{t}) \leftarrow V (S_{t})+
-      \alpha\left (\frac {\pi (A_{t}|S_{t})}{\mu (A_{t}|S_{t})}\left (R_{t+1}+\gamma V (S_{t+1})\right)-V (S_{t})\right)
-  $$
-  - 依然存在高方差和支持集不重叠问题
-
-- 为什么二者需要重要性采样？
-  - 只要你的更新目标里包含 “对目标策略 $\pi$ 下动作的期望”，而你的数据来自另一个策略 $\mu$​，就必须使用重要性采样
-  - Q-learning 之所以不需要重要性采样，是因为它根本不在估计任何策略的期望，而是在逼近 Bellman 最优算子
-  - 离策略 MC 的目标是从行为策略 $\mu$ 中采样轨迹，来评估并改进某个目标策略 $\pi$ 的价值
-
-#### 2.5.2 Q-Learning 的实现
-
-- Q-Learning 的关键突破：**完全绕开重要性采样**
-  - Q-learning 根本不在做策略评估，没有 $\pi$，没有对动作分布取期望
-  - Q-Learning 学的是什么？不是 $q_\pi$，而是最优动作价值函数
-  - 考虑动作值函数 $Q (s,a)$，不需要重要性采样
-  - 不存在用 $\mu$ 的分布去估计 $\pi$​ 的期望
-  - Q-Learning 直接对 Bellman 最优方程进行随机近似，不涉及对目标策略期望的估计，因此不需要重要性采样
-- Q-Learning（SARSAMAX）的推导过程：
-  - Q-Learning 更新的是 Bellman 最优算子
-
-    $$
-    \begin {align*}
-    Q^*(s,a)
-    &=\max_\pi
-    \mathbb {E}_\pi
-    \Big [\sum_{k=0}^\infty \gamma^k R_{t+k+1}
-    \mid S_t=s,A_t=a
-    \Big]\\
-    &=\mathbb {E}
-    \left [R_{t+1}
-    +
-    \gamma \max_{a'} Q^*(S_{t+1},a')
-    \right]
-    \end {align*}
-    $$
-
-  - 和 TD / SARSA 一样，样本近似期望（TD-Target 与行为策略 $\mu$ 无关）：
-
-    $$
-    R_{t+1}+\gamma \max_{a'} Q (S_{t+1},a')
-    $$
-
-  - TD 误差（Q-learning）：
-
-    $$
-    \delta_t^{\text{QL}}=R_{t+1}+\gamma \max_{a'} Q (S_{t+1},a')-Q (S_t,A_t)
-    $$
-
-  - 更新规则：
-
-    $$
-    Q (S_t,A_t)\leftarrow Q (S_t,A_t)+\alpha\left ({\color {red} R_{t+1}+\gamma\max_{a'} Q (S_{t+1}, a')} -Q (S_t,A_t)\right)
-    $$
-
-  - 这一更新规则本质上是在最小化如下**均方 TD 误差**：
-
-    $$
-    \begin {align*}
-    \mathcal {L}&=\Big (y_t^{QL}-Q (s_t,a_t)\Big)^2\\
-    A'&\triangleq\arg\max_{a'} Q (S_{t+1},a')\\
-    y_t^{QL}&=R_{t+1}+\gamma Q (S_{t+1},A')\\
-    & =R_{t+1}+\gamma Q (S_{t+1},\arg\max_{a^{\prime}} Q (S_{t+1},a^{\prime})) \\
-    &=R_{t+1}+\gamma\max_{a'} Q (s_{t+1},a')\\
-    \end {align*}
-    $$
-
-  - 其中 $A'$**并非环境中实际执行的动作**，而是由当前动作价值函数在下一个状态上给出的记号性贪婪选择
-  - 在上述公式中可以看到，Q-Learning 更新时用的是 $\displaystyle\max_{a'} Q (S_{t+1},a')$，而不是从行为策略中采样的动作，与行为策略完全无关；即行为 ≠ 目标，故 Q-Learning 是 off-policy 的
-  - 在 Q-Learning 中，目标策略 $\pi$ 是隐式的，其选取贪婪策略
-
-    $$
-    \pi (S_{t+1})=\arg\displaystyle\max_{a^{\prime}} Q (S_{t+1},a^{\prime})
-    $$
-
-- 综上所述，Q-learning = off-policy + TD + max-backup + 学最优动作价值函数，它假装未来会完美贪心，从而忽略探索的风险
-- 当状态–动作空间巨大或连续时，无法再用表格存储 $Q (s,a)$，于是将其替换为**参数化函数逼近**：
-
-  $$
-  Q (s,a)\approx Q_\theta (s,a)
-  $$
-
-- 在这种情况下，Q-learning 的更新不再是 “直接改表格”，而是对参数 $\theta$ 做梯度下降：
-
-  $$
-  \theta \leftarrow
-  \theta
-  -\alpha\nabla_\theta
-  \Big (y_t^{QL}
-  -Q_\theta (s_t,a_t)
-  \Big)^2
-  $$
-
-- 这一步**并没有改变 Q-learning 的本质假设**：
-  - TD 目标仍然来自一步 bootstrap
-  - 下一状态价值仍然通过 $\displaystyle\max_{a'} Q (\cdot,a')$ 给出
-  - 行为策略仍可包含探索，但目标值函数始终对应最优贪心策略
-  - 而 DQN 所做的事，正是将 $Q (s,a)$ 替换为 深度神经网络 $Q_\theta (s,a)$，并配合经验回放、目标网络等工程机制，但这些机制并未改变 Q-learning 的 “off-policy + TD + max-backup” 核心结构
-
-  | 类别                              | Full Backup (DP)                                                                                                                 | Sample Backup (TD)                                                                                        |
-  | --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-  | Bellman 期望方程（$v_\pi (s)$）    | Iterative Policy Evaluation<br/>$V (s) \leftarrow \mathbb {E}[R + \gamma V (S') \mid s]$                                            | TD Learning<br/> $V (S) \stackrel {\alpha}{\leftarrow} R + \gamma V (S')$                                    |
-  | Bellman 期望方程（$q_\pi (s, a)$） | Q-Policy Iteration<br/>$Q (s, a) \leftarrow \mathbb {E}[R + \gamma Q (S', A') \mid s, a]$                                           | SARSA<br/>$Q (S, A) \stackrel {\alpha}{\leftarrow} R + \gamma Q (S', A')$                                    |
-  | Bellman 最优方程（$q_*(s, a)$）   | Q-Value Iteration<br/>$Q (s, a) \leftarrow \mathbb {E} \left [R + \gamma \displaystyle\max_{a' \in A} Q (S', a') \mid s, a \right]$ | Q-Learning <br/>$Q (S, A) \stackrel {\alpha}{\leftarrow} R + \gamma \displaystyle\max_{a' \in A} Q (S', a')$ |
-
-  ![DP 与 TD 的关系](/img/llm/DP与TD的关系.png)
-
-#### 2.5.3 从算子与不动点的角度看强化学习
-
-### 2.6 函数逼近
-
-#### 2.6.1 函数逼近
-
-- 基本思想
-  - 在前面章节（DP / MC / TD）中，我们几乎都隐含假设了一件事：状态（或状态 - 动作）是有限的、可枚举的，可以用表存下来
-  - 一旦这个假设不成立（连续状态、高维状态、组合爆炸），表格法直接失效
-  - 状态空间巨大（如图像、传感器数据）、状态空间连续（如位置、速度）、状态 × 动作组合数爆炸，这导致很多状态一辈子都见不到
-  - 因此不能 “记忆”，只能 “泛化”，那么如何通过泛化，建立有效的方法 —— 使用**参数化的函数模型**（如线性模型、神经网络等）来逼近
-- 函数逼近法
-  - 能够从已经见到的状态泛化到未见状态
-  - 通过 MC 或 TD 学习更新参数 $\mathbf {w}$
-
-    $$
-    \begin {align*}
-        \hat {v}(s,\mathbf {w}) & \approx v_{\pi}(s) \\
-        \hat {q}(s,a,\mathbf {w}) & \approx q_{\pi}(s,a)\\
-        \hat {\pi}(a|s;\mathbf {w}) &\approx \pi (a|s)
-        \end {align*}
-    $$
-
-  - 函数逼近是统一工具，值函数和策略都能逼近
-  - 函数逼近器有哪些？特征的线性组合、神经网络、决策树、最近邻、傅里叶 / 小波基
-  - 可微函数逼近器有哪些？特征的线性组合、神经网络 ——**要用梯度下降法**
-
-- 函数逼近在 RL 里比监督学习难得多，因为：
-  - 数据**非独立同分布（non-i.i.d.）**
-  - 数据分布**随策略变化（非平稳）**
-  - 目标值依赖于当前模型（bootstrap）
-
-#### 2.6.2 增量方法
-
-- 增量方法 =**在线学习**，即每来一个样本，就更新一次参数
-- 利用梯度下降法，找到局部最小值（以均方误差为例）
-  - $J (\mathbf {w})$​​ 是损失函数
-
-    $$
-    J (\mathbf {w}) =\mathbb {E}_\pi\left [(v_\pi (S)-\hat {v}(S,\mathbf {w}))^2\right]
-    $$
-
-  - 目标：通过梯度下降法，最小化损失函数，以优化模型参数
-
-    $$
-    \mathbf {w}^*=\arg\min_{\mathbf {w}} J (\mathbf {w})
-    $$
-
-  - 梯度下降的原始定义
-
-    $$
-    \Delta\mathbf {w}=-\alpha\nabla_{\mathbf {w}} J (\mathbf {w})
-    $$
-    - $\nabla_{\mathbf {w}} J (\mathbf {w})$：损失函数对参数的梯度
-    - 负号：沿着下降最快的方向
-    - $\alpha$：学习率
-
-  - 对单个状态 $S$，定义瞬时损失：
-
-    $$
-    \ell (\mathbf {w})=(v_\pi (S)-\hat {v}(S,\mathbf {w}))^2
-    $$
-
-  - 对它求梯度：
-
-    $$
-    \nabla_{\mathbf {w}}\ell (\mathbf {w})=\nabla_{\mathbf {w}}(v_\pi (S)-\hat {v}(S,\mathbf {w}))^2
-    $$
-
-  - 使用链式法则：
-
-    $$
-    =2 (v_\pi (S)-\hat {v}(S,\mathbf {w}))\cdot (-\nabla_{\mathbf {w}}\hat {v}(S,\mathbf {w}))
-    $$
-
-  - 整理符号：
-
-    $$
-    =-2 (v_\pi (S)-\hat {v}(S,\mathbf {w}))\nabla_{\mathbf {w}}\hat {v}(S,\mathbf {w})
-    $$
-
-  - 为了抵消平方项，添加系数
-
-    $$
-    \begin {align*}
-      \Delta \mathbf {w} & =-\frac {1}{2}\alpha\nabla_{\mathbf {w}} J (\mathbf {w}) \\
-       & =\alpha\mathbb {E}_\pi\left [(v_\pi (S)-\hat {v}(S,\mathbf {w}))\nabla_\mathbf {w}\hat {v}(S,\mathbf {w})\right]\\
-      \end {align*}
-    $$
-
-  - 其中，$\nabla_{\mathbf {w}}\hat {v}(S,\mathbf {w})$ 即表示模型对参数 $\mathbf {w}$ 的梯度，表示模型参数变化时，预测值的变化量
-  - 也可以直观理解为：误差 × 对参数的敏感度 × 学习率
-
-- 随机梯度下降（SGD）
-  - 采样梯度，收敛于全局最优值
-  - 真实环境中我们拿不到期望，只能采样
-
-    $$
-    \Delta\mathbf {w}=\alpha (v_\pi (S)-\hat {v}(S,\mathbf {w}))\nabla_\mathbf {w}\hat {v}(S,\mathbf {w})
-    $$
-
-- 线性价值函数逼近
-  - 使用特征向量表示状态
-
-    $$
-        x (S)=\begin {pmatrix}
-        \mathbf {x}_1 (S) \\
-        \vdots \\
-        \mathbf {x}_n (S)
-        \end {pmatrix}
-    $$
-
-  - 代入梯度公式：所有非线性都藏在特征里，模型本身是线性的
-
-    $$
-      \begin {align*}
-      \hat {v}(S,\mathbf {w})&=\mathbf {x}(S)^\top\mathbf {w}=\displaystyle\sum_{j=1}^n\mathbf {x}_j (S)\mathbf {w}_j\\
-      J (\mathbf {w})&=\mathbb {E}_\pi\left [(v_\pi (S)-\mathbf {x}(S)^\top\mathbf {w})^2\right]\\
-      \end {align*}
-    $$
-
-  - 代入梯度更新公式：更新值 = 学习率 × 预测误差 × 特征向量
-
-    $$
-        \nabla_\mathbf {w}\hat {v}(S,\mathbf {w}) =\mathbf {x}(S)\\
-        \Delta \mathbf {w} =\alpha (v_\pi (S)-\hat {v}(S,\mathbf {w}))\mathbf {x}(S)
-    $$
-
-  - 表查找形式：表格法 = one-hot 特征 + 线性模型
-
-    $$
-        \mathbf {x}^{table}(S)=
-        \begin {pmatrix}
-        \mathbf {1}(S=s_1) \\
-        \vdots \\
-        \mathbf {1}(S=s_n)
-        \end {pmatrix}\\
-        \hat {v}(S,\mathbf {w})=\mathbf {x}^{table}(S)\cdot
-        \begin {pmatrix}
-        \mathbf {w}_1 \\
-        \vdots \\
-        \mathbf {w}_n
-        \end {pmatrix}
-    $$
-
-  - 函数逼近不是 “另起炉灶”，而是表格法的推广
-
-- 状态值函数 $v_{\pi}(s)$​ 的函数逼近
-  - 可以对 $\langle S_1,A_1,V_{\pi}(S_1)\rangle,\langle S_2,A_2,V_{\pi}(S_2)\rangle,…,\langle S_T,A_T,V_{\pi}(S_T)\rangle$ 进行监督学习，来构造逼近函数
-- 动作值函数 $q_{\pi}(s,a)$ 的函数逼近
-  - 目标
-
-    $$
-    \hat {q}(S,A,\mathbf {w})\approx q_{\pi}(S,A)
-    $$
-
-  - 损失函数
-
-    $$
-    J (\mathbf {w})=\mathbb {E}_\pi\left [(q_\pi (S,A)-\hat {q}(S,A,\mathbf {w}))^2\right]
-    $$
-
-  - 随机梯度下降
-
-    $$
-    \begin {align*}
-    \Delta\mathbf {w} &= -\frac {1}{2}\alpha\nabla_{\mathbf {w}} J (\mathbf {w})\\ &=\alpha (q_{\pi}(S,A)-\hat {q}(S,A,\mathbf {w}))\nabla_{\mathbf {w}}\hat {q}(S,A,\mathbf {w})
-    \end {align*}
-    $$
-
-  - 可以对 $\langle S_1,A_1,V_{\pi}(S_1)\rangle,\langle S_2,A_2,V_{\pi}(S_2)\rangle,…,\langle S_T,A_T,V_{\pi}(S_T)\rangle$ 进行监督学习，来构造逼近函数
-  - 线性形式
-
-    $$
-        \begin {align*}
-        \mathbf {x}(S,A)&=
-        \begin {pmatrix}
-        \mathbf {x}_{1}(S,A) \\
-        \vdots \\
-        \mathbf {x}_{n}(S,A)
-        \end {pmatrix}\\
-        \hat {q}(S,A,\mathbf {w})&=\mathbf {x}(S,A)^\top\mathbf {w}=\sum_{j=1}^n\mathbf {x}_j (S,A)\mathbf {w}_j\\
-        \nabla_\mathbf {w}\hat {q}(S,A,\mathbf {w}) & =\mathbf {x}(S,A) \\
-        \Delta \mathbf {w} & =\alpha (q_\pi (S,A)-\hat {q}(S,A,\mathbf {w}))\mathbf {x}(S,A)
-        \end {align*}
-    $$
-
-#### 2.6.3 批量方法
-
-- 增量方法的问题：
-  - 每次更新仅依赖于当前样本或小批量样本，样本没被充分利用
-  - 更新噪声大
-  - 不稳定
-- 给定经验数据集
-
-  $$
-  \mathcal {D}={(s_1, v_1^\pi), …, (s_T, v_T^\pi)}
-  $$
-
-- 则最小二乘法找到的参数 $\mathbf {w}$ 最小化平方和误差
-
-  $$
-  \begin {align*}
-    LS (\mathbf {w}) & =\displaystyle\sum_{t=1}^T (v_t^\pi-\hat {v}(s_t,\mathbf {w}))^2 \\
-     & =\mathbb {E}_{\mathcal {D}}\left [(v^{\pi}-\hat {v}(s,\mathbf {w}))^{2}\right]
-  \end {align*}
-  $$
-
-- 如何找到最小二乘解
-  - 从经历中采样状态 - 值：$\langle s,v^{\pi}\rangle\sim \mathcal {D}$
-  - 应用随机梯度下降更新：$\Delta\mathbf {w}=\alpha (v^\pi-\hat {v}(s,\mathbf {w}))\nabla_\mathbf {w}\hat {v}(s,\mathbf {w})$
-  - 收敛至最小二乘解：$\mathbf {w}^{\pi}=\arg\min_{\mathbf {w}} LS (\mathbf {w})$​
-- 线性最小二乘
-  - 给定线性函数逼近 $\hat {v}(S,\mathbf {w})=\mathbf {x}(S)^\top\mathbf {w}$
-  - 当取 $\min LS (\mathbb {w})$ 时，$\mathbb {E}_{\mathcal {D}}[\Delta\mathbb {w}]=0$，即
-
-    $$
-        \begin {align*}
-        \mathbb {E}_{\mathcal {D}}\left [\Delta\mathbf {w}\right] & =0 \\
-        \alpha\sum_{t=1}^T\mathbf {x}(s_t)(v_t^\pi-\mathbf {x}(s_t)^\top\mathbf {w}) & =0 \\
-        \sum_{t=1}^T\mathbf {x}(s_t) v_t^\pi & =\sum_{t=1}^T\mathbf {x}(s_t)\mathbf {x}(s_t)^\top\mathbf {w} \\
-        \mathrm {w} & =\left (\sum_{t=1}^T\mathbf {x}(s_t)\mathbf {x}(s_t)^\top\right)^{-1}\sum_{t=1}^T\mathbf {x}(s_t) v_t^\pi
-        \end {align*}
-    $$
-
-  - 对于 $N$ 维特征向量，时间复杂度为 $O (N^3)$；采用增量方法（Shermann-Morrison）解决，时间复杂度为 $O (N^2)$
-  - 使用 MC/TD 估计 $v_t^\pi$
-
-- 最小二乘 Q-Learning（LSTDQ）
-  - 用最小二乘解 TD 固定点，比 Q-learning 更稳定、更样本高效
-  - 目标：线性逼近 $\hat {Q}(s,a;\mathbf {w})=\mathbf {x}(s,a)^\top\mathbf {w}$
-  - 损失函数：$LS (\mathbf {w})=\mathbb {E}_{\mathcal {D}}\left [(Q (s,a)-\hat {Q}(s,a;\mathbf {w}))^2\right]$
-  - 计算 $\mathcal {w}$
-
-    $$
-    \begin {align*}
-        \delta & =R_{t+1}+\gamma\hat {q}(S_{t+1},\pi (S_{t+1}),\mathbf {w})-\hat {q}(S_{t},A_{t},\mathbf {w}) \\
-        \Delta\mathbf {w} & =\alpha\delta\mathbf {x}(S_{t},A_{t})\\
-        0 & =\sum_{t=1}^{T}\alpha (R_{t+1}+\gamma\hat {q}(S_{t+1},\pi (S_{t+1}),\mathbf {w})-\hat {q}(S_{t},A_{t},\mathbf {w}))\mathbf {x}(S_{t},A_{t}) \\
-        \mathbf {w} & =\left (\sum_{t=1}^{T}\mathbf {x}(S_{t},A_{t})(\mathbf {x}(S_{t},A_{t})-\gamma\mathbf {x}(S_{t+1},\pi (S_{t+1})))^{\top}\right)^{-1}\sum_{t=1}^{T}\mathbf {x}(S_{t},A_{t}) R_{t+1}
-        \end {align*}
-    $$
-
-- 最小二乘策略迭代（Least Squares Policy Iteration）
-  - Policy Evaluation：LSTDQ
-  - Policy Improvement：Greedy
-
-  ```text
-  function LSPI-TD(D, π₀)
-      π′ ← π₀
-      repeat
-          π ← π′
-          Q ← LSTDQ(π, D)  // 通过最小二乘 TD-Q 方法计算 Q 函数
-          for all s ∈ S do
-              π′(s) ← argmaxₐ Q(s, a)  // 策略改进
-          end for
-      until (π ≈ π′)  // 判断策略是否收敛
-      return π
-  end function
-  ```

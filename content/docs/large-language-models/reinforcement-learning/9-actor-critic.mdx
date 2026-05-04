@@ -1,0 +1,334 @@
+---
+title: Actor-Critic
+description: 介绍 Actor-Critic 算法的基本原理，包括 Critic 模型的学习方法、几种 AC 算法的对比等内容
+---
+
+## Actor-Critic 算法
+
+- 通过引入真 TD 误差作为优势函数的无偏估计量（TD 误差在期望意义下等于优势函数，因此可作为其在线估计），REINFORCE 算法得到了极大改进，其不再需要完整回合，方差大幅下降，而且在线、持续学习成为可能
+- 然而，在 REINFORCE 算法中，$G_t$ 来自真实轨迹，无需额外模型，那么 TD 误差中的价值函数 $V_t (s)$ 由谁提供？
+  - 它不是环境给的，也不是 “天然存在” 的
+  - 倘若使用真值 $V_t (s)$，需要知道 $P (s'|s,a)$​，也即需要知道完整 MDP，这显然不现实
+    - 真实状态价值函数
+
+      $$
+      V^\pi (s) = \mathbb {E}_{\tau\sim\pi}\left [\sum_{k\ge t}\gamma^{k-t} r_k \;\bigg|\; s_t=s\right]
+      $$
+
+    - 期望展开后有
+
+      $$
+      V^\pi (s) = \sum_a \pi (a|s)\sum_{s'} P (s'|s,a)\Big (r (s,a,s') + \gamma V^\pi (s') \Big)
+      $$
+
+    - 真实价值 $V^\pi (s)$ 是对未来所有可能路径的加权平均，权重就是转移概率 P
+    - 不知道 P，就不可能算出真实的期望
+
+  - 那么只能自己学习一个价值函数 $V_{\mathbf {w}}(s)$—— 用一个函数逼近器，在线估计
+  - 由此，Critic 模型正式登场
+
+- Actor-Critic 架构
+  - 使用 Critic 去估计状态价值函数 $V^{\pi_\theta}(s)$，Actor 根据 Critic 的估计更新策略
+  - Critic 更新价值函数的参数 $\mathbf {w}$，即
+
+    $$
+    V_{\mathbf {w}}(s)\approx V^{\pi_\theta}(s)
+    $$
+
+  - 此时的 $\delta_t$ 不再是 “真优势”，而是 “估计的优势”
+  - 自此，Actor 更新策略的参数 $\theta$，根据 Critic 建议的方向
+
+- 如何学习 Critic 模型
+  - 首先，Critic 的优化目标是最小化均方误差损失：
+
+    $$
+    \mathcal {L}(w) = \frac {1}{2}\big (V_w (s_t) - V^\pi (s_t)\big)^2
+    $$
+
+  - 根据贝尔曼方程，真实价值满足：
+
+    $$
+    V^\pi (s_t) = \mathbb {E}\big [r_t + \gamma V^\pi (s_{t+1})\big]
+    $$
+
+  - 用采样值代替期望，构造 TD 目标：
+
+    $$
+    y_t = r_t + \gamma V_w (s_{t+1})
+    $$
+
+  - 定义 TD 误差：
+
+    $$
+    \delta_t = y_t - V_w (s_t) = r_t + \gamma V_w (s_{t+1}) - V_w (s_t)
+    $$
+
+  - 损失函数可写为 TD 误差的平方：
+
+    $$
+    \mathcal {L}(w) = \frac {1}{2}\delta_t^2
+    $$
+
+  - 对参数 w 求梯度：
+
+    $$
+    \nabla_w \mathcal {L}(w)
+    = \delta_t \cdot \nabla_w \delta_t
+    = \delta_t \cdot \nabla_w\big (r_t + \gamma V_w (s_{t+1}) - V_w (s_t)\big)
+    $$
+
+  - 由于 TD 目标中 $V_w (s_{t+1})$ 不参与当前步梯度计算（semi-gradient 设定），仅对 $V_w (s_t)$ 求导：
+
+    $$
+    \nabla_w \mathcal {L}(w) = -\delta_t \cdot \nabla_w V_w (s_t)
+    $$
+
+  - 执行梯度下降更新：
+
+    $$
+    \mathbf {w} \leftarrow \mathbf {w} - \beta \nabla_w \mathcal {L}(w)
+    $$
+
+  - 代入梯度后得到最终更新形式：
+
+    $$
+    \mathbf {w}\leftarrow\mathbf {w}+\beta\delta_t\nabla_\mathbf {w} V_\mathbf {w}(s_t)
+    $$
+
+  - 即通过 TD 误差来更新参数，进而逼近 $V_{\pi_\theta}(s)$
+
+- 算法流程
+  - Critic 使用线性函数逼近器，使用 TD (0) 逼近
+
+    $$
+    V_{\mathbf {w}}(s)=\mathbf {\phi}(s)^\top\mathbf {w}
+    $$
+
+  - 初始化策略参数 $\theta$ 和价值函数参数 $\mathbf {w}$
+  - 循环更新
+    1. 从起始状态 $s_0$ 开始
+    2. 根据策略 $\pi_\theta$ 选择动作 $a_t$
+    3. 执行动作 $a_t$，观察奖励 $r_{t}$ 和下一状态 $s_{t+1}$
+    4. 更新价值函数
+
+       $$
+       \begin {align*}
+       \delta
+       &=r_{t}+\gamma V_{\mathbf {w}}(s_{t+1})-V_{\mathbf {w}}(s_t)\\
+       \mathbf {w}
+       &\leftarrow
+       \mathbf {w}+\beta\delta\mathbf {\phi}(s_t)
+       \end {align*}
+       $$
+
+    5. 更新策略
+
+       $$
+       \theta\leftarrow
+       \theta+\alpha\nabla_\theta\log\pi_\theta (a_t\vert s_t)\delta_t
+       $$
+
+    6. 将状态更新为 $s_{t+1}$，$t\leftarrow t+1$
+    7. 重复直到达到终止状态
+
+- 误区澄清
+  - 在纯 V-critic Actor-Critic 中，Critic 并不直接为 Actor 提供动作区分信号，而动作区分完全由 $\nabla_\theta \log \pi_\theta (a|s)$ 提供
+  - 状态价值函数 $V_w (s)$​ 仅作为 baseline 使用，而真正驱动策略更新的是 TD 误差
+
+    $$
+    \delta_t = r_{t+1} + \gamma V_w (s_{t+1}) - V_w (s_t)
+    $$
+
+  - 它是对优势函数 $A^\pi (s_t,a_t)$ 的在线估计
+
+## 2.7.5 几种 AC 算法的对比
+
+| 维度              |V-critic                      |Q-critic                  |Advantage-critic          |
+| ----------------- | ---------------------------------- | ------------------------------ | ------------------------------ |
+| Critic 估计对象   | 状态价值函数                       | 动作价值函数                   | 优势函数                       |
+|                   | $V_w (s)$                           | $Q_w (s,a)$                     | $A_w (s,a)$                     |
+| 是否显式区分动作  | 不区分                             | 区分                           | 区分                           |
+| Actor 使用的信号  | TD 误差                            | $Q$ 值                         | 优势值                         |
+|                   | $\delta_t$                         | $Q_w (s_t,a_t)$                 | $A_w (s_t,a_t)$                 |
+| 策略梯度形式      | $\nabla_\theta\log\pi\cdot\delta_t$ | $\nabla_\theta\log\pi\cdot Q_w$ | $\nabla_\theta\log\pi\cdot A_w$ |
+| 是否天然 baseline | 是                                 | 否                             | 是                             |
+| 方差              | 中                                 | 高                             | 最低                           |
+| 兼容函数逼近      | 不适用                             | 有条件                         | 标准成立                       |
+| 典型算法          | A2C（V 版）                        | NAC                            | A2C / A3C / PPO                |
+
+- V-critic Actor–Critic
+  - Critic 的估计目标：使用函数逼近器估计状态价值函数
+
+    $$
+    V_w (s)\approx V^{\pi}(s)
+    $$
+
+- Actor 使用的核心信号
+  - TD 误差作为优势函数的在线估计
+
+    $$
+    \delta_t
+    =r_{t+1}
+    +
+    \gamma V_w (s_{t+1})
+    -
+    V_w (s_t)
+    $$
+    - 在 $V_w \to V^{\pi}$ 收敛时，有
+
+      $$
+      \mathbb {E}[\delta_t \mid s_t,a_t]=A^{\pi}(s_t,a_t)
+      $$
+
+  - Critic 参数更新（TD (0)，半梯度）：最小化 TD 误差平方的半梯度下降
+
+    $$
+    w
+    \leftarrow
+    w
+    +
+    \beta
+    \delta_t
+    \nabla_w V_w (s_t)
+    $$
+
+  - Actor 参数更新：使用 TD 误差调制策略梯度
+
+    $$
+    \theta
+    \leftarrow
+    \theta
+    +
+    \alpha
+    \nabla_\theta
+    \log
+    \pi_\theta (a_t|s_t)
+    ;
+    \delta_t
+    $$
+
+  - 关键性质
+    - Critic 不显式区分动作，**不显式表示优势**，只是 “间接提供一个 noisy 的优势样本”
+    - 动作区分完全由 $\nabla_\theta \log \pi_\theta (a|s)$ 提供
+    - TD 误差决定更新幅度与方向稳定性
+    - 不满足兼容函数逼近定理，但实践中稳定高效
+
+- Q-critic Actor–Critic
+  - Critic 的估计目标：使用函数逼近器估计动作价值函数
+
+    $$
+    Q_w (s,a)\approx Q^{\pi}(s,a)
+    $$
+
+  - Actor 使用的信号：直接使用动作价值作为回报估计
+
+    $$
+    Q_w (s_t,a_t)
+    $$
+
+  - Actor 参数更新（原始形式）：策略梯度以 $Q$ 值作为权重
+
+    $$
+    \theta
+    \leftarrow
+    \theta
+    +
+    \alpha
+    \nabla_\theta
+    \log
+    \pi_\theta (a_t|s_t)
+    Q_w (s_t,a_t)
+    $$
+
+  - 主要问题
+    - $Q_w (s,a)$ 本身是回报期望，未减 baseline
+    - 更新方差较大，稳定性较差
+  - 常见改进思路：引入状态相关 baseline，该形式自然过渡到 Advantage-critic
+
+    $$
+    \nabla_\theta
+    \log
+    \pi_\theta (a|s)
+    \big (Q_w (s,a)-b (s)
+    \big)
+    $$
+
+  - 理论上可构造兼容形式，但很少直接使用
+
+- Advantage-critic Actor–Critic
+  - Critic 的估计目标：直接估计优势函数
+
+    $$
+    \begin {align*}
+    A_w (s,a)&\approx A^{\pi}(s,a)\\
+    A_w (s,a)
+    &= Q_w (s,a)-
+    V_w (s)
+    \end {align*}
+    $$
+
+  - Actor 使用的信号：使用去除 baseline 后的动作优势
+
+    $$
+    A_w (s_t,a_t)
+    $$
+
+  - Actor 参数更新（标准形式）：策略梯度直接乘以优势函数
+
+    $$
+    \theta
+    \leftarrow
+    \theta
+    +
+    \alpha
+    \nabla_\theta
+    \log
+    \pi_\theta (a_t|s_t)
+    ;
+    A_w (s_t,a_t)
+    $$
+
+  - 优势函数满足（相比 Q-critic，方差显著降低）：
+
+    $$
+    \mathbb {E}_{a\sim\pi}[A_{\pi}(s,a)] = 0
+    $$
+
+  - 兼容函数逼近条件
+    - 若 Critic 采用
+
+      $$
+      A_w (s,a)
+      =
+
+      \nabla_\theta
+      \log
+      \pi_\theta (a|s)^\top
+      w
+      $$
+
+    - 且 $w$ 最小化
+
+      $$
+      \mathbb {E}_{\pi_\theta}
+      \left [
+      \big (A^{\pi}(s,a)-A_w (s,a)
+      \big)^2
+      \right]
+      $$
+
+    - 则策略梯度无偏
+
+      $$
+      \nabla_\theta J (\theta)
+      =
+      \mathbb {E}_{\pi_\theta}
+      \left [
+      \nabla_\theta
+      \log
+      \pi_\theta (a|s)
+      A_w (s,a)
+      \right]
+      $$
+
+  - A2C、A3C、PPO 等算法的核心形式

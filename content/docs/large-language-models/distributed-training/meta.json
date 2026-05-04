@@ -2,6 +2,10 @@
     "title": "分布式训练",
     "description": "从数据并行、模型并行到流水线并行，介绍大语言模型训练中的分布式训练技术和优化方法",
     "pages": [
-        "..."
+        "1-distributed-training-overview",
+        "2-parallelism",
+        "3-deepspeed",
+        "4-fsdp",
+        "5-megatron"
     ]
 }

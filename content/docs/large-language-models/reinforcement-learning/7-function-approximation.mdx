@@ -1,0 +1,261 @@
+---
+title: 函数逼近
+description: 介绍函数逼近在强化学习中的应用，包括增量方法、批量方法、线性价值函数逼近、最小二乘 Q-Learning 以及最小二乘策略迭代等内容
+---
+
+#### 2.6.1 函数逼近
+
+- 基本思想
+  - 在前面章节（DP / MC / TD）中，我们几乎都隐含假设了一件事：状态（或状态 - 动作）是有限的、可枚举的，可以用表存下来
+  - 一旦这个假设不成立（连续状态、高维状态、组合爆炸），表格法直接失效
+  - 状态空间巨大（如图像、传感器数据）、状态空间连续（如位置、速度）、状态 × 动作组合数爆炸，这导致很多状态一辈子都见不到
+  - 因此不能 “记忆”，只能 “泛化”，那么如何通过泛化，建立有效的方法 —— 使用**参数化的函数模型**（如线性模型、神经网络等）来逼近
+- 函数逼近法
+  - 能够从已经见到的状态泛化到未见状态
+  - 通过 MC 或 TD 学习更新参数 $\mathbf {w}$
+
+    $$
+    \begin{align*}
+    \hat {v}(s,\mathbf {w}) & \approx v_{\pi}(s) \\
+    \hat {q}(s,a,\mathbf {w}) & \approx q_{\pi}(s,a)\\
+    \hat {\pi}(a|s;\mathbf {w}) &\approx \pi (a|s)
+    \end{align*}
+    $$
+
+  - 函数逼近是统一工具，值函数和策略都能逼近
+  - 函数逼近器有哪些？特征的线性组合、神经网络、决策树、最近邻、傅里叶 / 小波基
+  - 可微函数逼近器有哪些？特征的线性组合、神经网络 ——**要用梯度下降法**
+
+- 函数逼近在 RL 里比监督学习难得多，因为：
+  - 数据**非独立同分布（non-i.i.d.）**
+  - 数据分布**随策略变化（非平稳）**
+  - 目标值依赖于当前模型（bootstrap）
+
+#### 2.6.2 增量方法
+
+- 增量方法 =**在线学习**，即每来一个样本，就更新一次参数
+- 利用梯度下降法，找到局部最小值（以均方误差为例）
+  - $J (\mathbf {w})$​​ 是损失函数
+
+    $$
+    J (\mathbf {w}) =\mathbb {E}_\pi\left [(v_\pi (S)-\hat {v}(S,\mathbf {w}))^2\right]
+    $$
+
+  - 目标：通过梯度下降法，最小化损失函数，以优化模型参数
+
+    $$
+    \mathbf {w}^*=\arg\min_{\mathbf {w}} J (\mathbf {w})
+    $$
+
+  - 梯度下降的原始定义
+
+    $$
+    \Delta\mathbf {w}=-\alpha\nabla_{\mathbf {w}} J (\mathbf {w})
+    $$
+    - $\nabla_{\mathbf {w}} J (\mathbf {w})$：损失函数对参数的梯度
+    - 负号：沿着下降最快的方向
+    - $\alpha$：学习率
+
+  - 对单个状态 $S$，定义瞬时损失：
+
+    $$
+    \ell (\mathbf {w})=(v_\pi (S)-\hat {v}(S,\mathbf {w}))^2
+    $$
+
+  - 对它求梯度：
+
+    $$
+    \nabla_{\mathbf {w}}\ell (\mathbf {w})=\nabla_{\mathbf {w}}(v_\pi (S)-\hat {v}(S,\mathbf {w}))^2
+    $$
+
+  - 使用链式法则：
+
+    $$
+    =2 (v_\pi (S)-\hat {v}(S,\mathbf {w}))\cdot (-\nabla_{\mathbf {w}}\hat {v}(S,\mathbf {w}))
+    $$
+
+  - 整理符号：
+
+    $$
+    =-2 (v_\pi (S)-\hat {v}(S,\mathbf {w}))\nabla_{\mathbf {w}}\hat {v}(S,\mathbf {w})
+    $$
+
+  - 为了抵消平方项，添加系数
+
+    $$
+    \begin {align*}
+    \Delta \mathbf {w} & =-\frac {1}{2}\alpha\nabla_{\mathbf {w}} J (\mathbf {w}) \\
+    & =\alpha\mathbb {E}_\pi\left [(v_\pi (S)-\hat {v}(S,\mathbf {w}))\nabla_\mathbf {w}\hat {v}(S,\mathbf {w})\right]\\
+    \end {align*}
+    $$
+
+  - 其中，$\nabla_{\mathbf {w}}\hat {v}(S,\mathbf {w})$ 即表示模型对参数 $\mathbf {w}$ 的梯度，表示模型参数变化时，预测值的变化量
+  - 也可以直观理解为：误差 × 对参数的敏感度 × 学习率
+
+- 随机梯度下降（SGD）
+  - 采样梯度，收敛于全局最优值
+  - 真实环境中我们拿不到期望，只能采样
+
+    $$
+    \Delta\mathbf {w}=\alpha (v_\pi (S)-\hat {v}(S,\mathbf {w}))\nabla_\mathbf {w}\hat {v}(S,\mathbf {w})
+    $$
+
+- 线性价值函数逼近
+  - 使用特征向量表示状态
+
+    $$
+    x (S)=\begin {pmatrix}
+    \mathbf {x}_1 (S) \\
+    \vdots \\
+    \mathbf {x}_n (S)
+    \end {pmatrix}
+    $$
+
+  - 代入梯度公式：所有非线性都藏在特征里，模型本身是线性的
+
+    $$
+    \begin {align*}
+    \hat {v}(S,\mathbf {w})&=\mathbf {x}(S)^\top\mathbf {w}=\displaystyle\sum_{j=1}^n\mathbf {x}_j (S)\mathbf {w}_j\\
+    J (\mathbf {w})&=\mathbb {E}_\pi\left [(v_\pi (S)-\mathbf {x}(S)^\top\mathbf {w})^2\right]\\
+    \end {align*}
+    $$
+
+  - 代入梯度更新公式：更新值 = 学习率 × 预测误差 × 特征向量
+
+    $$
+    \nabla_\mathbf {w}\hat {v}(S,\mathbf {w}) =\mathbf {x}(S)\\
+    \Delta \mathbf {w} =\alpha (v_\pi (S)-\hat {v}(S,\mathbf {w}))\mathbf {x}(S)
+    $$
+
+  - 表查找形式：表格法 = one-hot 特征 + 线性模型
+
+    $$
+    \mathbf {x}^{table}(S)=
+    \begin {pmatrix}
+    \mathbf {1}(S=s_1) \\
+    \vdots \\
+    \mathbf {1}(S=s_n)
+    \end {pmatrix}\\
+    \hat {v}(S,\mathbf {w})=\mathbf {x}^{table}(S)\cdot
+    \begin {pmatrix}
+    \mathbf {w}_1 \\
+    \vdots \\
+    \mathbf {w}_n
+    \end {pmatrix}
+    $$
+
+  - 函数逼近不是 “另起炉灶”，而是表格法的推广
+
+- 状态值函数 $v_{\pi}(s)$​ 的函数逼近
+  - 可以对 $\langle S_1,A_1,V_{\pi}(S_1)\rangle,\langle S_2,A_2,V_{\pi}(S_2)\rangle,…,\langle S_T,A_T,V_{\pi}(S_T)\rangle$ 进行监督学习，来构造逼近函数
+- 动作值函数 $q_{\pi}(s,a)$ 的函数逼近
+  - 目标
+
+    $$
+    \hat {q}(S,A,\mathbf {w})\approx q_{\pi}(S,A)
+    $$
+
+  - 损失函数
+
+    $$
+    J (\mathbf {w})=\mathbb {E}_\pi\left [(q_\pi (S,A)-\hat {q}(S,A,\mathbf {w}))^2\right]
+    $$
+
+  - 随机梯度下降
+
+    $$
+    \begin {align*}
+    \Delta\mathbf {w} &= -\frac {1}{2}\alpha\nabla_{\mathbf {w}} J (\mathbf {w})\\ &=\alpha (q_{\pi}(S,A)-\hat {q}(S,A,\mathbf {w}))\nabla_{\mathbf {w}}\hat {q}(S,A,\mathbf {w})
+    \end {align*}
+    $$
+
+  - 可以对 $\langle S_1,A_1,V_{\pi}(S_1)\rangle,\langle S_2,A_2,V_{\pi}(S_2)\rangle,…,\langle S_T,A_T,V_{\pi}(S_T)\rangle$ 进行监督学习，来构造逼近函数
+  - 线性形式
+
+    $$
+    \begin {align*}
+    \mathbf {x}(S,A)&=
+    \begin {pmatrix}
+    \mathbf {x}_{1}(S,A) \\
+    \vdots \\
+    \mathbf {x}_{n}(S,A)
+    \end {pmatrix}\\
+    \hat {q}(S,A,\mathbf {w})&=\mathbf {x}(S,A)^\top\mathbf {w}=\sum_{j=1}^n\mathbf {x}_j (S,A)\mathbf {w}_j\\
+    \nabla_\mathbf {w}\hat {q}(S,A,\mathbf {w}) & =\mathbf {x}(S,A) \\
+    \Delta \mathbf {w} & =\alpha (q_\pi (S,A)-\hat {q}(S,A,\mathbf {w}))\mathbf {x}(S,A)
+    \end {align*}
+    $$
+
+#### 2.6.3 批量方法
+
+- 增量方法的问题：
+  - 每次更新仅依赖于当前样本或小批量样本，样本没被充分利用
+  - 更新噪声大
+  - 不稳定
+- 给定经验数据集
+
+  $$
+  \mathcal {D}={(s_1, v_1^\pi), …, (s_T, v_T^\pi)}
+  $$
+
+- 则最小二乘法找到的参数 $\mathbf {w}$ 最小化平方和误差
+
+  $$
+  \begin {align*}
+    LS (\mathbf {w}) & =\displaystyle\sum_{t=1}^T (v_t^\pi-\hat {v}(s_t,\mathbf {w}))^2 \\
+     & =\mathbb {E}_{\mathcal {D}}\left [(v^{\pi}-\hat {v}(s,\mathbf {w}))^{2}\right]
+  \end {align*}
+  $$
+
+- 如何找到最小二乘解
+  - 从经历中采样状态 - 值：$\langle s,v^{\pi}\rangle\sim \mathcal {D}$
+  - 应用随机梯度下降更新：$\Delta\mathbf {w}=\alpha (v^\pi-\hat {v}(s,\mathbf {w}))\nabla_\mathbf {w}\hat {v}(s,\mathbf {w})$
+  - 收敛至最小二乘解：$\mathbf {w}^{\pi}=\arg\min_{\mathbf {w}} LS (\mathbf {w})$​
+- 线性最小二乘
+  - 给定线性函数逼近 $\hat {v}(S,\mathbf {w})=\mathbf {x}(S)^\top\mathbf {w}$
+  - 当取 $\min LS (\mathbb {w})$ 时，$\mathbb {E}_{\mathcal {D}}[\Delta\mathbb {w}]=0$，即
+
+    $$
+    \begin {align*}
+    \mathbb {E}_{\mathcal {D}}\left [\Delta\mathbf {w}\right] & =0 \\
+    \alpha\sum_{t=1}^T\mathbf {x}(s_t)(v_t^\pi-\mathbf {x}(s_t)^\top\mathbf {w}) & =0 \\
+    \sum_{t=1}^T\mathbf {x}(s_t) v_t^\pi & =\sum_{t=1}^T\mathbf {x}(s_t)\mathbf {x}(s_t)^\top\mathbf {w} \\
+    \mathrm {w} & =\left (\sum_{t=1}^T\mathbf {x}(s_t)\mathbf {x}(s_t)^\top\right)^{-1}\sum_{t=1}^T\mathbf {x}(s_t) v_t^\pi
+    \end {align*}
+    $$
+
+  - 对于 $N$ 维特征向量，时间复杂度为 $O (N^3)$；采用增量方法（Shermann-Morrison）解决，时间复杂度为 $O (N^2)$
+  - 使用 MC/TD 估计 $v_t^\pi$
+
+- 最小二乘 Q-Learning（LSTDQ）
+  - 用最小二乘解 TD 固定点，比 Q-learning 更稳定、更样本高效
+  - 目标：线性逼近 $\hat {Q}(s,a;\mathbf {w})=\mathbf {x}(s,a)^\top\mathbf {w}$
+  - 损失函数：$LS (\mathbf {w})=\mathbb {E}_{\mathcal {D}}\left [(Q (s,a)-\hat {Q}(s,a;\mathbf {w}))^2\right]$
+  - 计算 $\mathcal {w}$
+
+    $$
+    \begin {align*}
+    \delta & =R_{t+1}+\gamma\hat {q}(S_{t+1},\pi (S_{t+1}),\mathbf {w})-\hat {q}(S_{t},A_{t},\mathbf {w}) \\
+    \Delta\mathbf {w} & =\alpha\delta\mathbf {x}(S_{t},A_{t})\\
+    0 & =\sum_{t=1}^{T}\alpha (R_{t+1}+\gamma\hat {q}(S_{t+1},\pi (S_{t+1}),\mathbf {w})-\hat {q}(S_{t},A_{t},\mathbf {w}))\mathbf {x}(S_{t},A_{t}) \\
+    \mathbf {w} & =\left (\sum_{t=1}^{T}\mathbf {x}(S_{t},A_{t})(\mathbf {x}(S_{t},A_{t})-\gamma\mathbf {x}(S_{t+1},\pi (S_{t+1})))^{\top}\right)^{-1}\sum_{t=1}^{T}\mathbf {x}(S_{t},A_{t}) R_{t+1}
+    \end {align*}
+    $$
+
+- 最小二乘策略迭代（Least Squares Policy Iteration）
+  - Policy Evaluation：LSTDQ
+  - Policy Improvement：Greedy
+
+  ```text
+  function LSPI-TD(D, π₀)
+      π′ ← π₀
+      repeat
+          π ← π′
+          Q ← LSTDQ(π, D)  // 通过最小二乘 TD-Q 方法计算 Q 函数
+          for all s ∈ S do
+              π′(s) ← argmaxₐ Q(s, a)  // 策略改进
+          end for
+      until (π ≈ π′)  // 判断策略是否收敛
+      return π
+  end function
+  ```

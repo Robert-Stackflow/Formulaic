@@ -1,0 +1,182 @@
+---
+title: 基于值函数的深度强化学习
+description: 介绍基于值函数的深度强化学习的基本原理，包括 DQN、Double DQN、Dueling DQN 等内容
+---
+
+## 深度强化学习
+
+- 为什么深度 RL 会不稳定
+  - 所有深度 RL 算法几乎都是函数逼近 + Bootstrapping + Off-policy
+  - 函数逼近：神经网络本身是 “全局耦合” 的
+    - 在表格 RL 中：更新 $Q (s,a)$ 只影响一个格子
+    - 在深度 RL 中：更新参数 $\theta$，所有状态–动作的估计都会发生变化
+    - 结果：一个样本的误差 → 在整个状态空间 “扩散”，局部错误可能被放大
+  - Bootstrapping：目标本身在动
+  - Off-policy：数据分布 ≠ 当前策略分布
+    - 在 DQN /replay buffer 中：数据来自旧策略、探索策略、甚至完全不同策略，但更新目标是当前参数对应的策略
+    - 导致梯度方向系统性偏差、在函数逼近下无法保证收敛
+  - 分布漂移（Non-stationarity）
+    - 在监督学习中：数据分布固定
+    - 在 RL 中：模型一更新，数据分布就变，Actor 变 → 状态访问频率变 → Critic 学习目标变
+  - 为了解决这些问题，一系列的措施
+
+    | 技巧           | 本质作用                 |
+    | -------------- | ------------------------ |
+    | Target Network | 冻结 bootstrap 目标      |
+    | Replay Buffer  | 打破时间相关性、平滑分布 |
+    | Double DQN     | 减少自举高估             |
+    | Clipped PPO    | 限制策略更新幅度         |
+    | Entropy bonus  | 防止过早塌缩             |
+    | SAC soft value | 平滑价值面               |
+
+- 为什么策略迭代有时比值迭代快
+
+## 3.1 值函数方法（DQN）
+
+- 表格型 Q-learning 假设 $Q (s,a)$ 可枚举，但当状态空间巨大（图像、连续状态）时，表格法不可行
+- 核心思想 —— 用**神经网络**逼近 Q 函数：
+
+  $$
+    Q (s,a; \theta) \approx Q^*(s,a)
+  $$
+  - 其中 $\theta$ 是网络参数，输入是状态 $s$，输出是每个动作 $a$ 对应的估计价值
+
+- DQN 的学习目标：
+  - Bellman 最优方程：
+
+    $$
+    Q^*(s,a)=\mathbb {E}\big [r+\gamma\max_{a'} Q^*(s',a')\big]
+    $$
+
+  - 用当前网络近似，得到 TD 目标：
+
+    $$
+    y_t=R_t+\gamma\max_{a'} Q (s_{t+1},a';\theta)
+    $$
+
+  - 用均方误差拟合：
+
+    $$
+    \mathcal {L}(\theta)=\mathbb {E}\big [(y_t-Q (s_t,a_t;\theta))^2\big]
+    $$
+
+  - 均方误差中，目标 $y_t$ 和被更新的 $Q (\cdot;\theta)$**用的是同一套参数**，导致一系列问题
+    - 时序相关性：连续样本高度相关、SGD 假设 i.i.d. 被破坏
+    - 目标非平稳：$y_t$ 依赖 $\theta$，学习目标在 “追着自己跑”
+    - max 运算导致高估偏差
+
+      $$
+      \mathbb {E}[\max Q] \ge \max \mathbb {E}[Q]
+      $$
+
+- 经验回放（Experience Replay）
+  - 回放池 $\mathcal {D}$
+
+    $$
+    \mathcal {D}={(s_t,a_t,R_t,s_{t+1})}
+    $$
+
+  - 每次训练随机采样小批量数据，而不是用最新的数据
+
+    $$
+    (s,a,r,s')\sim \mathcal {D}
+    $$
+
+  - 打破时序相关性；提高数据利用率；近似 i.i.d. 分布
+
+- 目标网络（Target Network）
+  - 维护一套冻结参数
+
+    $$
+    Q (s,a;\theta^-)
+    $$
+
+  - TD 目标改为：
+
+    $$
+    y_t=R_t+\gamma\max_{a'} Q (s_{t+1},a';\theta^-)
+    $$
+
+  - 每隔固定步数，将主网络参数 $\theta$ 复制给目标网络：
+
+    $$
+    \theta^- \leftarrow \theta
+    $$
+
+  - 让目标在一段时间内固定，避免 “自己追自己”
+
+- 损失函数：
+
+  $$
+  \mathcal {L}(\theta)
+  =\mathbb {E}_{(s,a,r,s')\sim\mathcal {D}}
+  \Big [
+  \big (r+\gamma\max_{a'} Q (s',a';\theta^-)
+  -Q (s,a;\theta)
+  \big)^2
+  \Big]\\
+  \theta\leftarrow\theta-\alpha\nabla_\theta\mathcal {L}(\theta)
+  $$
+
+- DQN 的本质与缺点
+  - DQN = off-policy + TD 控制 + 值函数方法，逼近 Bellman 最优算子的不动点
+  - 缺点：仅适用于**离散动作空间**，max 运算不可微，连续动作 → 无法直接扩展，目标偏差大时不稳定
+  - 将 Q-Critic Actor-Critic 中的 Actor 做出如下改动
+    - 把随机策略变成确定策略：不再采样，永远选 Q 最大的动作
+    - Actor 不再有参数：没有 $\theta$，策略完全由 Q 决定
+    - Actor 更新消失，只剩 Critic
+    - 也即：把 $\pi_\theta (a|s)$ 限制为 $\delta (a=\arg\max Q)$
+  - 如此得到的正是 Q-learning / DQN，由此可见，DQN 是 Q-critic 没有 Actor 的极限情况
+  - 通过引入可学习的 Actor，在连续空间中不可解析不可微的 max 运算变为了间接逼近极大化的参数化网络
+- Double DQN
+  - DQN 中，由同一个网络选择动作并评估动作，Double DQN 对其进行拆分
+  - 主网络选动作：
+
+    $$
+    a^*=\arg\max_a Q (s',a;\theta)
+    $$
+
+  - 目标网络评估：
+
+    $$
+    y=r+\gamma Q (s',a^*;\theta^-)
+    $$
+
+  - 减少 max 带来的系统性高估
+
+- Dueling DQN
+  - 将 Q 函数分解为
+
+    $$
+    Q (s,a)=V (s)+A (s,a)
+    $$
+
+  - 网络输出一个 $V (s)$ 和一组 $A (s,a)$
+  - 常见归一化形式
+
+    $$
+    Q (s,a)=V (s)+\Big (A (s,a)-\frac {1}{|\mathcal {A}|}\sum_{a'} A (s,a')\Big)
+    $$
+
+  - 有些状态下：动作不重要，而是状态本身就好 / 坏，提高了泛化性与学习效率
+
+- Prioritized Experience Replay
+  - TD 误差
+
+    $$
+    \delta_i = y_i - Q (s_i,a_i)
+    $$
+
+  - 采样概率
+
+    $$
+    P (i)\propto|\delta_i|^\alpha
+    $$
+
+  - 重要性采样修正：
+
+    $$
+    w_i=\left (\frac {1}{N\cdot P (i)}\right)^\beta
+    $$
+
+  - 多学 “学得不好的样本”、加速收敛、提高样本效率

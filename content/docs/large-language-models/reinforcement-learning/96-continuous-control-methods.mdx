@@ -1,0 +1,238 @@
+---
+title: 连续控制方法
+description: 介绍连续控制方法的基本原理，包括 DDPG、TD3、SAC 等算法的核心思想、优势函数的定义与计算方法
+---
+
+离散动作空间中的 DQN 依赖 max 运算来求解最优动作，该运算不可微。当动作空间连续时，无法直接应用该策略。
+
+DDPG、TD3 和 SAC 通过引入可学习的策略网络（Actor）直接处理连续动作，避免了显式的最大化运算。
+
+## 3.4.1 DDPG 方法
+
+- 深度确定性策略梯度（Deep Deterministic Policy Gradient, DDPG）是将确定性策略梯度定理扩展到深度学习领域的方法，用于处理连续控制问题。
+- 核心思想：
+  - 维护两个网络：Actor 网络 $\mu_\theta (s)$ 产生确定性动作，Critic 网络 $Q_w (s,a)$ 评估状态 - 动作对的价值
+  - Actor 通过最大化 Critic 提供的 Q 值来更新，Critic 通过 TD 误差来更新
+  - 通过目标网络和经验回放稳定训练
+- 确定性策略梯度定理：
+  - 随机策略梯度：
+
+    $$
+    \nabla_\theta J (\theta) = \mathbb {E}_{s\sim\rho^\pi} \left [\nabla_a Q (s,a) |_{a=\mu_\theta (s)} \nabla_\theta \mu_\theta (s) \right]
+    $$
+
+  - 其中 $\mu_\theta (s)$ 是确定性策略，而非从分布采样，梯度可以直接流经 Critic
+  - 直观解释：通过链式法则，Q 值关于动作的导数告诉我们 "在当前状态下应该如何改变动作以增加价值"，策略网络据此调整其参数
+
+- Critic 的更新：
+  - Critic 估计的是状态 - 动作对的价值函数 $Q_w (s,a) \approx Q^\mu (s,a)$
+  - 使用 TD 目标（带目标网络 $\theta^-$）：
+
+    $$
+    y_t = R_t + \gamma Q_{w'}(s_{t+1}, \mu_{\theta'}(s_{t+1}))
+    $$
+
+  - 其中 $w'$ 和 $\theta'$ 分别是 Critic 和 Actor 的目标网络参数
+  - 最小化 TD 误差：
+
+    $$
+    \mathcal {L}_Q (w) = \mathbb {E}_{(s,a,r,s')\sim\mathcal {D}} \left [\big ( y_t - Q_w (s,a) \big)^2 \right]
+    $$
+
+- Actor 的更新：
+  - 使用确定性策略梯度，沿着 Critic 的梯度方向更新 Actor：
+
+    $$
+    \nabla_\theta \mathcal {L}_\mu (\theta) = -\mathbb {E}_{s\sim\mathcal {D}} \left [\nabla_a Q_w (s,a) |_{a=\mu_\theta (s)} \nabla_\theta \mu_\theta (s) \right]
+    $$
+
+  - 或简化为：
+
+    $$
+    \theta \leftarrow \theta + \alpha \mathbb {E}_{s\sim\mathcal {D}} \left [\nabla_\theta \mu_\theta (s) \nabla_a Q_w (s,a) |_{a=\mu_\theta (s)} \right]
+    $$
+
+- 目标网络和缓慢更新：
+  - 维护一套冻结的目标网络参数 $\theta'$ 和 $w'$，每隔 $C$ 步进行软更新：
+
+    $$
+    \theta' \leftarrow \tau \theta + (1-\tau) \theta'\\
+    w' \leftarrow \tau w + (1-\tau) w'
+    $$
+
+  - 其中 $\tau \ll 1$（通常 $\tau=0.001$），使目标网络平缓变化，提高稳定性
+
+- 经验回放：使用重放缓冲区 $\mathcal {D}$ 存储 $(s_t, a_t, R_t, s_{t+1})$，从中随机采样进行训练，打破数据时序相关性
+- DDPG 的特点：
+  - 优点：适用于连续动作空间，off-policy 学习效率高，通过确定性策略梯度直接优化 Actor
+  - 缺点：Critic 学习不稳定时容易导致价值高估，确定性策略容易过早收敛到局部最优
+
+## 3.4.2 TD3 方法
+
+- 双延迟深度确定性策略梯度（Twin Delayed DDPG, TD3）针对 DDPG 的价值高估问题进行了改进
+- DDPG 存在的问题：
+  - Critic 网络使用单一 Q 网络估计目标值，当网络学习不完美时，往往高估 Q 值
+  - 这导致 Actor 学习偏向高估的动作，形成恶性循环，最终学到次优策略
+- TD3 的三个关键改进：
+  - 双 Q 网络（Clipped Double Q）：
+    - 维护两个独立的 Critic 网络 $Q_{w_1}$ 和 $Q_{w_2}$，分别有参数 $w_1$ 和 $w_2$
+    - 取两个网络的最小值作为目标（相比 DDPG 的单网络更保守）：
+
+      $$
+      y_t = R_t + \gamma \min (Q_{w_1'}(s_{t+1}, \tilde {a}_{t+1}), Q_{w_2'}(s_{t+1}, \tilde {a}_{t+1}))
+      $$
+
+    - 其中 $\tilde {a}_{t+1} = \mu_{\theta'}(s_{t+1}) + \text{clip}(\epsilon, -c, c)$，$\epsilon \sim \mathcal {N}(0, \sigma^2)$ 是策略平滑化噪声
+    - 通过最小值运算显式地对抗价值高估
+
+  - 延迟策略更新（Delayed Policy Update）：
+    - 每隔 $d$ 步才更新一次 Actor，而 Critic 每步都更新
+    - Actor 更新的标志是 Critic 已经更新得相对稳定，减少基于不可靠 Critic 反馈的策略更新
+
+      $$
+      \text{if} \text{step} \mod d = 0 \text{then update} \theta \text{else only update} w_1, w_2
+      $$
+
+  - 目标策略平滑化（Target Policy Smoothing）：
+    - 在目标 Q 值计算中，动作添加噪声而非硬性选择最优动作：
+
+      $$
+      \tilde {a}_{t+1} = \text{clip}(\mu_{\theta'}(s_{t+1}) + \text{clip}(\epsilon, -c, c), a_{\min}, a_{\max})
+      $$
+
+    - 避免 Q 网络在动作空间中的尖峰（sharp peaks），提高泛化能力
+    - 相当于对目标策略的高斯平滑化近似
+
+- 损失函数：
+  - Critic 损失（每步更新，两个网络）：
+
+    $$
+    \mathcal {L}_{Q}(w_i) = \mathbb {E}_{(s,a,r,s')\sim\mathcal {D}} \left [\big ( y_t - Q_{w_i}(s,a) \big)^2 \right], \quad i=1,2
+    $$
+
+  - Actor 损失（每 $d$ 步更新）：
+
+    $$
+    \mathcal {L}_\mu (\theta) = -\mathbb {E}_{s\sim\mathcal {D}} \left [Q_{w_1}(s, \mu_\theta (s)) \right]
+    $$
+
+  - 注意这里使用第一个 Critic 网络；也可平均两个网络
+
+- 目标网络更新：与 DDPG 相同，使用软更新
+
+  $$
+  \theta' \leftarrow \tau \theta + (1-\tau) \theta', \quad w_i' \leftarrow \tau w_i + (1-\tau) w_i'
+  $$
+
+- TD3 的优势：
+  - 通过双 Q 网络和最小值运算明确对抗价值高估
+  - 延迟策略更新让 Actor 基于更稳定的 Critic 反馈进行学习
+  - 目标策略平滑化提高学习的平稳性和泛化
+  - 实验证明比 DDPG 获得更稳定、更高的收益
+
+## 3.4.3 SAC 方法
+
+- 最大熵强化学习（Soft Actor-Critic, SAC）通过在奖励中加入策略熵项，鼓励探索的同时学习鲁棒策略
+- 最大熵 RL 的目标：
+  - 标准 RL 目标：最大化累计折扣奖励 $J (\pi) = \mathbb {E}[\sum_{t=0}^{\infty} \gamma^t r (s_t, a_t)]$
+  - 最大熵目标：同时最大化奖励和策略的熵，平衡开采和探索
+
+    $$
+    J (\pi) = \mathbb {E}_{\pi} \left [\sum_{t=0}^{\infty} \gamma^t (r (s_t, a_t) + \alpha \mathcal {H}(\pi (\cdot|s_t))) \right]
+    $$
+
+  - 其中 $\mathcal {H}(\pi) = -\mathbb {E}_{a\sim\pi}[\log\pi (a|s)]$ 是策略的熵，$\alpha$ 是温度参数，控制探索与开采的权衡
+  - 直觉：鼓励策略保持高熵（多样性），避免陷入确定性的次优行为
+
+- Soft Q 函数和贝尔曼方程：
+  - 定义 Soft Q 函数（包含熵奖励）：
+
+    $$
+    Q^\pi (s,a) = \mathbb {E} \left [r (s,a) + \gamma \mathbb {E}_{s'\sim P (s'|s,a)} \big [V^\pi (s') \big] \right]
+    $$
+
+  - 其中 Soft V 函数为：
+
+    $$
+    V^\pi (s) = \mathbb {E}_{a\sim\pi (\cdot|s)} \left [Q^\pi (s,a) - \alpha \log \pi (a|s) \right]
+    $$
+
+  - Soft Bellman 方程：
+
+    $$
+    V^\pi (s) = \mathbb {E}_{a\sim\pi (\cdot|s)} \left [Q^\pi (s,a) - \alpha \log \pi (a|s) \right]
+    $$
+
+    $$
+    Q^\pi (s,a) = r (s,a) + \gamma \mathbb {E}_{s'\sim P (s'|s,a)} \left [V^\pi (s') \right]
+    $$
+
+- SAC 的网络结构和更新规则：
+  - SAC 维护三个网络：策略网络 $\pi_\theta (a|s)$、两个 Q 网络 $Q_{\phi_1}$ 和 $Q_{\phi_2}$（借鉴 TD3 的双 Q 思想）以及两个对应的目标网络
+  - Critic 更新（Q 网络）：
+    - 计算 soft 目标值，使用目标策略网络从下一状态采样动作并计算 V 值：
+
+      $$
+      V (s') = \mathbb {E}_{a'\sim\pi_\theta (a'|s')} \left [\min (Q_{\phi_1'}(s',a'), Q_{\phi_2'}(s',a')) - \alpha \log \pi_\theta (a'|s') \right]
+      $$
+
+    - Q 值的 soft TD 目标：
+
+      $$
+      y = r + \gamma V (s')
+      $$
+
+    - 最小化 Critic 损失：
+
+      $$
+      \mathcal {L}_{Q_i}(\phi_i) = \mathbb {E}_{(s,a,r,s')\sim\mathcal {D}} \left [\big ( Q_{\phi_i}(s,a) - y \big)^2 \right], \quad i=1,2
+      $$
+
+  - Actor 更新：
+    - 重参数化技巧（Reparameterization Trick）：策略网络输出高斯分布的均值和标准差
+
+      $$
+      a = \mu_\theta (s) + \sigma_\theta (s) \odot \epsilon, \quad \epsilon \sim \mathcal {N}(0, I)
+      $$
+
+    - 允许梯度通过采样操作反向传播
+    - Actor 目标：最大化 Q 值同时最大化熵
+
+      $$
+      \mathcal {L}_\pi (\theta) = \mathbb {E}_{s\sim\mathcal {D}, a\sim\pi_\theta (\cdot|s)} \left [\alpha \log \pi_\theta (a|s) - Q_{\phi_1}(s,a) \right]
+      $$
+
+    - 或等价地（使用价值函数形式）：
+
+      $$
+      \mathcal {L}_\pi (\theta) = \mathbb {E}_{s\sim\mathcal {D}} \left [D_{\text{KL}} \left (\pi_\theta (\cdot|s) \big\| \frac {\exp (Q_{\phi_1}(s,\cdot))}{\mathcal {Z}(s)} \right) \right]
+      $$
+
+    - 该形式说明策略向 "Q 加权的 Boltzmann 分布" 靠近
+
+- 自动温度调整（Automatic Entropy Tuning）：
+  - 温度参数 $\alpha$ 决定探索程度，固定值往往不适应不同阶段
+  - SAC 学习 $\alpha$ 的对数值 $\log\alpha$，使其自动调整
+  - 设定目标熵 $\bar {\mathcal {H}} = -\dim (a)$（动作空间维数的负值），目标是平均熵等于目标熵
+  - 温度损失：
+
+    $$
+    \mathcal {L}_\alpha (\alpha) = \mathbb {E}_{a\sim\pi_\theta (\cdot|s)} \left [-\alpha (\log \pi_\theta (a|s) + \bar {\mathcal {H}}) \right]
+    $$
+
+    $$
+    \alpha \leftarrow \alpha - \beta \nabla_\alpha \mathcal {L}_\alpha
+    $$
+
+  - 梯度迭代使 $\alpha$ 自动调整，确保策略熵接近目标值
+
+- **目标网络更新**：与 DDPG/TD3 相同，使用软更新
+
+$$
+\phi_i' \leftarrow \tau \phi_i + (1-\tau) \phi_i'
+$$
+
+- SAC 的特点：
+  - 优点：通过熵正则化提高探索，自动温度调整适应不同任务，双 Q 网络降低价值高估，算法稳定且样本高效
+  - 缺点：需要维护更多网络（Actor + 双 Q + 温度参数），计算开销相对较大；超参数较多（$\tau$、初始 $\alpha$、目标熵等）
+  - 适用场景：对样本效率有高要求，或需要多模态策略的任务

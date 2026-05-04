@@ -1,0 +1,144 @@
+---
+title: 信息熵
+description: 介绍信息熵的基本概念，包括信息量、信息熵、联合熵、条件熵、交叉熵、KL 散度及互信息等内容
+---
+
+## 3.1 信息量（Self-Information）
+
+- 度量事件所携带的信息多少
+- 信息量与事件发生概率成反比：概率越小，不确定性越高，信息量越大
+- 数学定义：
+
+  $$
+  I (x) = -\log p (x)
+  $$
+
+- 事件越不可能（$p (x)$ 越小），其 $I (x)$ 越大
+
+## 3.2 信息熵（Entropy）
+
+- 度量随机变量总体平均不确定性。
+- 对离散型随机变量 $X$，信息熵是信息量的期望：
+
+  $$
+  H (X) = \mathbb {E}_{x\sim X}[I (x)]
+  = -\sum_{x\in X} p (x)\log p (x)
+  $$
+
+- 基本性质：
+  - 单调性：概率越集中（不确定性越低），熵越小
+  - 非负性：$H (X)\ge 0$
+  - 累加性：独立随机变量的联合熵可分解为两者熵之和
+
+## 3.3 联合熵（Joint Entropy）
+
+- 若 $X,Y$ 为随机变量，则它们的联合熵为：
+
+  $$
+  H (X,Y) = -\sum_{x \in \mathcal {X}} \sum_{y \in \mathcal {Y}} p (x,y)\log p (x,y)
+  $$
+
+- 它描述同时观察两个变量的不确定性
+
+## 3.4 条件熵（Conditional Entropy）
+
+- 度量在已知 $X$ 的条件下，$Y$ 仍然具有多少不确定性
+
+  $$
+  \begin {align*}
+  H (Y|X)&=\mathbb {E}_{X}[H (Y|X=x)]\\
+  &=\sum_{x \in \mathcal {X}} p (x) H (Y|X=x)\\
+  &=\sum_{x \in \mathcal {X}} p (x) \left (-\sum_{y \in \mathcal {Y}} p (y|x) \log p (y|x) \right)\\
+  &=-\sum_{x \in \mathcal {X}} \sum_{y \in \mathcal {Y}} p (y,x) \log p (y|x).
+  \end {align*}
+  $$
+
+- 若 $X$ 完全决定 $Y$，则 $H (Y|X)=0$
+
+## 3.5 联合熵与条件熵的关系
+
+- 联合熵可通过熵与条件熵分解：
+
+  $$
+  \begin{align*}
+  H (X, Y) &= -\sum_{x \in \mathcal {X}} \sum_{y \in \mathcal {Y}} p (x, y) \text{log} [p (x) p (y|x)] \\
+  &= -\sum_{x \in \mathcal {X}} \sum_{y \in \mathcal {Y}} p (x, y) [\log p (x) + \log p (y|x)] \\
+  &= -\sum_{x \in \mathcal {X}} \sum_{y \in \mathcal {Y}} p (x, y) \log p (x) - \sum_{x \in \mathcal {X}} \sum_{y \in \mathcal {Y}} p (x, y) \log p (y|x) \\
+  &= -\sum_{x \in \mathcal {X}} p (x) \log p (x) - \sum_{x \in \mathcal {X}} \sum_{y \in \mathcal {Y}} p (x, y) \log p (y|x) \\
+  &= H (X) + H (Y|X)
+  \end{align*}
+  $$
+
+- 这说明：联合不确定性 = 单变量不确定性 + 额外的不确定性
+
+## 3.6 交叉熵（Cross-Entropy）
+
+- 度量两个概率分布之间的差异，在分类模型中常用作损失函数
+
+- 若 $p$ 为真实分布，$q$ 为预测分布，则：
+
+  $$
+  \begin {align*}
+  H (p,q)
+  &= \sum_{i=1}^n p (x_i)\log\frac {1}{q (x_i)} \\
+  &= -\sum_{i=1}^n p (x_i)\log q (x_i)
+  \end {align*}
+  $$
+
+- 当 $q$ 越接近 $p$ 时，$H (p,q)$ 越小
+
+## 3.7 KL 散度（相对熵，Kullback–Leibler Divergence）
+
+- 度量两个分布 $p$ 与 $q$ 的差异
+- 不对称：$D_{KL}(p\|q)\neq D_{KL}(q\|p)$
+- 定义：
+
+  $$
+  D_{KL}(p\|q)=\sum_{i=1}^n p (x_i)\log\frac {p (x_i)}{q (x_i)}
+  $$
+
+- KL 散度为 0 当且仅当 $p=q$
+
+## 3.8 交叉熵与相对熵的关系
+
+- KL 散度可以表示为信息熵与交叉熵之差：
+
+  $$
+  \begin {align*}
+  D_{KL}(p||q)&=\sum_{i=1}^np (x_i)*log (\frac {p (x_i)}{q (x_i)})\\
+  &=\sum_{i=1}^np (x_i)*log (p (x_i))-1*\sum_{i=1}^np (x_i)*log (q (x_i))\\
+  &=H (X)-H (p,q)
+  \end {align*}
+  $$
+
+- 其中 $H (p)$ 为常量，因此最小化 KL 散度等价于最小化交叉熵
+
+## 3.9 互信息（Mutual Information）
+
+- 度量两个变量的相关性，即知道一个变量后另一个不确定性减少的程度。
+- 也可视为联合分布 $p (x,y)$ 与独立分布 $p (x) p (y)$ 的 KL 散度：
+
+  $$
+  I (X;Y)=\sum_{x,y} p (x,y)\log\frac {p (x,y)}{p (x) p (y)}
+  $$
+
+- 互信息的等价形式（基于熵，信息熵与条件熵之差 —— 知道其中一个，另一个不确定性减少的程度）：
+
+  $$
+  I (X;Y)=H (Y)-H (Y|X)=H (X)-H (X|Y)
+  $$
+
+- 展开可得：
+
+  $$
+  \begin {align*}
+  I (x;y)&=H (Y)-H (Y|X)=H (X)-H (X|Y) \\
+  & =-\sum_{x\in X} p (x)\log p (x)-\sum_{y\in Y} p (y) H (X\mid Y=y) \\
+  & =-\sum_{x\in X}\left (\sum_{y\in Y} p (x,y)\right)\log p (x)+\sum_{y\in Y} p (y)\sum_{x\in X} p (x\mid y)\log p (x\mid y) \\
+  & =-\sum_{x\in X}\sum_{y\in Y} p (x,y)\log p (x)+\sum_{y\in Y}\sum_{x\in X} p (x,y)\log p (x\mid y) \\
+  & =\sum_{y\in Y}\sum_{x\in X} p (x,y)\log\frac {p (x\mid y)}{p (x)} \\
+  & =\sum_{y\in Y}\sum_{x\in X} p (x,y)\log\frac {p (x,y)}{p (x) p (y)}
+  \end {align*}
+  $$
+
+- 互信息越大，代表两个变量的关联越强

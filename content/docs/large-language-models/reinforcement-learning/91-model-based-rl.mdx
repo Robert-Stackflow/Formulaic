@@ -1,0 +1,242 @@
+---
+title: 基于模型的强化学习
+description: 介绍基于模型的强化学习的基本原理，包括模型学习、Dyna-Q、Dyna-Q+、基于模拟的搜索等内容
+---
+
+## 2.8.1 基于模型的强化学习
+
+- 什么是基于模型的强化学习
+  - 从经历中直接学习环境的模型
+  - 通过规划来学习策略或价值函数
+  - 价值 / 策略 -- 采取动作 --> 经历 -- 模型学习 --> 模型 -- 规划 --> 价值 / 策略
+  - 样本效率较高，但累积近似误差后模型误差会被放大
+- 什么是模型
+  - 模型是一个 MDP 过程的表示 $\mathcal {M}=\langle\mathcal {S},\mathcal {A},\mathcal {P},\mathcal {R}\rangle$，以 $\eta$ 参数化
+  - 假设状态空间和动作空间是已知的，那么 $\mathcal {M}=\langle\mathcal {P}_\eta,\mathcal {R}_\eta\rangle$
+  - 其中 $\mathcal {P}_\eta\approx\mathcal {P}$ 且 $\mathcal {R}_\eta\approx\mathcal {R}$
+  - 通常假设状态转移和奖励是条件独立的，即
+
+    $$
+    \mathbb {P}[s^{\prime},r^{\prime}|s,a]=\mathbb {P}[s^{\prime}|s,a]\mathbb {P}[r^{\prime}|s,a]
+    $$
+
+  - 从而把问题拆成两个监督学习问题
+
+- 模型学习
+  - 从经历中估计模型 $\mathcal {M}_\eta$
+  - 监督学习问题
+
+    $$
+        \begin {align*}
+        S_{1},A_{1} & \to R_{2},S_{2} \\
+        S_{2},A_{2} & \to R_{3},S_{3} \\
+        & \vdots \\
+        S_{T-1},A_{T-1} & \to R_{T},S_{T}
+        \end {align*}
+    $$
+
+  - 学习 $s,a\rightarrow r$ 是一个回归问题
+  - 学习 $s,a\rightarrow s^{\prime}$ 是一个密度估计 / 回归问题
+  - 寻找参数 $\eta$ 最小化经验损失
+  - 基于模型的强化学习的效果受限于估计得到的模型，当模型是不正确的，规划过程会得到一个次优策略
+  - 学习到模型后，采用规划方法来学习策略或价值函数
+    - 动态规划
+    - Sample-Based Planning：先从模型中采样，然后使用采样数据通过 Model-Free 方法进行学习
+
+- 然而，规划会累积模型的误差
+  - 单步误差：小
+  - 但多步 rollout：误差指数级累积
+  - 最终得到的策略是 在 “幻想环境” 里最优
+  - 因此，Dyna 要 “短规划”，MCTS 要 “从当前状态局部搜索”，Dreamer / MuZero 要用 value 网络兜底
+
+## 2.8.2 Dyna-Q
+
+- 结合学习和规划
+  - 真实环境 → Q-learning（真实更新）
+  - 真实环境 → 模型学习
+  - 模型 → 模拟经验 → Q-learning（规划更新）
+  - **模型不是用来直接算最优策略的，而是用来 “生成假数据”**
+  - 用 Q-learning 既学真实经验，也学模型生成的经验
+  - Dyna-Q = Model-Free 更新 + Model-Based 数据来源
+- Dyna-Q 算法
+  - 初始化：Q 值初始化为某个值（通常为零），并且模型也被初始化为空
+  - 与环境交互：执行动作并观察环境的反馈（即状态转移和奖励），然后更新 Q 值并拟合模型
+  - 规划（内部模拟）：使用当前的环境模型模拟一系列可能的状态转移和奖励，并通过这些模拟进行 Q 值更新
+  - 重复：交替进行环境交互和规划，逐渐改进 Q 值
+
+  ```py
+  initialize Q(s, a) arbitrarily
+  initialize model (state, action, reward, next_state) arbitrarily
+  
+  for each episode:
+      initialize state s
+      while s is not terminal:
+          choose action a using policy derived from Q (e.g., ε-greedy)
+          take action a, observe reward r, and next state s'
+          update Q(s, a) using Q-learning update rule
+          update model with (s, a, r, s')
+  
+          # Perform planning step (simulate interactions)
+          for i = 1 to N:
+              randomly choose a state-action pair (s, a)
+              get (r, s') from model
+              update Q(s, a) using Q-learning update rule
+  ```
+
+## 2.8.3 Dyna-Q+
+
+- 在**非平稳环境**中（环境奖励 / 转移发生变化）：
+  - 模型是 “记忆性的”，但环境可能变了
+  - 普通 Dyna-Q 可能不再探索曾经 “失败过” 的动作
+  - 导致策略对环境变化反应迟钝
+  - Dyna-Q+ 通过**鼓励重新探索**来解决该问题
+- 核心思想：探索奖励（Time-based Exploration Bonus）
+  - 在规划阶段，对**长期未被访问的状态–动作对**给予额外奖励
+  - 使得即便某些动作过去回报较差，也会在规划中再次被考虑
+- 关键机制
+  - 对每个状态–动作对 $(s,a)$ 维护一个计时变量 $\tau (s,a)$，表示自上一次真实执行 $(s,a)$ 以来经过的时间步数
+  - 在规划（模拟）时，对模型奖励进行修正（把探索从真实交互，移至规划阶段）：
+
+    $$
+    r^+(s,a) = r_{model}(s,a) + \kappa \sqrt {\tau (s,a)}
+    $$
+    - $r_{model}(s,a)$：模型中存储的奖励
+    - $\kappa > 0$：探索奖励强度超参数
+    - $\tau (s,a)$​ 越大，探索奖励越高
+
+- 探索奖励是平方根形式
+  - 源自**乐观探索（optimism under uncertainty）**的下界思想
+  - 在基于不确定性的探索方法（如 UCB、多臂老虎机与 PAC-MDP 分析）中，奖励或价值的不确定性通常满足：
+
+    $$
+    \text{uncertainty} \propto \sqrt {\text{time since last observation}}
+    $$
+
+  - 或更常见地：
+
+    $$
+    \sqrt {\frac {\log t}{N (s,a)}}
+    $$
+
+  - 该平方根形式可视为**由集中不等式（如 Hoeffding / Azuma）导出的置信区间宽度**，反映了 “观测越久远，估计越不可靠，但不确定性增长是次线性的”
+  - 如果使用线性时间奖励，将导致：
+    - 探索奖励无限增长：长期未访问的动作会获得过大的虚假优势，破坏价值尺度
+    - 规划阶段被探索奖励主导：智能体会周期性 “强制性” 回到某些劣质状态，仅因为它们 “太久没来”
+  - 而对数形式 $\log \tau$ 增长过慢，在稀疏或非平稳环境中可能不足以驱动再探索
+  - 平方根形式则保证 $\sqrt {\tau}$​ 随时间增长，但**边际增益递减**
+
+```py
+initialize Q(s, a) arbitrarily
+initialize model[s, a] = (r, s') arbitrarily
+initialize τ(s, a) = 0 for all s, a
+
+for each episode:
+    initialize state s
+    while s is not terminal:
+        # 行为策略（如 ε-greedy）
+        choose action a from s using policy derived from Q
+
+        # 与真实环境交互
+        take action a, observe reward r and next state s'
+
+        # Q-Learning 更新（真实经验）
+        Q[s, a] ← Q[s, a] + α * (r + γ * max_a' Q[s', a'] − Q[s, a])
+
+        # 更新模型
+        model[s, a] ← (r, s')
+
+        # 更新时间计数
+        τ[s, a] ← 0
+        for all (ŝ, â) ≠ (s, a):
+            τ[ŝ, â] ← τ[ŝ, â] + 1
+
+        # 规划阶段（Planning）
+        for i = 1 to N:
+            randomly sample a previously observed state-action pair (ŝ, â)
+            (r_model, ŝ') = model[ŝ, â]
+
+            # 探索奖励（Dyna-Q+ 的关键）
+            r_plus = r_model + κ * sqrt(τ[ŝ, â])
+
+            # 使用修正奖励进行 Q-Learning 更新
+            Q[ŝ, â] ← Q[ŝ, â] + α * (r_plus + γ * max_a Q[ŝ', a] − Q[ŝ, â])
+
+        s ← s'
+```
+
+## 2.8.4 基于模拟的搜索
+
+- 搜索方法（search-based methods）是基于模型的吗
+  - 搜索方法（search-based methods）并非独立于基于模型的强化学习范式
+  - 相反，它们是基于模型方法中 “通过显式前瞻规划进行决策” 的一类代表
+  - 区别仅在于模型是否需要从数据中学习，以及模型在决策过程中被使用的方式
+- 基本思想
+  - 把 “规划” 从全局问题，变成了 “局部决策问题”
+  - 传统 DP / 值迭代：解整个状态空间，不现实
+  - 前向搜索：只关心当前状态 $s_t$，从 $s_t$ 往前模拟
+  - 不同于采样随机选择状态和动作，通过前向搜索算法通过前瞻选择最佳的动作
+  - 以当前状态 $s_t$ 为根节点，构造搜索树，无需解决整个 MDP，而是只关注子 MDP
+- 前向搜索范式
+  - 基于 Sample-Based Planning
+  - 使用模型从当前状态开始模拟若干个经历
+
+    $$
+    \{s_t^k,A_t^k,R_{t+1}^k,...,S_T^k\}_{k=1}^K\sim\mathcal {M}_\nu
+    $$
+
+  - 应用 Model-Free 强化学习去评估经历
+    - 蒙特卡洛控制 --> 蒙特卡洛树搜索（Monte Carlo Tree Search, MCTS）
+    - SARSA --> 时序差分树搜索（Temporal Difference Tree Search, TDTS）
+
+- 简单的蒙特卡洛搜索
+  - 从根节点 $s_t$ 开始，对于每一个动作 $a_t$
+    - 基于固定的策略，模拟 $K$ 次经历
+    - 进行蒙特卡洛评估：
+
+      $$
+      Q (s_{t},a)=\frac {1}{K}\displaystyle\sum_{k=1}^{K} G_{t}\xrightarrow {P} q_{\pi}(s_{t},a)
+      $$
+
+  - 选择当前的真实动作：$a_t=\arg\displaystyle\max_{a} Q (s_t,a)$​
+  - 不共享子结构，计算浪费
+
+- 蒙特卡洛树搜索
+  - 动态评估状态，不像 DP 一样探索整个状态空间
+  - 使用采样来打破维数诅咒
+
+    $$
+    Q (s,a)=\frac {1}{N (s,a)}\sum_{k=1}^{K}\sum_{u=t}^{T}\mathbf {1}(S_{u},A_{u}=s,a) G_{u}\overset {P}{\operatorname*{\operatorname*{\operatorname*{\to}}}} q_{\pi}(s,a)
+    $$
+
+  - **选择（Selection）**：平衡探索 / 利用
+  - **扩展（Expansion）**：只扩必要节点
+  - **模拟（Simulation）**：rollout
+  - **回溯（Backup）**：更新统计量
+
+- TD 树搜索
+  - 模拟从当前状态 $s_t$ 开始的 episodes
+  - 估计动作 - 价值函数 $Q (s, a)$
+  - 通过 Sarsa 更新动作 - 价值
+
+  $$
+       \Delta Q (S, A) = \alpha \left (R + \gamma Q (S', A') - Q (S, A) \right)
+  $$
+  - 根据动作 - 价值函数 $Q (s, a)$ 选择动作
+    - 例如：$\epsilon$- 贪婪策略
+  - 可能使用函数逼近来表示 $Q (s, a)$
+
+- Dyna-2
+  - 规划 = 临时修正价值函数
+  - 长期记忆
+    - 智能体从环境中通过真实交互获得的一般领域知识，即适用于所有或大部分 episodes 的知识
+    - 通过时序差分（TD）学习更新
+  - 短期记忆
+    - 智能体从模拟经验中获得的特定局部知识，即仅适用于当前特定情境的知识
+    - 通过 TD 搜索更新；TD 搜索是模拟的经验更新过程，其中智能体使用它所学到的环境模型来生成虚拟的状态转移和奖励，然后基于这些模拟的经验进行更新
+  - 价值函数是长期记忆和短期记忆的加权总和
+
+    $$
+        V (s) = V_{\text{long}}(s) + V_{\text{short}}(s)
+    $$
+
+  - 模拟经验通过模型生成，允许智能体进行规划而不依赖于与环境的每一步交互
