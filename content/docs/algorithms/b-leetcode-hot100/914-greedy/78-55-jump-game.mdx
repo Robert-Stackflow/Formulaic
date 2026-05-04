@@ -1,0 +1,431 @@
+---
+id: "55"
+title: 跳跃游戏
+englishTitle: Jump Game
+slug: jump-game
+url: https://leetcode-cn.com/problems/jump-game/
+difficulty: Medium
+tags:
+  - 贪心算法
+  - 贪心
+  - 数组
+  - 动态规划
+---
+
+## 题面
+
+给你一个非负整数数组 `nums` ，你最初位于数组的 第一个下标 。数组中的每个元素代表你在该位置可以跳跃的最大长度。
+
+判断你是否能够到达最后一个下标，如果可以，返回 `true` ；否则，返回 `false` 。
+
+示例  1：
+
+    输入： nums = [2,3,1,1,4]
+    输出： true
+    解释： 可以先跳 1 步，从下标 0 到达下标 1, 然后再从下标 1 跳 3 步到达最后一个下标。
+
+示例  2：
+
+    输入： nums = [3,2,1,0,4]
+    输出： false
+    解释： 无论怎样，总会到达下标为 3 的位置。但该下标的最大跳跃长度是 0 ， 所以永远不可能到达最后一个下标。
+
+提示：
+
+  * `1 <= nums.length <= 104`
+  * `0 <= nums[i] <= 105`
+
+## 分析
+
+- 可以判断每个位置的最远覆盖范围，如果最终覆盖范围可以达到终点，即说明可以到达
+
+- 可以维护右侧最远可达范围，当当前位置 i 小于右侧最远可达范围时，说明当前位置无法到达；否则更新最远范围
+
+- 实际上就是区间类型的贪心，当合并区间后，如果存在多个区间，则说明无法到达终点，因为中间已经断开了
+
+- 每个位置的步数，都决定当前位置的区间延伸到何处，如果该位置大于前面的区间所延伸到的范围，说明就无法跳跃到该位置了
+
+- 代码实现
+
+	```cpp
+	class Solution {
+	public:
+	    bool canJump(vector<int>& nums) {
+	        int range = 0;
+	        for (int i = 0; i < nums.size(); i++) {
+	            if (i > range)
+	                return false;
+	            range = max(i + nums[i], range);
+	            if (range >= nums.size() - 1)
+	                return true;
+	        }
+	        return true;
+	    }
+	};
+	```
+
+## 跳跃游戏 II
+
+- 在 I 的基础上，求最小步数
+- 贪心，分段跳
+	- `end`：当前步能到达的最远边界
+	- `max_reach`：下一步能到达的最远
+	- 走到 `end` 必须跳一步，步数 + 1
+
+## 跳跃游戏 III
+
+- 这里有一个非负整数数组 `arr`，你最开始位于该数组的起始下标 `start` 处。当你位于下标 `i` 处时，你可以跳到 `i + arr[i]` 或者 `i - arr[i]`
+
+- 请你判断自己是否能够跳到对应元素值为 0 的 任一 下标处
+
+- 注意，不管是什么情况下，你都无法跳到数组之外
+
+- 转化为图论问题，构建图后，能否从指定的 start 跳跃至元素值为 0 的位置，可以使用 DFS
+
+- 代码实现
+
+	```cpp
+	class Solution {
+	public:
+	    bool dfs(vector<int>& arr, vector<bool>& visited, int start) {
+	        if (start < 0 || start >= arr.size() || visited[start])
+	            return false;
+	        if (arr[start] == 0)
+	            return true;
+	        visited[start] = true;
+	        return dfs(arr, visited, start + arr[start]) ||
+	               dfs(arr, visited, start - arr[start]);
+	    }
+	    bool canReach(vector<int>& arr, int start) {
+	        vector<bool> visited(arr.size(), false);
+	        return dfs(arr, visited, start);
+	    }
+	};
+	```
+
+## 跳跃游戏 IV
+
+- 给你一个整数数组 `arr` ，你一开始在数组的第一个元素处（下标为 0）
+
+- 每一步，你可以从下标 `i` 跳到下标 `i + 1` 、`i - 1` 或者 `j` ：
+
+	- `i + 1` 需满足：`i + 1 < arr.length`
+	- `i - 1` 需满足：`i - 1 >= 0`
+	- `j` 需满足：`arr[i] == arr[j]` 且 `i != j`
+
+- 请你返回到达数组最后一个元素的下标处所需的 最少操作次数
+
+- 与 III 类似，构建图后，使用 BFS 求最短路径；同时哈希表记录相同值位置，用过就删避免重复遍历
+
+- 代码实现
+
+	```cpp
+	class Solution {
+	public:
+	    int minJumps(vector<int>& arr) {
+	        int n = arr.size();
+	        unordered_map<int, vector<int>> same;
+	        for (int i = 0; i < n; i++) {
+	            same[arr[i]].push_back(i);
+	        }
+	        queue<int> que;
+	        que.push(0);
+	        vector<bool> visited(n, false);
+	        int ans = 0;
+	        visited[0] = true;
+	        while (!que.empty()) {
+	            int sz = que.size();
+	            while (sz--) {
+	                int cur = que.front();
+	                que.pop();
+	                if (cur == n - 1)
+	                    return ans;
+	                for (int next : {cur - 1, cur + 1}) {
+	                    if (next >= 0 && next < n && !visited[next]) {
+	                        visited[next] = 1;
+	                        que.push(next);
+	                    }
+	                }
+	                for (auto next : same[arr[cur]]) {
+	                    if (!visited[next]) {
+	                        visited[next] = true;
+	                        que.push(next);
+	                    }
+	                }
+	                same[arr[cur]].clear();
+	            }
+	            ans++;
+	        }
+	        return ans;
+	    }
+	};
+	```
+
+## 跳跃游戏 V
+
+- 给你一个整数数组 `arr` 和一个整数 `d` 。每一步你可以从下标 `i` 跳到：
+	- `i + x` ，其中 `i + x < arr.length` 且 `0 < x <= d` 。
+	- `i - x` ，其中 `i - x >= 0` 且 `0 < x <= d` 
+	
+- 除此以外，你从下标 `i` 跳到下标 `j` 需要满足：`arr[i] > arr[j]` 且 `arr[i] > arr[k]` ，其中下标 `k` 是所有 `i` 到 `j` 之间的数字（更正式的，`min(i, j) < k < max(i, j)`）
+
+- 你可以选择数组的任意下标开始跳跃。请你返回你最多可以访问多少个下标
+
+- 实际上是一个动态规划问题，dp[i] 表示下标 i 的位置能够访问到的最多下标，那么 `dp[i]=max(dp[j])+1`，j 是 i 能够跳跃到的位置
+
+	```cpp
+	class Solution {
+	public:
+	    int maxJumps(vector<int>& arr, int d) {
+	        int n = arr.size();
+	        vector<int> dp(n, 1);  // dp[i] 初始 = 1（自身）
+	        vector<int> idx(n);
+	        
+	        // 步骤1：生成下标，并按 arr 的值从小到大排序
+	        iota(idx.begin(), idx.end(), 0);
+	        sort(idx.begin(), idx.end(), [&](int a, int b) {
+	            return arr[a] < arr[b];
+	        });
+	
+	        // 步骤2：按从矮到高 递推 dp
+	        for (int i : idx) {
+	            // 向左跳 1~d 步
+	            for (int j = i - 1; j >= max(0, i - d); j--) {
+	                if (arr[j] >= arr[i]) break;
+	                dp[i] = max(dp[i], dp[j] + 1);
+	            }
+	            // 向右跳 1~d 步
+	            for (int j = i + 1; j <= min(n - 1, i + d); j++) {
+	                if (arr[j] >= arr[i]) break;
+	                dp[i] = max(dp[i], dp[j] + 1);
+	            }
+	        }
+	
+	        // 取最大值
+	        return *max_element(dp.begin(), dp.end());
+	    }
+	};
+	```
+
+## 跳跃游戏 VI
+
+- 给你一个下标从**0**开始的整数数组 `nums` 和一个整数 `k` 
+
+- 一开始你在下标 `0` 处。每一步，你最多可以往前跳 `k` 步，但你不能跳出数组的边界。也就是说，你可以从下标 `i` 跳到 `[i + 1， min(n - 1, i + k)]` 包含 两个端点的任意位置
+
+- 你的目标是到达数组最后一个位置（下标为 `n - 1` ），你的 得分 为经过的所有数字之和
+
+- 请你返回你能得到的 最大得分
+
+- 某个位置能达到的最大得分，是它左侧可以到达 i 的位置的最大得分中的最大值，即 `dp[i]=max(dp[j])+nums[i]`
+
+- 为了快速查询左侧固定窗口内的最大值，可以使用单调队列来维护
+
+- 代码实现
+
+	```cpp
+	class Solution {
+	public:
+	    int maxResult(vector<int>& nums, int k) {
+	        int n = nums.size();
+	        vector<int> dp(n);
+	        dp[0] = nums[0];
+	        
+	        // 单调队列：存下标，队头是窗口内 dp 值最大的
+	        deque<int> q;
+	        q.push_back(0);
+	        
+	        for (int i = 1; i < n; i++) {
+	            // 超出窗口 k 范围，弹出队头
+	            while (!q.empty() && q.front() < i - k) {
+	                q.pop_front();
+	            }
+	            
+	            // 从窗口最大的位置跳过来
+	            dp[i] = dp[q.front()] + nums[i];
+	            
+	            // 维护单调递减队列
+	            while (!q.empty() && dp[i] >= dp[q.back()]) {
+	                q.pop_back();
+	            }
+	            q.push_back(i);
+	        }
+	        return dp.back();
+	    }
+	};
+	```
+
+## 跳跃游戏 VII
+
+- 给你一个下标从 0 开始的二进制字符串 `s` 和两个整数 `minJump` 和 `maxJump` 。一开始，你在下标 `0` 处，且该位置的值一定为 `'0'` 
+
+- 当同时满足如下条件时，你可以从下标 `i` 移动到下标 `j` 处：
+
+	- `i + minJump <= j <= min(i + maxJump, s.length - 1)` 且
+	- `s[j] == '0'`.
+
+- 如果你可以到达 `s` 的下标 `s.length - 1` 处，请你返回 `true` ，否则返回 `false` 
+
+- 设 dp[i] 表示位置 i 是否可达，那么其能否可达取决于任意 `[i-maxJump,i-minJump]` 中的位置能否可达
+
+	```cpp
+	class Solution {
+	public:
+	    bool canReach(string s, int minJump, int maxJump) {
+	        int n = s.size();
+	        vector<bool> dp(n, false);
+	        dp[0] = true;
+	
+	        for (int i = 1; i < n; ++i) {
+	            if (s[i] != '0')
+	                continue;
+	
+	            // 暴力往前找 [i-maxJump, i-minJump]
+	            int L = max(0, i - maxJump);
+	            int R = i - minJump;
+	            for (int j = L; j <= R; ++j) {
+	                if (dp[j]) {
+	                    dp[i] = true;
+	                    break;
+	                }
+	            }
+	        }
+	        return dp[n - 1];
+	    }
+	};
+	```
+
+- 那么如何快速查询这个区间中是否存在可达的位置？可以使用前缀和，当这一段内的 dp 前缀和大于 1 时，说明这一段内存在 true
+
+	```cpp
+	class Solution {
+	public:
+	    bool canReach(string s, int minJump, int maxJump) {
+	        int n = s.size();
+	        vector<bool> dp(n, false);
+	        vector<int> pre(n + 1, 0);
+	        dp[0] = true;
+	        pre[1] = 1;
+	
+	        for (int i = 1; i < n; ++i) {
+	            if (s[i] == '0') {
+	                int L = max(0, i - maxJump);
+	                int R = i - minJump;
+	                if (R >= 0) {
+	                    int cnt = pre[R + 1] - pre[L];
+	                    dp[i] = (cnt > 0);
+	                }
+	            }
+	            pre[i + 1] = pre[i] + dp[i];
+	        }
+	        return dp[n - 1];
+	    }
+	};
+	```
+
+- 当然，也可以使用滑动窗口的思想，维护这一段固定窗口内是否包含 true，而这个窗口比较特殊，其右边界不是当前的 i，而是 i-minJump
+
+	```cpp
+	class Solution {
+	public:
+	    bool canReach(string s, int minJump, int maxJump) {
+	        int n = s.size();
+	        vector<bool> dp(n, false);
+	        dp[0] = true;
+	
+	        int cnt = 1; // 窗口内可达点数量，初始 dp[0]=1
+	        int left = 0;
+	
+	        for (int i = 1; i < n; ++i) {
+	            // 右边界：i - minJump
+	            int right = i - minJump;
+	            // 左边界：i - maxJump
+	            while (left < max(0, i - maxJump)) {
+	                if (dp[left]) cnt--;
+	                left++;
+	            }
+	
+	            if (s[i] == '0' && right >= 0 && cnt > 0)
+	                dp[i] = true;
+	
+	            // 把 right 位置加入窗口（下一轮会用到）
+	            if (right >= 0 && dp[right])
+	                cnt++;
+	        }
+	
+	        return dp.back();
+	    }
+	};
+	```
+
+
+## 跳跃游戏 VIII
+
+- 给定一个长度为 n 的下标从**0**开始的整数数组 `nums`。初始位置为下标 `0`。当 `i < j` 时，你可以从下标 `i` 跳转到下标 `j`:
+
+	- 对于在 `i < k < j` 范围内的所有下标 `k` 有 `nums[i] <= nums[j]` 和 `nums[k] < nums[i]` , 或者
+	- 对于在 `i < k < j` 范围内的所有下标 `k` 有 `nums[i] > nums[j]` 和 `nums[k] >= nums[i]` 
+
+- 你还得到了一个长度为 `n` 的整数数组 `costs`，其中 `costs[i]` 表示跳转到下标 `i` 的代价
+
+- 返回跳转到下标`n - 1` 的最小代价
+
+- 显然，i 可以跳转的位置只有右侧第一个更大（等于）的元素或右侧第一个更小的元素
+
+- 对每个 i，从它能跳到的两个 j 去更新 dp [j]：
+
+	```text
+	dp[j] = min(dp[j], dp[i] + nums[j])
+	```
+
+- 代码实现
+
+	```cpp
+	vector<long long> minCost(vector<int>& nums, vector<int>& costs) {
+	    int n = nums.size();
+	    vector<long long> dp(n, LLONG_MAX);
+	    dp[0] = 0;
+	
+	    vector<int> next_greater_or_eq(n, -1);
+	    vector<int> next_smaller(n, -1);
+	    stack<int> st;
+	
+	    // 求 next_greater_or_eq：单调递减栈
+	    for (int i = n - 1; i >= 0; --i) {
+	        while (!st.empty() && nums[st.top()] < nums[i])
+	            st.pop();
+	        if (!st.empty())
+	            next_greater_or_eq[i] = st.top();
+	        st.push(i);
+	    }
+	
+	    // 清空栈，求 next_smaller：单调递增栈
+	    while (!st.empty()) st.pop();
+	    for (int i = n - 1; i >= 0; --i) {
+	        while (!st.empty() && nums[st.top()] >= nums[i])
+	            st.pop();
+	        if (!st.empty())
+	            next_smaller[i] = st.top();
+	        st.push(i);
+	    }
+	
+	    // DP 转移
+	    for (int i = 0; i < n; ++i) {
+	        if (dp[i] == LLONG_MAX) continue;
+	
+	        int j1 = next_greater_or_eq[i];
+	        if (j1 != -1) {
+	            dp[j1] = min(dp[j1], dp[i] + costs[j1]);
+	        }
+	
+	        int j2 = next_smaller[i];
+	        if (j2 != -1) {
+	            dp[j2] = min(dp[j2], dp[i] + costs[j2]);
+	        }
+	    }
+	
+	    return dp;
+	}
+	```
+
+	

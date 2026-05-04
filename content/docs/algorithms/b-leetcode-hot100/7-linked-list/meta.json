@@ -1,0 +1,20 @@
+{
+  "title": "链表",
+  "description": "链表相关的题目",
+  "pages": [
+    "22-160-intersection-of-two-linked-lists",
+    "23-206-reverse-linked-list",
+    "24-234-palindrome-linked-list",
+    "25-141-linked-list-cycle",
+    "26-142-linked-list-cycle-ii",
+    "27-21-merge-two-sorted-lists",
+    "28-2-add-two-numbers",
+    "29-19-remove-nth-node-from-end-of-list",
+    "30-24-swap-nodes-in-pairs",
+    "31-25-reverse-nodes-in-k-group",
+    "32-138-copy-list-with-random-pointer",
+    "33-148-sort-list",
+    "34-23-merge-k-sorted-lists",
+    "35-146-lru-cache"
+  ]
+}

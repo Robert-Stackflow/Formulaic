@@ -1,0 +1,98 @@
+---
+id: "437"
+title: 路径总和 III
+englishTitle: Path Sum III
+slug: path-sum-iii
+url: https://leetcode-cn.com/problems/path-sum-iii/
+difficulty: Medium
+tags:
+  - 二叉树
+  - 树
+  - 深度优先搜索
+---
+
+## 题面
+
+给定一个二叉树的根节点 `root` ，和一个整数 `targetSum` ，求该二叉树里节点值之和等于 `targetSum` 的 路径 的数目。
+
+路径 不需要从根节点开始，也不需要在叶子节点结束，但是路径方向必须是向下的（只能从父节点到子节点）。
+
+示例 1：
+
+![](https://assets.leetcode.com/uploads/2021/04/09/pathsum3-1-tree.jpg)
+
+    输入： root = [10,5,-3,3,2,null,11,3,-2,null,1], targetSum = 8
+    输出： 3
+    解释： 和等于 8 的路径有 3 条，如图所示。
+
+示例 2：
+
+    输入： root = [5,4,8,11,null,13,4,7,2,null,null,5,1], targetSum = 22
+    输出： 3
+
+提示:
+
+  * 二叉树的节点个数的范围是 `[0,1000]`
+  * `-109 <= Node.val <= 109`
+  * `-1000 <= targetSum <= 1000`
+
+## 分析
+
+- 这道题与和为K的子数组比较类似
+
+	|**560. 和为 K 的子数组**                          |**437. 路径总和 III**                         |
+	| -------------------------------------------------- | ---------------------------------------------- |
+	| 连续子数组                                         | 方向向下的路径                                 |
+	| 前缀                                               | 从根节点开始的路径                             |
+	| 做法：枚举子数组**右端点**，统计有多少个**左端点**| 做法：枚举路径的**终点**，统计有多少个**起点**|
+
+- 要解决的问题是：DFS 遍历这棵树，遍历到节点 node 时，假设 node 是路径的终点，那么有多少个起点，满足起点到终点 node 的路径总和恰好等于 targetSum
+
+- 和 560 题一样的套路：一边遍历二叉树，一边用哈希表 cnt 统计前缀和（从根节点开始的路径和）的出现次数。设从根到终点 node 的路径和为 s，那么起点的个数就是 cnt[s−targetSum]，加入答案。对比 560 题，我们在枚举子数组的右端点（终点），统计有多少个左端点（起点），做法完全一致
+
+- 这里需要初始化 cnt[0]=1
+
+- 为什么代码中要先更新 ans，再更新 cnt？
+
+	- 在 targetSum =0 的情况下，这俩谁先谁后都可以
+	- 但如果 targetSum=0，假设根节点值为 1，如果先把 cnt[1] 增加 1，再把 ans 增加 cnt[s−targetSum]=cnt[1]=1，就相当于我们找到了一条和为 targetSum=0 的路径，但和为 0 的路径是不存在的
+	- 另一种理解方式是，空路径的元素和等于 0，我们把这个 0 当作了符合要求的路径，但题目要统计的是非空路径
+
+- 代码实现如下
+
+	```cpp
+	/**
+	 * Definition for a binary tree node.
+	 * struct TreeNode {
+	 *     int val;
+	 *     TreeNode *left;
+	 *     TreeNode *right;
+	 *     TreeNode() : val(0), left(nullptr), right(nullptr) {}
+	 *     TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}
+	 *     TreeNode(int x, TreeNode *left, TreeNode *right) : val(x), left(left),
+	 * right(right) {}
+	 * };
+	 */
+	class Solution {
+	public:
+	    int ans = 0;
+	    std::unordered_map<long long, int> cnt;
+	    void dfs(TreeNode* root, int targetSum, long long sum) {
+	        if (root == nullptr)
+	            return;
+	        sum += root->val;
+	        ans += cnt[sum - targetSum];
+	        cnt[sum]++;
+	        dfs(root->left, targetSum, sum);
+	        dfs(root->right, targetSum, sum);
+	        cnt[sum]--;
+	    }
+	    int pathSum(TreeNode* root, int targetSum) {
+	        cnt[0] = 1;
+	        dfs(root, targetSum, 0);
+	        return ans;
+	    }
+	};
+	```
+
+	

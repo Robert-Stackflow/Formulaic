@@ -127,7 +127,7 @@ description: 介绍 Python 的基础知识，包括数据类型、函数、装�
 		p = Point(1, 2)
 		```
 
-### *args 和 **kwargs
+### *args 和**kwargs
 
 - `*args`：接收多余的位置参数，打包成元组 tuple
 
@@ -151,10 +151,10 @@ description: 介绍 Python 的基础知识，包括数据类型、函数、装�
 	# kwargs = {'x':1, 'y':2, 'z':3}
 	```
 
-- 普通参数 → *args → **kwargs
+- 普通参数 → *args →**kwargs
 
 	```python
-	def func(a, b, *args, **kwargs):
+	def func(a, b, *args,**kwargs):
 	    pass
 	```
 
@@ -199,7 +199,7 @@ description: 介绍 Python 的基础知识，包括数据类型、函数、装�
 		# 定义高阶函数，接收回调函数 callback
 		def process_data(data, callback):
 		    print("开始处理数据...")
-		    result = [x ** 2 for x in data]  # 假设处理是平方
+		    result = [x**2 for x in data]  # 假设处理是平方
 		    print("数据处理完成")
 		    # 调用回调函数
 		    callback(result)
@@ -451,9 +451,9 @@ description: 介绍 Python 的基础知识，包括数据类型、函数、装�
 
 	```python
 	def my_decorator(func):
-	    def wrapper(*args, **kwargs):
+	    def wrapper(*args,**kwargs):
 	        print("调用前逻辑")
-	        result = func(*args, **kwargs)
+	        result = func(*args,**kwargs)
 	        print("调用后逻辑")
 	        return result
 	    return wrapper
@@ -489,9 +489,9 @@ description: 介绍 Python 的基础知识，包括数据类型、函数、装�
 	```python
 	def repeat(times):
 	    def decorator(func):
-	        def wrapper(*args, **kwargs):
+	        def wrapper(*args,**kwargs):
 	            for _ in range(times):
-	                func(*args, **kwargs)
+	                func(*args,**kwargs)
 	        return wrapper
 	    return decorator
 	
@@ -522,9 +522,9 @@ description: 介绍 Python 的基础知识，包括数据类型、函数、装�
 		
 		def my_decorator(func):
 		    @wraps(func)
-		    def wrapper(*args, **kwargs):
+		    def wrapper(*args,**kwargs):
 		        print("before")
-		        return func(*args, **kwargs)
+		        return func(*args,**kwargs)
 		    return wrapper
 		```
 
@@ -1370,7 +1370,7 @@ description: 介绍 Python 的基础知识，包括数据类型、函数、装�
     ```
 
 - 可调用对象和上下文管理
-  - `__call__(self, *args, **kwargs)`：让对象像函数一样被调用
+  - `__call__(self, *args,**kwargs)`：让对象像函数一样被调用
 
   - `__enter__(self)`、`__exit__(self, exc_type, exc_val, exc_tb)`：支持 `with` 上下文管理
 
@@ -1530,7 +1530,7 @@ description: 介绍 Python 的基础知识，包括数据类型、函数、装�
             self._calls = []
 
         def __getattr__(self, name):
-            def _mock(*args, **kwargs):
+            def _mock(*args,**kwargs):
                 self._calls.append((name, args, kwargs))
                 print(f"调用了 {name}，参数：{args}, {kwargs}")
             return _mock

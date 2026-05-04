@@ -1186,7 +1186,7 @@ description: 介绍混合专家（Mixture of Experts，MoE）架构及其在大�
       def _set_ep_group(self, ep_group):
           self.ep_group = ep_group
 
-      def forward(self, *input: Tensor, **kwargs: Any) -> Tensor:
+      def forward(self, *input: Tensor,**kwargs: Any) -> Tensor:
 
           ......
           # -------------------------------------------------------------------------
@@ -1442,7 +1442,7 @@ description: 介绍混合专家（Mixture of Experts，MoE）架构及其在大�
 ## MoE 的稳定性训练
 
 - 熵正则化
-  - 与侧重于平衡各专家接收 token 总量的负载均衡损失不同，熵正则化直接作用于路由器对 ** 单个 token 的专家分配概率分布 **
+  - 与侧重于平衡各专家接收 token 总量的负载均衡损失不同，熵正则化直接作用于路由器对**单个 token 的专家分配概率分布**
 
   - 其目标是鼓励 softmax 输出在专家维度上更加平坦，即具有更高的熵，从而避免路由器过早做出过于确定的决策
 

@@ -1,0 +1,131 @@
+---
+id: "763"
+title: 划分字母区间
+englishTitle: Partition Labels
+slug: partition-labels
+url: https://leetcode-cn.com/problems/partition-labels/
+difficulty: Medium
+tags:
+  - 贪心算法
+  - 贪心
+  - 哈希表
+  - 双指针
+  - 字符串
+---
+
+## 题面
+
+给你一个字符串 `s` 。我们要把这个字符串划分为尽可能多的片段，同一字母最多出现在一个片段中。例如，字符串 `"ababcc"` 能够被分为 `["abab", "cc"]`，但类似 `["aba", "bcc"]` 或 `["ab", "ab", "cc"]` 的划分是非法的。
+
+注意，划分结果需要满足：将所有划分结果按顺序连接，得到的字符串仍然是 `s` 。
+
+返回一个表示每个字符串片段的长度的列表。
+
+示例 1：
+
+    输入： s = "ababcbacadefegdehijhklij"
+    输出：[9,7,8]
+    解释：
+    划分结果为 "ababcbaca"、"defegde"、"hijhklij" 。
+    每个字母最多出现在一个片段中。
+    像 "ababcbacadefegde", "hijhklij" 这样的划分是错误的，因为划分的片段数较少。 
+
+示例 2：
+
+    输入： s = "eccbbbbdec"
+    输出：[10]
+
+提示：
+
+  * `1 <= s.length <= 500`
+  * `s` 仅由小写英文字母组成
+
+## 分析
+
+- 这实际上是一个合并区间覆盖问题，可以先统计每个字母所出现的范围，然后求出互相不会覆盖的区间范围即可
+
+- 代码实现
+
+	```cpp
+	class Solution {
+	public:
+	    vector<int> partitionLabels(string s) {
+	        std::unordered_map<char, pair<int, int>> rangeMap;
+	        vector<int> length;
+	        for (int i = 0; i < s.size(); i++) {
+	            if (rangeMap.find(s[i]) == rangeMap.end()) {
+	                rangeMap[s[i]] = make_pair(i, i);
+	            } else {
+	                rangeMap[s[i]].second = i;
+	            }
+	        }
+	        vector<pair<int, int>> range;
+	        for (const auto& p : rangeMap) {
+	            range.push_back(p.second);
+	        }
+	        sort(range.begin(), range.end());
+	        int left = range[0].first;
+	        int right = range[0].second;
+	        for (int i = 1; i < range.size(); i++) {
+	            if (range[i].first < right) {
+	                right = max(range[i].second, right);
+	            } else {
+	                length.push_back(right - left + 1);
+	                left = range[i].first;
+	                right = range[i].second;
+	            }
+	        }
+	        length.push_back(right - left + 1);
+	        return length;
+	    }
+	};
+	```
+
+- 但是这段代码可以继续优化
+
+	- 使用了`unordered_map`存储每个字符的起止位置，还需要额外遍历和排序，增加了时间和空间开销
+	- 实际上只需要记录每个字符**最后一次出现的位置**即可，无需记录起始位置
+	- 可以在一次遍历中完成区间划分，无需先构建所有字符的区间再排序
+
+- 代码实现
+
+	```cpp
+	#include <vector>
+	#include <string>
+	#include <algorithm>
+	using namespace std;
+	
+	class Solution {
+	public:
+	    vector<int> partitionLabels(string s) {
+	        vector<int> result;
+	        // 只记录每个字符最后一次出现的位置（用数组比哈希表更快）
+	        int last_pos[26] = {0};
+	        int n = s.size();
+	        
+	        // 第一步：记录每个字符最后出现的索引
+	        for (int i = 0; i < n; ++i) {
+	            last_pos[s[i] - 'a'] = i;
+	        }
+	        
+	        // 第二步：一次遍历划分区间
+	        int start = 0;    // 当前区间的起始位置
+	        int end = 0;      // 当前区间的结束位置
+	        for (int i = 0; i < n; ++i) {
+	            // 更新当前区间的最远结束位置
+	            end = max(end, last_pos[s[i] - 'a']);
+	            // 当遍历到当前区间的结束位置时，完成一个区间划分
+	            if (i == end) {
+	                result.push_back(end - start + 1);
+	                start = i + 1;  // 开始下一个区间
+	            }
+	        }
+	        
+	        return result;
+	    }
+	};
+	```
+
+- 时间复杂度：从 O (n log n)（排序开销）降低到 O (n)（两次线性遍历）
+
+- 空间复杂度：从 O (n)（存储所有区间）降低到 O (1)（固定大小的数组）

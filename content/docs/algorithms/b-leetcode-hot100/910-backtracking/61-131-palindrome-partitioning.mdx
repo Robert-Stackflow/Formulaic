@@ -1,0 +1,213 @@
+---
+id: "131"
+title: 分割回文串
+englishTitle: Palindrome Partitioning
+slug: palindrome-partitioning
+url: https://leetcode-cn.com/problems/palindrome-partitioning/
+difficulty: Medium
+tags:
+  - 回溯
+  - 字符串
+  - 动态规划
+---
+
+## 题面
+
+给你一个字符串 `s`，请你将 `s`  分割成一些 子串，使每个子串都是 回文串 。返回 `s` 所有可能的分割方案。
+
+示例 1：
+
+    输入： s = "aab"
+    输出：[["a","a","b"],["aa","b"]]
+
+示例 2：
+
+    输入： s = "a"
+    输出：[["a"]]
+
+提示：
+
+  * `1 <= s.length <= 16`
+  * `s` 仅由小写英文字母组成
+
+## 分析
+
+- 涉及到两个关键问题：
+
+  - 切割问题，有不同的切割方式
+  - 判断是否回文
+
+- 对于字符串abcdef：
+
+	- 组合问题：选取一个 a 之后，在 bcdef 中再去选取第二个，选取 b 之后在 cdef 中再选取第三个.....
+	- 切割问题：切割一个 a 之后，在 bcdef 中再去切割第二段，切割 b 之后在 cdef 中再切割第三段.....
+
+- 切割问题也可以抽象为树形结构，横向决定切割的位置，纵向决定切割后的子串再继续如何切割；而结束/剪枝条件即为判断是否是回文字符串
+
+- 回溯问题
+
+  - 回溯终止条件：
+  - 何时加入答案：回溯终止时
+  - 如何回溯：回溯的应该是当前被加入到 path 中的元素；同时 sum + candidates[i] 进行值传递，进行隐式的回溯
+  - 如何保证能够选到重复的元素？startIndex 不再+1，即可保证当前元素可以被重复选择
+  - 如何剪枝：当前和已经大于 target，说明无需往下进行（因为数组元素都是正的）
+  - 这里的 `if (sum > target) return;` 剪枝逻辑是可行的，但属于「被动剪枝」，只能在递归进入后终止路径
+  - 而排序 +`if (sum + candidates[i] > target) break;` 是「主动剪枝」，能在递归进入前直接跳过整个无效分支，效率提升数倍
+
+- 代码实现
+
+	```cpp
+	class Solution {
+	public:
+	    vector<vector<string>> result;
+	    vector<string> path;
+	    bool isPalindrome(string s, int i, int j) {
+	        for (; i < j; i++, j--) {
+	            if (s[i] != s[j])
+	                return false;
+	        }
+	        return true;
+	    }
+	    void backtracking(string s, int startIndex) {
+	        if (startIndex == s.size()) {
+	            result.push_back(path);
+	            return;
+	        }
+	        for (int i = startIndex; i < s.size(); i++) {
+	            if (!isPalindrome(s, startIndex, i))
+	                continue;
+	            path.push_back(s.substr(startIndex, i - startIndex + 1));
+	            backtracking(s, i + 1);
+	            path.pop_back();
+	        }
+	    }
+	    vector<vector<string>> partition(string s) {
+	        backtracking(s, 0);
+	        return result;
+	    }
+	};
+	```
+
+- 上述代码中，通过判断当前左侧分割过的字符串是否为回文字符串，来提前剪枝无效的分支；但是每次都要判断是否为回文字符串，可以事先利用动态规划预处理出所有子串是否为回文，后续递归时直接查表即可，避免重复计算，这是最有效的剪枝手段
+
+- 代码实现
+
+	```cpp
+	#include <vector>
+	#include <string>
+	using namespace std;
+	
+	class Solution {
+	public:
+	    vector<vector<string>> result;
+	    vector<string> path;
+	    // 预处理的回文状态表：dp[i][j] 表示 s[i...j] 是否为回文
+	    vector<vector<bool>> dp;
+	
+	    // 预处理回文状态的函数
+	    void preProcessPalindrome(const string& s) {
+	        int n = s.size();
+	        dp.resize(n, vector<bool>(n, false));
+	        // 从后往前遍历，保证计算dp[i][j]时，dp[i+1][j-1]已经计算完成
+	        for (int i = n - 1; i >= 0; i--) {
+	            for (int j = i; j < n; j++) {
+	                // 情况1：单个字符，一定是回文
+	                if (i == j) {
+	                    dp[i][j] = true;
+	                }
+	                // 情况2：两个相邻字符，相等则是回文
+	                else if (j - i == 1) {
+	                    dp[i][j] = (s[i] == s[j]);
+	                }
+	                // 情况3：长度大于2，首尾相等且中间子串是回文，则整体是回文
+	                else {
+	                    dp[i][j] = (s[i] == s[j] && dp[i+1][j-1]);
+	                }
+	            }
+	        }
+	    }
+	
+	    void backtracking(const string& s, int startIndex) {
+	        if (startIndex == s.size()) {
+	            result.push_back(path);
+	            return;
+	        }
+	        for (int i = startIndex; i < s.size(); i++) {
+	            // 剪枝：直接查表，无需重复计算回文
+	            if (!dp[startIndex][i]) {
+	                continue;
+	            }
+	            path.push_back(s.substr(startIndex, i - startIndex + 1));
+	            backtracking(s, i + 1);
+	            path.pop_back(); // 回溯
+	        }
+	    }
+	
+	    vector<vector<string>> partition(string s) {
+	        // 第一步：预处理所有子串的回文状态
+	        preProcessPalindrome(s);
+	        // 第二步：回溯分割
+	        backtracking(s, 0);
+	        return result;
+	    }
+	};
+	```
+
+- 可以进一步优化逻辑
+
+	```cpp
+	#include <vector>
+	#include <string>
+	using namespace std;
+	
+	class Solution {
+	public:
+	    vector<vector<string>> partition(string s) {
+	        int n = s.size();
+	        // 1. 预处理回文DP表（基础优化保留）
+	        vector<vector<bool>> dp(n, vector<bool>(n, false));
+	        for (int i = n - 1; i >= 0; --i) {
+	            dp[i][i] = true; // 单个字符直接设为true，简化逻辑
+	            for (int j = i + 1; j < n; ++j) {
+	                if (s[i] == s[j]) {
+	                    // 两个字符或中间子串是回文，则整体是回文
+	                    dp[i][j] = (j - i == 1) || dp[i+1][j-1];
+	                }
+	                // 不等则默认false，无需显式赋值
+	            }
+	        }
+	
+	        vector<vector<string>> result;
+	        vector<string> path;
+	        // 2. 改用内联式递归（减少成员变量开销），传引用减少拷贝
+	        backtracking(s, dp, 0, path, result);
+	        return result;
+	    }
+	
+	private:
+	    // 优化递归函数：所有参数传引用，避免拷贝
+	    void backtracking(const string& s, const vector<vector<bool>>& dp, 
+	                      int start, vector<string>& path, vector<vector<string>>& result) {
+	        int n = s.size();
+	        if (start == n) {
+	            result.push_back(path);
+	            return;
+	        }
+	
+	        // 3. 预计算子串，减少substr的重复调用（关键优化）
+	        for (int i = start; i < n; ++i) {
+	            if (!dp[start][i]) continue; // 剪枝：非回文直接跳过
+	            
+	            // 优化：先构造子串再push，减少临时对象
+	            string sub = s.substr(start, i - start + 1);
+	            path.push_back(move(sub)); // 用move语义，避免拷贝
+	            backtracking(s, dp, i + 1, path, result);
+	            path.pop_back(); // 回溯
+	        }
+	    }
+	};
+	```
+
+	
+
+	

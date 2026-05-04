@@ -1,0 +1,132 @@
+---
+id: "238"
+title: 除了自身以外数组的乘积
+englishTitle: Product of Array Except Self
+slug: product-of-array-except-self
+url: https://leetcode-cn.com/problems/product-of-array-except-self/
+difficulty: Medium
+tags:
+  - 普通数组
+  - 数组
+  - 前缀和
+---
+
+## 题面
+
+给你一个整数数组 `nums`，返回 数组 `answer` ，其中 `answer[i]` 等于 `nums` 中除了 `nums[i]` 之外其余各元素的乘积 。
+
+题目数据 保证 数组 `nums`之中任意元素的全部前缀元素和后缀的乘积都在  32 位 整数范围内。
+
+请 不要使用除法， 且在 `O(n)` 时间复杂度内完成此题。
+
+示例 1:
+
+    输入: nums = [1,2,3,4]
+    输出: [24,12,8,6]
+
+示例 2:
+
+    输入: nums = [-1,1,0,-3,3]
+    输出: [0,0,9,0,0]
+
+提示：
+
+  * `2 <= nums.length <= 105`
+  * `-30 <= nums[i] <= 30`
+  * 输入 保证 数组 `answer[i]` 在  32 位 整数范围内
+
+进阶： 你可以在 `O(1)` 的额外空间复杂度内完成这个题目吗？（ 出于对空间复杂度分析的目的，输出数组 不被视为  额外空间。）
+
+## 分析
+
+- 一个元素以外的元素的乘积，等于其前缀元素乘积乘以后缀元素乘积，因此可以先计算出来前缀元素乘积和后缀元素乘积；然后重新遍历数组，计算其结果
+
+- 这个方法需要维护两个额外的数组，空间复杂度为 $O(n)$
+
+- 代码实现
+
+	```cpp
+	class Solution {
+	public:
+	    vector<int> productExceptSelf(vector<int>& nums) {
+	        int n = nums.size();
+	        vector<int> premul = vector(n, 1);
+	        vector<int> sufmul = vector(n, 1);
+	        vector<int> result = vector(n, 0);
+	        for (int i = 0; i < n-1; i++) {
+	            premul[i+1] = premul[i] * nums[i];
+	        }
+	        for (int i = n - 1; i > 0; i--) {
+	            sufmul[i-1] = sufmul[i] * nums[i];
+	        }
+	        for (int i = 0; i < n; i++) {
+	           result[i] = premul[i] * sufmul[i];
+	        }
+	        return result;
+	    }
+	};
+	```
+
+- 那么可以减少空间复杂度的开销吗？
+
+- 首先，可以先减少一个数组的开销，比如仍旧记录 premul，然后在反向遍历时，无需保存 sufmul，直接计算得到最终结果
+
+	```cpp
+	class Solution {
+	public:
+	    vector<int> productExceptSelf(vector<int>& nums) {
+	        int n = nums.size();
+	        vector<int> premul = vector(n, 1);
+	        vector<int> result = vector(n, 0);
+	        for (int i = 0; i < n - 1; i++) {
+	            premul[i + 1] = premul[i] * nums[i];
+	        }
+	        int sufmul = 1;
+	        for (int i = n - 1; i >= 0; i--) {
+	            result[i] = sufmul * premul[i];
+	            sufmul *= nums[i];
+	        }
+	        return result;
+	    }
+	};
+	```
+
+- 那么可以继续优化掉 premul 的开销吗？可以直接利用 result 数组来存储
+
+	```cpp
+	class Solution {
+	public:
+	    vector<int> productExceptSelf(vector<int>& nums) {
+	        int n = nums.size();
+	        vector<int> result = vector(n, 1);
+	        for (int i = 0; i < n - 1; i++) {
+	            result[i + 1] = result[i] * nums[i];
+	        }
+	        int sufmul = 1;
+	        for (int i = n - 1; i >= 0; i--) {
+	            result[i] = sufmul * result[i];
+	            sufmul *= nums[i];
+	        }
+	        return result;
+	    }
+	};
+	```
+
+- 双指针做法
+
+	```cpp
+	std::vector<int> productExceptSelf(std::vector<int>& nums) {
+	    std::vector<int> answer(nums.size(), 1);
+	    int left = 0, right = nums.size() - 1;
+	    int lp = 1, rp = 1;
+	    while (right >= 0 && left < nums.size()) {
+	        answer[right] *= rp;
+	        answer[left] *= lp;
+	        lp *= nums[left++];
+	        rp *= nums[right--];
+	    }
+	    return answer;
+	}
+	```
+
+	

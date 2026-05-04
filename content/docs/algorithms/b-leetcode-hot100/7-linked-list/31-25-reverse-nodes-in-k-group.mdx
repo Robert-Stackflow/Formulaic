@@ -1,0 +1,121 @@
+---
+id: "25"
+title: K 个一组翻转链表
+englishTitle: Reverse Nodes in k-Group
+slug: reverse-nodes-in-k-group
+url: https://leetcode-cn.com/problems/reverse-nodes-in-k-group/
+difficulty: Hard
+tags:
+  - 链表
+  - 递归
+---
+
+## 题面
+
+给你链表的头节点 `head` ，每 `k`   个节点一组进行翻转，请你返回修改后的链表。
+
+`k` 是一个正整数，它的值小于或等于链表的长度。如果节点总数不是 `k`   的整数倍，那么请将最后剩余的节点保持原有顺序。
+
+你不能只是单纯的改变节点内部的值，而是需要实际进行节点交换。
+
+示例 1：
+
+![](https://assets.leetcode.com/uploads/2020/10/03/reverse_ex1.jpg)
+
+    输入： head = [1,2,3,4,5], k = 2
+    输出：[2,1,4,3,5]
+
+示例 2：
+
+![](https://assets.leetcode.com/uploads/2020/10/03/reverse_ex2.jpg)
+
+    输入： head = [1,2,3,4,5], k = 3
+    输出：[3,2,1,4,5]
+
+提示：
+
+  * 链表中的节点数目为 `n`
+  * `1 <= k <= n <= 5000`
+  * `0 <= Node.val <= 1000`
+
+进阶： 你可以设计一个只用 `O(1)` 额外内存空间的算法解决此问题吗？
+
+## 分析
+
+- 在翻转时，可以传入 end 参数，当碰到 end 节点时就停止翻转
+
+- slow 维护要反转的左节点，fast 向右遍历到要反转的右节点；如果不到 n 个那么就直接把剩下的接上来
+
+- 如果到 n 个就翻转链表，并把反转后的链表接到 pre 上，并重新移动 slow、fast 和 pre
+
+- 代码实现
+
+	```cpp
+	/**
+	 * Definition for singly-linked list.
+	 * struct ListNode {
+	 *     int val;
+	 *     ListNode *next;
+	 *     ListNode() : val(0), next(nullptr) {}
+	 *     ListNode(int x) : val(x), next(nullptr) {}
+	 *     ListNode(int x, ListNode *next) : val(x), next(next) {}
+	 * };
+	 */
+	class Solution {
+	public:
+	    // 优化后：无end参数，反转「从head开始的整条链表」（因为已经提前断链）
+	    // 纯链表反转逻辑，和普通反转链表完全一致，无额外判断
+	    ListNode* reverseList(ListNode* head) {
+	        ListNode* prev = nullptr;
+	        ListNode* curr = head;
+	        // 标准的单链表反转，无需任何额外条件
+	        while (curr != nullptr) {
+	            ListNode* next = curr->next;
+	            curr->next = prev;
+	            prev = curr;
+	            curr = next;
+	        }
+	        return prev; // 返回反转后的头节点
+	    }
+	
+	    ListNode* reverseKGroup(ListNode* head, int k) {
+	        ListNode* dummy = new ListNode(0);
+	        dummy->next = head;
+	        ListNode* pre = dummy; // 每段反转链表的「前驱节点」
+	
+	        while (true) {
+	            // 1. 找到当前段的尾部（从pre->next开始数k个节点）
+	            ListNode* tail = pre->next;
+	            int count = k - 1; // 已经指向第一个节点，只需再走k-1步
+	            while (tail != nullptr && count > 0) {
+	                tail = tail->next;
+	                count--;
+	            }
+	
+	            // 2. 如果不足k个节点，直接退出
+	            if (tail == nullptr) break;
+	
+	            // 3. 关键：切断当前段和后续链表的连接（先保存后续节点）
+	            ListNode* nextSegHead = tail->next; // 下一段的头节点
+	            tail->next = nullptr; // 切断！当前段变成独立链表
+	
+	            // 4. 反转当前段（因为已断链，reverseList只需处理head→tail的独立链表）
+	            ListNode* reversedHead = reverseList(pre->next);
+	
+	            // 5. 接回原链表：pre指向反转后的头，原头（反转后的尾）指向下一段
+	            pre->next = reversedHead; // 前驱节点连接反转后的头
+	            // 找到反转后的尾节点（就是原来的当前段头节点），连接下一段
+	            while (pre->next != nullptr) {
+	                pre = pre->next;
+	            }
+	            pre->next = nextSegHead; // 接回后续链表
+	        }
+	
+	        ListNode* result = dummy->next;
+	        delete dummy; // 释放dummy，避免内存泄漏
+	        return result;
+	    }
+	};
+	```
+	
+	

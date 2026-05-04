@@ -1,0 +1,158 @@
+---
+id: "1"
+title: 两数之和
+englishTitle: Two Sum
+slug: two-sum
+url: https://leetcode-cn.com/problems/two-sum/
+difficulty: Easy
+tags:
+  - 哈希
+  - 数组
+  - 哈希表
+---
+
+## 题面
+
+给定一个整数数组 `nums` 和一个整数目标值 `target`，请你在该数组中找出 和为目标值 `target`   的那 两个  整数，并返回它们的数组下标。
+
+你可以假设每种输入只会对应一个答案，并且你不能使用两次相同的元素。
+
+你可以按任意顺序返回答案。
+
+示例 1：
+
+    输入： nums = [2,7,11,15], target = 9
+    输出：[0,1]
+    解释： 因为 nums[0] + nums[1] == 9 ，返回 [0, 1] 。
+
+示例 2：
+
+    输入： nums = [3,2,4], target = 6
+    输出：[1,2]
+
+示例 3：
+
+    输入： nums = [3,3], target = 6
+    输出：[0,1]
+
+提示：
+
+  * `2 <= nums.length <= 104`
+  * `-109 <= nums[i] <= 109`
+  * `-109 <= target <= 109`
+  * 只会存在一个有效答案
+
+进阶： 你可以想出一个时间复杂度小于 `O(n^2)` 的算法吗？
+
+## 暴力解法
+
+- 遍历数组中的每一个数 `x`，寻找数组中是否存在 `target-x`
+
+- 当遍历整个数组寻找 `target-x` 时，每一个位于 `x` 之前的元素都已经匹配过，不需要再进行匹配；因此只需要在 `x` 之后的元素中寻找 `target-x`
+
+- 代码实现
+
+    ```cpp
+    class Solution {
+    public:
+        vector<int> twoSum(vector<int>& nums, int target) {
+            int n = nums.size();
+            for (int i = 0; i < n; ++i) {
+                for (int j = i + 1; j < n; ++j) {
+                    if (nums[i] + nums[j] == target) {
+                        return {i, j};
+                    }
+                }
+            }
+            return {};
+        }
+    };
+    ```
+
+- 时间复杂度为 $O(N^2)$，空间复杂度为 $O(1)$
+
+## 哈希表
+
+- 方法一的时间复杂度较高，主要是因为查找 `target-x` 时复杂度过高
+
+- 因此需要一种更优秀的方法，能够快速寻找数组中是否存在目标元素，如果存在，给出它的索引
+
+- 使用哈希表，可以将寻找 `target - x` 的时间复杂度降低到从 $O(N)$ 降低到 $O(1)$
+
+- 代码实现
+
+    ```cpp
+    class Solution {
+    public:
+        vector<int> twoSum(vector<int>& nums, int target) {
+            unordered_map<int, int> hashtable;
+            for (int i = 0; i < nums.size(); ++i) {
+                auto it = hashtable.find(target - nums[i]);
+                if (it != hashtable.end()) {
+                    return {it->second, i};
+                }
+                hashtable[nums[i]] = i;
+            }
+            return {};
+        }
+    };
+    ```
+
+- 时间复杂度为 $O(N)$，空间复杂度为 $O(N)$
+
+## 双指针法
+
+- 可以先将数组排序，使用结构体辅助存储其原始 index
+
+- 数组有序后，使用相向指针，如果两个指针的和大于目标值，那么就移动右指针，如果小于目标值则移动左指针，如果相等，说明找到了结果，返回其对应 index 即可
+
+- 代码实现
+
+    ```cpp
+    #include <vector>
+    #include <algorithm> // 包含sort排序函数
+    #include <utility>   // 包含pair（替代自定义结构体）
+    
+    using namespace std;
+    
+    class Solution {
+    public:
+        vector<int> twoSum(vector<int>& nums, int target) {
+            // 1. 用pair<int, int>替代C的结构体：first存数值，second存原始下标
+            vector<pair<int, int>> arr;
+            for (int i = 0; i < nums.size(); ++i) {
+                arr.emplace_back(nums[i], i); // 直接构造pair，避免拷贝
+            }
+    
+            // 2. 按数值升序排序（C++的sort比qsort更易用，且类型安全）
+            sort(arr.begin(), arr.end(), [](const pair<int, int>& a, const pair<int, int>& b) {
+                // 避免减法溢出，直接用比较运算符
+                return a.first < b.first;
+            });
+    
+            // 3. 双指针查找目标和
+            int left = 0, right = arr.size() - 1;
+            while (left < right) {
+                int sum = arr[left].first + arr[right].first;
+                if (sum > target) {
+                    --right; // 和太大，右指针左移
+                } else if (sum < target) {
+                    ++left; // 和太小，左指针右移
+                } else {
+                    // 找到解，返回原始下标（保证小下标在前）
+                    int idx1 = arr[left].second;
+                    int idx2 = arr[right].second;
+                    if (idx1 > idx2) {
+                        swap(idx1, idx2); // C++内置swap函数，更简洁
+                    }
+                    return {idx1, idx2}; // C++11+直接返回vector，无需手动管理内存
+                }
+            }
+    
+            // 题目保证有解，此处返回空vector（鲁棒性兜底）
+            return {};
+        }
+    };
+    ```
+
+- 时间复杂度为 $O(n\log n)$，空间复杂度为 $O(n)$

@@ -1,0 +1,176 @@
+---
+id: "4"
+title: 寻找两个正序数组的中位数
+englishTitle: Median of Two Sorted Arrays
+slug: median-of-two-sorted-arrays
+url: https://leetcode-cn.com/problems/median-of-two-sorted-arrays/
+difficulty: Hard
+tags:
+  - 二分查找
+  - 数组
+  - 分治
+---
+
+## 题面
+
+给定两个大小分别为 `m` 和 `n` 的正序（从小到大）数组 `nums1` 和 `nums2`。请你找出并返回这两个正序数组的 中位数 。
+
+算法的时间复杂度应该为 `O(log (m+n))` 。
+
+示例 1：
+
+    输入： nums1 = [1,3], nums2 = [2]
+    输出： 2.00000
+    解释： 合并数组 = [1,2,3] ，中位数 2
+
+示例 2：
+
+    输入： nums1 = [1,2], nums2 = [3,4]
+    输出： 2.50000
+    解释： 合并数组 = [1,2,3,4] ，中位数 (2 + 3) / 2 = 2.5
+
+提示：
+
+  * `nums1.length == m`
+  * `nums2.length == n`
+  * `0 <= m <= 1000`
+  * `0 <= n <= 1000`
+  * `1 <= m + n <= 2000`
+  * `-106 <= nums1[i], nums2[i] <= 106`
+
+## 分析
+
+- 可以使用两个指针，把两个有序数组合并在一起，然后求中位数，其时间复杂度为 $O(m+n)$
+
+- 实际上，就是确定第 $\frac{m+n}{2}$ 大的数（总大小为奇数），或者第 $\frac{m+n}{2}$ 大和第 $\frac{m+n}{2}+1$ 大的数（总大小为偶数）
+
+- 可以不合并数组，而是直接遍历数组，类似于合并链表的方法，遇到第 k 大的数就返回
+
+  ```cpp
+  class Solution {
+  public:
+      int findKth(vector<int>& A, vector<int>& B, int k) {
+          int m = A.size(), n = B.size();
+          int i = 0, j = 0;
+          
+          while (i < m && j < n) {
+              int cur;
+              if (A[i] < B[j]) {
+                  cur = A[i++];
+              } else {
+                  cur = B[j++];
+              }
+              k--;
+              if (k == 0) return cur;
+          }
+          
+          // 一个数组走完了，走另一个
+          while (i < m) {
+              k--;
+              if (k == 0) return A[i];
+              i++;
+          }
+          while (j < n) {
+              k--;
+              if (k == 0) return B[j];
+              j++;
+          }
+          return -1;
+      }
+  };
+  ```
+
+- 那么可以把两个数组的左区间和右区间的元素组成新左和新右，为了保证左边的最大值就是中位数，规则为
+
+  - 新左和新右的元素个数差值尽可能小（总大小为奇数时新左多一个）
+  - 保证新左的最大值小于新右的最小值
+
+- 当新左的最大值大于新右的最小值时，假设 num1 的左区间最大值大于 num2 的右区间的最小值，说明，num1 的左区间元素太多了，而 num2 的左区间元素太少了
+
+- 可以向右移动 num1 的左区间并同时向左移动 num2 的左区间，直到满足两个条件，而这个移动可以使用二分法来实现，而不是直接遍历
+
+- 实际上，这个思路与求解数据流中的中位数比较相似，在数据流中的中位数问题中，在加入新元素时，需要保证左区间的大顶堆元素个数与右区间的最小值的元素个数尽量相同，从而使得可以直接利用大顶堆的顶与小顶堆的顶来求解实时的中位数
+
+- 代码实现
+
+  ```cpp
+  
+  #include <stdio.h>
+  #include <vector>
+  using namespace std;
+  
+  #define max(a,b) (((a) > (b)) ? (a) : (b))
+  #define min(a,b) (((a) < (b)) ? (a) : (b))
+  
+  class Solution {
+  public:
+  	double findMedianSortedArrays(vector<int>& nums1, vector<int>& nums2) {
+  		int n = nums1.size();
+  		int m = nums2.size();
+  
+  		if (n > m)  //保证数组1一定最短
+  		{
+  			return findMedianSortedArrays(nums2, nums1);
+  		}
+  
+  		// Ci 为第i个数组的割,比如C1为2时表示第1个数组只有2个元素。LMaxi为第i个数组割后的左元素。RMini为第i个数组割后的右元素。
+  		int LMax1, LMax2, RMin1, RMin2, c1, c2, lo = 0, hi = 2 * n;  //我们目前是虚拟加了'#'所以数组1是2*n长度
+  
+  		while (lo <= hi)   //二分
+  		{
+  			c1 = (lo + hi) / 2;  //c1是二分的结果
+  			c2 = m + n - c1;
+  
+  			LMax1 = (c1 == 0) ? INT_MIN : nums1[(c1 - 1) / 2];
+  			RMin1 = (c1 == 2 * n) ? INT_MAX : nums1[c1 / 2];
+  			LMax2 = (c2 == 0) ? INT_MIN : nums2[(c2 - 1) / 2];
+  			RMin2 = (c2 == 2 * m) ? INT_MAX : nums2[c2 / 2];
+  
+  			if (LMax1 > RMin2)
+  				hi = c1 - 1;
+  			else if (LMax2 > RMin1)
+  				lo = c1 + 1;
+  			else
+  				break;
+  		}
+  		return (max(LMax1, LMax2) + min(RMin1, RMin2)) / 2.0;
+  	}
+  };
+  ```
+
+- 另一种代码实现
+
+	```cpp
+	class Solution {
+	public:
+	    int findKth(vector<int>& A, vector<int>& B, int k) {
+	        return findK(A, 0, B, 0, k);
+	    }
+	
+	    int findK(vector<int>& A, int i, vector<int>& B, int j, int k) {
+	        // 数组A空了
+	        if (i >= A.size()) return B[j + k - 1];
+	        // 数组B空了
+	        if (j >= B.size()) return A[i + k - 1];
+	        // 找第1小，直接返回最小的
+	        if (k == 1) return min(A[i], B[j]);
+	
+	        // 各取 k/2 个
+	        int mid = k / 2;
+	        int aMid = i + mid - 1;
+	        int bMid = j + mid - 1;
+	
+	        int aVal = (aMid >= A.size()) ? INT_MAX : A[aMid];
+	        int bVal = (bMid >= B.size()) ? INT_MAX : B[bMid];
+	
+	        // 谁小，淘汰谁的前半段
+	        if (aVal < bVal) {
+	            return findK(A, i + mid, B, j, k - mid);
+	        } else {
+	            return findK(A, i, B, j + mid, k - mid);
+	        }
+	    }
+	};
+	```
+
+	

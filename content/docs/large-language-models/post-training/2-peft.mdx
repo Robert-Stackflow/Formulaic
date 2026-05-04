@@ -75,7 +75,7 @@ description: 介绍参数高效微调（PEFT）技术及其应用
   - Adapter 的核心思想是冻结原模型参数，只引入一小组可训练参数，用极低成本实现任务适配
 
 - 模型结构
-  - Adapter 是插入在 Transformer 层中的一个 ** 小瓶颈网络 **（bottleneck module）
+  - Adapter 是插入在 Transformer 层中的一个**小瓶颈网络**（bottleneck module）
 
     $$
     \mathrm {Adapter}(x)
@@ -953,11 +953,11 @@ $$
   def update_momentum(grad_):
       # first-order momentum
       m = beta_1 * m + (1 - beta_1) * grad_
-      m /= (1 - beta_1 ** t)
+      m /= (1 - beta_1**t)
 
       # second-order momentum
-      v = beta_2 * v + (1 - beta_2) * grad_ ** 2
-      v /= (1 - beta_2 ** t)
+      v = beta_2 * v + (1 - beta_2) * grad_**2
+      v /= (1 - beta_2**t)
 
       return m, v
 

@@ -1,0 +1,21 @@
+{
+  "title": "二叉树",
+  "description": "二叉树相关的题目",
+  "pages": [
+    "36-94-binary-tree-inorder-traversal",
+    "37-104-maximum-depth-of-binary-tree",
+    "38-226-invert-binary-tree",
+    "39-101-symmetric-tree",
+    "40-543-diameter-of-binary-tree",
+    "41-102-binary-tree-level-order-traversal",
+    "42-108-convert-sorted-array-to-binary-search-tree",
+    "43-98-validate-binary-search-tree",
+    "44-230-kth-smallest-element-in-a-bst",
+    "45-199-binary-tree-right-side-view",
+    "46-114-flatten-binary-tree-to-linked-list",
+    "47-105-construct-binary-tree-from-preorder-and-inorder-traversal",
+    "48-437-path-sum-iii",
+    "49-236-lowest-common-ancestor-of-a-binary-tree",
+    "50-124-binary-tree-maximum-path-sum"
+  ]
+}

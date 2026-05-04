@@ -1,0 +1,258 @@
+---
+remark: 一维 DP 优化
+id: "322"
+title: 零钱兑换
+englishTitle: Coin Change
+slug: coin-change
+url: https://leetcode-cn.com/problems/coin-change/
+difficulty: Medium
+tags:
+  - 动态规划
+  - 广度优先搜索
+  - 数组
+---
+
+## 题面
+
+给你一个整数数组 `coins` ，表示不同面额的硬币；以及一个整数 `amount` ，表示总金额。
+
+计算并返回可以凑成总金额所需的 最少的硬币个数 。如果没有任何一种硬币组合能组成总金额，返回 `-1` 。
+
+你可以认为每种硬币的数量是无限的。
+
+示例  1：
+
+    输入： coins = [1, 2, 5], amount = 11
+    输出：3 
+    解释： 11 = 5 + 5 + 1
+
+示例 2：
+
+    输入： coins = [2], amount = 3
+    输出： -1
+
+示例 3：
+
+    输入： coins = [1], amount = 0
+    输出： 0
+
+提示：
+
+  * `1 <= coins.length <= 12`
+  * `1 <= coins[i] <= 231 - 1`
+  * `0 <= amount <= 104`
+
+## 分析
+
+- 显然，这是一个完全背包问题
+
+  - 背包容量是 amount
+  - 物品是各种面额的硬币
+  - 物品的重量是面额
+  - 物品的价值是 1
+  - 优化目标是装满背包 i 时，所需的最小物品价值
+
+- 设 `dp[i][j]` 表示用 0-i 面额的硬币，装满 j 容量的背包，所需的最小物品价值
+
+- 递推公式
+  - 不选第 `i` 个硬币：`dp[i][j] = dp[i-1][j]`（继承前 `i-1` 个硬币的结果）
+  - 选第 `i` 个硬币（前提 `j ≥ coins[i-1]`）：`dp[i][j] = min(dp[i][j], dp[i][j - coins[i-1]] + 1)`（重复选当前硬币，所以是 `dp[i][...]` 而非 `dp[i-1][...]`）
+  - 取最小值，即 `dp[i][j]=min(dp[i][j-coins[i]]+1,dp[i-1][j])`
+
+- 初始化：`dp[0][0] = 0`，其余为 `INT_MAX - 1`（避免溢出）
+
+- 代码实现
+
+  ```cpp
+  class Solution {
+  public:
+      int coinChange(vector<int>& coins, int amount) {
+          // 初始化dp数组：dp[i][j]表示用前i个硬币凑出金额j所需的最少硬币数
+          // 初始化为INT_MAX-1（避免+1溢出），表示初始无法凑出
+          vector<vector<int>> dp =
+              vector(coins.size() + 1, vector(amount + 1, INT_MAX - 1));
+          dp[0][0] = 0; // 边界：0个硬币凑0元需要0个
+          // 遍历前i个硬币
+          for (int i = 1; i <= coins.size(); i++) {
+              // 遍历所有金额（从0开始）
+              for (int j = 0; j <= amount; j++) {
+                  // 不选第i个硬币：继承前i-1个硬币的结果
+                  dp[i][j] = dp[i - 1][j];
+  
+                  // 选第i个硬币（前提：j >= 当前硬币面值）
+                  if (j >=
+                      coins[i - 1]) { // coins[i-1]是第i个硬币的面值（避免越界）
+                      dp[i][j] = min(dp[i][j], dp[i][j - coins[i - 1]] + 1);
+                  }
+              }
+          }
+          return dp[coins.size()][amount] == INT_MAX - 1
+                     ? -1
+                     : dp[coins.size()][amount];
+      }
+  };
+  ```
+
+- 计算 `dp[i][j]` 时，只依赖两行数据：
+
+  - 上一行（`i-1` 行）的 `dp[i-1][j]`（不选当前硬币的情况）；
+  - 当前行（`i` 行）的 `dp[i][j - coins[i-1]]`（选当前硬币的情况）
+
+- 完全背包的特性（物品可重复选）决定了不需要保留历史的 `i-1` 行，只需用一个一维数组覆盖更新即可
+
+- 将二维的 `dp[i][j]` 简化为一维的 `dp[j]`，含义变为：凑出金额 `j` 所需的最少硬币数（不再区分 “前 i 个硬币”，而是通过遍历硬币逐步更新）
+
+- 和二维一致，初始化为 “无穷大”（表示无法凑出），仅 `dp[0] = 0`（凑 0 元需要 0 个硬币）
+
+- 二维 DP 的循环是 “先遍历硬币（i），再遍历金额（j）”；一维 DP 保留这个循环顺序，但修改金额遍历方向和状态转移
+
+- 正序遍历金额（区别于 01 背包）
+
+  - 二维中选当前硬币时，用的是 `dp[i][j - coin]`（当前行的历史值）；
+  - 一维中如果正序遍历金额（从 `coin` 到 `amount`），那么计算 `dp[j]` 时，`dp[j - coin]` 已经是 “选过当前硬币后更新的值”，正好对应二维中 `dp[i][j - coin]` 的逻辑（允许重复选当前硬币）
+  - 如果是逆序遍历（01 背包），则 `dp[j - coin]` 是 “未选当前硬币的值”，对应 `dp[i-1][j - coin]`，无法重复选
+
+- 同时，正序遍历金额时，初始金额从 coins[i] 选取，因为金额≥硬币面值才有可能选
+
+- 完整代码
+
+  ```cpp
+  #include <vector>
+  #include <climits>
+  #include <algorithm>
+  using namespace std;
+  
+  class Solution {
+  public:
+      int coinChange(vector<int>& coins, int amount) {
+          // 步骤1：初始化一维DP数组
+          vector<int> dp(amount + 1, INT_MAX - 1);  // 避免+1溢出
+          dp[0] = 0;  // 凑0元需要0个硬币
+          
+          // 步骤2：遍历每个硬币（对应二维的i循环）
+          for (int coin : coins) {
+              // 步骤3：正序遍历金额（允许重复选当前硬币）
+              for (int j = coin; j <= amount; j++) {
+                  // 步骤4：状态转移（min(不选当前硬币, 选当前硬币)）
+                  dp[j] = min(dp[j], dp[j - coin] + 1);
+              }
+          }
+          
+          // 步骤5：处理结果（无法凑出则返回-1）
+          return dp[amount] == INT_MAX - 1 ? -1 : dp[amount];
+      }
+  };
+  ```
+
+
+- 可以颠倒遍历顺序吗？
+	- 必须外层遍历物品，内层遍历金额
+	- 先固定物品，再从小到大更新金额，dp[j] 会用到本轮已经更新过的 dp[j-w[i]]，相当于重复选
+	- 而如果先遍历金额，每个金额只会被每个物品更新一次，无法实现一件物品多次选择的逻辑
+
+## 零钱兑换 II
+
+- 求能够构成所需金额的零钱兑换方案数
+
+- `dp[i][j]` 表示前 i 种面额，拼凑出金额为 j 的方案数是多少
+
+	- 如果选当前面额，那么方案数就是 `dp[i][j-coins[i]]`
+	- 如果不选当前面额，那么方案数就是 `dp[i-1][j]`
+	- 二者互斥，相加为总的方案数
+
+- 代码实现
+
+	```cpp
+	class Solution {
+	public:
+	    int change(int amount, vector<int>& coins) {
+	        int n = coins.size();
+	        vector<vector<uint64_t>> dp(n + 1, vector<uint64_t>(amount + 1, 0));
+	        for (int i = 0; i <= n; i++) {
+	            dp[i][0] = 1;
+	        }
+	        for (int i = 1; i <= n; i++) {
+	            for (int j = 1; j <= amount; j++) {
+	                dp[i][j] += dp[i - 1][j];
+	                if (j >= coins[i - 1]) {
+	                    dp[i][j] += dp[i][j - coins[i - 1]];
+	                }
+	            }
+	        }
+	        return dp[n][amount];
+	    }
+	};
+	```
+
+- 可以进一步优化空间，`dp[j]` 表示凑成金额为 j 的方案数，`dp[j]+=dp[j-coins[i]]`
+
+- 代码实现
+
+	```cpp
+	class Solution {
+	public:
+	    int change(int amount, vector<int>& coins) {
+	        int n = coins.size();
+	        vector<uint64_t> dp(amount + 1, 0);
+	        dp[0] = 1;
+	        for (int i = 1; i <= n; i++) {
+	            for (int j = 1; j <= amount; j++) {
+	                if (j >= coins[i - 1]) {
+	                    dp[j] += dp[j - coins[i - 1]];
+	                }
+	            }
+	        }
+	        return dp[amount];
+	    }
+	};
+	```
+
+## 硬币面值还原
+
+- 如果已知构成任意金额的方案数，那么反向构造出硬币的面额
+
+- 根据方案数中最小非零元素，可以确定得到第一个最小的面额，那么根据这个已知的面额去更新 dp 数组，接下来继续遍历方案数
+
+	- 如果 `numWays[i] = f[i]`，说明所有和为 `i` 的方案均由小于 `i` 的元素组成，`a` 中没有 `i`
+	- 如果 `numWays[i] = f[i] + 1`，意味着 `i` 可以单独一个数，贡献 1 个和为 `i` 的方案，所以 `a` 中一定有 `i`，把 `i` 加入答案，用 `i` 继续更新 `f`
+	- 其他情况：`numWays` 不可能是某个数组 `a` 的完全背包 DP 数组，返回空列表
+
+- 代码实现
+
+	```cpp
+	class Solution {
+	public:
+	    vector<int> findCoins(vector<int>& numWays) {
+	        int n = numWays.size();  // 最大金额
+	        vector<int> f(n + 1);   // f[i] = 用找到的硬币凑 i 元的方法数
+	        f[0] = 1;               // 0元只有1种方法：什么都不用
+	        vector<int> ans;        // 存放找到的硬币
+	
+	        for (int i = 1; i <= n; i++) {  // 从小到大，检查每个金额 i
+	            int ways = numWays[i - 1]; // 凑i元的方法数
+	
+	            // 情况1：所有和为 `i` 的方案均由小于 `i` 的元素组成
+	            if (ways == f[i]) {
+	                continue;
+	            }
+	
+	            // 情况2： `i` 可以单独一个数，贡献 1 个和为 `i` 的方案，所以 `a` 中一定有 `i`
+	            if (ways - 1 != f[i]) {
+	                return {};
+	            }
+	
+	            // 情况3：ways = f[i]+1 → 这是一枚硬币！
+	            ans.push_back(i);
+	
+	            // 加入硬币 i，更新完全背包 DP（完全背包标准写法）
+	            for (int j = i; j <= n; j++) {
+	                f[j] += f[j - i];
+	            }
+	        }
+	
+	        return ans; // 最后返回找到的所有硬币
+	    }
+	};
+	```
+
+	

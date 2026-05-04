@@ -1398,9 +1398,9 @@ description: 介绍 PyTorch 中的张量（Tensor）概念、创建、索引、�
   ```
 
 - requires_grad 的传播规则
-  - ** 任意 ** 输入 requires_grad=True，且该操作支持 autograd，则其输出 requires_grad=True
+  - **任意**输入 requires_grad=True，且该操作支持 autograd，则其输出 requires_grad=True
 
-  - ** 所有 ** 输入 requires_grad=False，则输出必为 False
+  - **所有**输入 requires_grad=False，则输出必为 False
 
 - 哪些节点保存梯度 `.grad`
   - PyTorch 默认只给 Leaf Tensor 保存梯度
@@ -1466,10 +1466,10 @@ description: 介绍 PyTorch 中的张量（Tensor）概念、创建、索引、�
   w = torch.tensor(3.0, requires_grad=True)
 
   y = x * w
-  loss = y ** 2
+  loss = y**2
   # 计算图为
   # x ──┐
-  #     * ── y ── **2 ── loss
+  #     * ── y ──**2 ── loss
   # w ──┘
   loss.backward() # 反向传播的例子
   ```
@@ -1567,7 +1567,7 @@ description: 介绍 PyTorch 中的张量（Tensor）概念、创建、索引、�
 - `torch.autograd.grad` 直接返回梯度，不写入 `.grad`，不一定释放图
 
   ```python
-  y = x ** 2
+  y = x**2
   grad_x = torch.autograd.grad(y, x)
   # grad_x 是一个 Tensor，x.grad 仍然是 None
   ```
@@ -1575,7 +1575,7 @@ description: 介绍 PyTorch 中的张量（Tensor）概念、创建、索引、�
 - 高阶梯度（二阶、Hessian）：梯度本身也可以是计算图的一部分
 
   ```python
-  y = x ** 2
+  y = x**2
   dy_dx = torch.autograd.grad(y, x)
   # dy_dx 是普通 Tensor，不可再对它求梯度
   dy_dx = torch.autograd.grad(y, x, create_graph=True)
@@ -1602,7 +1602,7 @@ description: 介绍 PyTorch 中的张量（Tensor）概念、创建、索引、�
         @staticmethod
         def forward(ctx, x): # 决定存储哪些 activation
             ctx.save_for_backward(x) # ctx 即为 backward 的记忆，而 save_for_backward 即为 activation
-            return x ** 2
+            return x**2
 
         @staticmethod
         def backward(ctx, grad_out): # 决定如何用存储的激活值计算梯度

@@ -30,7 +30,7 @@ description: 介绍 Attention 机制的基本原理，包括 Scaled Dot-Product 
 - 社交网络传播类比
   - 你（当前词）发布一个问题（Query），所有其他词用 Key 回应 “我能提供什么”，然后你按相似度给每个词评分（注意力权重），最后根据评分汇总各词提供的 Value（上下文信息）
 
-- 因此 Attention 最终输出一个 ** 融合上下文语义的向量 **
+- 因此 Attention 最终输出一个**融合上下文语义的向量**
 
 ## Scaled Dot-Product Attention
 
@@ -168,7 +168,7 @@ description: 介绍 Attention 机制的基本原理，包括 Scaled Dot-Product 
 
 ## Bahdanau Attention
 
-- Bahdanau Attention，又称 **Additive Attention**，是 2015 年 Bahdanau 等人在神经机器翻译中提出的注意力机制
+- Bahdanau Attention，又称**Additive Attention**，是 2015 年 Bahdanau 等人在神经机器翻译中提出的注意力机制
 - 它主要解决了 Seq2Seq 模型在长序列下 Encoder 隐藏状态信息压缩成单个上下文向量的问题
 
 - 核心思想：
@@ -251,7 +251,7 @@ description: 介绍 Attention 机制的基本原理，包括 Scaled Dot-Product 
   - 根据 Decoder 当前隐藏状态（Query）从 Encoder 隐藏状态（Key/Value）中提取相关信息 —— Query 来自 Decoder，而 Key/Value 来自 Encoder
   - 动态生成上下文向量，增强输出的条件依赖性
 
-- 假设，Encoder 隐藏状态（Key / Value）中 $K = V = H^E \in \mathbb {R}^{T \times d_\text {model}}$，Decoder 当前隐藏状态（Query）中 $Q = H^D \in \mathbb {R}^{S \times d_\text {model}}$，其中 $T$ 表示 Encoder 序列长度，$S$ 表示 Decoder 序列长度，那么 Cross-Attention 本质是 **Query 与外部序列的注意力机制 **，其输出为 $O \in \mathbb {R}^{S \times d_v}$
+- 假设，Encoder 隐藏状态（Key / Value）中 $K = V = H^E \in \mathbb {R}^{T \times d_\text {model}}$，Decoder 当前隐藏状态（Query）中 $Q = H^D \in \mathbb {R}^{S \times d_\text {model}}$，其中 $T$ 表示 Encoder 序列长度，$S$ 表示 Decoder 序列长度，那么 Cross-Attention 本质是**Query 与外部序列的注意力机制**，其输出为 $O \in \mathbb {R}^{S \times d_v}$
 
   $$
   \text {Cross-Attention}(Q,H^E) = \mathrm {softmax}\left (\frac {Q (H^E)^\top}{\sqrt {d_k}}\right) H^E
@@ -282,7 +282,7 @@ description: 介绍 Attention 机制的基本原理，包括 Scaled Dot-Product 
   - 由于单一的内积形式难以捕获多样的模式，引入加性注意力以允许一个可学习的打分函数，从而获得更灵活的相似度估计
   - 多头注意力（Multi-Head Attention）通过提供 $h$ 组独立的投影，使模型能够在 $h$ 个不同的度量子空间中分别学习模式匹配策略
   - 各头在其独立空间中计算注意力后将输出拼接，并通过一次线性变换进行整合，从而提升表达能力
-  - 对于第 $i$ 个头，模型使用 ** 可学习矩阵 ** $W_q^{(i)}, W_k^{(i)}, W_v^{(i)}$ 将 $Q, K, V$ 投影到维度 $d_v$ 的子空间，并在该子空间中计算注意力，得到 $\mathrm {head}_i$​
+  - 对于第 $i$ 个头，模型使用**可学习矩阵**$W_q^{(i)}, W_k^{(i)}, W_v^{(i)}$ 将 $Q, K, V$ 投影到维度 $d_v$ 的子空间，并在该子空间中计算注意力，得到 $\mathrm {head}_i$​
 
   ![multi-head attention](/img/llm/multi-head-attention.png)
 
@@ -354,7 +354,7 @@ description: 介绍 Attention 机制的基本原理，包括 Scaled Dot-Product 
 - 基本思想
   - Multi-Query Attention（MQA）是为了解决 Transformer 在推理（特别是自回归生成）阶段效率低、KV cache 过大等问题而提出的注意力变体
   - 它在保持模型质量基本不降的前提下显著降低推理开销，因此 GPT-3.5、PaLM、Gemini、LLaMA-3 等均采用了 MQA 或 GQA
-  - 与 MHA 相比，MQA 的关键改动：每个注意力头依然有独立的 Query 投影，** 所有注意力头共享同一组 Key 和 Value**
+  - 与 MHA 相比，MQA 的关键改动：每个注意力头依然有独立的 Query 投影，**所有注意力头共享同一组 Key 和 Value**
 
 - 数学公式（对于输入 $X\in\mathbb {R}^{n \times d_\text {model}}$）
   - Query（多头）：每个头有自己独立的投影
@@ -390,7 +390,7 @@ description: 介绍 Attention 机制的基本原理，包括 Scaled Dot-Product 
     - 自回归推理中，需要缓存历史 token 的 $(K_t, V_t)$
 
     - MHA 的缓存大小（per layer）为 $O (n H d_k)$，而 MQA 则为 $O (n d_k)$
-    - 缓存大小直接减少 **H 倍 **（例如 H = 32 → KV cache 减少 32×），这对长上下文推理非常关键
+    - 缓存大小直接减少**H 倍**（例如 H = 32 → KV cache 减少 32×），这对长上下文推理非常关键
 
   - 推理时每步注意力计算更快
     - 自回归中每次新 token 的注意力计算为：
@@ -435,8 +435,8 @@ description: 介绍 Attention 机制的基本原理，包括 Scaled Dot-Product 
   | 特性          | MHA（Multi-Head Attention） | MQA（Multi-Query Attention） | GQA（Grouped-Query Attention） |
   | ------------- | --------------------------- | ---------------------------- | ------------------------------ |
   | Query (Q)     | 每头独立                    | 每头独立                     | 每头独立                       |
-  | Key (K)       | 每头独立                    | ** 所有头共享 1 份 **          | 每组头共享 1 份                |
-  | Value (V)     | 每头独立                    | ** 所有头共享 1 份 **          | 每组头共享 1 份                |
+  | Key (K)       | 每头独立                    |**所有头共享 1 份**         | 每组头共享 1 份                |
+  | Value (V)     | 每头独立                    |**所有头共享 1 份**         | 每组头共享 1 份                |
   | KV cache 内存 | 最大，$O (n × H × d_k)$     | 最小，$O (n × d_k)$          | 中等，$O (n × G × d_k)$        |
   | 推理速度      | 较慢                        | 快（尤其长上下文）           | 较快，介于 MHA 和 MQA 之间     |
   | 表达能力      | 最强                        | 略低于 MHA                   | 介于 MHA 与 MQA 之间           |
@@ -586,7 +586,7 @@ description: 介绍 Attention 机制的基本原理，包括 Scaled Dot-Product 
   - 为了降低原本 $O (n^2)$ 的注意力计算成本，设计了一系列方法，如 Sparse Attention、Performer、Linear Attention、FlashAttention
 
 - Sparse Attention 的核心思想
-  - 稀疏注意力（Sparse Attention）只计算 ** 部分相关位置的注意力 **，而不是全量 $n \times n$ 计算，降低复杂度并保持性能
+  - 稀疏注意力（Sparse Attention）只计算**部分相关位置的注意力**，而不是全量 $n \times n$ 计算，降低复杂度并保持性能
 
   - 但显然，计算部分位置的注意力的效果理论上不如计算全部位置的注意力的效果
 

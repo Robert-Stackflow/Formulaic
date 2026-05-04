@@ -1,0 +1,363 @@
+---
+remark: 打家劫舍系列问题
+id: "198"
+title: 打家劫舍
+englishTitle: House Robber
+slug: house-robber
+url: https://leetcode-cn.com/problems/house-robber/
+difficulty: Medium
+tags:
+  - 动态规划
+  - 数组
+---
+
+## 题面
+
+你是一个专业的小偷，计划偷窃沿街的房屋。每间房内都藏有一定的现金，影响你偷窃的唯一制约因素就是相邻的房屋装有相互连通的防盗系统，如果两间相邻的房屋在同一晚上被小偷闯入，系统会自动报警 。
+
+给定一个代表每个房屋存放金额的非负整数数组，计算你不触动警报装置的情况下 ，一夜之内能够偷窃到的最高金额。
+
+示例 1：
+
+    输入：[1,2,3,1]
+    输出： 4
+    解释： 偷窃 1 号房屋 (金额 = 1) ，然后偷窃 3 号房屋 (金额 = 3)。
+         偷窃到的最高金额 = 1 + 3 = 4 。
+
+示例 2：
+
+    输入：[2,7,9,3,1]
+    输出： 12
+    解释： 偷窃 1 号房屋 (金额 = 2), 偷窃 3 号房屋 (金额 = 9)，接着偷窃 5 号房屋 (金额 = 1)。
+         偷窃到的最高金额 = 2 + 9 + 1 = 12 。
+
+提示：
+
+  * `1 <= nums.length <= 100`
+  * `0 <= nums[i] <= 400`
+
+## 分析
+
+- dp[i] 表示下标 0-i 内的房间所能偷到的最高金额
+
+- 递推公式
+
+	- 偷当前房间，那么前一个房间不能偷，即 dp[i-2]+nums[i]
+	- 不偷当前房间，那么前一个房间可以偷，即 dp[i-1]
+	- dp[i] = max(dp[i-2]+nums[i],dp[i-1])
+
+- 初始化 dp 数组
+
+	- dp[0] = nums[0]
+	- dp[1] = max(nums[0],nums[1])
+
+- 代码实现
+
+	```cpp
+	class Solution {
+	public:
+	    int rob(vector<int>& nums) {
+	        if (nums.size() == 1)
+	            return nums[0];
+	        vector<int> dp(nums.size(), 0);
+	        dp[0] = nums[0];
+	        dp[1] = max(nums[0], nums[1]);
+	        for (int i = 2; i < nums.size(); i++) {
+	            dp[i] = max(dp[i - 2] + nums[i], dp[i - 1]);
+	        }
+	        return dp[nums.size() - 1];
+	    }
+	};
+	```
+
+- 可以进一步优化空间
+
+	```cpp
+	class Solution {
+	public:
+	    int rob(vector<int>& nums) {
+	        if (nums.size() == 1)
+	            return nums[0];
+	        int pre1 = nums[0];
+	        int pre2 = max(nums[0], nums[1]);
+	        for (int i = 2; i < nums.size(); i++) {
+	            int temp = max(pre1 + nums[i], pre2);
+	            pre1 = pre2;
+	            pre2 = temp;
+	        }
+	        return pre2;
+	    }
+	};
+	```
+
+
+## 打家劫舍 II
+
+- 现在所有房间构成一个环状，怎么解决？
+
+- 实际上，这个问题取决于选不选 0 和 n-1 的元素
+
+	- 选 0：在剩下的 2~n-2 之间进行打家劫舍 I
+	- 选 n-1：在剩下的 1~n-1 之间进行打家劫舍 II
+
+- 代码实现
+
+	```cpp
+	class Solution {
+	public:
+	    int rob1(vector<int>& nums, int start, int end) {
+	        int f0 = 0;
+	        int f1 = 0;
+	        for (int i = start; i < end; i++) {
+	            int tmp = max(f0 + nums[i], f1);
+	            f0 = f1;
+	            f1 = tmp;
+	        }
+	        return f1;
+	    }
+	    int rob(vector<int>& nums) {
+	        int n = nums.size();
+	        return max(nums[0] + rob1(nums, 2, n - 1), rob1(nums, 1, n));
+	    }
+	};
+	```
+
+## 打家劫舍 III
+
+- 小偷又发现了一个新的可行窃的地区。这个地区只有一个入口，我们称之为 root
+
+- 除了 root 之外，每栋房子有且只有一个“父“房子与之相连。一番侦察之后，聪明的小偷意识到“这个地方的所有房屋的排列类似于一棵二叉树”。 如果 两个直接相连的房子在同一天晚上被打劫 ，房屋将自动报警
+
+- 给定二叉树的 root ，返回 在不触动警报的情况下 ，小偷能够盗取的最高金额
+
+- 可以用记忆化的递归来实现
+
+	```cpp
+	/**
+	 * Definition for a binary tree node.
+	 * struct TreeNode {
+	 *     int val;
+	 *     TreeNode *left;
+	 *     TreeNode *right;
+	 *     TreeNode() : val(0), left(nullptr), right(nullptr) {}
+	 *     TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}
+	 *     TreeNode(int x, TreeNode *left, TreeNode *right) : val(x), left(left),
+	 * right(right) {}
+	 * };
+	 */
+	class Solution {
+	public:
+	    unordered_map<TreeNode*, int> umap;
+	    int traverse(TreeNode* root) {
+	        if (umap.contains(root))
+	            return umap[root];
+	        int u = root->val;
+	        if (root->left != nullptr) {
+	            u += traverse(root->left->left) + traverse(root->left->right);
+	        }
+	        if (root->right != nullptr) {
+	            u += traverse(root->right->left) + traverse(root->right->right);
+	        }
+	        int v = traverse(root->left) + traverse(root->right);
+	        umap[root] = max(u, v);
+	        return umap[root];
+	    }
+	    int rob(TreeNode* root) {
+	        umap[nullptr] = 0;
+	        return traverse(root);
+	    }
+	};
+	```
+
+- 进阶优化上，可以不使用哈希表，代码如下
+
+	```cpp
+	class Solution {
+	public:
+	    pair<int, int> dfs(TreeNode* root) {
+	        if (!root) return {0, 0};
+	        auto l = dfs(root->left);
+	        auto r = dfs(root->right);
+	        // 抢当前 = 当前值 + 不抢左右孩子
+	        int rob = root->val + l.second + r.second;
+	        // 不抢当前 = max(抢/不抢左) + max(抢/不抢右)
+	        int notRob = max(l.first, l.second) + max(r.first, r.second);
+	        return {rob, notRob};
+	    }
+	    int rob(TreeNode* root) {
+	        auto res = dfs(root);
+	        return max(res.first, res.second);
+	    }
+	};
+	```
+
+- 在这个方案中，dfs 直接返回两个值，第一个值表示抢当前的结果，第二个值表示不抢当前的结果
+
+## 打家劫舍 IV
+
+- 题面
+
+	- 沿街有一排连续的房屋，每间房屋内都藏有一定的现金，现在有一位小偷计划从这些房屋中窃取现金
+	- 由于相邻的房屋装有相互连通的防盗系统，所以小偷 不会窃取相邻的房屋 
+	- 小偷的 窃取能力 定义为他在窃取过程中能从单间房屋中窃取的 最大金额 
+	- 给你一个整数数组 nums 表示每间房屋存放的现金金额。形式上，从左起第 i 间房屋中放有 nums[i] 美元
+	- 另给你一个整数 k ，表示窃贼将会窃取的 最少 房屋数。小偷总能窃取至少 k 间房屋
+	- 返回小偷的 最小 窃取能力
+
+- 题意理解 A
+
+	- 说，有个小偷公司，给小偷定的 KPI 是偷至少 k 间房子，要求偷的房子不能相邻
+	- 张三作为其中的一个小偷，他不想偷太多，否则一不小心就「数额巨大」，这可太刑了
+	- 所以张三计划，在他偷过的房子中，偷走的最大金额要尽量地小
+	- 这个最小值是多少呢？
+
+- 题意理解 B
+
+	- 给定数组 nums，从中选择一个长度至少为 k 的子序列 A，要求 A 中没有任何元素在 nums 中是相邻的
+	- 最小化 max(A)
+
+- 对于这种最小化最大值问题，都需要用二分答案的方法做
+
+- left 为 1，right 为数组元素最大值，那么 mid 越大则说明能够选择的房子越多，就越可能偷至少 k 间房子，就越满足条件，因此构成单调性
+
+- 对于每个 mid，检查在偷的房间金额小于等于 mid 的情况下，最多能偷几间房间，如果这个值大于等于 k，则说明满足题目要求，收缩右边界；否则收缩左边界
+
+- 而这个 check 的逻辑，可以用 DP 或贪心实现
+
+- DP 实现
+
+	```cpp
+	class Solution {
+	public:
+	    // 给定最大允许金额 maxAmount，最多能偷多少间不相邻的房子
+	    int check(vector<int> &nums, int mx) {
+	        int f0 = 0, f1 = 0;
+	        for (int x: nums) {
+	            if (x > mx) {
+	                f0 = f1;
+	            } else {
+	                int tmp = f1;
+	                f1 = max(f1, f0 + 1);
+	                f0 = tmp;
+	            }
+	        }
+	        return f1;
+	    }
+	
+	    int minCapability(vector<int>& nums, int k) {
+	        int left = 1;
+	        int right = *max_element(nums.begin(), nums.end());
+	        while (left <= right) {
+	            int mid = left + (right - left) / 2;
+	            if (countHouses(nums, mid) >= k) {
+	                right = mid - 1;
+	            } else {
+	                left = mid + 1;
+	            }
+	        }
+	        return left;
+	    }
+	};
+	```
+
+- 贪心实现
+
+	```cpp
+	class Solution {
+	public:
+	    // 给定最大允许金额 maxAmount，最多能偷多少间不相邻的房子
+	    int countHouses(vector<int>& nums, int maxAmount) {
+	        int n = nums.size();
+	        int count = 0;
+	        int i = 0;
+	        while (i < n) {
+	            // 能偷就偷：金额<=上限，且不相邻
+	            if (nums[i] <= maxAmount) {
+	                count++;
+	                i += 2; // 偷了就跳过下一间
+	            } else {
+	                i++; // 不能偷，看下一间
+	            }
+	        }
+	        return count;
+	    }
+	
+	    int minCapability(vector<int>& nums, int k) {
+	        int left = 1;
+	        int right = *max_element(nums.begin(), nums.end());
+	        while (left <= right) {
+	            int mid = left + (right - left) / 2;
+	            if (countHouses(nums, mid) >= k) {
+	                right = mid - 1;
+	            } else {
+	                left = mid + 1;
+	            }
+	        }
+	        return left;
+	    }
+	};
+	```
+
+## 打家劫舍 V
+
+- 你是一名专业小偷，计划偷窃沿街的房屋。每间房屋都藏有一定的现金，并由带有颜色代码的安全系统保护
+
+- 给你两个长度为 n 的整数数组 nums 和 colors，其中 nums[i] 是第 i 间房屋中的金额，而 colors[i] 是该房屋的颜色代码
+
+- 如果两间 相邻 的房屋具有 相同 的颜色代码，则你 不能同时偷窃 它们
+
+- 返回你能偷窃到的 最大 金额
+
+- 代码实现
+
+	```cpp
+	class Solution {
+	public:
+	    long long rob(vector<int>& nums, vector<int>& colors) {
+	        int n = nums.size();
+	        if (n == 1)
+	            return nums[0];
+	        vector<long long> dp(n, 0);
+	        dp[0] = nums[0];
+	        dp[1] =
+	            colors[0] == colors[1] ? max(nums[0], nums[1]) : nums[0] + nums[1];
+	        for (int i = 2; i < n; i++) {
+	            if (colors[i] == colors[i - 1]) {
+	                dp[i] = max(dp[i - 2] + nums[i], dp[i - 1]);
+	            } else {
+	                dp[i] = dp[i - 1] + nums[i];
+	            }
+	        }
+	        return dp[n - 1];
+	    }
+	};
+	```
+
+- 空间优化
+
+	```cpp
+	class Solution {
+	public:
+	    long long rob(vector<int>& nums, vector<int>& colors) {
+	        int n = nums.size();
+	        if (n == 1)
+	            return nums[0];
+	        long long f0 = nums[0];
+	        long long f1 =
+	            colors[0] == colors[1] ? max(nums[0], nums[1]) : nums[0] + nums[1];
+	        for (int i = 2; i < n; i++) {
+	            long long tmp = 0;
+	            if (colors[i] == colors[i - 1]) {
+	                tmp = max(f0 + nums[i], f1);
+	            } else {
+	                tmp = f1 + nums[i];
+	            }
+	            f0 = f1;
+	            f1 = tmp;
+	        }
+	        return f1;
+	    }
+	};
+	```
+
+	

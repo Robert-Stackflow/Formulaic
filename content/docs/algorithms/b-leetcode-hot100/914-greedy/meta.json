@@ -1,0 +1,10 @@
+{
+  "title": "贪心算法",
+  "description": "贪心算法相关的题目",
+  "pages": [
+    "77-121-best-time-to-buy-and-sell-stock",
+    "78-55-jump-game",
+    "79-45-jump-game-ii",
+    "80-763-partition-labels"
+  ]
+}

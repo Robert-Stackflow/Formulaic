@@ -11,7 +11,8 @@ const docSchema = pageSchema.extend({
   readingTime: z.string().optional(),
   index: z.boolean().default(false), // 是否在该目录下作为 index 展示
   ai_summary: z.boolean().optional(), // 是否显示 AI 摘要
-  difficulty: z.enum(["easy", "medium", "hard"]).optional(),
+  difficulty: z.enum(["Easy", "Medium", "Hard"]).optional(),
+  url: z.string().optional(), // 可选的 URL 字段，允许自定义链接地址
   description: z.string().optional(),
   lastUpdated: z.string().optional(),
   authors: z.array(z.string()).optional(),

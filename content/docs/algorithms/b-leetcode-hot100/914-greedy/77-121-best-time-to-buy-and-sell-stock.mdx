@@ -1,0 +1,461 @@
+---
+id: "121"
+title: 买卖股票的最佳时机
+englishTitle: Best Time to Buy and Sell Stock
+slug: best-time-to-buy-and-sell-stock
+url: https://leetcode-cn.com/problems/best-time-to-buy-and-sell-stock/
+difficulty: Easy
+tags:
+  - 贪心算法
+  - 数组
+  - 动态规划
+---
+
+## 题面
+
+给定一个数组 `prices` ，它的第 `i` 个元素 `prices[i]` 表示一支给定股票第 `i` 天的价格。
+
+你只能选择 某一天 买入这只股票，并选择在 未来的某一个不同的日子 卖出该股票。设计一个算法来计算你所能获取的最大利润。
+
+返回你可以从这笔交易中获取的最大利润。如果你不能获取任何利润，返回 `0` 。
+
+示例 1：
+
+    输入：[7,1,5,3,6,4]
+    输出： 5
+    解释： 在第 2 天（股票价格 = 1）的时候买入，在第 5 天（股票价格 = 6）的时候卖出，最大利润 = 6-1 = 5 。
+         注意利润不能是 7-1 = 6, 因为卖出价格需要大于买入价格；同时，你不能在买入前卖出股票。
+
+示例 2：
+
+    输入： prices = [7,6,4,3,1]
+    输出： 0
+    解释： 在这种情况下, 没有交易完成, 所以最大利润为 0。
+
+提示：
+
+  * `1 <= prices.length <= 105`
+  * `0 <= prices[i] <= 104`
+
+## 分析
+
+- 保存历史的最低股票价格，遍历时，记录当前可以获得的最大利润
+
+- 代码实现
+
+	```cpp
+	class Solution {
+	public:
+	    int maxProfit(vector<int>& prices) {
+	        int history = INT_MAX;
+	        int ans = 0;
+	        for (int i = 0; i < prices.size(); i++) {
+	            history = min(history, prices[i]);
+	            ans = max(ans, prices[i] - history);
+	        }
+	        return ans;
+	    }
+	};
+	```
+
+## 买卖股票 II
+
+- 现在，你可以进行无限次交易
+
+- 显然，这样的话，每次只要比昨天的股票价格高就可以进行交易
+
+	```cpp
+	class Solution {
+	public:
+	    int maxProfit(vector<int>& prices) {
+	        int ans = 0;
+	        for (int i = 1; i < prices.size(); i++) {
+	            if (prices[i] > prices[i - 1]) {
+	                ans += (prices[i] - prices[i - 1]);
+	            }
+	        }
+	        return ans;
+	    }
+	};
+	```
+
+- 也可以用动态规划实现，设 `dp[i][0]` 表示第 i 天不持有股票的最大收益，`dp[i][1]` 表示第 i 天持有股票的最大收益
+
+	- `dp[i][0]=max(dp[i-1][0],dp[i-1][1]+prices[i])`
+	- `dp[i][1]=max(dp[i-1][1],dp[i-1][0]-prices[i])`
+
+- 代码实现
+
+	```cpp
+	class Solution {
+	public:
+	    int maxProfit(vector<int>& prices) {
+	        int n = prices.size();
+	        if (n == 0) return 0;
+	
+	        // 一维 DP 数组
+	        vector<int> dp0(n);  // 不持有
+	        vector<int> dp1(n);  // 持有
+	
+	        dp0[0] = 0;           // 第0天不持有：0
+	        dp1[0] = -prices[0];  // 第0天持有：-price
+	
+	        for (int i = 1; i < n; i++) {
+	            // 今天不持有 = max(昨天不持有, 昨天持有+今天卖出)
+	            dp0[i] = max(dp0[i-1], dp1[i-1] + prices[i]);
+	            
+	            // 今天持有 = max(昨天持有, 今天买入)
+	            dp1[i] = max(dp1[i-1], dp0[i-1] - prices[i]);
+	        }
+	
+	        // 最后一天不持有一定比持有利润高
+	        return dp0.back();
+	    }
+	};
+	```
+
+- 实际上 `dp[i]` 只依赖于 `dp[i-1]`，因此可以直接使用两个变量，f0 表示当前天不持有股票的最大收益，f1 表示当前天持有股票的最大收益
+
+	```cpp
+	class Solution {
+	public:
+	    int maxProfit(vector<int>& prices) {
+	        int ans = 0;
+	        int f0 = 0, f1 = -prices[0];
+	        for (int i = 1; i < prices.size(); i++) {
+	            f0 = max(f0, f1 + prices[i]);
+	            f1 = max(f1, f0 - prices[i]);
+	        }
+	        return max(f0, f1);
+	    }
+	};
+	```
+
+## 买卖股票含手续费
+
+- 在 II 的基础上，每笔交易都需要付手续费，直接修改转移方程 `f0 = max(f0, f1 + prices[i] - fee)`
+
+- 代码实现
+
+	```cpp
+	class Solution {
+	public:
+	    int maxProfit(vector<int>& prices, int fee) {
+	        int ans = 0;
+	        int f0 = 0, f1 = -prices[0];
+	        for (int i = 1; i < prices.size(); i++) {
+	            f0 = max(f0, f1 + prices[i] - fee);
+	            f1 = max(f1, f0 - prices[i]);
+	        }
+	        return max(f0, f1);
+	    }
+	};
+	```
+
+## 买卖股票含冷冻期
+
+- 在 II 的基础上，每笔交易之后的第二天无法买入股票（冷冻期 1 天）
+
+- 一共 3 个状态：
+
+	- 持有股票：当天结束时手里有股票
+	- 不持有股票 + 非冷冻期：当天结束时没股票，且第二天可以买入
+	- 不持有股票 + 冷冻期：当天结束时没股票，且第二天不能买入（当天卖出了股票）
+
+- 状态转移
+
+	- 持有股票：要么是前一天就持有，要么是前一天非冷冻期今天买入
+		`hold[i] = max(hold[i-1], non_cool[i-1] - prices[i])`
+	- 不持有股票 + 冷冻期：只能是前一天持有股票今天卖出
+	  `cool[i] = hold[i-1] + prices[i]`
+	- 不持有股票 + 非冷冻期（可交易状态）：要么前一天就是非冷冻期，要么前一天是冷冻期今天解冻
+	  `non_cool[i] = max(non_cool[i-1], cool[i-1])`
+
+- 最后一天不可能持有股票（持有无收益），取「冷冻期」和「非冷冻期」的最大值：
+
+	```
+	max(cool[n-1], non_cool[n-1])
+	```
+
+- 代码实现
+
+	```cpp
+	int maxProfit(vector<int>& prices) {
+	    int n = prices.size();
+	    if (n == 0) return 0;
+	
+	    // 一维 DP 数组，分别表示第 i 天的三种状态
+	    vector<int> hold(n);       // 持有股票
+	    vector<int> cool(n);       // 不持有 + 冷冻期
+	    vector<int> non_cool(n);   // 不持有 + 非冷冻期
+	
+	    // 第 0 天初始化
+	    hold[0] = -prices[0];
+	    cool[0] = 0;
+	    non_cool[0] = 0;
+	
+	    // 从第 1 天开始递推
+	    for (int i = 1; i < n; ++i) {
+	        hold[i] = max(hold[i-1], non_cool[i-1] - prices[i]);
+	        cool[i] = hold[i-1] + prices[i];
+	        non_cool[i] = max(non_cool[i-1], cool[i-1]);
+	    }
+	
+	    // 最后一天不可能持有股票，取两种不持有的最大值
+	    return max(cool[n-1], non_cool[n-1]);
+	}
+	```
+
+- 空间优化
+
+	```cpp
+	int maxProfit(vector<int>& prices) {
+	    int n = prices.size();
+	    // 边界：天数小于2，无法交易，利润为0
+	    if (n <= 1) return 0;
+	
+	    // 初始化第一天的三种状态
+	    // 第一天持有：买入股票，利润为 -prices[0]
+	    int hold = -prices[0];
+	    // 第一天冷冻期：不可能（没卖出过），利润0
+	    int cool = 0;
+	    // 第一天非冷冻期：没股票，利润0
+	    int non_cool = 0;
+	
+	    // 从第二天开始遍历
+	    for (int i = 1; i < n; ++i) {
+	        // 保存上一轮的状态值（避免覆盖后计算错误）
+	        int pre_hold = hold;
+	        int pre_cool = cool;
+	        int pre_non_cool = non_cool;
+	
+	        // 状态转移
+	        hold = max(pre_hold, pre_non_cool - prices[i]);    // 持有股票
+	        cool = pre_hold + prices[i];                       // 冷冻期（当天卖出）
+	        non_cool = max(pre_non_cool, pre_cool);            // 非冷冻期
+	    }
+	
+	    // 最终结果：最后一天不持有股票的最大值
+	    return max(cool, non_cool);
+	}
+	```
+
+- 那么假如每笔交易之后的 k 天都不能进行交易呢？
+
+- 原本冷冻 1 天：non_cool[i] 只能从 non_cool[i-1] 或 cool[i-1] 转移来
+
+- 现在冷冻 k 天：
+
+  - 卖出后，连续 k 天都是冷冻期，第 k+1 天才能恢复买入
+  - 所以：第 i 天要买入，只能参考 i - k - 1 天的非冷冻状态
+
+- 代码实现
+
+  ```cpp
+  int maxProfit(vector<int>& prices, int k) {
+      int n = prices.size();
+      if (n <= 1) return 0;
+  
+      // 一维 DP 数组
+      vector<int> hold(n);
+      vector<int> cool(n);
+      vector<int> non_cool(n);
+  
+      // 初始化第 0 天
+      hold[0] = -prices[0];
+      cool[0] = 0;
+      non_cool[0] = 0;
+  
+      for (int i = 1; i < n; ++i) {
+          // ---------------------- 持有股票 ----------------------
+          // 要么继续持有，要么在 i-k-1 天是非冷冻 → 今天买入
+          int buy_from;
+          if (i - k - 1 >= 0)
+              buy_from = non_cool[i - k - 1];
+          else
+              buy_from = 0;  // 还没到冷冻结束时间，只能用初始状态
+  
+          hold[i] = max(hold[i-1], buy_from - prices[i]);
+  
+          // ---------------------- 冷冻期（今天卖出） ----------------------
+          cool[i] = hold[i-1] + prices[i];
+  
+          // ---------------------- 非冷冻期 ----------------------
+          // 冷冻期必须满 k 天才能解冻
+          if (i - k >= 0)
+              non_cool[i] = max(non_cool[i-1], cool[i - k]);
+          else
+              non_cool[i] = non_cool[i-1];  // 还在冷冻中
+      }
+  
+      // 答案一定是不持有的最大值
+      return max(cool.back(), non_cool.back());
+  }
+  ```
+
+- 优化空间
+
+- 冷冻 k 天意味着今天要买入，必须参考 k+1 天前的 non_cool，所以只需要维护一个滑动窗口，保存最近 k+1 天的 `non_cool` 值
+
+  ```cpp
+  class Solution {
+  public:
+      int maxProfit(vector<int>& prices, int k) {
+          int n = prices.size();
+          if (n == 0) return 0;
+  
+          int hold = -prices[0];       // 保留
+          int non_cool = 0;            // free → non_cool（不持有+非冷冻）
+          queue<int> q;
+          q.push(0);
+  
+          for (int i = 1; i < n; ++i) {
+              int newHold = max(hold, non_cool - prices[i]);
+              int newCool = hold + prices[i];  // cold → cool（冷冻期）
+  
+              q.push(newCool);
+              int newNon_cool = non_cool;      // newFree → newNon_cool
+  
+              if (q.size() > k) {
+                  newNon_cool = max(non_cool, q.front());
+                  q.pop();
+              }
+  
+              hold = newHold;
+              non_cool = newNon_cool;
+          }
+  
+          while (!q.empty()) {
+              non_cool = max(non_cool, q.front());
+              q.pop();
+          }
+          
+          return non_cool;
+      }
+  };
+  ```
+
+## 买卖股票 III / 买卖股票 IV
+
+- 现在，只允许最多进行 K 次交易，显然，与 II 相比，需要再新增一个 dp 维度，表示当前天已经进行了 k 次交易的情况下持有/不持有股票的最大收益
+
+- 代码实现
+
+	```cpp
+	class Solution {
+	public:
+	    int maxProfit(int k, vector<int>& prices) {
+	        int n = prices.size();
+	        vector<vector<int>> dp(
+	            vector<vector<int>>(k + 1, vector<int>(2, -1e9)));
+	
+	        // 第0天初始化
+	        for (int j = 0; j <= k; ++j) {
+	            dp[j][0] = 0;
+	            dp[j][1] = -prices[0];
+	        }
+	
+	        for (int i = 1; i < n; ++i) {
+	            for (int j = k; j >= 1; --j) {
+	                dp[j][0] = max(dp[j][0], dp[j][1] + prices[i]);
+	                dp[j][1] = max(dp[j][1], dp[j - 1][0] - prices[i]);
+	            }
+	        }
+	
+	        int ans = 0;
+	        for (int j = 0; j <= k; ++j)
+	            ans = max(ans, dp[j][0]);
+	        return ans;
+	    }
+	};
+	```
+
+## 买卖股票 V
+
+- 在 IV 的基础上，现在可以进行两种交易
+
+	- 普通交易：在第 i 天买入，然后在之后的第 j 天卖出，其中 i < j，你的利润是 prices[j] - prices[i]
+	- 做空交易：在第 i 天卖出，然后在之后的第 j 天买回，其中 i < j，你的利润是 prices[i] - prices[j]
+
+- 那么此时需要多设置一个状态
+
+	- 设 `dp[k][0]` 表示已经进行了 k 次交易的情况下不持有股票的最大收益，`dp[k][1]` 表示已经进行了 k 次交易的情况下持有股票的最大收益，`dp[k][2]` 表示已经进行了 k 次交易的情况下处于做空中状态的最大收益
+		- `dp[k][0]=max(dp[k][0],dp[k][1]+prices[i],dp[k][2]-prices[i])`
+		- `dp[k][1]=max(dp[k][1],dp[k][0]-prices[i])`
+		- `dp[k][2]=max(dp[k][2],dp[k][0]+prices[i])`
+
+- 代码实现
+
+	```cpp
+	class Solution {
+	public:
+	    long long maximumProfit(vector<int>& prices, int k) {
+	        vector<vector<long long>> dp(vector<vector<long long>>(
+	            k + 1, vector<long long>(3, LLONG_MIN / 2)));
+	
+	        // 第 0 天初始化
+	        for (int j = 0; j <= k; j++) {
+	            dp[j][0] = 0;
+	        }
+	
+	        for (int p : prices) {
+	            for (int j = k; j >= 1; --j) {
+	                dp[j][0] = max(dp[j][0], max(dp[j][1] + p, dp[j][2] - p));
+	                dp[j][1] = max(dp[j][1], dp[j - 1][0] - p);
+	                dp[j][2] = max(dp[j][2], dp[j - 1][0] + p);
+	            }
+	        }
+	
+	        return dp[k][0];
+	    }
+	};
+	```
+
+
+## 按策略买卖股票的最佳时机
+
+- 给你两个整数数组 `prices` 和 `strategy`，其中：
+
+	- `prices[i]` 表示第 `i` 天某股票的价格
+	- `strategy[i]` 表示第 `i` 天的交易策略，其中：
+		- `-1` 表示买入一单位股票。
+		- `0` 表示持有股票。
+		- `1` 表示卖出一单位股票。
+
+- 同时给你一个 偶数 整数 `k`，你可以对 `strategy` 进行 最多一次 修改，一次修改包括：
+
+	- 选择 `strategy` 中恰好 `k` 个 连续 元素
+	- 将前 `k / 2` 个元素设为 `0`（持有）
+	- 将后 `k / 2` 个元素设为 `1`（卖出）
+
+- 利润 定义为所有天数中 `strategy[i] * prices[i]` 的总和，返回你可以获得的最大可能利润
+
+- 注意： 没有预算或股票持有数量的限制，因此所有买入和卖出操作均可行，无需考虑过去的操作
+
+- 代码实现
+
+	```cpp
+	class Solution {
+	public:
+	    long long maxProfit(vector<int>& nums, vector<int>& strategy, int k) {
+	        int n = nums.size();
+	        vector<long long> presum(n + 1, 0);
+	        vector<long long> preprofit(n + 1, 0);
+	        for (int i = 0; i < n; i++) {
+	            presum[i + 1] = presum[i] + nums[i];
+	            preprofit[i + 1] = preprofit[i] + nums[i] * strategy[i];
+	        }
+	        long long sum = preprofit[n];
+	        long long max_diff = 0;
+	        for (int l = 0, r = k - 1; r < n; l++, r++) {
+	            int mid = l + (r - l) / 2 + 1;
+	            long long diff =
+	                presum[r + 1] - presum[mid] - (preprofit[r + 1] - preprofit[l]);
+	            max_diff = max(max_diff, diff);
+	        }
+	        return sum + max_diff;
+	    }
+	};
+	```
+
+	

@@ -1,0 +1,170 @@
+---
+remark: 快速选择算法
+id: "215"
+title: 数组中的第K个最大元素
+englishTitle: Kth Largest Element in an Array
+slug: kth-largest-element-in-an-array
+url: https://leetcode-cn.com/problems/kth-largest-element-in-an-array/
+difficulty: Medium
+tags:
+  - 堆
+  - 数组
+  - 分治
+  - 快速选择
+  - 排序
+  - 堆（优先队列）
+---
+
+## 题面
+
+给定整数数组 `nums` 和整数 `k`，请返回数组中第 `k` 个最大的元素。
+
+请注意，你需要找的是数组排序后的第 `k` 个最大的元素，而不是第 `k` 个不同的元素。
+
+你必须设计并实现时间复杂度为 `O(n)` 的算法解决此问题
+
+示例 1:
+
+    输入: [3,2,1,5,6,4], k = 2
+    输出: 5
+
+示例  2:
+
+    输入: [3,2,3,1,2,4,5,5,6], k = 4
+    输出: 4
+
+提示：
+
+  * `1 <= k <= nums.length <= 105`
+  * `-104 <= nums[i] <= 104`
+
+## 分析
+
+- 可以使用小顶堆来维护前 K 大的元素，最后堆顶就是这个堆中最小的数，也就是第 K 大的元素
+
+- 代码实现
+
+  ```cpp
+  class Solution {
+  public:
+      int findKthLargest(vector<int>& nums, int k) {
+          priority_queue<int, vector<int>, greater<int>> min_heap;
+  
+          for (int num : nums) {
+              min_heap.push(num);
+              if (min_heap.size() > k) {
+                  min_heap.pop();
+              }
+          }
+  
+          return min_heap.top();
+      }
+  };
+  ```
+
+- 可以进一步优化，基于快速选择算法实现
+
+- 第 k 大元素在升序数组中的下标是 n−k
+
+	- 在 `nums` 中随机选择一个基准元素 `pivot`
+	- 划分 `nums`。通过交换，把 `< pivot` 的元素放在 `pivot` 的左侧，把 `≥ pivot` 的元素放在 `pivot` 的右侧。如此划分可以让我们粗略地排序 `nums`。划分后，`pivot` 此刻的位置就等于 `pivot` 在升序数组中的位置。
+	- 设 `pivot` 在 `nums` 中的下标为 `i`。
+	   - 如果 `i = n - k`，那么答案就是 `pivot`
+	   - 如果 `i > n - k`，说明答案在 `pivot` 左侧，我们在其中寻找，回到第一步
+	   - 如果 `i < n - k`，说明答案在 `pivot` 右侧，我们在其中寻找，回到第一步
+	   - 这类似**二分查找**，只要我们每次能把问题的规模缩小一半，就可以用 O(n) 时间解决（见复杂度分析）
+	   - 问题规模缩小后，相当于在 `nums` 的一个子数组中，继续划分子数组，寻找答案
+
+- 然而，如果按照 `< pivot` 和 `≥ pivot` 划分数组，这个做法会在数组包含大量重复元素时，划分后的 `i` 往往是子数组第一个元素的下标，算法会退化至 O(n²)
+
+- **解决办法**：修改第二步，把 `<` 改成 `≤`，也就是把 `≤ pivot` 的元素放在 `pivot` 的左侧，把 `> pivot` 的元素放在 `pivot` 的右侧。特别地，如果子数组所有元素都相同，这样做可以完美地返回子数组的中心下标（见代码），避免复杂度退化
+
+	```cpp
+	class Solution {
+	    // 在子数组 [left, right] 中随机选择一个基准元素 pivot
+	    // 根据 pivot 重新排列子数组 [left, right]
+	    // 重新排列后，<= pivot 的元素都在 pivot 的左侧，>= pivot 的元素都在 pivot 的右侧
+	    // 返回 pivot 在重新排列后的 nums 中的下标
+	    // 特别地，如果子数组的所有元素都等于 pivot，我们会返回子数组的中心下标，避免退化
+	    int partition(vector<int>& nums, int left, int right) {
+	        // 1. 在子数组 [left, right] 中随机选择一个基准元素 pivot
+	        int i = left + rand() % (right - left + 1);
+	        int pivot = nums[i];
+	        // 把 pivot 与子数组第一个元素交换，避免 pivot 干扰后续划分，从而简化实现逻辑
+	        swap(nums[i], nums[left]);
+	
+	        // 2. 相向双指针遍历子数组 [left + 1, right]
+	        // 循环不变量：在循环过程中，子数组的数据分布始终如下图
+	        // [ pivot | <=pivot | 尚未遍历 | >=pivot ]
+	        //   ^                 ^     ^         ^
+	        //   left              i     j         right
+	
+	        i = left + 1;
+	        int j = right;
+	        while (true) {
+	            while (i <= j && nums[i] < pivot) {
+	                i++;
+	            }
+	            // 此时 nums[i] >= pivot
+	
+	            while (i <= j && nums[j] > pivot) {
+	                j--;
+	            }
+	            // 此时 nums[j] <= pivot
+	
+	            if (i >= j) {
+	                break;
+	            }
+	
+	            // 维持循环不变量
+	            swap(nums[i], nums[j]);
+	            i++;
+	            j--;
+	        }
+	
+	        // 循环结束后
+	        // [ pivot | <=pivot | >=pivot ]
+	        //   ^             ^   ^     ^
+	        //   left          j   i     right
+	
+	        // 3. 把 pivot 与 nums[j] 交换，完成划分（partition）
+	        // 为什么与 j 交换？
+	        // 如果与 i 交换，可能会出现 i = right + 1 的情况，已经下标越界了，无法交换
+	        // 另一个原因是如果 nums[i] > pivot，交换会导致一个大于 pivot 的数出现在子数组最左边，不是有效划分
+	        // 与 j 交换，即使 j = left，交换也不会出错
+	        swap(nums[left], nums[j]);
+	
+	        // 交换后
+	        // [ <=pivot | pivot | >=pivot ]
+	        //               ^
+	        //               j
+	
+	        // 返回 pivot 的下标
+	        return j;
+	    }
+	
+	public:
+	    int findKthLargest(vector<int>& nums, int k) {
+	        srand(time(NULL));
+	        int n = nums.size();
+	        int target_index = n - k; // 第 k 大元素在升序数组中的下标是 n - k
+	        int left = 0, right = n - 1; // 闭区间
+	        while (true) {
+	            int i = partition(nums, left, right);
+	            if (i == target_index) {
+	                // 找到第 k 大元素
+	                return nums[i];
+	            }
+	            if (i > target_index) {
+	                // 第 k 大元素在 [left, i - 1] 中
+	                right = i - 1;
+	            } else {
+	                // 第 k 大元素在 [i + 1, right] 中
+	                left = i + 1;
+	            }
+	        }
+	    }
+	};
+	```
+
+	

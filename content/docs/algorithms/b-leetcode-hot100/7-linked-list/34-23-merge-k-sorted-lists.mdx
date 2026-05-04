@@ -1,0 +1,248 @@
+---
+remark: 当要在不断更新的数组中寻找最小值时，考虑最小堆，学习最小堆的写法
+id: "23"
+title: 合并 K 个升序链表
+englishTitle: Merge k Sorted Lists
+slug: merge-k-sorted-lists
+url: https://leetcode-cn.com/problems/merge-k-sorted-lists/
+difficulty: Hard
+tags:
+  - 链表
+  - 分治
+  - 堆（优先队列）
+  - 归并排序
+---
+
+## 题面
+
+给你一个链表数组，每个链表都已经按升序排列。
+
+请你将所有链表合并到一个升序链表中，返回合并后的链表。
+
+示例 1：
+
+    输入： lists = [[1,4,5],[1,3,4],[2,6]]
+    输出：[1,1,2,3,4,4,5,6]
+    解释： 链表数组如下：
+    [
+      1->4->5,
+      1->3->4,
+      2->6
+    ]
+    将它们合并到一个有序链表中得到。
+    1->1->2->3->4->4->5->6
+
+示例 2：
+
+    输入： lists = []
+    输出：[]
+
+示例 3：
+
+    输入： lists = [[]]
+    输出：[]
+
+提示：
+
+- `k == lists.length`
+- `0 <= k <= 10^4`
+- `0 <= lists[i].length <= 500`
+- `-10^4 <= lists[i][j] <= 10^4`
+- `lists[i]` 按 升序 排列
+- `lists[i].length` 的总和不超过 `10^4`
+
+## 分析
+
+- 扩充在合并两个有序 i 链表中的做法即可，需要处理的边界情况包括
+  - 0 个链表
+  - 1 个链表
+  - 链表都为 nullptr
+
+- 代码如下
+
+  ```cpp
+  /**
+   * Definition for singly-linked list.
+   * struct ListNode {
+   *     int val;
+   *     ListNode *next;
+   *     ListNode() : val(0), next(nullptr) {}
+   *     ListNode(int x) : val(x), next(nullptr) {}
+   *     ListNode(int x, ListNode *next) : val(x), next(next) {}
+   * };
+   */
+  class Solution {
+  public:
+      ListNode* mergeKLists(vector<ListNode*>& lists) {
+          if (lists.size() == 0)
+              return nullptr;
+          if (lists.size() == 1)
+              return lists[0];
+          ListNode* dummy = new ListNode(-1);
+          ListNode* cur = dummy;
+          while (true) {
+              int minium = 10001;
+              int miniumIndex = -1;
+              int finishedCount = 0;
+              for (int i = 0; i < lists.size(); i++) {
+                  ListNode* list = lists[i];
+                  if (list != nullptr && minium > list->val) {
+                      minium = list->val;
+                      miniumIndex = i;
+                  } else if (list == nullptr) {
+                      finishedCount++;
+                  }
+              }
+              if (finishedCount == lists.size() - 1)
+                  break;
+              if (miniumIndex == -1)
+                  break;
+              cur->next = lists[miniumIndex];
+              lists[miniumIndex] = lists[miniumIndex]->next;
+              cur = cur->next;
+              // ListNode* p = dummy->next;
+              // while (p != nullptr) {
+              //     std::cout << p->val << " -> ";
+              //     p = p->next;
+              // }
+              // std::cout << std::endl;
+          }
+          for (ListNode* list : lists) {
+              if (list != nullptr) {
+                  cur->next = list;
+                  break;
+              }
+          }
+          ListNode* res = dummy->next;
+          delete dummy;
+          return res;
+      }
+  };
+  ```
+
+- 显然这个时间复杂度很慢，因为每次在寻找下一个要合并的节点时，都要查找一遍链表的首节点中最小的元素，那么如何优化这个速度？可以使用最小堆维护第一个节点的数值，代码如下
+
+  ```cpp
+  /**
+   * Definition for singly-linked list.
+   * struct ListNode {
+   *     int val;
+   *     ListNode *next;
+   *     ListNode() : val(0), next(nullptr) {}
+   *     ListNode(int x) : val(x), next(nullptr) {}
+   *     ListNode(int x, ListNode *next) : val(x), next(next) {}
+   * };
+   */
+  struct CompareNode {
+      bool operator()(ListNode* a, ListNode* b) {
+          return a->val > b->val;
+      }
+  };
+
+  class Solution {
+  public:
+      ListNode* mergeKLists(vector<ListNode*>& lists) {
+          if (lists.empty()) return nullptr;
+          priority_queue<ListNode*, vector<ListNode*>, CompareNode> minHeap;
+          for (ListNode* list : lists) {
+              if (list != nullptr) {
+                  minHeap.push(list);
+              }
+          }
+
+          ListNode* dummy = new ListNode(-1);
+          ListNode* cur = dummy;
+
+          while (!minHeap.empty()) {
+              ListNode* minNode = minHeap.top();
+              minHeap.pop();
+
+              cur->next = minNode;
+              cur = cur->next;
+
+              if (minNode->next != nullptr) {
+                  minHeap.push(minNode->next);
+              }
+          }
+
+          ListNode* res = dummy->next;
+          delete dummy;
+          return res;
+      }
+  };
+  ```
+
+- 在合并两个有序链表的基础上，可以使用分治思想来解决，即先合并两个链表，然后逐个合并新的链表，不过这样操作的时间复杂度较高，可以将 list 一分为二，使用二分方法进行分治
+
+- 递归实现
+
+  ```cpp
+  class Solution {
+      // 21. 合并两个有序链表
+      ListNode* mergeTwoLists(ListNode* list1, ListNode* list2) {
+          ListNode dummy{}; // 用哨兵节点简化代码逻辑
+          auto cur = &dummy; // cur 指向新链表的末尾
+          while (list1 && list2) {
+              if (list1->val < list2->val) {
+                  cur->next = list1; // 把 list1 加到新链表中
+                  list1 = list1->next;
+              } else { // 注：相等的情况加哪个节点都是可以的
+                  cur->next = list2; // 把 list2 加到新链表中
+                  list2 = list2->next;
+              }
+              cur = cur->next;
+          }
+          cur->next = list1 ? list1 : list2; // 拼接剩余链表
+          return dummy.next;
+      }
+
+      // 合并从 lists[i] 到 lists[j-1] 的链表
+      ListNode* mergeKLists(vector<ListNode*>& lists, int i, int j) {
+          int m = j - i;
+          if (m == 0) {
+              return nullptr; // 注意输入的 lists 可能是空的
+          }
+          if (m == 1) {
+              return lists[i]; // 无需合并，直接返回
+          }
+          auto left = mergeKLists(lists, i, i + m / 2); // 合并左半部分
+          auto right = mergeKLists(lists, i + m / 2, j); // 合并右半部分
+          return mergeTwoLists(left, right); // 最后把左半和右半合并
+      }
+
+  public:
+      ListNode* mergeKLists(vector<ListNode*>& lists) {
+          return mergeKLists(lists, 0, lists.size());
+      }
+  };
+  ```
+
+- 迭代实现
+
+  ```cpp
+  class Solution:
+      # 21. 合并两个有序链表
+      def mergeTwoLists(self, list1: Optional[ListNode], list2: Optional[ListNode]) -> Optional[ListNode]:
+          cur = dummy = ListNode()  # 用哨兵节点简化代码逻辑
+          while list1 and list2:
+              if list1.val < list2.val:
+                  cur.next = list1  # 把 list1 加到新链表中
+                  list1 = list1.next
+              else:  # 注：相等的情况加哪个节点都是可以的
+                  cur.next = list2  # 把 list2 加到新链表中
+                  list2 = list2.next
+              cur = cur.next
+          cur.next = list1 if list1 else list2  # 拼接剩余链表
+          return dummy.next
+
+      def mergeKLists(self, lists: List[Optional[ListNode]]) -> Optional[ListNode]:
+          m = len(lists)
+          if m == 0:
+              return None
+          step = 1
+          while step < m:
+              for i in range(0, m - step, step * 2):
+                  lists[i] = self.mergeTwoLists(lists[i], lists[i + step])
+              step *= 2
+          return lists[0]
+  ```

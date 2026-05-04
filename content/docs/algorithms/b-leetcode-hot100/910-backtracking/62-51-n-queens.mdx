@@ -1,0 +1,94 @@
+---
+id: "51"
+title: N 皇后
+englishTitle: N-Queens
+slug: n-queens
+url: https://leetcode-cn.com/problems/n-queens/
+difficulty: Hard
+tags:
+  - 回溯
+  - 数组
+---
+
+## 题面
+
+按照国际象棋的规则，皇后可以攻击与之处在同一行或同一列或同一斜线上的棋子。
+
+n  皇后问题 研究的是如何将 `n` 个皇后放置在 `n×n` 的棋盘上，并且使皇后彼此之间不能相互攻击。
+
+给你一个整数 `n` ，返回所有不同的 n   皇后问题 的解决方案。
+
+每一种解法包含一个不同的 n 皇后问题 的棋子放置方案，该方案中 `'Q'` 和 `'.'` 分别代表了皇后和空位。
+
+示例 1：
+
+![](https://assets.leetcode.com/uploads/2020/11/13/queens.jpg)
+
+    输入： n = 4
+    输出：[[".Q..","...Q","Q...","..Q."],["..Q.","Q...","...Q",".Q.."]]
+    解释： 如上图所示，4 皇后问题存在两个不同的解法。
+
+示例 2：
+
+    输入： n = 1
+    输出：[["Q"]]
+
+提示：
+
+  * `1 <= n <= 9`
+
+## 分析
+
+- N 皇后问题实际上可以暴力解决，使用 N 层循环即可，但实际上可以通过回溯实现，并进行剪枝
+
+- 代码实现，注意，只有当当前位置放置皇后合法时，才对 pos[cur] 进行赋值
+
+	```cpp
+	class Solution {
+	public:
+	    vector<vector<string>> result;
+	    vector<string> toChess(vector<int>& pos) {
+	        vector<string> path;
+	        for (int i = 0; i < pos.size(); i++) {
+	            string s;
+	            for (int j = 0; j < pos.size(); j++) {
+	                if (j == pos[i])
+	                    s += "Q";
+	                else
+	                    s += ".";
+	            }
+	            path.push_back(s);
+	        }
+	        return path;
+	    }
+	    bool isValid(vector<int>& pos, int cur) {
+	        for (int i = 0; i < cur; i++) { // 只检查前cur行，无需检查所有行
+	            // 列冲突 或 对角线冲突（行差绝对值 == 列差绝对值）
+	            if (pos[i] == pos[cur] || abs(pos[i] - pos[cur]) == abs(i - cur)) {
+	                return false;
+	            }
+	        }
+	        return true;
+	    }
+	    void backtracking(int n, vector<int>& pos, int cur) {
+	        if (cur == n) {
+	            result.push_back(toChess(pos));
+	            return;
+	        }
+	        for (int i = 0; i < n; i++) {
+	            pos[cur] = i;                      // 摆放皇后到当前行第i列
+	            if (isValid(pos, cur)) {           // 检查是否合法
+	                backtracking(n, pos, cur + 1); // 合法则递归下一行
+	            }
+	            pos[cur] = -1; // 回溯：恢复当前行的状态（关键！）
+	        }
+	    }
+	    vector<vector<string>> solveNQueens(int n) {
+	        vector<int> pos = vector(n, -1);
+	        backtracking(n, pos, 0);
+	        return result;
+	    }
+	};
+	```
+
+	

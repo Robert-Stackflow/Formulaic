@@ -132,9 +132,9 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
 
   ```py
   def decorator(func):
-      def wrapper(*args, **kwargs):
+      def wrapper(*args,**kwargs):
           # 执行前增强
-          res = func(*args, **kwargs)
+          res = func(*args,**kwargs)
           # 执行后增强
           return res
       return wrapper
@@ -151,8 +151,8 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
 
   def decorator(func):
       @wraps(func)
-      def wrapper(*args, **kwargs):
-          return func(*args, **kwargs)
+      def wrapper(*args,**kwargs):
+          return func(*args,**kwargs)
       return wrapper
   ```
 
@@ -162,8 +162,8 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
   def decorator(arg):
       def inner(func):
           @wraps(func)
-          def wrapper(*args, **kwargs):
-              return func(*args, **kwargs)
+          def wrapper(*args,**kwargs):
+              return func(*args,**kwargs)
           return wrapper
       return inner
   ```
@@ -407,7 +407,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
     class Singleton:
         _instance = None
 
-        def __new__(cls, *args, **kwargs):
+        def __new__(cls, *args,**kwargs):
             if not cls._instance:
                 cls._instance = super().__new__(cls)
             return cls._instance
@@ -422,9 +422,9 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
     ```py
     def singleton(cls):
         instances = {}
-        def wrapper(*args, **kwargs):
+        def wrapper(*args,**kwargs):
             if cls not in instances:
-                instances[cls] = cls(*args, **kwargs)
+                instances[cls] = cls(*args,**kwargs)
             return instances[cls]
         return wrapper
 

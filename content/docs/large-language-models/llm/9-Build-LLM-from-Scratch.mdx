@@ -877,7 +877,7 @@ description: 介绍 Build LLM from Scratch，包括 Tokenization、Batching、Mo
       name="gpt2_custom",
       pat_str=base_tokenizer._pat_str,
       mergeable_ranks=base_tokenizer._mergeable_ranks,
-      special_tokens={**base_tokenizer._special_tokens, **custom_token_ids},
+      special_tokens={**base_tokenizer._special_tokens,**custom_token_ids},
   )
   ```
 
@@ -1981,7 +1981,7 @@ description: 介绍 Build LLM from Scratch，包括 Tokenization、Batching、Mo
           V = V.view(b, n, self.num_heads, self.head_dim).transpose(1, 2)
 
           # Scaled dot-product attention
-          scores = torch.einsum("bhnd,bhmd->bhnm", Q, K) / (self.head_dim ** 0.5)
+          scores = torch.einsum("bhnd,bhmd->bhnm", Q, K) / (self.head_dim**0.5)
 
           # Apply mask
           mask = self.mask[:n, :n]
@@ -5196,7 +5196,7 @@ description: 介绍 Build LLM from Scratch，包括 Tokenization、Batching、Mo
       assert head_dim % 2 == 0, "Embedding dimension must be even"
 
       # Compute the inverse frequencies
-      inv_freq = 1.0 / (theta_base ** (torch.arange(0, head_dim, 2)[: (head_dim // 2)].float() / head_dim))
+      inv_freq = 1.0 / (theta_base**(torch.arange(0, head_dim, 2)[: (head_dim // 2)].float() / head_dim))
 
       # Generate position indices
       positions = torch.arange(context_length)
@@ -5787,8 +5787,8 @@ description: 介绍 Build LLM from Scratch，包括 Tokenization、Batching、Mo
   base_llama2 = 10_000
   base_llama3 = 500_000
 
-  theta_llama2 = base_llama2 ** (-2 * (i - 1) / d)
-  theta_llama3 = base_llama3 ** (-2 * (i - 1) / d)
+  theta_llama2 = base_llama2**(-2 * (i - 1) / d)
+  theta_llama3 = base_llama3**(-2 * (i - 1) / d)
 
   plt.plot(i, theta_llama2, label="base = 10,000 (Llama 2)")
   plt.plot(i, theta_llama3, label="base = 500,000 (Llama 3)", ls="--")
@@ -5813,7 +5813,7 @@ description: 介绍 Build LLM from Scratch，包括 Tokenization、Batching、Mo
       assert head_dim % 2 == 0, "Embedding dimension must be even"
 
       # Compute the inverse frequencies
-      inv_freq = 1.0 / (theta_base ** (torch.arange(0, head_dim, 2)[: (head_dim // 2)].float() / head_dim))
+      inv_freq = 1.0 / (theta_base**(torch.arange(0, head_dim, 2)[: (head_dim // 2)].float() / head_dim))
 
       ###################### NEW ################################
       # Frequency adjustments
@@ -7516,7 +7516,7 @@ description: 介绍 Build LLM from Scratch，包括 Tokenization、Batching、Mo
       def forward(self, input_ids):
           # Forward pass
           b, seq_len = input_ids.shape
-          x = self.tok_emb(input_ids) * (self.cfg["emb_dim"] ** 0.5)
+          x = self.tok_emb(input_ids) * (self.cfg["emb_dim"]**0.5)
           mask_global, mask_local = self._create_masks(seq_len, x.device)
 
           for block in self.blocks:
@@ -7668,7 +7668,7 @@ description: 介绍 Build LLM from Scratch，包括 Tokenization、Batching、Mo
               return ramp_func
 
           # Base frequencies
-          pos_freqs = theta_base ** (torch.arange(0, head_dim, 2, dtype=dtype) / head_dim)
+          pos_freqs = theta_base**(torch.arange(0, head_dim, 2, dtype=dtype) / head_dim)
           inv_freq_extrapolation = 1.0 / pos_freqs  # No scaling (extrapolation)
           inv_freq_interpolation = 1.0 / (rope_factor * pos_freqs)  # With scaling (interpolation)
 
@@ -7684,7 +7684,7 @@ description: 介绍 Build LLM from Scratch，包括 Tokenization、Batching、Mo
       else:
           # Default RoPE
           inv_freq = 1.0 / (
-              theta_base ** (
+              theta_base**(
                   torch.arange(0, head_dim, 2, dtype=dtype)[: head_dim // 2].float()
                   / head_dim
               )

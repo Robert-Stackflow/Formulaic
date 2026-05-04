@@ -1,0 +1,148 @@
+---
+remark: 注意递归做法
+id: "394"
+title: 字符串解码
+englishTitle: Decode String
+slug: decode-string
+url: https://leetcode-cn.com/problems/decode-string/
+difficulty: Medium
+tags:
+  - 栈
+  - 递归
+  - 字符串
+---
+
+## 题面
+
+给定一个经过编码的字符串，返回它解码后的字符串。
+
+编码规则为: `k[encodedstring]`，表示其中方括号内部的 `encodedstring` 正好重复 `k` 次。注意 `k` 保证为正整数。
+
+你可以认为输入字符串总是有效的；输入字符串中没有额外的空格，且输入的方括号总是符合格式要求的。
+
+此外，你可以认为原始数据不包含数字，所有的数字只表示重复的次数 `k` ，例如不会出现像 `3a` 或 `2[4]` 的输入。
+
+测试用例保证输出的长度不会超过 `105`。
+
+示例 1：
+
+    输入： s = "3[a]2[bc]"
+    输出： "aaabcbc"
+
+示例 2：
+
+    输入： s = "3[a2[c]]"
+    输出： "accaccacc"
+
+示例 3：
+
+    输入： s = "2[abc]3[cd]ef"
+    输出： "abcabccdcdcdef"
+
+示例 4：
+
+    输入： s = "abc3[cd]xyz"
+    输出： "abccdcdcdxyz"
+
+提示：
+
+- `1 <= s.length <= 30`
+- `s` 由小写英文字母、数字和方括号 `'[]'` 组成
+- `s` 保证是一个 有效 的输入。
+- `s` 中所有整数的取值范围为 `[1, 300]`
+
+## 分析
+
+- 代码实现
+
+  ```cpp
+  class Solution {
+  public:
+      string decodeString(string s) {
+          std::deque<string> st;
+          for (int i = 0; i < s.size(); i++) {
+              int j = 0;
+              if ('0' <= s[i] && s[i] <= '9') {
+                  string num;
+                  j = i;
+                  while ('0' <= s[j] && s[j] <= '9') {
+                      num += s[j++];
+                  }
+                  i = j - 1;
+                  st.push_back(num);
+              }
+              if ('a' <= s[i] && s[i] <= 'z') {
+                  string word;
+                  j = i;
+                  while ('a' <= s[j] && s[j] <= 'z') {
+                      word += s[j++];
+                  }
+                  i = j - 1;
+                  st.push_back(word);
+              }
+              if (s[i] == ']') {
+                  string res;
+                  string word;
+                  while (true) {
+                      string t = st.back();
+                      if ('a' <= t[0] && t[0] <= 'z') {
+                          word = t + word;
+                          st.pop_back();
+
+                      } else {
+                          break;
+                      }
+                  }
+                  int number = stoi(st.back());
+                  st.pop_back();
+
+                  while (number-- > 0) {
+                      res += word;
+                  }
+                  st.push_back(res);
+              }
+          }
+          string res;
+          while (!st.empty()) {
+              res = st.back() + res;
+              st.pop_back();
+          }
+          return res;
+      }
+  };
+  ```
+
+- 也可以使用递归的方法来解决
+
+  ```cpp
+  class Solution {
+  public:
+      string decodeString(string s) {
+          int i = 0;
+
+          auto decode = [&](this auto&& decode) -> string {
+              string res;
+              int k = 0;
+              while (i < s.size()) {
+                  char c = s[i];
+                  i++;
+                  if (isalpha(c)) {
+                      res += c;
+                  } else if (isdigit(c)) {
+                      k = k * 10 + (c - '0');
+                  } else if (c == '[') { // 递
+                      string t = decode();
+                      for (; k > 0; k--) {
+                          res += t; // 把括号内的字符串重复 k 次
+                      }
+                  } else { // ']' 归
+                      break;
+                  }
+              }
+              return res;
+          };
+
+          return decode();
+      }
+  };
+  ```

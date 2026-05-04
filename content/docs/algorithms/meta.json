@@ -3,6 +3,10 @@
   "description": "数据结构与算法相关的文档和资源",
   "root": true,
   "pages": [
-    "index"
+    "index",
+    "---算法笔记---",
+    "...a-algorithm-notes",
+    "---LeetCode Hot 100---",
+    "...b-leetcode-hot100"
   ]
 }

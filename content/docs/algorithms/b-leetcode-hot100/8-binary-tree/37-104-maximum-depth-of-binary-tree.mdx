@@ -1,0 +1,125 @@
+---
+id: "104"
+title: 二叉树的最大深度
+englishTitle: Maximum Depth of Binary Tree
+slug: maximum-depth-of-binary-tree
+url: https://leetcode-cn.com/problems/maximum-depth-of-binary-tree/
+difficulty: Easy
+tags:
+  - 二叉树
+  - 树
+  - 深度优先搜索
+  - 广度优先搜索
+---
+
+## 题面
+
+给定一个二叉树 `root` ，返回其最大深度。
+
+二叉树的 最大深度 是指从根节点到最远叶子节点的最长路径上的节点数。
+
+示例 1：
+
+![](https://assets.leetcode.com/uploads/2020/11/26/tmp-tree.jpg)
+
+    输入： root = [3,9,20,null,null,15,7]
+    输出： 3
+
+示例 2：
+
+    输入： root = [1,null,2]
+    输出： 2
+
+提示：
+
+  * 树中节点的数量在 `[0, 104]` 区间内。
+  * `-100 <= Node.val <= 100`
+
+## 分析
+
+- 层序遍历天然适合用于求解树的深度，因为它是一层一层遍历节点的，实现如下
+
+	```cpp
+	/**
+	 * Definition for a binary tree node.
+	 * struct TreeNode {
+	 *     int val;
+	 *     TreeNode *left;
+	 *     TreeNode *right;
+	 *     TreeNode() : val(0), left(nullptr), right(nullptr) {}
+	 *     TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}
+	 *     TreeNode(int x, TreeNode *left, TreeNode *right) : val(x), left(left),
+	 * right(right) {}
+	 * };
+	 */
+	class Solution {
+	public:
+	    int maxDepth(TreeNode* root) {
+	        if (root == nullptr)
+	            return 0;
+	        queue<TreeNode*> que;
+	        int depth = 0;
+	        que.push(root);
+	        while (!que.empty()) {
+	            int size = que.size();
+	            depth++;
+	            for (int i = 0; i < size; i++) {
+	                TreeNode* node = que.front();
+	                que.pop();
+	                if (node->left)
+	                    que.push(node->left);
+	                if (node->right)
+	                    que.push(node->right);
+	            }
+	        }
+	        return depth;
+	    }
+	};
+	```
+
+- 也可以用递归的方式来实现，递归有两种视角
+
+- 一种是自底向上，以领导者的思维来看，领导者将任务分发给下层，下层完成任务之后将结果返回给上层，上层负责汇总结果，代码如下：
+
+	```cpp
+	class Solution {
+	public:
+	    int maxDepth(TreeNode* root) {
+	        if (root == nullptr) { // 递归结束条件，返回其深度为 0
+	            return 0;
+	        }
+	        int l_depth = maxDepth(root->left); // 分发给左子树，请你计算你的深度是多少
+	        int r_depth = maxDepth(root->right); // 分发给右子树，请你计算你的深度是多少
+	        return max(l_depth, r_depth) + 1; // 最终汇总，最大深度就是左右子树的最大深度+1
+	    }
+	};
+	```
+
+- 一种是自顶向下，即通过深度优先搜索（DFS） 的自顶向下方式，计算二叉树的最大深度（即从根节点到最远叶子节点的最长路径上的节点数）
+
+	```cpp
+	class Solution {
+	public:
+	    int maxDepth(TreeNode* root) {
+	        int ans = 0;
+	        auto dfs = [&](this auto&& dfs, TreeNode* node, int depth) -> void {
+	            if (node == nullptr) { // 递归终止条件，节点为空，直接返回
+	                return;
+	            }
+	            depth++; // 访问当前节点，深度+1（自顶向下的核心：从根往下走，每走一层深度+1）
+	            ans = max(ans, depth); // 更新全局最大深度
+	            // 递归遍历左子树，传递当前深度（注意：这里depth是值传递，不会影响右子树）
+	            dfs(node->left, depth);
+	            // 递归遍历右子树，传递当前深度
+	            dfs(node->right, depth);
+	        };
+	        dfs(root, 0); // 从根节点开始，初始深度为 0
+	        return ans;
+	    }
+	};
+	```
+
+- 显然二者的区别在于
+
+	- 自底向上：递归函数的核心是 “**向上返回结果**”—— 先让子节点（下层）计算出自己的深度，父节点（上层）汇总子节点的结果（取最大值），再加 1 得到自己的深度，最终从叶子节点层层向上汇总到根节点；也即，从最小的子问题往更大的子问题计算
+	- 自顶向下：递归函数的核心是 “**向下传递状态 + 更新全局结果**”—— 父节点（上层）将 “当前深度” 这个状态传递给子节点（下层），子节点用这个状态更新全局的最大深度，函数本身不返回计算结果，仅通过副作用（修改全局变量）完成目标

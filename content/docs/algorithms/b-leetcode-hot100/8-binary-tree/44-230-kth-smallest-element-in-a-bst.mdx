@@ -1,0 +1,241 @@
+---
+id: "230"
+title: 二叉搜索树中第 K 小的元素
+englishTitle: Kth Smallest Element in a BST
+slug: kth-smallest-element-in-a-bst
+url: https://leetcode-cn.com/problems/kth-smallest-element-in-a-bst/
+difficulty: Medium
+tags:
+  - 二叉树
+  - 树
+  - 深度优先搜索
+  - 二叉搜索树
+---
+
+## 题面
+
+给定一个二叉搜索树的根节点 `root` ，和一个整数 `k` ，请你设计一个算法查找其中第 `k`  小的元素（`k` 从 1 开始计数）。
+
+示例 1：
+
+![](https://assets.leetcode.com/uploads/2021/01/28/kthtree1.jpg)
+
+    输入： root = [3,1,4,null,2], k = 1
+    输出： 1
+
+示例 2：
+
+![](https://assets.leetcode.com/uploads/2021/01/28/kthtree2.jpg)
+
+    输入： root = [5,3,6,2,4,null,null,1], k = 3
+    输出： 3
+
+提示：
+
+  * 树中的节点数为 `n` 。
+  * `1 <= k <= n <= 104`
+  * `0 <= Node.val <= 104`
+
+进阶： 如果二叉搜索树经常被修改（插入/删除操作）并且你需要频繁地查找第 `k` 小的值，你将如何优化算法？
+
+## 分析
+
+- 可以在中序遍历的过程中，记录访问到了第几个元素即可
+
+	```cpp
+	/**
+	 * Definition for a binary tree node.
+	 * struct TreeNode {
+	 *     int val;
+	 *     TreeNode *left;
+	 *     TreeNode *right;
+	 *     TreeNode() : val(0), left(nullptr), right(nullptr) {}
+	 *     TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}
+	 *     TreeNode(int x, TreeNode *left, TreeNode *right) : val(x), left(left),
+	 * right(right) {}
+	 * };
+	 */
+	class Solution {
+	public:
+	    int kthSmallest(TreeNode* root, int k) {
+	        if (root == nullptr)
+	            return -1;
+	        stack<TreeNode*> st;
+	        TreeNode* cur = root;
+	        while (cur != nullptr || !st.empty()) {
+	            if (cur != nullptr) {
+	                st.push(cur);
+	                cur = cur->left;
+	            } else {
+	                cur = st.top();
+	                st.pop();
+	                if (--k == 0)
+	                    return cur->val;
+	                cur = cur->right;
+	            }
+	        }
+	        return -1;
+	    }
+	};
+	```
+
+- 另一种写法（递归）
+
+	```cpp
+	class Solution {
+	public:
+	    int kthSmallest(TreeNode* root, int& k) { // 注意这里改成了引用
+	        if (root == nullptr) {
+	            return -1; // 题目保证节点值非负，用 -1 表示没有找到
+	        }
+	        int left_res = kthSmallest(root->left, k);
+	        if (left_res != -1) { // 答案在左子树中
+	            return left_res;
+	        }
+	        if (--k == 0) { // 答案就是当前节点
+	            return root->val;
+	        }
+	        return kthSmallest(root->right, k); // 右子树会返回答案或者 -1
+	    }
+	};
+	```
+
+- 如果改成第 K 大的元素，应该怎么处理？
+
+- 朴素的想法是，将二叉搜索树转成有序数组，然后再处理，那么可以在遍历的过程中处理吗？
+
+- 然而，中序遍历（左→根→右）的结果是升序的，这也是原代码找第 K 小节点的原理
+
+- 如果把遍历顺序改为（右→根→左），结果就会是降序的，这样就能找到第 K 大节点
+
+- 那么，如果二叉搜索树经常被修改（插入/删除操作）并且需要频繁地查找第 `k` 小的值，将如何优化算法？
+
+- 原有的中序遍历找第 k 小的方法，每次查询的时间复杂度是 O(n)（最坏情况遍历整棵树），在频繁查询的场景下效率极低。根本原因是：普通 BST 没有记录每个节点的子树规模信息，无法快速定位第 k 小元素
+
+- 最经典且高效的解决方案是给每个节点增加一个额外的属性 `size`，表示以该节点为根的子树的节点总数，通过维护这个属性，可以在 O(h)（h 为树的高度，平衡树时 h=logn）的时间内完成：
+
+	1. 查找第 k 小元素
+	2. 插入 / 删除节点（同时维护 size 属性）
+
+- 首先扩展 TreeNode 结构，增加`size`字段：
+
+	```
+	struct TreeNode {
+	    int val;
+	    int size;  // 新增：以当前节点为根的子树的节点总数
+	    TreeNode *left;
+	    TreeNode *right;
+	    TreeNode() : val(0), size(1), left(nullptr), right(nullptr) {}  // 初始size=1（自身）
+	    TreeNode(int x) : val(x), size(1), left(nullptr), right(nullptr) {}
+	    TreeNode(int x, TreeNode *left, TreeNode *right) : val(x), size(1), left(left), right(right) {}
+	};
+	```
+
+- 插入 / 删除时需要递归更新路径上所有节点的 size：
+
+	```cpp
+	// 更新节点的size：size = 左子树size + 右子树size + 1（自身）
+	void updateSize(TreeNode* node) {
+	    if (node == nullptr) return;
+	    int leftSize = (node->left == nullptr) ? 0 : node->left->size;
+	    int rightSize = (node->right == nullptr) ? 0 : node->right->size;
+	    node->size = leftSize + rightSize + 1;
+	}
+	```
+
+- 查找第 k 小元素
+
+	```cpp
+	// 查找第k小的元素（k从1开始）
+	int kthSmallest(TreeNode* root, int k) {
+	    if (root == nullptr || k < 1 || k > root->size) {
+	        return -1;  // 边界：k非法或树为空
+	    }
+	
+	    // 左子树的节点数
+	    int leftSize = (root->left == nullptr) ? 0 : root->left->size;
+	
+	    if (k == leftSize + 1) {
+	        // 第k小就是当前节点（左子树有leftSize个，当前是第leftSize+1个）
+	        return root->val;
+	    } else if (k <= leftSize) {
+	        // 第k小在左子树中，递归查找左子树的第k小
+	        return kthSmallest(root->left, k);
+	    } else {
+	        // 第k小在右子树中，递归查找右子树的第(k - leftSize - 1)小
+	        return kthSmallest(root->right, k - leftSize - 1);
+	    }
+	}
+	```
+
+- 插入节点：在普通 BST 插入逻辑基础上，回溯更新路径上节点的 size：
+
+	```cpp
+	TreeNode* insert(TreeNode* root, int val) {
+	    if (root == nullptr) {
+	        return new TreeNode(val);
+	    }
+	
+	    if (val < root->val) {
+	        root->left = insert(root->left, val);
+	    } else if (val > root->val) {
+	        root->right = insert(root->right, val);
+	    } else {
+	        return root;  // 假设不插入重复值
+	    }
+	
+	    // 插入后更新当前节点的size
+	    updateSize(root);
+	    return root;
+	}
+	```
+
+- 删除节点：普通 BST 删除逻辑 + 回溯更新 size（以删除叶子 / 单孩子节点为例，完整删除需处理双孩子情况）：
+
+	```cpp
+	TreeNode* deleteNode(TreeNode* root, int val) {
+	    if (root == nullptr) {
+	        return nullptr;
+	    }
+	
+	    if (val < root->val) {
+	        root->left = deleteNode(root->left, val);
+	    } else if (val > root->val) {
+	        root->right = deleteNode(root->right, val);
+	    } else {
+	        // 找到要删除的节点
+	        if (root->left == nullptr && root->right == nullptr) {
+	            // 叶子节点，直接删除
+	            delete root;
+	            return nullptr;
+	        } else if (root->left == nullptr) {
+	            // 只有右孩子
+	            TreeNode* temp = root->right;
+	            delete root;
+	            return temp;
+	        } else if (root->right == nullptr) {
+	            // 只有左孩子
+	            TreeNode* temp = root->left;
+	            delete root;
+	            return temp;
+	        }
+	        // 双孩子情况：找右子树最小节点替代（或左子树最大）
+	        TreeNode* minRight = root->right;
+	        while (minRight->left != nullptr) {
+	            minRight = minRight->left;
+	        }
+	        root->val = minRight->val;
+	        root->right = deleteNode(root->right, minRight->val);
+	    }
+	
+	    // 删除后更新当前节点的size
+	    updateSize(root);
+	    return root;
+	}
+	```
+
+- 更进一步的优化是平衡树（AVL/红黑树）
+- 上述增强版 BST 的查询 / 修改时间复杂度是 O(h)，但如果 BST 退化成链表（如插入有序数据），h=n，效率会回到 O(n)
+- 因此，工业级解决方案是将基础 BST 替换为平衡二叉搜索树（如 AVL 树、红黑树），保证树的高度始终是 logn，最终：
+	- 插入 / 删除：O(logn)（维护平衡 + 更新 size）
+	- 查找第 k 小：O(logn)

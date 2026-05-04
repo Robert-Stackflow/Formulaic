@@ -1,0 +1,142 @@
+---
+remark: 学习如何找到链表的zhong'ji
+id: "234"
+title: 回文链表
+englishTitle: Palindrome Linked List
+slug: palindrome-linked-list
+url: https://leetcode-cn.com/problems/palindrome-linked-list/
+difficulty: Easy
+tags:
+  - 链表
+  - 栈
+  - 递归
+  - 双指针
+---
+
+## 题面
+
+给你一个单链表的头节点 `head` ，请你判断该链表是否为回文链表。如果是，返回 `true` ；否则，返回 `false` 。
+
+示例 1：
+
+![](https://assets.leetcode.com/uploads/2021/03/03/pal1linked-list.jpg)
+
+    输入： head = [1,2,2,1]
+    输出： true
+
+示例 2：
+
+![](https://assets.leetcode.com/uploads/2021/03/03/pal2linked-list.jpg)
+
+    输入： head = [1,2]
+    输出： false
+
+提示：
+
+- 链表中节点数目在范围`[1, 105]` 内
+- `0 <= Node.val <= 9`
+
+进阶： 你能否用 `O(n)` 时间复杂度和 `O(1)` 空间复杂度解决此题？
+
+## 分析
+
+- 可以先将链表转换为数组，然后从数组中间向两边出发，判断是否为回文串
+
+- 时间复杂度为 $O(n)$
+
+  ```cpp
+  /**
+   * Definition for singly-linked list.
+   * struct ListNode {
+   *     int val;
+   *     ListNode *next;
+   *     ListNode() : val(0), next(nullptr) {}
+   *     ListNode(int x) : val(x), next(nullptr) {}
+   *     ListNode(int x, ListNode *next) : val(x), next(next) {}
+   * };
+   */
+  class Solution {
+  public:
+      bool isPalindrome(ListNode* head) {
+          vector<int> vals;
+          ListNode* cur = head;
+          while (cur != nullptr) {
+              vals.push_back(cur->val);
+              cur = cur->next;
+          }
+          int l = 0, r = 0, n = vals.size();
+          if (n % 2 == 0) {
+              l = n / 2 - 1;
+              r = n / 2;
+          } else {
+              l = r = n / 2;
+          }
+          while (l >= 0) {
+              if (vals[l] != vals[r])
+                  return false;
+              l--;
+              r++;
+          }
+          return true;
+      }
+  };
+  ```
+
+- 那么可以优化空间复杂度吗？相较于数组，为什么不能直接在链表上使用双指针？因为链表是单向的，不能往左侧移动指针
+
+- 那么可以先找到中间节点，然后从中间往左反转链表，这样就可以比较左右两侧的值
+
+  ```cpp
+  /**
+   * Definition for singly-linked list.
+   * struct ListNode {
+   *     int val;
+   *     ListNode *next;
+   *     ListNode() : val(0), next(nullptr) {}
+   *     ListNode(int x) : val(x), next(nullptr) {}
+   *     ListNode(int x, ListNode *next) : val(x), next(next) {}
+   * };
+   */
+  class Solution {
+  public:
+      bool isPalindrome(ListNode* head) {
+          ListNode* cur = head;
+          ListNode* pre = nullptr;
+          int count = 0;
+          while (cur != nullptr) {
+              count++;
+              cur = cur->next;
+          }
+          int mid = count / 2;
+          cur = head;
+          while (mid--) {
+              ListNode* temp = cur->next;
+              cur->next = pre;
+              pre = cur;
+              cur = temp;
+          }
+          ListNode* l = pre;
+          ListNode* r = count % 2 == 1 ? cur->next : cur;
+          while (l != nullptr) {
+              if (l->val != r->val)
+                  return false;
+              l = l->next;
+              r = r->next;
+          }
+          return true;
+      }
+  };
+  ```
+
+- 找到中间节点的更好的办法——快慢指针，这与找到倒数第 N 个节点的思想类似
+
+  ```cpp
+  ListNode* middleNode(ListNode* head) {
+      ListNode* slow = head, *fast = head;
+      while (fast && fast->next) {
+          slow = slow->next;
+          fast = fast->next->next;
+      }
+      return slow;
+  }
+  ```

@@ -1,0 +1,152 @@
+---
+id: "128"
+title: 最长连续序列
+englishTitle: Longest Consecutive Sequence
+slug: longest-consecutive-sequence
+url: https://leetcode-cn.com/problems/longest-consecutive-sequence/
+difficulty: Medium
+tags:
+  - 哈希
+  - 并查集
+  - 数组
+  - 哈希表
+---
+
+## 题面
+
+给定一个未排序的整数数组 `nums` ，找出数字连续的最长序列（不要求序列元素在原数组中连续）的长度。
+
+请你设计并实现时间复杂度为 `O(n)` 的算法解决此问题。
+
+示例 1：
+
+    输入： nums = [100,4,200,1,3,2]
+    输出： 4
+    解释： 最长数字连续序列是 [1, 2, 3, 4]。它的长度为 4。
+
+示例 2：
+
+    输入： nums = [0,3,7,2,5,8,4,6,0,1]
+    输出： 9
+
+示例 3：
+
+    输入： nums = [1,0,1,2]
+    输出： 3
+
+提示：
+
+  * `0 <= nums.length <= 105`
+  * `-109 <= nums[i] <= 109`
+
+## 分析
+
+- 可以先将数组排序后去重，然后统计最长的连续序列
+
+- 在统计时
+
+	- 当前元素与前一个元素相差 1 时，说明连续，记录连续序列长度
+	- 否则说明不连续，更新当前最长序列长度并重置 cur
+
+- 代码实现
+
+	```cpp
+	class Solution {
+	public:
+	    int longestConsecutive(vector<int>& nums) {
+	        if (nums.size() == 0)
+	            return 0;
+	        if (nums.size() == 1)
+	            return 1;
+	        // 1. 排序：核心复杂度O(n logn)
+	        std::sort(nums.begin(), nums.end());
+	        // 2. 去重：时间复杂度O(n)（遍历一次）
+	        auto last = std::unique(nums.begin(), nums.end());
+	        nums.erase(last, nums.end());
+	        int longest = 1;
+	        int current = 1;
+	        for (int i = 1; i < nums.size(); ++i) {
+	            if (nums[i] == nums[i-1] + 1) {
+	                current++;
+	            } else {
+	                longest = max(longest, current);
+	                current = 1;
+	            }
+	        }
+	        result = max(cur, result);
+	        return result;
+	    }
+	};
+	```
+
+- 上述算法的时间复杂度为 $O(n\log n)$
+
+- 其中排序的时间复杂度是 $O(n\log n)$，去重操作的时间复杂度为 $O(n)$，删除尾部重复元素的时间复杂度为 $O(k)$（k 为重复元素个数），遍历统计最长连续序列的时间复杂度为 $O(m)$​（m 为去重后元素个数）
+
+- 空间复杂度为 $O(\log n)\sim O(n)$
+
+- 去重逻辑也可以合并到统计逻辑中，无需进行 erase 操作
+
+	```cpp
+	class Solution {
+	public:
+	    int longestConsecutive(vector<int>& nums) {
+	        if (nums.empty()) return 0;
+	        
+	        // 排序：std::sort对基础类型极致优化
+	        std::sort(nums.begin(), nums.end());
+	        
+	        // 去重（合并到统计逻辑中，减少一次erase操作）
+	        int longest = 1, current = 1;
+	        for (int i = 1; i < nums.size(); ++i) {
+	            if (nums[i] == nums[i-1]) {
+	                continue; // 跳过重复元素，无需erase
+	            } else if (nums[i] == nums[i-1] + 1) {
+	                current++;
+	            } else {
+	                longest = max(longest, current);
+	                current = 1;
+	            }
+	        }
+	        // 最后一次更新（避免末尾连续序列未统计）
+	        longest = max(longest, current);
+	        return longest;
+	    }
+	};
+	```
+
+- 当然，有更好的做法是，使用 unordered_set 存储元素，遍历每个元素时仅检查连续序列的起点（num-1 不在集合中时才开始更新），避免排序开销
+
+- 代码实现
+
+	```cpp
+	class Solution {
+	public:
+	    int longestConsecutive(vector<int>& nums) {
+	        unordered_set<int> num_set;
+	        for (const int& num : nums) {
+	            num_set.insert(num);
+	        }
+	
+	        int longestStreak = 0;
+	
+	        for (const int& num : num_set) {
+	            if (!num_set.count(num - 1)) {
+	                int currentNum = num;
+	                int currentStreak = 1;
+	
+	                while (num_set.count(currentNum + 1)) {
+	                    currentNum += 1;
+	                    currentStreak += 1;
+	                }
+	
+	                longestStreak = max(longestStreak, currentStreak);
+	            }
+	        }
+	
+	        return longestStreak;           
+	    }
+	};
+	```
+
+- 上述算法的时间复杂度为 $O(n)$，最坏时间复杂度为 $O(n^2)$，空间复杂度为 $O(n)$

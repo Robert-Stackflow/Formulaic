@@ -1,0 +1,232 @@
+---
+id: "5"
+title: 最长回文子串
+englishTitle: Longest Palindromic Substring
+slug: longest-palindromic-substring
+url: https://leetcode-cn.com/problems/longest-palindromic-substring/
+difficulty: Medium
+tags:
+  - 多维动态规划
+  - 双指针
+  - 字符串
+  - 动态规划
+---
+
+## 题面
+
+给你一个字符串 `s`，找到 `s` 中最长的 回文 子串。
+
+示例 1：
+
+    输入： s = "babad"
+    输出： "bab"
+    解释： "aba" 同样是符合题意的答案。
+
+示例 2：
+
+    输入： s = "cbbd"
+    输出： "bb"
+
+提示：
+
+  * `1 <= s.length <= 1000`
+  * `s` 仅由数字和英文字母组成
+
+## 分析
+
+- `dp[i][j]` 表示子串 i-j 是否为回文子串
+
+- 递推公式：如果 `s[i]==s[j]` 且 `dp[i+1][j-1]==true` 说明字串是回文的，否则不是回文的
+
+- 这里外层循环需要控制区间的长度，由短到长地遍历子串
+
+- 代码实现
+
+	```cpp
+	class Solution {
+	public:
+	    string longestPalindrome(string s) {
+	        vector<bool> dp(s.size(), true);
+	        vector<bool> dp2(s.size(), false);
+	        int l = 0, r = 0;
+	        for (int stride = 1; stride < s.size(); stride++) {
+	            for (int i = 0, j = stride; j < s.size(); i++, j++) {
+	                if (s[i] == s[j] && (j == i + 1 || dp[i+1])) {
+	                    dp2[i][j] = true;
+	                    if (r - l < j - i) {
+	                        l = i, r = j;
+	                    }
+	                }
+	            }
+	        }
+	        return s.substr(l, r - l + 1);
+	    }
+	};
+	```
+
+- 观察 DP 状态转移方程：`dp[i][j] = (s[i] == s[j]) && (j == i+1 || dp[i+1][j-1])`，可以发现计算 `dp[i][j]` 只依赖于 `dp[i+1][j-1]`（即左下角的状态）
+
+- 因此可以用一维数组替代二维数组：
+
+	- 一维数组 `dp[j]` 表示「以 j 为右端点，i 为左端点」的子串是否为回文
+	- 遍历顺序改为从后往前（i 从 n-1 到 0），避免覆盖还未使用的状态
+	- 空间复杂度可降至 `O(n)`
+
+- 代码实现
+
+	```cpp
+	class Solution {
+	public:
+	    string longestPalindrome(string s) {
+	        int n = s.size();
+	        if (n < 2) return s; // 边界处理：空串或单字符直接返回
+	        
+	        // 一维DP数组：dp[j] 表示子串 s[i..j] 是否为回文
+	        vector<bool> dp(n, false);
+	        int start = 0; // 最长回文子串的起始索引
+	        int max_len = 1; // 最长回文子串的长度（初始为1，单字符）
+	        
+	        // 从后往前遍历左端点i，避免覆盖需要的dp值
+	        for (int i = n - 1; i >= 0; --i) {
+	            // 保存当前i+1,j-1的状态（避免被覆盖）
+	            bool prev = false;
+	            // 右端点j从i开始（子串长度至少为1）
+	            for (int j = i; j < n; ++j) {
+	                bool temp = dp[j]; // 保存当前dp[j]，作为下一轮的prev
+	                if (i == j) {
+	                    // 单个字符，一定是回文
+	                    dp[j] = true;
+	                } else if (j == i + 1) {
+	                    // 两个字符，只需判断是否相等
+	                    dp[j] = (s[i] == s[j]);
+	                } else {
+	                    // 长度>2，依赖前一轮的prev（即原dp[i+1][j-1]）
+	                    dp[j] = (s[i] == s[j]) && prev;
+	                }
+	                
+	                // 更新最长回文子串信息
+	                if (dp[j] && (j - i + 1) > max_len) {
+	                    max_len = j - i + 1;
+	                    start = i;
+	                }
+	                prev = temp; // 更新prev为当前轮的dp[j]
+	            }
+	        }
+	        
+	        return s.substr(start, max_len);
+	    }
+	};
+	```
+
+## 中心扩展法
+
+- 回文子串的核心特征是「中心对称」，因此可以：
+
+  - 遍历字符串中的每一个位置作为「中心」
+  - 考虑两种中心类型：
+  	- 奇数长度回文：中心是单个字符（如 `aba` 的中心是 `b`）
+  	- 偶数长度回文：中心是两个字符之间的间隙（如 `abba` 的中心在两个 `b` 之间）	
+
+
+  3. 从每个中心向左右扩展，直到字符不相等，记录最长回文的起始和长度
+
+- 代码实现
+
+	```cpp
+	class Solution {
+	public:
+	    string longestPalindrome(string s) {
+	        int n = s.size();
+	        if (n < 2) return s;
+	        
+	        int start = 0, max_len = 1; // 最长回文的起始位置和长度
+	        
+	        // 辅助函数：从中心(l, r)向两边扩展，返回回文子串的长度
+	        auto expand = [&](int l, int r) -> int {
+	            while (l >= 0 && r < n && s[l] == s[r]) {
+	                l--;
+	                r++;
+	            }
+	            // 退出循环时s[l]!=s[r]，实际长度是 (r-1) - (l+1) + 1 = r-l-1
+	            return r - l - 1;
+	        };
+	        
+	        for (int i = 0; i < n; i++) {
+	            int len1 = expand(i, i);   // 奇数长度回文（中心为i）
+	            int len2 = expand(i, i+1); // 偶数长度回文（中心为i和i+1之间）
+	            int cur_len = max(len1, len2);
+	            
+	            // 更新最长回文信息
+	            if (cur_len > max_len) {
+	                max_len = cur_len;
+	                // 计算起始位置：i - (cur_len-1)/2（兼容奇偶）
+	                start = i - (cur_len - 1) / 2;
+	            }
+	        }
+	        
+	        return s.substr(start, max_len);
+	    }
+	};
+	```
+
+## Manacher 算法
+
+- Manacher 算法是线性时间复杂度的最优解，核心优化点：
+
+	1. 预处理字符串：插入特殊字符（如 `#`），将奇偶长度回文统一为奇数长度（如 `abba` → `#a#b#b#a#`），避免分情况讨论
+	2. 维护「右边界最右的回文子串」的中心 `center` 和右边界 `right`
+	3. 利用回文的对称性，快速推导当前位置的回文半径，避免重复扩展
+
+- 代码实现
+
+	```cpp
+	class Solution {
+	public:
+	    string longestPalindrome(string s) {
+	        // 步骤1：预处理字符串，插入#统一奇偶长度
+	        string t = "^#"; // ^作为哨兵，避免越界
+	        for (char c : s) {
+	            t += c;
+	            t += '#';
+	        }
+	        t += '$'; // $作为哨兵
+	        int n = t.size();
+	        
+	        vector<int> p(n, 0); // p[i]表示以t[i]为中心的回文半径（包含自身）
+	        int center = 0, right = 0; // 最右回文的中心和右边界
+	        int max_r = 0, max_center = 0; // 最长回文的半径和中心
+	        
+	        // 步骤2：遍历计算p数组
+	        for (int i = 1; i < n - 1; i++) {
+	            // 利用对称性快速初始化p[i]
+	            if (i < right) {
+	                int mirror = 2 * center - i; // i关于center的对称点
+	                p[i] = min(right - i, p[mirror]);
+	            }
+	            
+	            // 中心扩展（仅扩展未覆盖的部分）
+	            while (t[i + p[i] + 1] == t[i - p[i] - 1]) {
+	                p[i]++;
+	            }
+	            
+	            // 更新最右回文的中心和右边界
+	            if (i + p[i] > right) {
+	                center = i;
+	                right = i + p[i];
+	            }
+	            
+	            // 更新最长回文信息
+	            if (p[i] > max_r) {
+	                max_r = p[i];
+	                max_center = i;
+	            }
+	        }
+	        
+	        // 步骤3：转换回原字符串的起始位置
+	        int start = (max_center - max_r) / 2;
+	        return s.substr(start, max_r);
+	    }
+	};
+	```
+
+	

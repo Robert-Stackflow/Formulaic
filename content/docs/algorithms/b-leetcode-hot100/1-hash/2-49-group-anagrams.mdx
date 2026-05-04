@@ -1,0 +1,141 @@
+---
+id: "49"
+title: 字母异位词分组
+englishTitle: Group Anagrams
+slug: group-anagrams
+url: https://leetcode-cn.com/problems/group-anagrams/
+difficulty: Medium
+tags:
+  - 哈希
+  - 数组
+  - 哈希表
+  - 字符串
+  - 排序
+---
+
+## 题面
+
+给你一个字符串数组，请你将 字母异位词 组合在一起。可以按任意顺序返回结果列表。
+
+示例 1:
+
+输入: strs = ["eat", "tea", "tan", "ate", "nat", "bat"]
+
+输出:[["bat"],["nat","tan"],["ate","eat","tea"]]
+
+解释：
+
+  * 在 strs 中没有字符串可以通过重新排列来形成 `"bat"`。
+  * 字符串 `"nat"` 和 `"tan"` 是字母异位词，因为它们可以重新排列以形成彼此。
+  * 字符串 `"ate"` ，`"eat"` 和 `"tea"` 是字母异位词，因为它们可以重新排列以形成彼此。
+
+示例 2:
+
+输入: strs = [""]
+
+输出:[[""]]
+
+示例 3:
+
+输入: strs = ["a"]
+
+输出:[["a"]]
+
+提示：
+
+  * `1 <= strs.length <= 104`
+  * `0 <= strs[i].length <= 100`
+  * `strs[i]` 仅包含小写字母
+
+## 分析
+
+- 要将字母异位词组合在一起，就需要找到一种方式，将同一个单词的字母异位词映射到哈希表中的同一个位置
+
+- 朴素的思想是，统计单词的每个字母的个数，转为一个字符串，从而利用这个模式串将包含相同数目各种字母的单词映射到一个位置
+
+- 代码实现
+
+	```cpp
+	class Solution {
+	public:
+	    vector<vector<string>> groupAnagrams(vector<string>& strs) {
+	        std::unordered_map<string, vector<string>> anagrams;
+	        vector<vector<string>> result;
+	        for (const string& str : strs) {
+	            vector<int> vec(26, 0);
+	            for (char c : str) {
+	                vec[c - 'a']++;
+	            }
+	            string pattern;
+	            for (int count : vec) {
+	                pattern += (to_string(count) + ",");
+	            }
+	            anagrams[pattern].push_back(str);
+	        }
+	        for (const auto& pair : anagrams) {
+	            result.push_back(pair.second);
+	        }
+	        return result;
+	    }
+	};
+	```
+
+- 然而，这种统计每个字母的个数，然后转为模式串的方式，对于比较耗时
+
+- 或者可以自定义对 `array<int,26>` 类型的哈希函数
+
+	```cpp
+	class Solution {
+	public:
+	    vector<vector<string>> groupAnagrams(vector<string>& strs) {
+	        // 自定义对 array<int, 26> 类型的哈希函数
+	        auto arrayHash = [fn = hash<int>{}] (const array<int, 26>& arr) -> size_t {
+	            return accumulate(arr.begin(), arr.end(), 0u, [&](size_t acc, int num) {
+	                return (acc << 1) ^ fn(num);
+	            });
+	        };
+	
+	        unordered_map<array<int, 26>, vector<string>, decltype(arrayHash)> mp(0, arrayHash);
+	        for (string& str: strs) {
+	            array<int, 26> counts{};
+	            int length = str.length();
+	            for (int i = 0; i < length; ++i) {
+	                counts[str[i] - 'a'] ++;
+	            }
+	            mp[counts].emplace_back(str);
+	        }
+	        vector<vector<string>> ans;
+	        for (auto it = mp.begin(); it != mp.end(); ++it) {
+	            ans.emplace_back(it->second);
+	        }
+	        return ans;
+	    }
+	};
+	```
+
+- 时间复杂度为 $O(n(k+\vert\sum\vert))$，其中 $\sum$ 表示字符集即 26；空间复杂度也是 $O(n(k+\vert\sum\vert))$
+
+- 可以将字符串按照字母顺序进行排序，这样，包含相同数量各种字母的单词就会变为同一个字符串
+
+	```cpp
+	class Solution {
+	public:
+	    vector<vector<string>> groupAnagrams(vector<string>& strs) {
+	        unordered_map<string, vector<string>> anagrams;
+	        for (const string& str : strs) {
+	            string key = str;
+	            sort(key.begin(), key.end()); // 排序作为特征键
+	            anagrams[key].push_back(str);
+	        }
+	        vector<vector<string>> result;
+	        for (const auto& pair : anagrams) {
+	            result.push_back(pair.second);
+	        }
+	        return result;
+	    }
+	};
+	```
+
+- 时间复杂度为 $O(nk\log k)$，n 为字符串个数，k 为字符串的最大长度
+
+- 空间复杂度为 $O(nk)$，需要用哈希表存储全部字符串

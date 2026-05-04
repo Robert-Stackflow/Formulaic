@@ -1,0 +1,170 @@
+---
+id: "76"
+title: 最小覆盖子串
+englishTitle: Minimum Window Substring
+slug: minimum-window-substring
+url: https://leetcode-cn.com/problems/minimum-window-substring/
+difficulty: Hard
+tags:
+  - 子串
+  - 哈希表
+  - 字符串
+  - 滑动窗口
+---
+
+## 题面
+
+给定两个字符串 `s` 和 `t`，长度分别是 `m` 和 `n`，返回 s 中的 最短窗口 子串，使得该子串包含 `t` 中的每一个字符（包括重复字符 ）。如果没有这样的子串，返回空字符串  `""`。
+
+测试用例保证答案唯一。
+
+示例 1：
+
+    输入： s = "ADOBECODEBANC", t = "ABC"
+    输出： "BANC"
+    解释： 最小覆盖子串 "BANC" 包含来自字符串 t 的 'A'、'B' 和 'C'。
+
+示例 2：
+
+    输入： s = "a", t = "a"
+    输出： "a"
+    解释： 整个字符串 s 是最小覆盖子串。
+
+示例 3:
+
+    输入: s = "a", t = "aa"
+    输出: ""
+    解释: t 中两个字符 'a' 均应包含在 s 的子串中，
+    因此没有符合条件的子字符串，返回空字符串。
+
+提示：
+
+  * `m == s.length`
+  * `n == t.length`
+  * `1 <= m, n <= 105`
+  * `s` 和 `t` 由英文字母组成
+
+进阶： 你能设计一个在 `O(m + n)` 时间内解决此问题的算法吗？
+
+## 分析
+
+- 显然，可以用滑动窗口解决这个问题
+
+- 在滑动窗口方法中，要注意的是，窗口需要先扩展到满足特定条件的窗口大小，然后再缩减左指针
+
+- 这个特定条件可以是，固定窗口大小（如滑动窗口最大值问题），可以是包含 t 中的所有字符
+
+- 当第一次扩展到窗口大小时，再去缩减左指针，直至不再满足特定条件，如不再包含 t 中的所有字符，此时再继续扩展右侧指针
+
+- 实际上，两种情况可以合并到一起，因为还没有扩展到满足特定条件的窗口大小时，是不可能去移动左指针的
+
+- 代码实现
+
+  ```cpp
+  class Solution {
+      bool is_covered(int cnt_s[], int cnt_t[]) {
+          for (int i = 'A'; i <= 'Z'; i++) {
+              if (cnt_s[i] < cnt_t[i]) {
+                  return false;
+              }
+          }
+          for (int i = 'a'; i <= 'z'; i++) {
+              if (cnt_s[i] < cnt_t[i]) {
+                  return false;
+              }
+          }
+          return true;
+      }
+  
+  public:
+      string minWindow(string s, string t) {
+          int cnt_s[128]{}; // s 子串字母的出现次数
+          int cnt_t[128]{}; // t 中字母的出现次数
+          for (char c : t) {
+              cnt_t[c]++;
+          }
+  
+          int m = s.size();
+          int ans_left = -1, ans_right = m;
+          int left = 0;
+          for (int right = 0; right < m; right++) { // 移动子串右端点
+              cnt_s[s[right]]++; // 右端点字母移入子串
+              while (is_covered(cnt_s, cnt_t)) { // 涵盖
+                  if (right - left < ans_right - ans_left) { // 找到更短的子串
+                      ans_left = left; // 记录此时的左右端点
+                      ans_right = right;
+                  }
+                  cnt_s[s[left]]--; // 左端点字母移出子串
+                  left++;
+              }
+          }
+          return ans_left < 0 ? "" : s.substr(ans_left, ans_right - ans_left + 1);
+      }
+  };
+  ```
+
+- 上述代码中，`is_covered` 每次都需要遍历两个数组判断是否涵盖，有没有一种方法，可以在 O(1) 时间内判断是否涵盖？
+
+- 可以在每次移动窗口时，就统计是否满足了涵盖的要求，这与找到字符串中所有字母异位词中优化判断字母异位词的逻辑有异曲同工之妙
+
+  ```cpp
+  class Solution {
+  public:
+      string minWindow(string s, string t) {
+          int cnt[128]{};
+          int less = 0;
+          for (char c : t) {
+              if (cnt[c] == 0) {
+                  less++; // 有 less 种字母的出现次数 < t 中的字母出现次数
+              }
+              cnt[c]++;
+          }
+  
+          int m = s.size();
+          int ans_left = -1, ans_right = m;
+          int left = 0;
+          for (int right = 0; right < m; right++) { // 移动子串右端点
+              char c = s[right]; // 右端点字母
+              cnt[c]--; // 右端点字母移入子串
+              if (cnt[c] == 0) {
+                  // 原来窗口内 c 的出现次数比 t 的少，现在一样多
+                  less--;
+              }
+              while (less == 0) { // 涵盖：所有字母的出现次数都是 >=
+                  if (right - left < ans_right - ans_left) { // 找到更短的子串
+                      ans_left = left; // 记录此时的左右端点
+                      ans_right = right;
+                  }
+                  char x = s[left]; // 左端点字母
+                  if (cnt[x] == 0) {
+                      // x 移出窗口之前，检查出现次数，
+                      // 如果窗口内 x 的出现次数和 t 一样，
+                      // 那么 x 移出窗口后，窗口内 x 的出现次数比 t 的少
+                      less++;
+                  }
+                  cnt[x]++; // 左端点字母移出子串
+                  left++;
+              }
+          }
+          return ans_left < 0 ? "" : s.substr(ans_left, ans_right - ans_left + 1);
+      }
+  };
+  ```
+
+
+## 滑动窗口逻辑总结
+
+- 总得来说，滑动窗口的代码逻辑如下
+
+	```cpp
+	//外层循环扩展右边界，内层循环扩展左边界
+	for (int l = 0, r = 0 ; r < n ; r++) {
+		//当前考虑的元素
+		while (l <= r && check()) {//区间[left,right]不符合题意
+	        //扩展左边界
+	    }
+	    //区间[left,right]符合题意，统计相关信息
+	}
+	```
+
+- 同时，可以通过在滑动窗口时实时维护匹配状态（check函数），来优化匹配的逻辑

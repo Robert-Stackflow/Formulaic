@@ -1,0 +1,364 @@
+---
+remark: 进阶问题
+id: "31"
+title: 下一个排列
+englishTitle: Next Permutation
+slug: next-permutation
+url: https://leetcode-cn.com/problems/next-permutation/
+difficulty: Medium
+tags:
+  - 技巧
+  - 数组
+  - 双指针
+---
+
+## 题面
+
+整数数组的一个 排列   就是将其所有成员以序列或线性顺序排列。
+
+  * 例如，`arr = [1,2,3]` ，以下这些都可以视作 `arr` 的排列：`[1,2,3]`、`[1,3,2]`、`[3,1,2]`、`[2,3,1]` 。
+
+整数数组的 下一个排列 是指其整数的下一个字典序更大的排列。更正式地，如果数组的所有排列根据其字典顺序从小到大排列在一个容器中，那么数组的 下一个排列 就是在这个有序容器中排在它后面的那个排列。如果不存在下一个更大的排列，那么这个数组必须重排为字典序最小的排列（即，其元素按升序排列）。
+
+  * 例如，`arr = [1,2,3]` 的下一个排列是 `[1,3,2]` 。
+  * 类似地，`arr = [2,3,1]` 的下一个排列是 `[3,1,2]` 。
+  * 而 `arr = [3,2,1]` 的下一个排列是 `[1,2,3]` ，因为 `[3,2,1]` 不存在一个字典序更大的排列。
+
+给你一个整数数组 `nums` ，找出 `nums` 的下一个排列。
+
+必须[原地](https://baike.baidu.com/item/%E5%8E%9F%E5%9C%B0%E7%AE%97%E6%B3%95) 修改，只允许使用额外常数空间。
+
+示例 1：
+
+    输入： nums = [1,2,3]
+    输出：[1,3,2]
+
+示例 2：
+
+    输入： nums = [3,2,1]
+    输出：[1,2,3]
+
+示例 3：
+
+    输入： nums = [1,1,5]
+    输出：[1,5,1]
+
+提示：
+
+  * `1 <= nums.length <= 100`
+  * `0 <= nums[i] <= 100`
+
+## 分析
+
+- 如果一个数组是降序的，说明其不存在下一个排列，需要返回升序排序的数组
+
+- 如果一个数组是升序的，说明其下一个排列就是最后两个数交换得到的数组
+
+- 将这个过程一般化，得到
+
+	| 下一个排列                                          | 下一个整数                          | 相同点                           |
+	| --------------------------------------------------- | ----------------------------------- | -------------------------------- |
+	| 从右向左，找第一个小于右侧相邻数字的数 $x$          | 从右向左，找第一个小于 $9$ 的数 $x$ | 都是找第一个小于右侧相邻数字的数 |
+	| 找 $x$ 右边最小的大于 $x$ 的数 $y$，交换 $x$ 和 $y$ | 把 $x$ 加一，得到 $y = x + 1$       | 增大这个数                       |
+	| 反转 $y$ 右边的数，把右边的数变成最小的排列         | 把 $y$ 右边的数都变成 $0$           | 把右边的数变到最小               |
+
+- 代码实现
+
+	```cpp
+	class Solution {
+	public:
+	    void nextPermutation(vector<int>& nums) {
+	        int n = nums.size();
+	
+	        // 第一步：从右向左找到第一个小于右侧相邻数字的数 nums[i]
+	        int i = n - 2;
+	        while (i >= 0 && nums[i] >= nums[i + 1]) {
+	            i--;
+	        }
+	
+	        // 如果找到了，进入第二步；否则跳过第二步，反转整个数组
+	        if (i >= 0) {
+	            // 第二步：从右向左找到 nums[i] 右边最小的大于 nums[i] 的数 nums[j]
+	            int j = n - 1;
+	            while (nums[j] <= nums[i]) {
+	                j--;
+	            }
+	            // 交换 nums[i] 和 nums[j]
+	            swap(nums[i], nums[j]);
+	        }
+	
+	        // 第三步：反转 [i+1, n-1]（如果上面跳过第二步，此时 i = -1）
+	        reverse(nums.begin() + i + 1, nums.end());
+	    }
+	};
+	```
+
+
+## 查找第 K 小的排列
+
+- https://leetcode.cn/problems/permutation-sequence/
+
+- 显然，先对 nums 排列，当在回溯过程中添加到第 k 个结果时，就正好是第 k 小的排列
+
+- 实际上，不要拘泥于回溯的思路，直接生成所有全排列再取第 `k` 个的方法（时间复杂度 O(n!)）效率极低，尤其是当 `n` 较大时（比如 `n=10`，全排列有 3628800 个）
+
+- 更优的思路是数学推导 + 逐步确定每一位数字：
+
+	1. 阶乘分组：对于第 1 位数字，每选择一个数字，后续的 `n-1` 位有 `(n-1)!` 种排列（比如 `n=3` 时，第 1 位选 1，后续有 `2! = 2` 种排列：`[1,2,3]`、`[1,3,2]`）；
+	2. 确定每一位：通过 `k` 除以阶乘值，确定当前位选哪个数字，再更新 `k` 为余数，继续确定下一位；
+	3. 动态维护可选数字列表：每确定一位数字后，从可选列表中移除该数字，避免重复选择
+
+- 代码实现
+
+	```cpp
+	#include <iostream>
+	#include <vector>
+	#include <string>
+	
+	using namespace std;
+	
+	class Solution {
+	public:
+	    string getPermutation(int n, int k) {
+	        // 1. 预计算阶乘：fact[i] = i!，用于快速计算分组数
+	        vector<int> fact(n);
+	        fact[0] = 1;  // 0! = 1
+	        for (int i = 1; i < n; ++i) {
+	            fact[i] = fact[i-1] * i;
+	        }
+	        
+	        // 2. 初始化可选数字列表（1~n）
+	        vector<int> nums;
+	        for (int i = 1; i <= n; ++i) {
+	            nums.push_back(i);
+	        }
+	        
+	        // 3. 转换k为0索引（方便数组操作）
+	        k--;
+	        
+	        string result;
+	        // 4. 逐步确定每一位数字
+	        for (int i = n; i >= 1; --i) {
+	            // 计算当前位的分组索引：k / (i-1)!
+	            int index = k / fact[i-1];
+	            // 将选中的数字加入结果
+	            result += to_string(nums[index]);
+	            // 从可选列表中移除该数字
+	            nums.erase(nums.begin() + index);
+	            // 更新k为余数：k % (i-1)!
+	            k = k % fact[i-1];
+	        }
+	        
+	        return result;
+	    }
+	};
+	
+	// 测试示例
+	int main() {
+	    Solution s;
+	    // 测试用例1：n=3, k=3 → 预期输出 "213"
+	    cout << "n=3, k=3 的第k个排列：" << s.getPermutation(3, 3) << endl;
+	    
+	    // 测试用例2：n=4, k=9 → 预期输出 "2314"
+	    cout << "n=4, k=9 的第k个排列：" << s.getPermutation(4, 9) << endl;
+	    
+	    // 测试用例3：n=1, k=1 → 预期输出 "1"
+	    cout << "n=1, k=1 的第k个排列：" << s.getPermutation(1, 1) << endl;
+	    
+	    return 0;
+	}
+	```
+
+## 求 nums 是字典序第几小的排列
+
+- [3109. 查找排列的下标](https://leetcode.cn/problems/find-the-index-of-permutation/)
+
+- 这个问题是 “求第 k 小排列” 的逆问题，核心思路依然是阶乘分组计算，但方向相反：逐位计算当前位数字比它小的可选数字数量，累加这些数字对应的排列数，最终得到该排列的字典序位次
+
+	1. 阶乘预计算：先计算 `0!` 到 `(n-1)!`，用于快速计算 “剩余位数的排列数”；
+
+	2. 逐位统计：从第一位到最后一位，对每一位数字：
+
+		- 找出当前可选数字中比当前位数字小的数字个数 `cnt`；
+	- 累加 `cnt * (剩余位数-1)!`（每个更小的数字作为当前位时，后续有 `(剩余位数-1)!` 种排列，都比当前排列小）；
+		- 从可选数字列表中移除当前位数字，继续处理下一位；
+		
+	3. 结果修正：最终累加的结果加 1（因为位次从 1 开始计数）
+
+- 代码实现
+
+	```cpp
+	#include <iostream>
+	#include <vector>
+	#include <algorithm>  // 用于find
+	
+	using namespace std;
+	
+	class Solution {
+	public:
+	    int getPermutationRank(vector<int>& nums) {
+	        int n = nums.size();
+	        if (n == 0) return 0;
+	        
+	        // 1. 预计算阶乘：fact[i] = i!，fact[0]=0!, fact[1]=1!, ..., fact[n-1]=(n-1)!
+	        vector<long long> fact(n);  // 用long long避免溢出（n>=20时阶乘会超int）
+	        fact[0] = 1;
+	        for (int i = 1; i < n; ++i) {
+	            fact[i] = fact[i-1] * i;
+	        }
+	        
+	        // 2. 初始化可选数字列表（1~n）
+	        vector<int> candidates;
+	        for (int i = 1; i <= n; ++i) {
+	            candidates.push_back(i);
+	        }
+	        
+	        long long rank = 0;  // 累计比当前排列小的排列数（从0开始）
+	        
+	        // 3. 逐位计算
+	        for (int i = 0; i < n; ++i) {
+	            int current = nums[i];
+	            // 找到当前数字在可选列表中的索引
+	            auto it = find(candidates.begin(), candidates.end(), current);
+	            int idx = it - candidates.begin();
+	            
+	            // 累加：比current小的数字个数 * 剩余位数的阶乘
+	            rank += idx * fact[n - 1 - i];
+	            
+	            // 从可选列表中移除当前数字
+	            candidates.erase(it);
+	        }
+	        
+	        // 4. 位次从1开始，所以最终结果+1
+	        return rank + 1;
+	    }
+	};
+	
+	// 测试示例
+	int main() {
+	    Solution s;
+	    
+	    // 测试用例1：nums = [2,1,3] → 预期输出 3
+	    vector<int> nums1 = {2,1,3};
+	    cout << "排列 [2,1,3] 的字典序位次：" << s.getPermutationRank(nums1) << endl;
+	    
+	    // 测试用例2：nums = [2,3,1,4] → 预期输出 9
+	    vector<int> nums2 = {2,3,1,4};
+	    cout << "排列 [2,3,1,4] 的字典序位次：" << s.getPermutationRank(nums2) << endl;
+	    
+	    // 测试用例3：nums = [1] → 预期输出 1
+	    vector<int> nums3 = {1};
+	    cout << "排列 [1] 的字典序位次：" << s.getPermutationRank(nums3) << endl;
+	    
+	    // 测试用例4：nums = [3,2,1] → 预期输出 6（n=3时全排列共6个，这是最后一个）
+	    vector<int> nums4 = {3,2,1};
+	    cout << "排列 [3,2,1] 的字典序位次：" << s.getPermutationRank(nums4) << endl;
+	    
+	    return 0;
+	}
+	```
+
+## 给定 nums，如何生成下下个排列？如何生成下 k 个排列
+
+- 理论上，可以调用 k 次生成下一个排列的算法，但是效率确实不高 —— 因为每次生成下一个排列都要从头遍历数组，存在大量重复操作
+
+- 核心改进逻辑是：
+
+	1. 先计算当前排列的字典序位次 rank（从 1 开始）；
+	2. 计算目标位次 `target_rank = rank + k`；
+	3. 直接根据 `target_rank` 生成对应位次的排列（而非逐次生成）；
+	4. 若 `target_rank > n!`（超出全排列总数），则返回空
+
+- 时间复杂度是 $O(n^2)$​，但是与 k 无关，即使 k 很大，效率也不会下降
+
+- 代码实现
+
+	```cpp
+	#include <iostream>
+	#include <vector>
+	#include <algorithm> // 仅用于find（可手动实现，见备注）
+	
+	using namespace std;
+	
+	// --------------- 工具函数：阶乘计算 + 防溢出 ---------------
+	long long factorial(int n) {
+	    long long res = 1;
+	    for (int i = 2; i <= n; ++i) {
+	        res *= i;
+	        // 防溢出：n>=20时阶乘远超long long，实际场景n<=12即可
+	        if (res > 1e18) break;
+	    }
+	    return res;
+	}
+	
+	// --------------- 步骤1：计算当前排列的字典序位次 ---------------
+	long long getPermutationRank(const vector<int>& nums) {
+	    int n = nums.size();
+	    long long rank = 0;
+	    vector<int> candidates;
+	    for (int i = 1; i <= n; ++i) candidates.push_back(i);
+	
+	    for (int i = 0; i < n; ++i) {
+	        int curr = nums[i];
+	        // 找curr在candidates中的索引（可手动实现find，见备注）
+	        auto it = find(candidates.begin(), candidates.end(), curr);
+	        int idx = it - candidates.begin();
+	        
+	        // 累加：比curr小的数字数 * 剩余位数的阶乘
+	        rank += idx * factorial(n - 1 - i);
+	        
+	        // 移除已选数字
+	        candidates.erase(it);
+	    }
+	    return rank + 1; // 位次从1开始
+	}
+	
+	// --------------- 步骤2：根据目标位次生成排列 ---------------
+	vector<int> getPermutationByRank(int n, long long target_rank) {
+	    long long total = factorial(n);
+	    if (target_rank < 1 || target_rank > total) return {}; // 超出范围
+	    
+	    target_rank--; // 转0索引
+	    vector<int> candidates;
+	    for (int i = 1; i <= n; ++i) candidates.push_back(i);
+	    vector<int> res;
+	
+	    for (int i = n; i >= 1; --i) {
+	        long long f = factorial(i - 1);
+	        int idx = target_rank / f; // 计算当前位的索引
+	        res.push_back(candidates[idx]);
+	        candidates.erase(candidates.begin() + idx); // 移除已选数字
+	        target_rank = target_rank % f; // 更新剩余位次
+	    }
+	    return res;
+	}
+	
+	// --------------- 核心函数：生成下k个排列 ---------------
+	vector<int> getNextKPermutation(const vector<int>& nums, int k) {
+	    int n = nums.size();
+	    long long total = factorial(n);
+	    long long curr_rank = getPermutationRank(nums);
+	    long long target_rank = curr_rank + k;
+	
+	    // 检查是否超出全排列总数
+	    if (target_rank > total) return {};
+	    // 直接生成目标位次的排列
+	    return getPermutationByRank(n, target_rank);
+	}
+	
+	// 辅助：打印排列
+	void printPermutation(const vector<int>& perm) {
+	    if (perm.empty()) {
+	        cout << "不存在对应的后续排列" << endl;
+	        return;
+	    }
+	    cout << "[";
+	    for (int i = 0; i < perm.size(); ++i) {
+	        cout << perm[i];
+	        if (i != perm.size() - 1) cout << ", ";
+	    }
+	    cout << "]" << endl;
+	}
+	```
+	
+	

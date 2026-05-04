@@ -1,0 +1,179 @@
+---
+id: "416"
+title: 分割等和子集
+englishTitle: Partition Equal Subset Sum
+slug: partition-equal-subset-sum
+url: https://leetcode-cn.com/problems/partition-equal-subset-sum/
+difficulty: Medium
+tags:
+  - 动态规划
+  - 数组
+---
+
+## 题面
+
+给你一个 只包含正整数 的 非空 数组 `nums` 。请你判断是否可以将这个数组分割成两个子集，使得两个子集的元素和相等。
+
+示例 1：
+
+    输入： nums = [1,5,11,5]
+    输出： true
+    解释： 数组可以分割成 [1, 5, 5] 和 [11] 。
+
+示例 2：
+
+    输入： nums = [1,2,3,5]
+    输出： false
+    解释： 数组不能分割成两个元素和相等的子集。
+
+提示：
+
+  * `1 <= nums.length <= 200`
+  * `1 <= nums[i] <= 100`
+
+## 分析
+
+- 转化为 01 背包问题，能够使得其正好装满 target=sum/2 的背包
+
+- 首先计算总和，如果为奇数，那么一定不行
+
+- `dp[i][j]` 表示前 i 个元素，能否正好装满 j 容量的背包
+
+- 递推公式
+
+	- 选第 i 个元素，则 `dp[i][j]=dp[i-1][j-nums[i]]`
+	- 不选第 i 个元素，则 `dp[i][j]=dp[i-1][j]`
+	- `dp[i][j]=dp[i-1][j-nums[i]]||dp[i-1][j]`
+
+- 初始化：`dp[0][0]=true`，背包容量为 0，一定能够装满（不装任何元素）
+
+- 可见 dp[i] 只依赖于 dp[i-1]，可以进行空间优化，此时 dp[j] 表示数组元素是否正好能够装满 j 容量的背包
+
+- 递推公式变为 `dp[j]=dp[j-nums[i]]||dp[j]`
+
+- 代码实现
+
+	```cpp
+	class Solution {
+	public:
+	    bool canPartition(vector<int>& nums) {
+	        int n = nums.size();
+	        int sum = 0;
+	        for (int num : nums)
+	            sum += num;
+	        if (sum % 2 == 1)
+	            return false;
+	        int target = sum / 2;
+	        vector<bool> dp = vector(target + 1, false);
+	        dp[0] = true;
+	        for (int i = 0; i < n; i++) {
+	            int num = nums[i];
+	            // 关键：倒序遍历背包容量（避免重复选同一元素）
+	            for (int j = target; j >= num; j--) {
+	                // 状态转移：选当前元素 或 不选当前元素
+	                dp[j] = dp[j] || dp[j - num];
+	            }
+	            // 提前终止：如果已经找到目标，直接返回true
+	            if (dp[target])
+	                return true;
+	        }
+	
+	        return dp[target];
+	    }
+	};
+	```
+
+- 无论已遍历元素的累加和是多少，都固定遍历`j`从`target`到`x`；但实际上，已遍历元素的累加和如果小于`target`，那么大于该累加和的`j`是不可能凑出来的（比如已遍历元素和为 5，target=10，那么 j=6~10 都无法凑出，遍历这些 j 是无效的）
+
+- 因此可以记录已经遍历元素所能凑出的最大可能和（不超过 target），遍历上限从`target`缩小到`s2`，大幅减少循环次数
+
+	```cpp
+	class Solution {
+	public:
+	    bool canPartition(vector<int>& nums) {
+	        int n = nums.size();
+	        int sum = 0;
+	        for (int num : nums)
+	            sum += num;
+	        if (sum % 2 == 1)
+	            return false;
+	        int target = sum / 2;
+	        int max_num = *max_element(nums.begin(), nums.end());
+	        if (max_num > target)
+	            return false;
+	        vector<bool> dp = vector(target + 1, false);
+	        dp[0] = true;
+	        int s2 = 0;
+	        for (int i = 0; i < n; i++) {
+	            int num = nums[i];
+	            s2 = min(s2 + num, target);
+	            // 关键：倒序遍历背包容量（避免重复选同一元素）
+	            for (int j = s2; j >= num; j--) {
+	                // 状态转移：选当前元素 或 不选当前元素
+	                dp[j] = dp[j] || dp[j - num];
+	            }
+	            // 提前终止：如果已经找到目标，直接返回true
+	            if (dp[target])
+	                return true;
+	        }
+	
+	        return dp[target];
+	    }
+	};
+	```
+
+## 比特集
+
+- 用 `bitset<N>` 中的第 `j` 位表示 “是否能凑出和为 `j` 的子集”：
+
+	- 第 `j` 位为 `1` → 能凑出和为 `j`
+	- 第 `j` 位为 `0` → 不能凑出和为 `j`
+
+- 初始状态：`bitset` 的第 `0` 位为 `1`（和为 0 的空集一定存在）
+
+- 状态更新：遍历每个元素 `x` 时，将 `bitset` 左移 `x` 位（表示 “选当前元素 `x`”），再与原 `bitset` 做或运算（表示 “选 / 不选当前元素的状态合并”）
+
+- 代码实现
+
+	```cpp
+	#include <iostream>
+	#include <vector>
+	#include <numeric>   // for accumulate (替代reduce，兼容C++11+)
+	#include <bitset>    // for bitset
+	
+	using namespace std;
+	
+	class Solution {
+	public:
+	    bool canPartition(vector<int>& nums) {
+	        // 步骤1：计算总和，判断奇偶
+	        int sum = accumulate(nums.begin(), nums.end(), 0);
+	        if (sum % 2 != 0) {
+	            return false;
+	        }
+	        int target = sum / 2;
+	
+	        // 步骤2：定义bitset，大小覆盖最大可能的target（题目中nums[i]≤100，n≤200 → target≤10000）
+	        const int MAX_TARGET = 10000;
+	        bitset<MAX_TARGET + 1> bs;
+	        bs.set(0); // 初始状态：和为0的子集存在（第0位置1）
+	
+	        // 步骤3：遍历每个元素，更新bitset状态
+	        for (int x : nums) {
+	            // 核心操作：左移x位（选当前元素） + 或运算（合并选/不选的状态）
+	            // 注意：必须用bs | (bs << x)，不能直接bs |= bs << x（避免覆盖）
+	            bs |= bs << x;
+	
+	            // 提前终止：如果target位已为1，直接返回true
+	            if (bs.test(target)) {
+	                return true;
+	            }
+	        }
+	
+	        // 步骤4：最终检查target位是否为1
+	        return bs.test(target);
+	    }
+	};
+	```
+
+	

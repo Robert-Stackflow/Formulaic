@@ -1,0 +1,158 @@
+---
+remark: 使用 BFS 实现遍历连通块
+id: "200"
+title: 岛屿数量
+englishTitle: Number of Islands
+slug: number-of-islands
+url: https://leetcode-cn.com/problems/number-of-islands/
+difficulty: Medium
+tags:
+  - 图论
+  - 深度优先搜索
+  - 广度优先搜索
+  - 并查集
+  - 数组
+  - 矩阵
+---
+
+## 题面
+
+给你一个由 `'1'`（陆地）和 `'0'`（水）组成的的二维网格，请你计算网格中岛屿的数量。
+
+岛屿总是被水包围，并且每座岛屿只能由水平方向和/或竖直方向上相邻的陆地连接形成。
+
+此外，你可以假设该网格的四条边均被水包围。
+
+示例 1：
+
+    输入： grid = [
+      ['1','1','1','1','0'],
+      ['1','1','0','1','0'],
+      ['1','1','0','0','0'],
+      ['0','0','0','0','0']
+    ]
+    输出： 1
+
+示例 2：
+
+    输入： grid = [
+      ['1','1','0','0','0'],
+      ['1','1','0','0','0'],
+      ['0','0','1','0','0'],
+      ['0','0','0','1','1']
+    ]
+    输出： 3
+
+提示：
+
+  * `m == grid.length`
+  * `n == grid[i].length`
+  * `1 <= m, n <= 300`
+  * `grid[i][j]` 的值为 `'0'` 或 `'1'`
+
+## 分析
+
+- 典型的深度优先搜索，遇到一个没有访问过的 1，就开始深度遍历这个 1，并把碰到的 1 都标记为访问过
+
+- 实际上，这是 DFS 的典型应用——查找/遍历图中的连通块
+
+- 连通块的定义是：图中相互可达的节点集合（无向图）/ 强连通分量（有向图）。DFS 的核心逻辑恰好匹配这个需求：
+
+	1. “一条路走到底”：从一个未访问的节点出发，递归遍历所有可达的节点，天然覆盖整个连通块；
+	2. 状态标记：通过 “访问标记数组”（如`visited`），确保每个节点只被遍历一次，避免重复统计；
+	3. 回溯特性：遍历完一个分支后自动回溯，能完整覆盖连通块的所有节点，不会遗漏
+
+- 代码实现
+
+  ```cpp
+  class Solution {
+  public:
+      void dfs(const vector<vector<char>>& grid, int x, int y,
+               vector<vector<bool>>& visited) {
+          visited[x][y] = true;
+          vector<vector<int>> directions = {{1, 0}, {0, 1}, {-1, 0}, {0, -1}};
+          for (vector<int> dir : directions) { // 遍历四个方向
+              int nx = x + dir[0], ny = y + dir[1];
+              bool valid =
+                  nx >= 0 && ny >= 0 && nx < grid.size() && ny < grid[0].size();
+              if (valid && !visited[nx][ny] &&
+                  grid[nx][ny] == '1') { // 没有访问过
+                  dfs(grid, nx, ny, visited);
+              }
+          }
+      }
+      int numIslands(vector<vector<char>>& grid) {
+          int ans = 0;
+          vector<vector<bool>> visited =
+              vector(grid.size(), vector(grid[0].size(), false));
+          for (int i = 0; i < grid.size(); i++) {
+              for (int j = 0; j < grid[0].size(); j++) {
+                  if (visited[i][j] || grid[i][j] == '0')
+                      continue;
+                  ans++;
+                  dfs(grid, i, j, visited);
+              }
+          }
+          return ans;
+      }
+  };
+  ```
+
+- 剪枝优化
+
+  - 空间剪枝：原地修改替代 visited 数组
+  	- 原代码用`visited`数组记录访问状态，需要额外的 O(n∗m) 空间
+  	- 剪枝思路：直接将访问过的陆地（'1'）修改为水域（'0'），无需额外空间，同时天然避免重复访问（相当于动态剪枝，跳过已访问节点）
+  - 逻辑剪枝：减少冗余判断 & 提前终止无效分支
+  	- 原代码在循环内先判断`visited[i][j] || grid[i][j] == '0'`再跳过，可保持，但 DFS 内部的`valid`判断可以拆分，提前过滤无效坐标
+  	- 避免在 DFS 循环内重复创建`directions`数组（每次调用 DFS 都创建一次，冗余），可将其定义为常量或全局变量
+  - 性能优化：减少拷贝 & 提升缓存命中率
+  	- 遍历方向的`vector`改为`const`引用或数组，避免拷贝；
+  	- 优先遍历行优先的方向，提升 CPU 缓存命中率（非剪枝，但提升效率）
+
+- 代码实现
+
+  ```cpp
+  class Solution {
+  public:
+      // 1. 方向数组定义为常量，避免DFS中重复创建（剪枝冗余创建）
+      const vector<vector<int>> directions = {{1, 0}, {0, 1}, {-1, 0}, {0, -1}};
+  
+      void dfs(vector<vector<char>>& grid, int x, int y) {
+          // 2. 提前剪枝：当前坐标无效 或 不是陆地，直接返回（终止无效分支）
+          if (x < 0 || y < 0 || x >= grid.size() || y >= grid[0].size() || grid[x][y] != '1') {
+              return;
+          }
+          
+          // 3. 原地修改：标记为已访问（空间剪枝，替代visited数组）
+          grid[x][y] = '0';
+          
+          // 4. 遍历方向（用const引用避免拷贝）
+          for (const auto& dir : directions) {
+              int nx = x + dir[0];
+              int ny = y + dir[1];
+              dfs(grid, nx, ny); // 无需额外判断，DFS内部会剪枝无效节点
+          }
+      }
+  
+      int numIslands(vector<vector<char>>& grid) {
+          int ans = 0;
+          int n = grid.size();
+          if (n == 0) return 0; // 边界剪枝：空网格直接返回0
+          int m = grid[0].size();
+          
+          for (int i = 0; i < n; i++) {
+              for (int j = 0; j < m; j++) {
+                  // 5. 剪枝：非陆地直接跳过
+                  if (grid[i][j] == '1') {
+                      ans++;
+                      dfs(grid, i, j);
+                  }
+              }
+          }
+          return ans;
+      }
+  };
+  ```
+
+  

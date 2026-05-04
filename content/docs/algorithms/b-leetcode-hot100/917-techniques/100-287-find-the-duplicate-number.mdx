@@ -1,0 +1,200 @@
+---
+remark: 鸽巢原理、判圈算法
+id: "287"
+title: 寻找重复数
+englishTitle: Find the Duplicate Number
+slug: find-the-duplicate-number
+url: https://leetcode-cn.com/problems/find-the-duplicate-number/
+difficulty: Medium
+tags:
+  - 技巧
+  - 位运算
+  - 数组
+  - 双指针
+  - 二分查找
+---
+
+## 题面
+
+给定一个包含 `n + 1` 个整数的数组 `nums` ，其数字都在 `[1, n]` 范围内（包括 `1` 和 `n`），可知至少存在一个重复的整数。
+
+假设 `nums` 只有 一个重复的整数 ，返回 这个重复的数 。
+
+你设计的解决方案必须 不修改 数组 `nums` 且只用常量级 `O(1)` 的额外空间。
+
+示例 1：
+
+    输入： nums = [1,3,4,2,2]
+    输出： 2
+
+示例 2：
+
+    输入： nums = [3,1,3,4,2]
+    输出： 3
+
+示例 3 :
+
+    输入： nums = [3,3,3,3,3]
+    输出： 3
+
+提示：
+
+  * `1 <= n <= 105`
+  * `nums.length == n + 1`
+  * `1 <= nums[i] <= n`
+  * `nums` 中 只有一个整数 出现 两次或多次 ，其余整数均只出现 一次
+
+进阶：
+
+  * 如何证明 `nums` 中至少存在一个重复的数字?
+  * 你可以设计一个线性级时间复杂度 `O(n)` 的解决方案吗？
+
+## 二分查找
+
+- 利用**鸽巢原理**：对于范围 `[1, mid]`，如果数组中小于等于 `mid` 的数字个数超过 `mid`，说明重复数一定在 `[1, mid]` 区间内；否则重复数在 `[mid+1, n]` 区间内。通过不断缩小查找范围，最终找到重复数
+
+- 代码实现
+
+	```cpp
+	#include <vector>
+	using namespace std;
+	
+	int findDuplicate_binarySearch(vector<int>& nums) {
+	    int left = 1, right = nums.size() - 1; // 数字范围是[1, n]，n = nums.size()-1
+	    while (left < right) {
+	        int mid = left + (right - left) / 2; // 避免溢出
+	        int count = 0;
+	        // 统计数组中<=mid的数字个数
+	        for (int num : nums) {
+	            if (num <= mid) {
+	                count++;
+	            }
+	        }
+	        // 鸽巢原理：个数超过mid，重复数在左区间
+	        if (count > mid) {
+	            right = mid;
+	        } else { // 否则在右区间
+	            left = mid + 1;
+	        }
+	    }
+	    return left; // 最终left==right，即为重复数
+	}
+	```
+
+## 位运算
+
+- 逐位分析：对于每一位（如第 `i` 位），统计数组中所有数字在该位上的 `1` 的个数 `cnt_nums`，再统计 `1~n` 所有数字在该位上的 `1` 的个数 `cnt_1n`。如果 `cnt_nums > cnt_1n`，说明重复数的该位是 `1`，否则是 `0`。最终将所有位的结果组合起来就是重复数
+
+- 代码实现
+
+	```cpp
+	class Solution {
+	public:
+	    int findDuplicate(vector<int>& nums) {
+	        // n为数组长度，题目中数组长度是n+1（数字范围1~n），所以这里n = (n+1)，后续用n-1表示数字的最大范围
+	        int n = nums.size(), ans = 0;
+	        
+	        // 第一步：确定需要遍历的二进制最高位（避免遍历无意义的高位）
+	        int bit_max = 31; // 初始假设最高位是31（int类型的最大有效位）
+	        // 循环条件：(n-1)右移bit_max位后为0，说明该位及更高位都是0，无需遍历
+	        while (!((n - 1) >> bit_max)) {
+	            bit_max -= 1; // 逐步减小，找到(n-1)的最高有效二进制位
+	        }
+	
+	        // 第二步：逐位分析每一个二进制位，确定重复数的每一位是0还是1
+	        for (int bit = 0; bit <= bit_max; ++bit) {
+	            // x：统计数组中所有数字的第bit位为1的个数
+	            // y：统计1~(n-1)中所有数字的第bit位为1的个数（因为数字范围是1~n-1）
+	            int x = 0, y = 0;
+	            
+	            // 遍历数组，同时完成x和y的统计（合并循环，提升效率）
+	            for (int i = 0; i < n; ++i) {
+	                // 统计数组元素nums[i]的第bit位是否为1，若是则x加1
+	                if (nums[i] & (1 << bit)) {
+	                    x += 1;
+	                }
+	                // 统计1~(n-1)中数字i的第bit位是否为1（i>=1才有效，因为数字从1开始）
+	                if (i >= 1 && (i & (1 << bit))) {
+	                    y += 1;
+	                }
+	            }
+	            
+	            // 核心逻辑：如果数组中该位为1的个数 > 1~n-1中该位为1的个数，说明重复数的该位是1
+	            if (x > y) {
+	                // 将第bit位设为1，累加到最终结果中
+	                ans |= 1 << bit;
+	            }
+	        }
+	        
+	        // 所有位分析完成后，ans即为重复的数字
+	        return ans;
+	    }
+	};
+	```
+
+## 快慢指针
+
+- 将数组视为一个 “链表”：数组下标 `i` 对应 “节点”，`nums[i]` 对应 “节点的下一个指针”。由于存在重复数，链表必然存在环，重复数就是环的入口节点
+
+	1. 慢指针（龟）每次走 1 步：`slow = nums[slow]`；
+	2. 快指针（兔）每次走 2 步：`fast = nums[nums[fast]]`；
+	3. 当快慢指针相遇后，将慢指针重置到起点，然后快慢指针都每次走 1 步，再次相遇时的位置就是环的入口（即重复数）
+
+- 代码实现
+
+	```cpp
+	#include <iostream>
+	#include <vector>
+	
+	// 1. 检测数组中是否存在重复数字（仅返回是否存在）
+	bool hasDuplicateNoExtraSpace(const std::vector<int>& nums) {
+	    // 处理边界情况：空数组或单个元素
+	    if (nums.size() <= 1) {
+	        return false;
+	    }
+	
+	    int slow = nums[0];
+	    int fast = nums[nums[0]];
+	
+	    // 快慢指针寻找相遇点（证明环存在）
+	    while (slow != fast) {
+	        // 越界检查：数字超出数组长度，不符合[1, n]前提，无法检测
+	        if (fast >= nums.size() || nums[fast] >= nums.size()) {
+	            return false;
+	        }
+	        slow = nums[slow];          // 慢指针走1步
+	        fast = nums[nums[fast]];    // 快指针走2步
+	    }
+	
+	    // 相遇则存在环（重复数字）
+	    return true;
+	}
+	
+	// 2. 找到数组中具体的重复数字（前提：已确定存在重复，且数字范围[1, n]）
+	int findDuplicateNumber(std::vector<int>& nums) {
+	    // 边界保护：确保数组长度符合前提
+	    if (nums.size() <= 1) {
+	        throw std::invalid_argument("数组长度必须大于1");
+	    }
+	
+	    // 第一步：快慢指针找到相遇点
+	    int slow = nums[0];
+	    int fast = nums[0];
+	    do {
+	        slow = nums[slow];
+	        fast = nums[nums[fast]];
+	    } while (slow != fast);
+	
+	    // 第二步：重置慢指针到起点，快慢指针同速移动找环的入口（重复数）
+	    slow = nums[0];
+	    while (slow != fast) {
+	        slow = nums[slow];
+	        fast = nums[fast];
+	    }
+	
+	    // 相遇点即为重复数字
+	    return slow;
+	}
+	```
+
+	

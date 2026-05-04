@@ -1,0 +1,530 @@
+---
+id: "53"
+title: 最大子数组和
+englishTitle: Maximum Subarray
+slug: maximum-subarray
+url: https://leetcode-cn.com/problems/maximum-subarray/
+difficulty: Medium
+tags:
+  - 普通数组
+  - 数组
+  - 分治
+  - 动态规划
+---
+
+## 题面
+
+给你一个整数数组 `nums` ，请你找出一个具有最大和的连续子数组（子数组最少包含一个元素），返回其最大和。
+
+子数组 是数组中的一个连续部分。
+
+示例 1：
+
+    输入： nums = [-2,1,-3,4,-1,2,1,-5,4]
+    输出： 6
+    解释： 连续子数组 [4,-1,2,1] 的和最大，为 6 。
+
+示例 2：
+
+    输入： nums = [1]
+    输出： 1
+
+示例 3：
+
+    输入： nums = [5,4,-1,7,8]
+    输出： 23
+
+提示：
+
+  * `1 <= nums.length <= 105`
+  * `-104 <= nums[i] <= 104`
+
+进阶： 如果你已经实现复杂度为 `O(n)` 的解法，尝试使用更为精妙的 分治法 求解。
+
+## 分析
+
+- 这个问题可以使用双指针法解决吗？不可以，因为数组中存在负数，将无法进行双指针的更新逻辑
+
+- 暴力的搜索逻辑是，遍历所有子数组，求其和，并记录最大的和
+
+- 可以使用前缀和数组来预处理数组，从而能够快速计算某个连续子数组的和
+
+- 代码实现如下
+
+  ```cpp
+  class Solution {
+  public:
+      int maxSubArray(vector<int>& nums) {
+          vector<int> presum(nums.size() + 1, 0);
+          for (int i = 0; i < nums.size(); i++) {
+              presum[i + 1] = presum[i] + nums[i];
+          }
+          int result = INT_MIN;
+          for (int i = 0; i < nums.size(); i++) {
+              for (int j = i + 1; j < nums.size()+1; j++) {
+                  int sum = presum[j] - presum[i];
+                  result = max(sum, result);
+              }
+          }
+          return result;
+      }
+  };
+  ```
+
+- 以上算法的时间复杂度为 $O(n^2)$， 空间复杂度为 $O(n)$
+
+- 显然，对于一些样例，以上算法运行时间超出了限制
+
+- 贪心算法：每一步的贪心选择是 “放弃负和的子数组，重新开始累加”
+
+	- 维护一个「当前子数组和」`current_sum`，初始为 0
+	- 维护一个「全局最大和」`max_sum`，初始为数组中最小可能值（或第一个元素）
+	- 遍历数组中的每个元素：
+		- 先把当前元素加入「当前子数组和」（`current_sum += num`）；
+		- 用「当前子数组和」更新「全局最大和」（确保不会遗漏当前的最优解）；
+		- 如果「当前子数组和」变成负数，说明这个子数组已经没有 “正向贡献” 了，直接重置 `current_sum` 为 0（相当于放弃当前子数组，从下一个元素重新开始）；
+	- 遍历结束后，`max_sum` 就是结果
+	
+	```cpp
+	class Solution {
+	public:
+	    int maxSubArray(vector<int>& nums) {
+	        // 最终答案，初始化为整型最小值（兼容全负数场景）
+	        int ans = INT_MIN;
+	        // 当前累加的子数组和（贪心核心：维护当前有效子数组的和）
+	        int current_sum = 0;
+	        
+	        for (int x : nums) {
+	            // 第一步：累加当前元素到当前子数组和
+	            current_sum += x;
+	            // 第二步：更新全局最大和（以当前元素结尾的子数组和 vs 历史最大值）
+	            ans = max(ans, current_sum);
+	            // 第三步：贪心决策——当前子数组和为负时重置为0（放弃无正向贡献的子数组）
+	            if (current_sum < 0) {
+	                current_sum = 0;
+	            }
+	        }
+	        return ans;
+	    }
+	};
+	```
+
+- 另一种贪心算法
+
+	- 每一步的贪心选择是 “记住遍历到现在的最小前缀和，用它计算当前最优解”
+	- 可以维护遍历过程中的最小前缀和，那么更新的答案就是当前前缀和减去最小前缀和与当前答案之间的最大值
+
+	```cpp
+	class Solution {
+	public:
+	    int maxSubArray(vector<int>& nums) {
+	        // 1. 初始化最终答案为整型最小值，兼容全负数场景
+	        int ans = INT_MIN;
+	        // 2. 维护遍历过程中最小的前缀和，初始为0（对应“前0个元素的前缀和”）
+	        int min_pre_sum = 0;
+	        // 3. 记录当前的前缀和（前k个元素的和，k从1开始）
+	        int pre_sum = 0;
+	        
+	        // 遍历数组中的每个元素
+	        for (int x : nums) {
+	            // 4. 累加当前元素，更新前缀和（此时pre_sum是“前i个元素的前缀和”，i从1开始）
+	            pre_sum += x; 
+	            // 5. 核心逻辑：当前前缀和 - 之前最小的前缀和 = 以当前元素结尾的最大子数组和
+	            //    用这个值更新全局答案ans
+	            ans = max(ans, pre_sum - min_pre_sum); 
+	            // 6. 维护最小前缀和：比较当前最小前缀和与当前前缀和，保留更小的那个
+	            min_pre_sum = min(min_pre_sum, pre_sum); 
+	        }
+	        return ans;
+	    }
+	};
+	```
+
+- 另一个做法是利用动态规划，因为这个问题是存在重复子问题的，比如在求 [0,i+1] 区间内的最大和时，其依赖于 [0,i] 区间内的最大和
+
+	- dp 数组的含义：dp[i] 表示以 0-i 结尾的子数组的最大和是 dp[i]
+	- 递推公式：`dp[i]=max(dp[i-1]+nums[i],nums[i])`
+	- 初始化：`dp[0]=nums[0]`，因为子数组至少包含 1 个元素
+
+	```cpp
+	class Solution {
+	public:
+	    int maxSubArray(vector<int>& nums) {
+	        vector<int> dp(nums.size(), 0);
+	        dp[0] = nums[0];
+	        int result = max(dp[0], INT_MIN);
+	        for (int i = 1; i < nums.size(); i++) {
+	            dp[i] = max(dp[i - 1] + nums[i], nums[i]);
+	            result = max(result, dp[i]);
+	        }
+	        return result;
+	    }
+	};
+	```
+
+- 实际上，dp[i] 仅仅依赖于 dp[i-1]，因此可以使用一个数来表示
+
+  ```cpp
+  class Solution {
+  public:
+      int maxSubArray(vector<int>& nums) {
+          int pre = nums[0];
+          int result = max(pre, INT_MIN);
+          for (int i = 1; i < nums.size(); i++) {
+              pre = max(pre+nums[i],nums[i]);
+              result = max(result,pre);
+          }
+          return result;
+      }
+  };
+  ```
+
+
+## 求最小子数组和
+
+- 把贪心逻辑 “反转”—— 维护当前最小子数组和，全局最小和，当当前和为正时重置（因为正数累加后续元素会让和更大，不如重新开始）
+
+	```cpp
+	class Solution {
+	public:
+	    int minSubArray(vector<int>& nums) {
+	        if (nums.empty()) return 0; // 边界处理
+	        
+	        int ans = INT_MAX; // 初始化为整型最大值（反转为最小）
+	        int current_sum = 0;
+	        
+	        for (int x : nums) {
+	            current_sum += x;
+	            ans = min(ans, current_sum); // 取最小值而非最大值
+	            // 贪心决策：当前和为正，重置为0（正数累加后续元素会让和更大，放弃）
+	            if (current_sum > 0) {
+	                current_sum = 0;
+	            }
+	        }
+	        return ans;
+	    }
+	};
+	```
+
+## 返回和最大的子数组
+
+- 在维护最大和的同时，记录子数组的起始、结束索引—— 更新全局最大和时，同步更新起止位置；重置当前和时，更新当前子数组的起始位置
+
+- 代码实现
+
+	```cpp
+	class Solution {
+	public:
+	    vector<int> maxSubArrayReturnSub(vector<int>& nums) {
+	        if (nums.empty()) return {};
+	        
+	        int max_sum = INT_MIN;
+	        int current_sum = 0;
+	        int start = 0, end = 0; // 最终子数组的起止索引
+	        int temp_start = 0; // 临时记录当前子数组的起始索引
+	        
+	        for (int i = 0; i < nums.size(); ++i) {
+	            current_sum += nums[i];
+	            
+	            // 更新全局最大和，同步记录起止索引
+	            if (current_sum > max_sum) {
+	                max_sum = current_sum;
+	                start = temp_start;
+	                end = i;
+	            }
+	            
+	            // 重置当前和时，更新临时起始索引为下一个位置
+	            if (current_sum < 0) {
+	                current_sum = 0;
+	                temp_start = i + 1;
+	            }
+	        }
+	        
+	        // 截取子数组 [start, end]
+	        return vector<int>(nums.begin() + start, nums.begin() + end + 1);
+	    }
+	};
+	```
+
+## 子数组长度有下界（如长度 ≥ k）
+
+- 无法直接用简单贪心，需结合前缀和 + 单调队列 / 预处理最小前缀和—— 保证子数组长度至少为 k，再找最优解
+
+- 代码实现
+
+	```cpp
+	#include <vector>
+	#include <climits>
+	#include <algorithm>
+	using namespace std;
+	
+	class Solution {
+	public:
+	    int maxSubArrayWithMinLen(vector<int>& nums, int k) {
+	        int n = nums.size();
+	        if (n < k) return 0; // 边界：数组长度不足k
+	        
+	        // 1. 预处理前缀和
+	        vector<long long> pre_sum(n + 1, 0); // 用long long避免溢出
+	        for (int i = 0; i < n; ++i) {
+	            pre_sum[i+1] = pre_sum[i] + nums[i];
+	        }
+	        
+	        int max_sum = INT_MIN;
+	        // 2. 先计算长度恰好为k的子数组和，作为初始值
+	        for (int i = k; i <= n; ++i) {
+	            max_sum = max(max_sum, (int)(pre_sum[i] - pre_sum[i - k]));
+	        }
+	        
+	        // 3. 处理长度 >k 的情况：维护i-k之前的最小前缀和
+	        int min_pre = pre_sum[0];
+	        for (int i = k + 1; i <= n; ++i) {
+	            min_pre = min(min_pre, (int)pre_sum[i - k - 1]); // 保证子数组长度 ≥k
+	            max_sum = max(max_sum, (int)(pre_sum[i] - min_pre));
+	        }
+	        
+	        return max_sum;
+	    }
+	};
+	```
+
+- 单调队列做法
+
+	```cpp
+	class Solution {
+	public:
+	    int maxSubArrayWithMinLen(vector<int>& nums, int k) {
+	        int n = nums.size();
+	        if (n == 0 || k == 0 || n < k) return 0;
+	        
+	        // 前缀和数组
+	        vector<long long> pre_sum(n + 1, 0);
+	        for (int i = 0; i < n; ++i) {
+	            pre_sum[i+1] = pre_sum[i] + nums[i];
+	        }
+	
+	        // 单调递增队列：维护 j <= i-k 的最小 pre_sum[j]
+	        deque<int> q;
+	        long long max_sum = LLONG_MIN;
+	
+	        for (int i = k; i <= n; ++i) {
+	            // 1. 把新的合法 j = i-k 加入候选（满足长度>=k）
+	            int valid_j = i - k;
+	            while (!q.empty() && pre_sum[valid_j] <= pre_sum[q.back()]) {
+	                q.pop_back();
+	            }
+	            q.push_back(valid_j);
+	
+	            // 2. 队首就是最小 pre_sum[j]，直接计算最大值
+	            max_sum = max(max_sum, pre_sum[i] - pre_sum[q.front()]);
+	        }
+	
+	        return (int)max_sum;
+	    }
+	};
+	```
+
+## 子数组长度有**上界**（如长度 ≤ k）
+
+- 滑动窗口 + 前缀和 —— 枚举所有长度 ≤k 的子数组，用前缀和快速计算和，维护最大值
+
+- 代码实现
+
+	```cpp
+	class Solution {
+	public:
+	    int maxSubArrayWithMaxLen(vector<int>& nums, int k) {
+	        int n = nums.size();
+	        if (n == 0 || k == 0) return 0;
+	        k = min(k, n); // 避免k超过数组长度
+	        
+	        // 预处理前缀和
+	        vector<long long> pre_sum(n + 1, 0);
+	        for (int i = 0; i < n; ++i) {
+	            pre_sum[i+1] = pre_sum[i] + nums[i];
+	        }
+	        
+	        int max_sum = INT_MIN;
+	        // 枚举所有结束位置i，起始位置j ≥ i-k
+	        for (int i = 1; i <= n; ++i) {
+	            int start = max(0, i - k); // 起始位置不能小于0
+	            for (int j = start; j <= i; ++j) {
+	                max_sum = max(max_sum, (int)(pre_sum[i+1] - pre_sum[j]));
+	            }
+	        }
+	        
+	        return max_sum;
+	    }
+	};
+	```
+
+- 可以进一步用单调队列优化内层遍历
+
+	```cpp
+	class Solution {
+	public:
+	    int maxSubArrayWithMaxLen(vector<int>& nums, int k) {
+	        int n = nums.size();
+	        if (n == 0 || k == 0) return 0;
+	        k = min(k, n); 
+	
+	        vector<long long> pre_sum(n + 1, 0);
+	        for (int i = 0; i < n; ++i) {
+	            pre_sum[i+1] = pre_sum[i] + nums[i];
+	        }
+	
+	        deque<int> q;
+	        int max_sum = INT_MIN;
+	
+	        for (int i = 1; i <= n; ++i) {
+	            // 1. 维护窗口范围：队列中下标必须 >= i - k（子数组长度不超过k）
+	            while (!q.empty() && q.front() < i - k) {
+	                q.pop_front();
+	            }
+	            // 2. 队首就是当前最优起点，计算最大子数组和
+	            if (!q.empty()) {
+	                max_sum = max(max_sum, (int)(pre_sum[i] - pre_sum[q.front()]));
+	            }
+	            // 3. 维护单调递增：移除队列尾部比当前pre_sum[i]大的元素
+	            // 因为它们不可能成为后续的最优起点
+	            while (!q.empty() && pre_sum[i] <= pre_sum[q.back()]) {
+	                q.pop_back();
+	            }
+	            // 4. 将当前下标加入队列
+	            q.push_back(i);
+	        }
+	        return max_sum;
+	    }
+	};
+	```
+
+- 参考题目：[363. 矩形区域不超过 K 的最大数值和](https://leetcode.cn/problems/max-sum-of-rectangle-no-larger-than-k/)
+
+## 子数组长度必须是奇数
+
+- 枚举所有长度为奇数的子数组（1,3,5,...），计算和并维护最大值 —— 可结合前缀和优化计算效率
+
+- 代码实现
+
+	```cpp
+	class Solution {
+	public:
+	    int maxSubArrayWithOddLen(vector<int>& nums) {
+	        int n = nums.size();
+	        if (n == 0) return 0;
+	        
+	        // 预处理前缀和
+	        vector<long long> pre_sum(n + 1, 0);
+	        for (int i = 0; i < n; ++i) {
+	            pre_sum[i+1] = pre_sum[i] + nums[i];
+	        }
+	        
+	        int max_sum = INT_MIN;
+	        // 枚举所有奇数长度：len=1,3,5...
+	        for (int len = 1; len <= n; len += 2) {
+	            // 枚举所有起始位置，保证子数组长度为len
+	            for (int i = 0; i + len <= n; ++i) {
+	                int j = i + len;
+	                int current_sum = (int)(pre_sum[j] - pre_sum[i]);
+	                max_sum = max(max_sum, current_sum);
+	            }
+	        }
+	        
+	        return max_sum;
+	    }
+	};
+	```
+
+## 子数组元素不能重复
+
+- 如果元素都是正数，那么子数组越长和越大，因此可以用滑动窗口（双指针） 维护一个「无重复元素的窗口」
+
+- 那么如果元素可以是负数呢？「更长的窗口和不一定更大」（比如窗口 [5,-10,3] 和为 -2，比 [5] 更小），因此不能直接用贪心滑动窗口，需结合哈希表记录元素最后出现位置 + 动态规划
+
+	- 用 `dp[i]` 表示「以第 i 个元素结尾的无重复子数组的最大和」
+	- 用哈希表 `last_pos` 记录每个元素最后一次出现的索引；
+	- 对于第 i 个元素 `nums[i]`：
+		- 若 `nums[i]` 未出现过，或最后出现位置 < 「以 i-1 结尾的无重复子数组的左边界」→ `dp[i] = dp[i-1] + nums[i]`；
+		- 若 `nums[i]` 重复且最后出现位置 ≥ 左边界 → 重置左边界为「重复位置 + 1」，`dp[i]` 从左边界开始重新累加（或直接取 `nums[i]`，因为负数可能让累加和更小）；
+	- 遍历过程中记录 `dp` 数组的最大值
+
+- 代码实现
+
+	```cpp
+	class Solution {
+	public:
+	    int maxSubArrayWithUniqueAny(vector<int>& nums) {
+	        if (nums.empty()) return 0;
+	        
+	        unordered_map<int, int> last_pos; // 记录元素最后出现的索引
+	        int left = 0;                     // 当前无重复子数组的左边界
+	        int current_sum = 0;              // 以当前元素结尾的无重复子数组和
+	        int max_sum = INT_MIN;            // 全局最大和（兼容全负数）
+	        
+	        for (int right = 0; right < nums.size(); ++right) {
+	            int num = nums[right];
+	            // 若当前元素重复，且重复位置在当前窗口内 → 收缩左边界
+	            if (last_pos.count(num) && last_pos[num] >= left) {
+	                // 清空左边界到重复位置之间的和（因为这些元素不再属于新窗口）
+	                for (int i = left; i <= last_pos[num]; ++i) {
+	                    current_sum -= nums[i];
+	                }
+	                left = last_pos[num] + 1; // 左边界移到重复位置下一位
+	            }
+	            // 加入当前元素，更新和与元素最后出现位置
+	            current_sum += num;
+	            last_pos[num] = right;
+	            
+	            // 关键：即使当前和为负，也要更新（比如全负数数组）
+	            max_sum = max(max_sum, current_sum);
+	            
+	            // 特殊情况：当前和为负时，重置窗口（负数累加无意义）
+	            if (current_sum < 0) {
+	                current_sum = 0;
+	                left = right + 1; // 左边界移到下一位，重新开始
+	            }
+	        }
+	        return max_sum;
+	    }
+	};
+	```
+
+## 总结
+
+- 这类问题的核心是「找最优解（最大 / 最小和）」+「满足附加约束（长度、去重）」，贪心（Kadane）和 DP 是基础，滑动窗口处理附加约束
+- 最大 / 最小子数组和
+	- 最大和：Kadane 算法（贪心 / DP），核心 `current_sum = max(num, current_sum + num)`；
+	- 最小和：反转贪心逻辑，`current_sum = min(num, current_sum + num)`，正和时重置
+- 长度约束（上下界 / 奇数）
+	- 长度下界（≥k）：前缀和 + 维护 k 之前的最小前缀和（保证子数组长度≥k）；
+	- 长度上界（≤k）：滑动窗口 + 前缀和，枚举所有长度≤k 的子数组；
+	- 长度为奇数：枚举所有奇数长度（1,3,5...），结合前缀和计算和
+- 元素不重复的最大子数组和
+	- 全正数：滑动窗口（右扩左缩去重，正数和随长度递增）；
+	- 含负数：DP 定义「无重复左边界」+ 前缀和（`dp[i] = max(dp[i-1], last+1)`），再计算和
+- 返回和最大的子数组
+	- 核心：在维护最大和的同时，记录子数组的起止索引（更新最大和时同步记录，重置窗口时更新临时起始索引）
+- 其他题目
+	- 拼接 k 个相同的 *nums*，得到一个长为 nk 的大数组，求这个大数组的最大子数组和，见 [1191. K 次串联后最大子数组之和](https://leetcode.cn/problems/k-concatenation-maximum-sum/)
+	- nums 是个环形数组，见 [918. 环形子数组的最大和](https://leetcode.cn/problems/maximum-sum-circular-subarray/)
+	- 删除 nums 中的至多一个数，再求最大子数组和，见 [1186. 删除一次得到子数组最大和](https://leetcode.cn/problems/maximum-subarray-sum-with-one-deletion/)
+
+## 与和为 k 的子数组的区别
+
+- 子数组和的约束是什么？
+
+	- 等于 / 大于 / 小于某个值 → 优先前缀和；
+
+	- 最大 / 最小和 → 优先贪心 / DP；
+
+- 数组元素特性？
+
+	- 全正数 → 滑动窗口（窗口和单调性）；
+
+	- 含负数 → 前缀和 + 哈希表 / 单调队列（滑动窗口不适用）；
+
+- 是否有附加约束？
+
+	- 长度约束 → 前缀和 + 边界控制（如 k 之前的最小前缀和）；
+
+	- 元素去重 → 哈希表记录元素最后位置 + 滑动窗口 / DP 边界

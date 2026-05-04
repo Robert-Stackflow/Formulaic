@@ -2721,14 +2721,14 @@ description: 介绍 Megatron 框架的设计模式、训练流程以及代码实
           if optimizer_key not in state_dict:
               optimizer_key = "optimizer_state_dict"
               print_rank_0(
-                  "***WARNING*** loading optimizer from " "an old checkpoint ..."
+                  "***WARNING***loading optimizer from " "an old checkpoint ..."
               )
           self.optimizer.load_state_dict(state_dict[optimizer_key])
 
           # Grad scaler.
           if "grad_scaler" not in state_dict:
               print_rank_0(
-                  "***WARNING*** found an old checkpoint, will not "
+                  "***WARNING***found an old checkpoint, will not "
                   "load grad scaler ..."
               )
           else:
@@ -2736,7 +2736,7 @@ description: 介绍 Megatron 框架的设计模式、训练流程以及代码实
                   self.grad_scaler.load_state_dict(state_dict["grad_scaler"])
               else:
                   print_rank_0(
-                      "***WARNING*** fould the grad scaler in the "
+                      "***WARNING***fould the grad scaler in the "
                       "checkpoint but it is None in the class. "
                       "Skipping loading grad scaler ..."
                   )

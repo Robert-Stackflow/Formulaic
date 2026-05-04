@@ -416,7 +416,7 @@ description: 介绍 CUDA 的基本概念、GPU 架构、CUDA Toolkit、cuBLAS、
   - SM 是 GPU 上可以独立执行多个 warp 的计算单元，一个 SM 包含多个 warp scheduler、ALU / Tensor Core、寄存器文件、shared memory
   - SM 决定了同时驻留多少 block，同时跑多少 warp 以及 shared memory /register 怎么划分
   - SM 的内部工作流程是 warp scheduler 选一个 warp，给这个 warp 发一条指令，32 个 thread 锁步执行，所以一个 warp ≈ 一条 SIMD 指令，而多个 warp 在 SM 内轮流执行（时间复用，从而隐藏延迟）
-  - 例如，当一个 warp 等待 global memory 时，调度器会切换到另一个 ready warp，所以 GPU 性能关键是 ** 让 SM 里始终有足够多的 warp**
+  - 例如，当一个 warp 等待 global memory 时，调度器会切换到另一个 ready warp，所以 GPU 性能关键是**让 SM 里始终有足够多的 warp**
 
 ### Thread 的索引体系
 
@@ -554,7 +554,7 @@ description: 介绍 CUDA 的基本概念、GPU 架构、CUDA Toolkit、cuBLAS、
   #define SIZE 1024
 
   // 转置矩阵
-  void transpose(int **original_matrix, int **transposed_matrix) {
+  void transpose(int**original_matrix, int**transposed_matrix) {
       for (int i = 0; i < SIZE; i++) {
           for (int j = 0; j < SIZE; j++) {
               transposed_matrix[j][i] = original_matrix[i][j];
@@ -563,8 +563,8 @@ description: 介绍 CUDA 的基本概念、GPU 架构、CUDA Toolkit、cuBLAS、
   }
 
   int main() {
-      int **original_matrix = (int **) malloc(SIZE * sizeof(int *));
-      int **transposed_matrix = (int **) malloc(SIZE * sizeof(int *));
+      int**original_matrix = (int**) malloc(SIZE * sizeof(int *));
+      int**transposed_matrix = (int**) malloc(SIZE * sizeof(int *));
 
       for (int i = 0; i < SIZE; i++) {
           original_matrix[i] = (int *) malloc(SIZE * sizeof(int));
@@ -595,7 +595,7 @@ description: 介绍 CUDA 的基本概念、GPU 架构、CUDA Toolkit、cuBLAS、
   ```
 
 - 第一步优化，在 GPU 中，矩阵分配存在几个问题：
-  - 多级指针访问效率低：如果使用 `int **matrix`，GPU 访问 `[0][0]` 时需要访问两次内存（先访问指针，再访问元素），效率低下
+  - 多级指针访问效率低：如果使用 `int**matrix`，GPU 访问 `[0][0]` 时需要访问两次内存（先访问指针，再访问元素），效率低下
   - 数据连续性：GPU 访问内存时，会一次性读取一块固定大小的数据。非连续存储会导致多次访问，降低性能
   - 因此，通常将矩阵展平为一维数组：`matrix[i][j] → matrix[i * WIDTH + j]`
 
@@ -827,7 +827,7 @@ description: 介绍 CUDA 的基本概念、GPU 架构、CUDA Toolkit、cuBLAS、
 
 - 内存管理（Memory Management）指的是如何分配内存空间，以及如何在主机（host，CPU）和设备（device，GPU）之间传输数据
 
-- 在整体思想上，CUDA 的内存管理方式与 CPU 程序类似，但有一个非常关键的区别：** 主机代码负责管理所有需要在主机和设备之间共享的数据 **
+- 在整体思想上，CUDA 的内存管理方式与 CPU 程序类似，但有一个非常关键的区别：**主机代码负责管理所有需要在主机和设备之间共享的数据**
 
 - 因此，一个典型的 CUDA 程序中，主机代码需要完成以下工作：
   - 在主机和 GPU 设备上分配内存
@@ -852,11 +852,11 @@ description: 介绍 CUDA 的基本概念、GPU 架构、CUDA Toolkit、cuBLAS、
 
       ```c++
       int *d_t1;
-      cudaMalloc((void **)&d_t1, size);
+      cudaMalloc((void**)&d_t1, size);
       ```
 
     - `cudaMalloc()` 不返回内存地址，它返回的是一个错误码
-    - 分配得到的设备指针是通过参数传回的，通常将指针强制转换为 `void **`，以便适用于任意数据类型
+    - 分配得到的设备指针是通过参数传回的，通常将指针强制转换为 `void**`，以便适用于任意数据类型
 
 - 固定内存（Pinned Memory Allocation）
   - 默认情况下，通过 `malloc()` 分配的主机内存是可分页内存（pageable memory），即可能被操作系统换出到磁盘，当 GPU 要从该内存拷贝数据时，系统需要先确保数据在物理内存中，这会带来额外的 CPU 开销
@@ -866,7 +866,7 @@ description: 介绍 CUDA 的基本概念、GPU 架构、CUDA Toolkit、cuBLAS、
   - CUDA 提供了 `cudaMallocHost()` 来分配并固定主机内存：
 
     ```c++
-    cudaMallocHost((int **)&h_t1, size);
+    cudaMallocHost((int**)&h_t1, size);
     ```
 
   - 这行代码替代了 `malloc()`，同时完成主机内存分配和内存固定
@@ -1124,7 +1124,7 @@ description: 介绍 CUDA 的基本概念、GPU 架构、CUDA Toolkit、cuBLAS、
     ```c++
     // 分配固定内存
     int *h;
-    cudaMallocHost((int **) &h, SIZE);
+    cudaMallocHost((int**) &h, SIZE);
 
     // 分配设备内存
     int *d;
@@ -1320,8 +1320,8 @@ description: 介绍 CUDA 的基本概念、GPU 架构、CUDA Toolkit、cuBLAS、
       transposed_matrix_h = (int *) malloc(size);
 
       // Allocate the matrices on device
-      cudaMalloc((void **) &original_matrix_d, size);
-      cudaMalloc((void **) &transposed_matrix_d, size);
+      cudaMalloc((void**) &original_matrix_d, size);
+      cudaMalloc((void**) &transposed_matrix_d, size);
 
       // Assign values to matrix
       for (int i = 0; i < SIZE; i++) {
@@ -1387,10 +1387,10 @@ description: 介绍 CUDA 的基本概念、GPU 架构、CUDA Toolkit、cuBLAS、
       transposed_matrix_h_2 = (int *) malloc(size);
 
       // Allocate the matrices on device
-      cudaMalloc((void **) &original_matrix_d_1, size);
-      cudaMalloc((void **) &transposed_matrix_d_1, size);
-      cudaMalloc((void **) &original_matrix_d_2, size);
-      cudaMalloc((void **) &transposed_matrix_d_2, size);
+      cudaMalloc((void**) &original_matrix_d_1, size);
+      cudaMalloc((void**) &transposed_matrix_d_1, size);
+      cudaMalloc((void**) &original_matrix_d_2, size);
+      cudaMalloc((void**) &transposed_matrix_d_2, size);
 
       // Assign random values to matrices
       for (int i = 0; i < SIZE; i++) {
@@ -1478,10 +1478,10 @@ description: 介绍 CUDA 的基本概念、GPU 架构、CUDA Toolkit、cuBLAS、
   ...
 
   // replaces malloc for pinned memory
-  cudaMallocHost((int **) &original_matrix_h_1, size);
-  cudaMallocHost((int **) &transposed_matrix_h_1, size);
-  cudaMallocHost((int **) &original_matrix_h_2, size);
-  cudaMallocHost((int **) &transposed_matrix_h_2, size);
+  cudaMallocHost((int**) &original_matrix_h_1, size);
+  cudaMallocHost((int**) &transposed_matrix_h_1, size);
+  cudaMallocHost((int**) &original_matrix_h_2, size);
+  cudaMallocHost((int**) &transposed_matrix_h_2, size);
 
   ...
 
@@ -1599,7 +1599,7 @@ description: 介绍 CUDA 的基本概念、GPU 架构、CUDA Toolkit、cuBLAS、
     ```
 
   - 对 Triton 内核代码的解释：
-    - `tl.program_id(0)` 返回 **block ID**，用来确定每个 block 处理数据的区间
+    - `tl.program_id(0)` 返回**block ID**，用来确定每个 block 处理数据的区间
     - `block_indices` 表示该 block 内的数据索引
     - `valid_mask` 确保不会越界
     - ELU 函数通过 `tl.where` 应用
@@ -2834,7 +2834,7 @@ description: 介绍 CUDA 的基本概念、GPU 架构、CUDA Toolkit、cuBLAS、
       rank = dist.get_rank()
       world_size = dist.get_world_size()
       input_tensor = [
-          torch.tensor([(rank + 1) * i for i in range(1, 3)], dtype=torch.float32).cuda() ** (j + 1)
+          torch.tensor([(rank + 1) * i for i in range(1, 3)], dtype=torch.float32).cuda()**(j + 1)
           for j in range(world_size)
       ]
       output_tensor = torch.zeros(2, dtype=torch.float32).cuda()

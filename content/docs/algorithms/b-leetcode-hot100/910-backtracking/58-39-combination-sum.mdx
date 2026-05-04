@@ -1,0 +1,370 @@
+---
+id: "39"
+title: 组合总和
+englishTitle: Combination Sum
+slug: combination-sum
+url: https://leetcode-cn.com/problems/combination-sum/
+difficulty: Medium
+tags:
+  - 回溯
+  - 数组
+---
+
+## 题面
+
+给你一个 无重复元素 的整数数组 `candidates` 和一个目标整数 `target` ，找出 `candidates` 中可以使数字和为目标数 `target` 的 所有  不同组合 ，并以列表形式返回。你可以按 任意顺序 返回这些组合。
+
+`candidates` 中的 同一个 数字可以 无限制重复被选取 。如果至少一个数字的被选数量不同，则两种组合是不同的。 
+
+对于给定的输入，保证和为 `target` 的不同组合数少于 `150` 个。
+
+示例  1：
+
+    输入： candidates = [2,3,6,7], target = 7
+    输出：[[2,2,3],[7]]
+    解释：
+    2 和 3 可以形成一组候选，2 + 2 + 3 = 7 。注意 2 可以使用多次。
+    7 也是一个候选， 7 = 7 。
+    仅有这两种组合。
+
+示例  2：
+
+    输入: candidates = [2,3,5], target = 8
+    输出:[[2,2,2,2],[2,3,3],[3,5]]
+
+示例 3：
+
+    输入: candidates = [2], target = 1
+    输出:[]
+
+提示：
+
+  * `1 <= candidates.length <= 30`
+  * `2 <= candidates[i] <= 40`
+  * `candidates` 的所有元素 互不相同
+  * `1 <= target <= 40`
+
+## 分析
+
+- 回溯的组合（元素可以重复）问题
+
+	- 利用 startIndex 控制遍历到了哪个数字
+	- 回溯终止条件：当前和等于 target
+	- 何时加入答案：回溯终止时
+	- 如何回溯：回溯的应该是当前被加入到 path 中的元素；同时 sum + candidates[i] 进行值传递，进行隐式的回溯
+	- 如何保证能够选到重复的元素？startIndex 不再+1，即可保证当前元素可以被重复选择
+	- 如何剪枝：当前和已经大于 target，说明无需往下进行（因为数组元素都是正的）
+	- 这里的 `if (sum > target) return;` 剪枝逻辑是可行的，但属于「被动剪枝」，只能在递归进入后终止路径
+	- 而排序 +`if (sum + candidates[i] > target) break;` 是「主动剪枝」，能在递归进入前直接跳过整个无效分支，效率提升数倍
+
+- 代码实现
+
+	```cpp
+	class Solution {
+	public:
+	    vector<vector<int>> res;
+	    vector<int> path;
+	    void backtracking(vector<int>& candidates, int target, int startIndex,
+	                      int sum) {
+	        if (sum > target)
+	            return;// 提前剪枝
+	        if (sum == target) {
+	            res.push_back(path);
+	            return;
+	        }
+	        for (int i = startIndex; i < candidates.size(); i++) {
+	            path.push_back(candidates[i]);
+	            // 下次回溯从 i 表示，表示当前的 i 可以重复选取
+	            backtracking(candidates, target, i, sum + candidates[i]);
+	            path.pop_back();
+	        }
+	    }
+	    vector<vector<int>> combinationSum(vector<int>& candidates, int target) {
+	        backtracking(candidates, target, 0, 0);
+	        return res;
+	    }
+	};
+	```
+	
+- 这个代码的决策逻辑是「枚举选哪个」的多叉决策逻辑，核心是通过 `for` 循环枚举「当前可以选的元素」，从 `startIndex` 开始（避免重复组合）
+
+- 也可以采用「选或不选」的二叉决策树思路，对每个元素只做两种选择（选当前元素 / 不选当前元素），通过递归的分支实现遍历
+
+- 代码实现
+
+	```cpp
+	#include <vector>
+	#include <algorithm> // 需引入排序头文件
+	using namespace std;
+	
+	class Solution {
+	public:
+	    vector<vector<int>> combinationSum(vector<int>& candidates, int target) {
+	        vector<vector<int>> ans;
+	        vector<int> path;
+	        
+	        auto dfs = [&](this auto&& dfs, int i, int left) {
+	            if (left == 0) {
+	                ans.push_back(path);
+	                return;
+	            }
+	
+	            // 剪枝：剩余目标值 < 0 直接返回（原有逻辑）
+	            if (i == candidates.size() || left < 0) {
+	                return;
+	            }
+	
+	            // 不选当前元素
+	            dfs(i + 1, left);
+	
+	            // 选当前元素
+	            path.push_back(candidates[i]);
+	            dfs(i, left - candidates[i]);
+	            path.pop_back();
+	        };
+	
+	        dfs(0, target);
+	        return ans;
+	    }
+	};
+	```
+
+- 一种更好的剪枝优化方法是让候选数组有序，这样当某个元素加入后总和超过目标值时，其后面的元素必然更大，无需再遍历，直接终止当前循环 / 分支，从而剪掉大量无效递归：
+
+	- 先对 `candidates` 升序排序；
+	- 在递归 / 循环中，若「当前元素 + 已选总和 > 目标值」（或「剩余目标值 < 当前元素」），直接终止后续遍历（剪枝）
+
+- 「选 / 不选」二叉决策树的排序剪枝优化：剪枝在递归入口处，剪掉整个二叉分支
+
+	```cpp
+	#include <vector>
+	#include <algorithm> // 需引入排序头文件
+	using namespace std;
+	
+	class Solution {
+	public:
+	    vector<vector<int>> combinationSum(vector<int>& candidates, int target) {
+	        vector<vector<int>> ans;
+	        vector<int> path;
+	        
+	        // 第一步：排序（核心优化前提）
+	        sort(candidates.begin(), candidates.end());
+	
+	        auto dfs = [&](this auto&& dfs, int i, int left) {
+	            if (left == 0) {
+	                ans.push_back(path);
+	                return;
+	            }
+	
+	            // 剪枝1：剩余目标值 < 0 直接返回（原有逻辑）
+	            if (i == candidates.size() || left < 0) {
+	                return;
+	            }
+	
+	            // 剪枝2：排序后，若当前元素 > 剩余目标值，后续元素更大，无需递归
+	            if (candidates[i] > left) {
+	                return;
+	            }
+	
+	            // 不选当前元素
+	            dfs(i + 1, left);
+	
+	            // 选当前元素
+	            path.push_back(candidates[i]);
+	            dfs(i, left - candidates[i]);
+	            path.pop_back();
+	        };
+	
+	        dfs(0, target);
+	        return ans;
+	    }
+	};
+	```
+
+- 「枚举选哪个」多叉决策树的排序后剪枝优化：剪枝在 for 循环内，剪掉整个多叉分支（用 `break` 而非 `continue` 是核心）
+
+	```cpp
+	#include <vector>
+	#include <algorithm> // 需引入排序头文件
+	using namespace std;
+	
+	class Solution {
+	public:
+	    vector<vector<int>> res;
+	    vector<int> path;
+	
+	    void backtracking(vector<int>& candidates, int target, int startIndex, int sum) {
+	        if (sum == target) {
+	            res.push_back(path);
+	            return;
+	        }
+	
+	        // 核心剪枝：遍历中判断，sum + candidates[i] > target 则break（而非continue）
+	        for (int i = startIndex; i < candidates.size(); i++) {
+	            // 剪枝：排序后，当前元素累加超过目标，后续元素更大，直接终止循环
+	            if (sum + candidates[i] > target) {
+	                break; // 关键！break而非continue，因为数组有序，后面的元素都更大
+	            }
+	            path.push_back(candidates[i]);
+	            backtracking(candidates, target, i, sum + candidates[i]);
+	            path.pop_back();
+	        }
+	    }
+	
+	    vector<vector<int>> combinationSum(vector<int>& candidates, int target) {
+	        res.clear();
+	        path.clear();
+	        // 第一步：排序（核心优化前提）
+	        sort(candidates.begin(), candidates.end());
+	        backtracking(candidates, target, 0, 0);
+	        return res;
+	    }
+	};
+	```
+
+
+## 组合总和 II
+
+- https://leetcode.cn/problems/combination-sum-ii/description/
+
+- 给定一个候选人编号的集合 `candidates` 和一个目标数 `target` ，找出 `candidates` 中所有可以使数字和为 `target` 的组合，candidates 中的数字可能会重复；candidates 中的每个数字在每个组合中只能使用一次
+
+- 为了去重，需要对原数组进行排序，当前数字和前一个数字相同时，说明该数字已经使用过，不能再在当前层级遍历
+
+	```cpp
+	class Solution {
+	public:
+	    vector<vector<int>> paths;
+	    vector<int> path;
+	    void backtracking(vector<int>& candidates, int target, int start, int sum) {
+	        if (sum > target) {
+	            return;
+	        }
+	        if (sum == target) {
+	            paths.push_back(path);
+	        }
+	        for (int i = start; i < candidates.size(); i++) {
+	            // 对于当前层级的元素，进行去重，注意必须 i>start
+	            if (i > start && candidates[i] == candidates[i - 1])
+	                continue;
+	            int num = candidates[i];
+	            path.push_back(num);
+	            backtracking(candidates, target, i + 1, sum + num);
+	            path.pop_back();
+	        }
+	    }
+	    vector<vector<int>> combinationSum2(vector<int>& candidates, int target) {
+	        sort(candidates.begin(), candidates.end());
+	        backtracking(candidates, target, 0, 0);
+	        return paths;
+	    }
+	};
+	```
+
+- 如果不包含重复数字呢？那也就不需要去重
+
+	```cpp
+	class Solution {
+	public:
+	    vector<vector<int>> res;
+	    vector<int> path;
+	    void backtracking(vector<int>& candidates, int target, int startIndex,
+	                      int sum) {
+	        if (sum > target)
+	            return;// 提前剪枝
+	        if (sum == target) {
+	            res.push_back(path);
+	            return;
+	        }
+	        for (int i = startIndex; i < candidates.size(); i++) {
+	            path.push_back(candidates[i]);
+	            // 下次回溯从 i+1 表示，表示当前的 i 不可以重复选取
+	            backtracking(candidates, target, i+1, sum + candidates[i]);
+	            path.pop_back();
+	        }
+	    }
+	    vector<vector<int>> combinationSum(vector<int>& candidates, int target) {
+	        backtracking(candidates, target, 0, 0);
+	        return res;
+	    }
+	};
+	```
+
+## 组合总和 III
+
+- https://leetcode.cn/problems/combination-sum-iii/
+
+- 找出所有相加之和为 `n` 的 `k` 个数的组合，且满足下列条件：
+
+	- 只使用数字1到9
+	- 每个数字最多使用一次 
+
+- 返回所有可能的有效组合的列表，列表不能包含相同的组合两次，组合可以以任何顺序返回
+
+- 这个问题是无重复元素的组合总和问题，数字不能重复选取，且只能选 k 个，因此可以提前剪枝
+
+	```cpp
+	class Solution {
+	public:
+	    vector<vector<int>> paths;
+	    vector<int> path;
+	    void backtracking(vector<int>& candidates, int size, int target, int start,
+	                      int sum) {
+	        if (path.size() > size || sum > target) {
+	            return;
+	        }
+	        if (path.size() == size && sum == target) {
+	            paths.push_back(path);
+	        }
+	        for (int i = start; i < candidates.size(); i++) {
+	            int num = candidates[i];
+	            path.push_back(num);
+	            backtracking(candidates, size, target, i + 1, sum + num);
+	            path.pop_back();
+	        }
+	    }
+	    vector<vector<int>> combinationSum3(int k, int n) {
+	        vector<int> candidates = {1, 2, 3, 4, 5, 6, 7, 8, 9};
+	        backtracking(candidates, k, n, 0, 0);
+	        return paths;
+	    }
+	};
+	```
+
+## 组合总和 Ⅳ
+
+- https://leetcode.cn/problems/combination-sum-iv/description/
+
+- 给你一个由 不同 整数组成的数组 nums ，和一个目标整数 target 。请你从 nums 中找出并返回总和为 target 的元素排列的个数，数字可以重复选取
+
+- 这是一个动态规划问题，实际上就是总共有 target 个台阶，一次可以走 nums 中任意数字个台阶
+
+	```cpp
+	int combinationSum4(vector<int>& nums, int target) {
+	    vector<unsigned> dp(target + 1, 0);
+	    dp[0] = 1;
+	    for (int i = 1; i <= target; ++i) {
+	        for (int num : nums) {
+	            if (i >= num) {
+	                dp[i] += dp[i - num];
+	            }
+	        }
+	    }
+	    return dp[target];
+	}
+	```
+
+- 那么这个和完全背包问题有什么区别？
+	- 例如对于零钱兑换问题：求组合（不考虑顺序，1+2 和 2+1 算同一种），此时外层是物品，从而使得每个物品只会被遍历一次，不会出现逆序的情况
+	- 而对于本题，求排列个数，那么外层的体积，内层是物品，从而使得对于任意背包大小，都能选择每一个物品
+- 如果给定的数组中含有负数会发生什么？
+	- 此时将会有无数个解，需要添加额外的限制条件
+	- 第一种条件：限制每个数字最多用 k 次
+	- 第二种条件：限制排列总长度不超过 L
+
+## 总结
+
+- 组合总和问题大致有三个约束
+	- 数组元素是否重复：进行排序，通过 i > start && candidates[i] == candidates[i - 1] 剪枝
+	- 数字能否重复选取：下一次 backtracing 仍旧从 i 开始
+	- 可以选几个数：通过 path.size() 进行剪枝

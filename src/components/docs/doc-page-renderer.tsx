@@ -34,6 +34,8 @@ export function DocPageRenderer({ source, slug }: DocPageRendererProps) {
     tags,
     index,
     ai_summary,
+    url: problemUrl,
+    difficulty,
   } = page.data;
 
   // Determine whether to show AI summary
@@ -69,6 +71,49 @@ export function DocPageRenderer({ source, slug }: DocPageRendererProps) {
         <div className="flex-1">
           <h1 className="text-[1.75em] font-semibold">{title}</h1>
           <p className="text-lg text-fd-muted-foreground mb-3">{description}</p>
+
+          {/* LeetCode problem metadata */}
+          {(difficulty || problemUrl) && (
+            <div className="flex flex-wrap items-center gap-3 mb-3">
+              {difficulty && (
+                <span
+                  className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${
+                    difficulty === "Easy"
+                      ? "bg-green-50 text-green-700 ring-green-600/20 dark:bg-green-500/10 dark:text-green-400 dark:ring-green-500/20"
+                      : difficulty === "Medium"
+                        ? "bg-yellow-50 text-yellow-800 ring-yellow-600/20 dark:bg-yellow-500/10 dark:text-yellow-500 dark:ring-yellow-500/20"
+                        : "bg-red-50 text-red-700 ring-red-600/20 dark:bg-red-500/10 dark:text-red-400 dark:ring-red-500/20"
+                  }`}
+                >
+                  {difficulty}
+                </span>
+              )}
+              {problemUrl && (
+                <a
+                  href={problemUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-xs text-fd-muted-foreground hover:text-fd-foreground transition-colors"
+                >
+                  <svg
+                    className="w-3.5 h-3.5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                    />
+                  </svg>
+                  LeetCode 原题
+                </a>
+              )}
+            </div>
+          )}
+
           {tags && tags.length > 0 && (
             <div className="flex flex-wrap items-center gap-2 text-sm text-fd-muted-foreground mb-4">
               {tags.map((tag: string) => (

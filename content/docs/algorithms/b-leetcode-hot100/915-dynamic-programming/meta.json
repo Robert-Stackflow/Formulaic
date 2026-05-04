@@ -1,0 +1,16 @@
+{
+  "title": "动态规划",
+  "description": "动态规划相关的题目",
+  "pages": [
+    "81-70-climbing-stairs",
+    "82-118-pascals-triangle",
+    "83-198-house-robber",
+    "84-279-perfect-squares",
+    "85-322-coin-change",
+    "86-139-word-break",
+    "87-300-longest-increasing-subsequence",
+    "88-152-maximum-product-subarray",
+    "89-416-partition-equal-subset-sum",
+    "90-32-longest-valid-parentheses"
+  ]
+}

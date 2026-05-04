@@ -171,6 +171,10 @@ export const baseOptions: BaseLayoutProps = {
       text: "博客",
       url: "/blog",
     },
+    {
+      text: "标签",
+      url: "/tags",
+    },
   ],
   githubUrl: "https://github.com/Robert-Stackflow/Formulaic",
 };

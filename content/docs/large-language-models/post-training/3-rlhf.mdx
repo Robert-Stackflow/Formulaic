@@ -51,7 +51,7 @@ description: 介绍基于人类反馈的强化学习（RLHF）技术
     - 与监督微调的目标不同，RLHF 在 Response 的整体层面对模型响应进行调整，关注回复的完整性与质量
     - 学习目标：RLHF 不指定模型必须学习的特定回复，而是明确告知模型什么样的回复更优，引导模型向符合人类偏好的方向优化
     - 除正向引导外，还会向模型展示应避免的回复类型（如负面反馈），帮助模型规避低质量输出
-    - 通常采用 ** 对比损失函数 ** 实现上述训练目标
+    - 通常采用**对比损失函数**实现上述训练目标
   - 具有可验证奖励的强化学习（Reinforcement Learning with Verifiable Rewards，RLVR）
     - 最新的 Post-Traing 方法，通过强化学习训练，提升模型在可验证领域的性能
   - 实际上，Post-Training 阶段涵盖预训练结束后的所有优化技术，包括 “中期训练调整”（如预训练末期的高质量网页数据补充、学习率退火）、指令微调（instruction tuning）、可验证奖励强化学习（RLVR）、偏好微调（preference-tuning）等，是预训练的延伸与优化
@@ -759,13 +759,13 @@ description: 介绍基于人类反馈的强化学习（RLHF）技术
 
 ### 过程奖励模型 (Process Reward Models)
 
-- 过程奖励模型（Process Reward Models，PRMs），最初称为过程监督奖励模型，是经过训练以在思维链推理过程中 ** 对每一步生成的内容输出分数 ** 的奖励模型
+- 过程奖励模型（Process Reward Models，PRMs），最初称为过程监督奖励模型，是经过训练以在思维链推理过程中**对每一步生成的内容输出分数**的奖励模型
 
 - PRMs 与 RM 不同，后者通常仅在 EOS token 输出整个序列的分数；也不同于 ORM，ORM 在每个 token 输出分数，但目标是整个响应的正确性
 
 - PRMs 在每个推理步骤结束时进行监督，每一步中的 tokens 会被训练以匹配其对应目标。与 ORM 的区别在于：ORM 的监督针对整个序列，而 PRM 的监督针对每一步的中间状态
 
-- 对于二元标记的 PRM，通常采用 ** 每步 ** 交叉熵损失进行优化：
+- 对于二元标记的 PRM，通常采用**每步**交叉熵损失进行优化：
 
   $$
   \mathcal {L}_{PRM}(\theta) = -\mathbb {E}_{(x, s) \sim D} \Bigg [\sum_{i=1}^K y_{s_i} \log r_\theta (s_i \mid x) + (1 - y_{s_i}) \log (1 - r_\theta (s_i \mid x)) \Bigg]
@@ -928,7 +928,7 @@ description: 介绍基于人类反馈的强化学习（RLHF）技术
 
 - 在 RLHF 优化过程中，通常需要引入多种正则化手段，以防止模型对奖励模型过拟合
 - 过拟合的典型表现包括：生成无意义文本、数学推理步骤表面合理但结果错误、文本重复、语言切换异常或出现大量特殊字符
-- 当前主流 RLHF 实现中，最常用的正则化方法是计算 ** 当前策略 ** 与 ** 参考策略 ** 在生成样本上的 KL 散度（Kullback–Leibler Divergence）
+- 当前主流 RLHF 实现中，最常用的正则化方法是计算**当前策略**与**参考策略**在生成样本上的 KL 散度（Kullback–Leibler Divergence）
 - 尽管 KL 散度在数学上不满足所有距离度量性质（例如对称性），在训练中通常通俗称为 “KL 距离”，用于衡量两个分布之间的优化距离
 - 下文中使用 $x$ 表示提示词（Prompt），使用 $y$ 表示补全文本（Completion），因为大多数方法处理的是完整的 Prompt–Completion 对，而非单个 token
 
@@ -953,8 +953,8 @@ description: 介绍基于人类反馈的强化学习（RLHF）技术
     $$
 
 - KL 散度
-  - 在 RLHF 中，主要关注两个分布：** 新版本模型的分布 **（记为 $P (x)$ 或 $\pi_{\text {RL}}$）和 ** 参考策略的分布 **（记为 $Q (x)$ 或 $\pi_{\text {ref}}$）
-  - 不同优化器可能使用不同方向的 KL 散度，本文中最常用的 “KL 惩罚” 是相对于参考策略的 ** 反向 KL 散度（Reverse KL）**
+  - 在 RLHF 中，主要关注两个分布：**新版本模型的分布**（记为 $P (x)$ 或 $\pi_{\text {RL}}$）和**参考策略的分布**（记为 $Q (x)$ 或 $\pi_{\text {ref}}$）
+  - 不同优化器可能使用不同方向的 KL 散度，本文中最常用的 “KL 惩罚” 是相对于参考策略的**反向 KL 散度（Reverse KL）**
   - 实际操作中通常通过蒙特卡洛估计实现：从 RL 模型中采样 token，并利用参考模型计算其概率
   - 当新模型 $P$ 在参考模型 $Q$ 认为概率极低的区域分配了较大概率质量时，反向 KL 会施加较大惩罚
   - 另一种方向的 KL 散度在机器学习中也常见（如某些 RL 算法的信任域计算），其直觉是：如果新模型在 $Q$ 的高概率区域没有分配足够概率，就会受到惩罚，这与知识蒸馏或行为克隆中的目标函数类似
@@ -1019,7 +1019,7 @@ description: 介绍基于人类反馈的强化学习（RLHF）技术
   + \gamma \mathbb {E}_{x \sim \mathcal {D}_{\text {pretrain}}} \left [\log \pi_{\text {RL},\theta}(x) \right]
   $$
 
-- 在直接偏好优化（DPO）中，也可以通过引入 ** 负对数似然（NLL）项 ** 来实现类似的平衡优化
+- 在直接偏好优化（DPO）中，也可以通过引入**负对数似然（NLL）项**来实现类似的平衡优化
 
 - 对奖励模型训练的应用形式如下：
 
@@ -1909,8 +1909,8 @@ description: 介绍基于人类反馈的强化学习（RLHF）技术
   v_old  = old_values
   v_clip = torch.clamp(v_pred, v_old - epsilon_v, v_old + epsilon_v)
 
-  vf_unclipped = 0.5 * (v_pred - targets) ** 2
-  vf_clipped   = 0.5 * (v_clip - targets) ** 2
+  vf_unclipped = 0.5 * (v_pred - targets)**2
+  vf_clipped   = 0.5 * (v_clip - targets)**2
   vf_loss_tok  = torch.max(vf_unclipped, vf_clipped)
 
   # 3) 仅在回答 token 上计算损失并聚合
@@ -2400,7 +2400,7 @@ description: 介绍基于人类反馈的强化学习（RLHF）技术
   pg_loss_max = torch.max(pg_losses1, pg_losses2)  # Shape: (B*G, L)
 
   # Simple value function loss
-  vf_loss = 0.5 * ((rewards - values) ** 2)  # Shape: (B*G, L)
+  vf_loss = 0.5 * ((rewards - values)**2)  # Shape: (B*G, L)
 
   # Combine policy and value losses
   per_token_loss = pg_loss_max + self.vf_coef * vf_loss  # Shape: (B*G, L)

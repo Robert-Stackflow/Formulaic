@@ -1,0 +1,307 @@
+---
+remark: 矩阵快速幂的应用、进阶之禁止台阶、进阶之每次可以爬 1-m 个台阶
+id: "70"
+title: 爬楼梯
+englishTitle: Climbing Stairs
+slug: climbing-stairs
+url: https://leetcode-cn.com/problems/climbing-stairs/
+difficulty: Easy
+tags:
+  - 动态规划
+  - 记忆化
+  - 数学
+---
+
+## 题面
+
+假设你正在爬楼梯。需要 `n` 阶你才能到达楼顶。
+
+每次你可以爬 `1` 或 `2` 个台阶。你有多少种不同的方法可以爬到楼顶呢？
+
+示例 1：
+
+    输入： n = 2
+    输出： 2
+    解释： 有两种方法可以爬到楼顶。
+    1. 1 阶 + 1 阶
+    2. 2 阶
+
+示例 2：
+
+    输入： n = 3
+    输出： 3
+    解释： 有三种方法可以爬到楼顶。
+    1. 1 阶 + 1 阶 + 1 阶
+    2. 1 阶 + 2 阶
+    3. 2 阶 + 1 阶
+
+提示：
+
+  * `1 <= n <= 45`
+
+## 分析
+
+- dp[i] 表示爬到第 i 个台阶有多少种方法
+
+- 递推公式：dp[i]=dp[i-1]+dp[i-2];
+
+- dp[0]=1, dp[1]=1
+
+- 显然，可以先利用递归的方法实现
+
+  ```cpp
+  // 会超时的递归代码
+  class Solution {
+      int dfs(int i) {
+          if (i <= 1) { // 递归边界
+              return 1;
+          }
+          return dfs(i - 1) + dfs(i - 2);
+      }
+  
+  public:
+      int climbStairs(int n) {
+          return dfs(n);
+      }
+  };
+  ```
+
+- 时间复杂度和空间复杂度均为 $O(n2^n)$，显然会超时
+
+- 可以通过记忆递归的返回值，来避免一些重复的计算
+
+  ```cpp
+  class Solution {
+      vector<int> memo;
+  
+      int dfs(int i) {
+          if (i <= 1) { // 递归边界
+              return 1;
+          }
+          int& res = memo[i]; // 注意这里是引用
+          if (res) { // 之前计算过
+              return res;
+          }
+          return res = dfs(i - 1) + dfs(i - 2); // 记忆化
+      }
+  
+  public:
+      int climbStairs(int n) {
+          memo.resize(n + 1);
+          return dfs(n);
+      }
+  };
+  ```
+
+- 时间复杂度和空间复杂度均为 $O(n)$
+
+- 递归的实现是自顶向下的，由顶层调用下层来得到最终结果，实际上，可以采用自底向上的方法，转换为递推形式，先计算 i 小的情况，然后一直到计算结果
+
+- 代码实现
+
+  ```cpp
+  class Solution {
+  public:
+      int climbStairs(int n) {
+          vector<int> dp = vector(n + 1, 0);
+          dp[0] = 1;
+          dp[1] = 1;
+          for (int i = 2; i <= n; i++) {
+              dp[i] = dp[i - 1] + dp[i - 2];
+          }
+          return dp[n];
+      }
+  };
+  ```
+
+- 空间优化：可以进一步压缩 dp 数组，因为 dp[i] 只依赖于前两个元素
+
+  ```cpp
+  class Solution {
+  public:
+      int climbStairs(int n) {
+          int pre1 = 1;
+          int pre2 = 1;
+          for (int i = 2; i <= n; i++) {
+              int temp = pre1 + pre2;
+              pre1 = pre2;
+              pre2 = temp;
+          }
+          return pre2;
+      }
+  };
+  ```
+
+- 把状态转移方程用矩阵乘法表示，即
+
+  $$
+  \begin{bmatrix}
+  f[i] \\
+  f[i-1]
+  \end{bmatrix}
+  =
+  \begin{bmatrix}
+  1 & 1 \\
+  1 & 0
+  \end{bmatrix}
+  \begin{bmatrix}
+  f[i-1] \\
+  f[i-2]
+  \end{bmatrix}
+  $$
+
+- 把上式中的三个矩阵分别记作 $F[i], M, F[i-1]$，即
+  $$
+  F[i] = M \times F[i-1]
+  $$
+
+- 那么有
+  $$
+  \begin{align*}
+  F[n] &= M \times F[n-1] \\
+  &= M \times M \times F[n-2] \\
+  &= M \times M \times M \times F[n-3] \\
+  &\quad\vdots \\
+  &= M^n \times F[0]
+  \end{align*}
+  $$
+
+- 其中 $M^n$ 可以用快速幂计算
+
+  
+
+- 初始值
+	$$
+	F[0] = \begin{bmatrix}
+	f[0] \\
+	f[-1]
+	\end{bmatrix}
+	=
+	\begin{bmatrix}
+	1 \\
+	0
+	\end{bmatrix}
+	$$
+
+- 答案为 $f[n]$，即 $F[n]$ 的第一项
+
+- 代码实现
+
+	```cpp
+	using matrix = vector<vector<long long>>;
+	
+	// 返回矩阵 a 和矩阵 b 相乘的结果
+	matrix mul(matrix& a, matrix& b) {
+	    int n = a.size(), m = b[0].size();
+	    matrix c = matrix(n, vector<long long>(m));
+	    for (int i = 0; i < n; i++) {
+	        for (int k = 0; k < a[i].size(); k++) {
+	            if (a[i][k] == 0) {
+	                continue;
+	            }
+	            for (int j = 0; j < m; j++) {
+	                c[i][j] += a[i][k] * b[k][j];
+	            }
+	        }
+	    }
+	    return c;
+	}
+	
+	// a^n * f0
+	matrix pow_mul(matrix a, int n, matrix& f0) {
+	    matrix res = f0;
+	    while (n) {
+	        if (n & 1) {
+	            res = mul(a, res);
+	        }
+	        a = mul(a, a);
+	        n >>= 1;
+	    }
+	    return res;
+	}
+	
+	class Solution {
+	public:
+	    int climbStairs(int n) {
+	        matrix m = {
+	            {1, 1},
+	            {1, 0},
+	        };
+	        matrix f0 = {{1}, {0}};
+	        matrix fn = pow_mul(m, n, f0);
+	        return fn[0][0];
+	    }
+	};
+	```
+
+- 时间复杂度为 $O(\log n)$
+
+
+## 进阶
+
+- 有 n 阶楼梯，规定：
+	- 每一步可以走 1,2,…,k 阶
+	- 有一些台阶不能踩（比如 forbidden = {3,5,7}）
+	- 求从 0 阶（地面）走到 n 阶一共有多少种不同方法
+- 约定：
+	- 0 阶是起点，一定可以站
+	- n 阶是终点，必须可以站（否则答案为 0）
+	- 走到 forbidden 台阶的路径直接作废
+
+- 设 `dp[i]` = 走到第 i 阶的合法方法数
+
+	- 如果 i 是禁止台阶，那么 dp[i]=0
+	- 否则 dp[i]=dp[i-1]+…+dp[i-k]
+
+- 可以优化 dp[i] 的求和——使用滑动窗口求和
+
+- 代码实现
+
+	```cpp
+	const int MOD = 1e9 + 7;
+	
+	long long climbStairs(int n, int k, unordered_set<int>& forbidden) {
+	    if (forbidden.count(n)) return 0;
+	    
+	    vector<long long> dp(n + 1, 0);
+	    dp[0] = 1; // 地面：1种方法
+	    long long sum = dp[0]; // 用一个变量维护窗口和：dp[i-k] ~ dp[i-1]
+	    
+	    for (int i = 1; i <= n; ++i) {
+	        // 1. 不能踩的台阶，方法数 = 0
+	        if (forbidden.count(i)) {
+	            dp[i] = 0;
+	        } else {
+	            dp[i] = sum % MOD; // 直接等于窗口内总和
+	        }
+	        
+	        // 2. 滑动窗口：加入当前 dp[i]，如果窗口超过k，移除最左边
+	        sum += dp[i];
+	        if (i - k >= 0) sum -= dp[i - k];
+	        
+	        // 防止负数
+	        if (sum < 0) sum += MOD;
+	    }
+	    
+	    return dp[n] % MOD;
+	}
+	```
+
+## 是完全背包吗？
+
+- 爬楼梯
+	- 每次走 1 或 2 阶（可以无限走）
+	- 求：走到 n 阶的路径数——排列数问题
+	- 1+2 和 2+1 是两条不同路径，算两种
+	- 在解法中，先遍历台阶，再遍历步长，这样会统计顺序，从而得到排列数
+- 完全背包
+	- 物品：无限次使用
+	- 容量：背包大小 n
+	- 求：组合数（不考虑顺序），比如 {1,2} 和 {2,1} 算同一种
+	- 在解法中，先遍历物品大小，再遍历背包容量，这样第 i 轮是在已经用了前 i-1 个物品的基础上，再加入当前物品 i，此时确保了物品只能按固定顺序被选择
+- 01 背包
+	- 物品：只能选一次
+	- 容量：背包大小 n
+	- 先遍历物品大小，然后遍历背包容量，必须倒着遍历
+	- 如果正着遍历，那么 i=2 → 用了重量为 2 的物品；i=4 → 又会用到 i=2 的结果 → 相当于选了两次
+	- 如果倒着遍历，那么 i 从大到小，不会覆盖还没用到的旧值 → 保证只选一次

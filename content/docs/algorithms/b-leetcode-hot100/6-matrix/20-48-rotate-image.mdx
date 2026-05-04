@@ -1,0 +1,112 @@
+---
+id: "48"
+title: 旋转图像
+englishTitle: Rotate Image
+slug: rotate-image
+url: https://leetcode-cn.com/problems/rotate-image/
+difficulty: Medium
+tags:
+  - 矩阵
+  - 数组
+  - 数学
+---
+
+## 题面
+
+给定一个 n  × n 的二维矩阵 `matrix` 表示一个图像。请你将图像顺时针旋转 90 度。
+
+你必须在[原地](https://baike.baidu.com/item/%E5%8E%9F%E5%9C%B0%E7%AE%97%E6%B3%95) 旋转图像，这意味着你需要直接修改输入的二维矩阵。请不要 使用另一个矩阵来旋转图像。
+
+示例 1：
+
+![](https://assets.leetcode.com/uploads/2020/08/28/mat1.jpg)
+
+    输入： matrix = [[1,2,3],[4,5,6],[7,8,9]]
+    输出：[[7,4,1],[8,5,2],[9,6,3]]
+
+示例 2：
+
+![](https://assets.leetcode.com/uploads/2020/08/28/mat2.jpg)
+
+    输入： matrix = [[5,1,9,11],[2,4,8,10],[13,3,6,7],[15,14,12,16]]
+    输出：[[15,13,2,5],[14,3,4,1],[12,6,8,9],[16,7,10,11]]
+
+提示：
+
+  * `n == matrix.length == matrix[i].length`
+  * `1 <= n <= 20`
+  * `-1000 <= matrix[i][j] <= 1000`
+
+## 分析
+
+- 可以使用辅助数组，对于矩阵中第 *i* 行的第 *j* 个元素，在旋转后，它出现在倒数第 *i* 列的第 *j* 个位置
+
+- 公式为
+	$$
+	matrix_{new}[col][n-row-1]=matrix[row][col]
+	$$
+
+- 它阻止了原地旋转，这是因为如果直接赋值，原矩阵的值就会被覆盖
+
+- 那么 $matrix[col][n-row-1]$ 旋转后到哪里？计算可以得到
+	$$
+	matrix[n−row−1][n−col−1]=matrix[col][n−row−1]
+	$$
+
+- 如此往复计算，得到一个循环覆盖的流程
+	$$
+	\begin{cases}
+	\text{temp} &= \text{matrix}[\text{row}][\text{col}] \\
+	\text{matrix}[\text{row}][\text{col}] &= \text{matrix}[n - \text{col} - 1][\text{row}] \\
+	\text{matrix}[n - \text{col} - 1][\text{row}] &= \text{matrix}[n - \text{row} - 1][n - \text{col} - 1] \\
+	\text{matrix}[n - \text{row} - 1][n - \text{col} - 1] &= \text{matrix}[\text{col}][n - \text{row} - 1] \\
+	\text{matrix}[\text{col}][n - \text{row} - 1] &= \text{temp}
+	\end{cases}
+	$$
+
+- 代码实现
+
+	```cpp
+	class Solution {
+	public:
+	    void rotate(vector<vector<int>>& matrix) {
+	        int n = matrix.size();
+	        for (int i = 0; i < n / 2; ++i) {
+	            for (int j = 0; j < (n + 1) / 2; ++j) {
+	                int temp = matrix[i][j];
+	                matrix[i][j] = matrix[n - j - 1][i];
+	                matrix[n - j - 1][i] = matrix[n - i - 1][n - j - 1];
+	                matrix[n - i - 1][n - j - 1] = matrix[j][n - i - 1];
+	                matrix[j][n - i - 1] = temp;
+	            }
+	        }
+	    }
+	};
+	```
+
+- 可以用翻转代替旋转，即先通过水平轴翻转，然后用主对角线进行翻转
+
+- 代码实现
+
+	```cpp
+	class Solution {
+	public:
+	    void rotate(vector<vector<int>>& matrix) {
+	        int n = matrix.size();
+	        // 水平翻转
+	        for (int i = 0; i < n / 2; ++i) {
+	            for (int j = 0; j < n; ++j) {
+	                swap(matrix[i][j], matrix[n - i - 1][j]);
+	            }
+	        }
+	        // 主对角线翻转
+	        for (int i = 0; i < n; ++i) {
+	            for (int j = 0; j < i; ++j) {
+	                swap(matrix[i][j], matrix[j][i]);
+	            }
+	        }
+	    }
+	};
+	```
+
+	

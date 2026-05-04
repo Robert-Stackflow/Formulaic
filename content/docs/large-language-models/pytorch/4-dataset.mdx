@@ -481,7 +481,7 @@ description: 介绍 PyTorch 中数据集（Dataset）和加载器（DataLoader�
           batch = move_to_device(batch, device)
 
           outputs = model(**batch["inputs"])
-          loss = criterion(outputs, **batch["targets"])
+          loss = criterion(outputs,**batch["targets"])
 
           loss.backward()
           optimizer.step()

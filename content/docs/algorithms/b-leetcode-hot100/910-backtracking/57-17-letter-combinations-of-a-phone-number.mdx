@@ -1,0 +1,158 @@
+---
+id: "17"
+title: 电话号码的字母组合
+englishTitle: Letter Combinations of a Phone Number
+slug: letter-combinations-of-a-phone-number
+url: https://leetcode-cn.com/problems/letter-combinations-of-a-phone-number/
+difficulty: Medium
+tags:
+  - 回溯
+  - 哈希表
+  - 字符串
+---
+
+## 题面
+
+给定一个仅包含数字 `2-9` 的字符串，返回所有它能表示的字母组合。答案可以按 任意顺序 返回。
+
+给出数字到字母的映射如下（与电话按键相同）。注意 1 不对应任何字母。
+
+![](https://pic.leetcode.cn/1752723054-mfIHZs-image.png)
+
+示例 1：
+
+    输入： digits = "23"
+    输出：["ad","ae","af","bd","be","bf","cd","ce","cf"]
+
+示例 2：
+
+    输入： digits = "2"
+    输出：["a","b","c"]
+
+提示：
+
+  * `1 <= digits.length <= 4`
+  * `digits[i]` 是范围 `['2', '9']` 的一个数字。
+
+## 分析
+
+- 回溯的组合问题
+
+	- 利用 cur 控制遍历到了哪个数字
+	- 回溯终止条件：path 长度等于原始字符串长度
+	- 何时加入答案：回溯终止时
+	- 如何回溯：回溯的应该是当前字符所对应的字母集合
+
+- 代码实现
+
+	```cpp
+	class Solution {
+	public:
+	    vector<string> res;
+	    string path;
+	    void backtracking(string digits, int cur) {
+	        vector<string> patterns = {"abc", "def",  "ghi", "jkl",
+	                                   "mno", "pqrs", "tuv", "wxyz"};
+	        if (path.size() == digits.size()) {
+	            res.push_back(path);
+	            return;
+	        }
+	        int index = stoi(string(1, digits[cur])) - 2;
+	        string pattern = patterns[index];
+	        for (int i = 0; i < pattern.size(); i++) {
+	            path.push_back(pattern[i]);
+	            backtracking(digits, cur + 1);
+	            path.pop_back();
+	        }
+	    }
+	    vector<string> letterCombinations(string digits) {
+	        backtracking(digits, 0);
+	        return res;
+	    }
+	};
+	```
+
+- 其回溯的树形结构如下
+
+	```mermaid
+	graph LR
+	    root["开始 (cur=0, path='')"] --> A["选 'a' (cur=0, path='a')"]
+	    root --> B["选 'b' (cur=0, path='b')"]
+	    root --> C["选 'c' (cur=0, path='c')"]
+	    
+	    %% 第一层（数字2）到第二层（数字3）的分支
+	    A --> A1["选 'd' (cur=1, path='ad')"]
+	    A --> A2["选 'e' (cur=1, path='ae')"]
+	    A --> A3["选 'f' (cur=1, path='af')"]
+	    
+	    B --> B1["选 'd' (cur=1, path='bd')"]
+	    B --> B2["选 'e' (cur=1, path='be')"]
+	    B --> B3["选 'f' (cur=1, path='bf')"]
+	    
+	    C --> C1["选 'd' (cur=1, path='cd')"]
+	    C --> C2["选 'e' (cur=1, path='ce')"]
+	    C --> C3["选 'f' (cur=1, path='cf')"]
+	    
+	    %% 终止条件：path长度=2，记录结果
+	    A1 --> res1["记录 'ad'"]
+	    A2 --> res2["记录 'ae'"]
+	    A3 --> res3["记录 'af'"]
+	    B1 --> res4["记录 'bd'"]
+	    B2 --> res5["记录 'be'"]
+	    B3 --> res6["记录 'bf'"]
+	    C1 --> res7["记录 'cd'"]
+	    C2 --> res8["记录 'ce'"]
+	    C3 --> res9["记录 'cf'"]
+	```
+
+
+## 字母大小写全排列
+
+- https://leetcode.cn/problems/letter-case-permutation/description/
+
+- 回溯实际上做的是同一层级的遍历过程，当前层遍历之后就执行下一层
+
+- 例如，在组合问题中，需要根据 start 来判断当前层需要有哪些数字被遍历到，如果当前元素可以重复选取，那么下一层的遍历依旧从 i 开始
+
+- 在电话号码的字母组合问题中，对于每个字符都有对应的若干个字符可以选择，从而构成了多叉树，而在字母大小写全排列问题中，数字只有一种选择，字母有大写/小写两种选择，注意每次在进行选择时，一定要进行回溯 pop_back()
+
+- 在排列问题中，由于当前字符选过之后，在下一层还能够被选择，但是每个字符又不能重复选，因此需要用 used 来表示该数字是否被选择过
+
+- 那么如果，原数组中有重复数字，此时排列问题怎么进行去重呢？如果当前元素与前面的元素相同，而且前面的元素没有被选择，说明在遍历前面的元素的时候，已经进行了回溯，同层的重复元素不需要再进行回溯了
+
+- 代码实现
+
+	```cpp
+	class Solution {
+	public:
+	    vector<string> paths;
+	    string path;
+	    void backtracking(string candidates, int i) {
+	        if (path.size() == candidates.size()) {
+	            paths.push_back(path);
+	            return;
+	        }
+	        if (i >= candidates.size())
+	            return;
+	        char cur = candidates[i];
+	        if (cur >= '0' && cur <= '9') {
+	            path += cur;
+	            backtracking(candidates, i + 1);
+	            path.pop_back();
+	        } else {
+	            path.push_back(tolower(cur));
+	            backtracking(candidates, i + 1);
+	            path.pop_back();
+	            path.push_back(toupper(cur));
+	            backtracking(candidates, i + 1);
+	            path.pop_back();
+	        }
+	    }
+	    vector<string> letterCasePermutation(string s) {
+	        backtracking(s, 0);
+	        return paths;
+	    }
+	};
+	```
+
+	

@@ -59,7 +59,7 @@ description: 介绍 Transformer 结构，包括 Encoder-Decoder 架构、多头�
   - 多头自注意力子层：对输入序列进行自注意力计算，捕捉 token 间的依赖关系
   - 前馈网络子层：对每个 token 独立进行非线性变换
   - 残差连接和层归一化：围绕每个子层添加
-- Encoder 输入：token 嵌入 + 位置编码的序列 $X \in \mathbb {R}^{n \times d_{\text {model}}}$（$n$​ 为序列长度）
+- Encoder 输入：token 嵌入 + 位置编码的序列 $X \in \mathbb {R}^{n \times d_{\text {model}}}$（$n$ 为序列长度）
 
 - 每个 Encoder Block（层）：
   - 输入：上一层输出或初始 $X$，维度 $n \times d_{\text {model}}$
@@ -107,8 +107,8 @@ description: 介绍 Transformer 结构，包括 Encoder-Decoder 架构、多头�
 ## Decoder 结构
 
 - Decoder 也由 $N$ 个相同层堆叠而成，每层包括：
-  - ** 掩码 ** 多头自注意力子层：仅关注当前及之前位置的 token，防止信息泄露（causal mask）
-  - ** 多头交叉 ** 注意力子层：Query 来自 Decoder，Key/Value 来自 Encoder 输出，实现条件生成
+  - **掩码**多头自注意力子层：仅关注当前及之前位置的 token，防止信息泄露（causal mask）
+  - **多头交叉**注意力子层：Query 来自 Decoder，Key/Value 来自 Encoder 输出，实现条件生成
   - 前馈网络子层：与 Encoder 相同
   - 残差连接和层归一化：围绕每个子层添加
 - Decoder 输入为目标序列的 token 嵌入 + 位置编码 $Y \in \mathbb {R}^{m \times d_{\text {model}}}$（$m$​ 为目标长度），在训练时使用 teacher forcing（真实目标序列），推理时自回归生成

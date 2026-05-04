@@ -1,0 +1,11 @@
+{
+  "title": "算法笔记",
+  "description": "系统整理算法题解与思路，提升算法能力和面试竞争力",
+  "pages": [
+    "!index",
+    "0-cpp",
+    "01-summary",
+    "data-structure",
+    "algorithms"
+  ]
+}

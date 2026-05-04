@@ -121,7 +121,7 @@ description: 介绍 BERT、GPT、T5 等主流模型的结构与推理方法
 
 ### RoBERTa
 
-- RoBERTa（**R**obustly **o**ptimized **BERT** pretraining **a**pproach）是对 BERT 的一种改进方法
+- RoBERTa（**R**obustly**o**ptimized**BERT**pretraining**a**pproach）是对 BERT 的一种改进方法
 
 - RoBERTa 本质上是在证明：BERT 的问题不在结构，而在训练范式
 
@@ -305,7 +305,7 @@ description: 介绍 BERT、GPT、T5 等主流模型的结构与推理方法
     - Transformer 是 $P (y_t \mid y_{<t}, \color {red}{x})$，上下文是 $y_{<t}$ + $x$，条件信息来自 Encoder 的输出
     - GPT 是 $P (x_t \mid x_{<t})$，上下文是 $x_{<t}$​，无条件信息，上下文本身就是所有信息
     - GPT 并没有显式建模 $P (y\vert x)$，但只要它学好了 $P (完整文本)$​，所有 “任务条件分布” 都隐含在里面
-    - $P (x)$ 理论上覆盖了 $P (y|x)$，不是因为 “更强”，而是因为 ** 条件分布只是联合分布的一个切片 **
+    - $P (x)$ 理论上覆盖了 $P (y|x)$，不是因为 “更强”，而是因为**条件分布只是联合分布的一个切片**
 
   - 等价于最小化交叉熵损失：
 

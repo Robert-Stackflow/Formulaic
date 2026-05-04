@@ -403,16 +403,16 @@ description: 介绍预训练阶段的训练流程与技术细节
 
 ![how_to_choose_model_type](/img/llm/how_to_choose_model_type.png)
 
-- ** 优先选密集型模型 **：部署于边缘设备（内存受限）、团队首次训练 LLM、时间线紧张（3 个月内），SmolLM3 因 “设备端部署” 选择 3B 密集型模型。
-- ** 选 MoE**：非内存受限、追求性能 / 计算比、团队有成熟分布式训练经验。
-- ** 选混合模型 **：需超长篇幅（如百万 tokens）、可接受架构探索成本。
+- **优先选密集型模型**：部署于边缘设备（内存受限）、团队首次训练 LLM、时间线紧张（3 个月内），SmolLM3 因 “设备端部署” 选择 3B 密集型模型。
+- **选 MoE**：非内存受限、追求性能 / 计算比、团队有成熟分布式训练经验。
+- **选混合模型**：需超长篇幅（如百万 tokens）、可接受架构探索成本。
 
 ### Tokenizer
 
 - 设计原则
-  - ** 我们希望支持哪些语言？** 如果我们正在构建一个多语言模型，但我们的分词器只见过英语，那么当遇到非英语文本时，该模型的效率会很低，因为这些文本会被拆分成比必要数量多得多的标记。这直接影响性能、训练成本和推理速度。
-  - ** 哪些领域对我们来说很重要？** 除了语言之外，数学和代码等领域需要对数字进行仔细表示。
-  - ** 我们了解我们的目标数据混合吗？** 如果我们计划从头开始训练分词器，理想情况下，我们应该在一个能反映我们最终训练混合的样本上训练它。
+  - **我们希望支持哪些语言？**如果我们正在构建一个多语言模型，但我们的分词器只见过英语，那么当遇到非英语文本时，该模型的效率会很低，因为这些文本会被拆分成比必要数量多得多的标记。这直接影响性能、训练成本和推理速度。
+  - **哪些领域对我们来说很重要？**除了语言之外，数学和代码等领域需要对数字进行仔细表示。
+  - **我们了解我们的目标数据混合吗？**如果我们计划从头开始训练分词器，理想情况下，我们应该在一个能反映我们最终训练混合的样本上训练它。
 
 - 词汇量大小
   - 词汇表本质上是一个词典，列出了我们的模型能识别的所有标记（最小的文本单位，如单词、子词或符号）
@@ -429,7 +429,7 @@ description: 介绍预训练阶段的训练流程与技术细节
   - Fertility
     - 它衡量的是编码一个单词所需的平均 tokens 数量。较低的生成率意味着更好的压缩效果，这会转化为更快的训练和推理速度。可以这样理解：如果一个分词器在编码大多数单词时需要多一到两个标记，而另一个分词器用更少的标记就能完成，那么显然第二个分词器效率更高。
 
-    - The standard approach for measuring fertility is to calculate **words-to-tokens ratio** (word fertility), which measures how many tokens are needed per word on average. This metric is defined around the concept of words because it provides meaningful cross-linguistic comparisons when appropriate word tokenizers are available, for example in [Spacy](https://spacy.io/) and [Stanza](https://stanfordnlp.github.io/stanza) ([Penedo et al., 2025](https://huggingfacetb-smol-training-playbook.hf.space/#bib-fineweb2)).
+    - The standard approach for measuring fertility is to calculate**words-to-tokens ratio**(word fertility), which measures how many tokens are needed per word on average. This metric is defined around the concept of words because it provides meaningful cross-linguistic comparisons when appropriate word tokenizers are available, for example in [Spacy](https://spacy.io/) and [Stanza](https://stanfordnlp.github.io/stanza) ([Penedo et al., 2025](https://huggingfacetb-smol-training-playbook.hf.space/#bib-fineweb2)).
 
     - 不同模型的分词器对比（越小越好）
 
@@ -480,22 +480,22 @@ description: 介绍预训练阶段的训练流程与技术细节
       | Gemma3 (262k)          | 26.0%   | 33.1%   | 39.9%  | 70.1%  |
 
 - 如何选择分词器
-  - ** 何时使用现有的分词器：** 如果我们的目标用例与上述最佳分词器（Llama、Qwen、Gemma）的语言或领域覆盖范围相匹配，那么它们是经过实战检验的可靠选择。在 SmolLM3 的训练中，我们选择了 Llama3 的分词器：它在我们的目标语言（英语、法语、西班牙语、葡萄牙语、意大利语）上具有出色的分词质量，且词汇量适中，这对于我们的小型模型尺寸来说是合理的。对于嵌入在总参数中占比较小的大型模型而言，Gemma3 在效率方面的提升会更具吸引力。
-  - ** 何时训练我们自己的分词器：** 如果我们要为低资源语言进行训练，或者有非常不同的数据混合，我们可能需要训练自己的分词器以确保良好的覆盖范围。在这种情况下，重要的是我们要在一个接近我们认为最终训练混合会呈现的样子的数据集上训练分词器。这就产生了一个有点类似 “先有鸡还是先有蛋” 的问题，因为我们需要一个分词器来进行数据消融并找到合适的混合方式。但我们可以在启动最终运行之前重新训练分词器，并验证下游性能是否有所提升以及拆分率是否仍然良好。
+  - **何时使用现有的分词器：**如果我们的目标用例与上述最佳分词器（Llama、Qwen、Gemma）的语言或领域覆盖范围相匹配，那么它们是经过实战检验的可靠选择。在 SmolLM3 的训练中，我们选择了 Llama3 的分词器：它在我们的目标语言（英语、法语、西班牙语、葡萄牙语、意大利语）上具有出色的分词质量，且词汇量适中，这对于我们的小型模型尺寸来说是合理的。对于嵌入在总参数中占比较小的大型模型而言，Gemma3 在效率方面的提升会更具吸引力。
+  - **何时训练我们自己的分词器：**如果我们要为低资源语言进行训练，或者有非常不同的数据混合，我们可能需要训练自己的分词器以确保良好的覆盖范围。在这种情况下，重要的是我们要在一个接近我们认为最终训练混合会呈现的样子的数据集上训练分词器。这就产生了一个有点类似 “先有鸡还是先有蛋” 的问题，因为我们需要一个分词器来进行数据消融并找到合适的混合方式。但我们可以在启动最终运行之前重新训练分词器，并验证下游性能是否有所提升以及拆分率是否仍然良好。
 
 ### 准则
 
 > Your use case drives your choices. 简而言之：您的用例决定了您的选择。
 
-**Let your deployment target guide architectural decisions.** Consider how and where your model will actually run when evaluating new architectural innovations.** 让部署目标指导架构决策。** 在评估新的架构创新时，要考虑模型实际运行的方式和位置。
+**Let your deployment target guide architectural decisions.**Consider how and where your model will actually run when evaluating new architectural innovations.**让部署目标指导架构决策。**在评估新的架构创新时，要考虑模型实际运行的方式和位置。
 
-**Strike the right balance between innovation and pragmatism.** We can’t afford to ignore major architectural advances - using Multi-Head Attention today when GQA and better alternatives exist would be a poor technical choice. Stay informed about the latest research and adopt techniques that offer clear, validated benefits at scale. But resist the temptation to chase every new paper that promises marginal gains (unless you have the resources to do so or your goal is architecture research).** 在创新与实用主义之间取得恰当平衡。** 我们不能忽视重大的架构进展 —— 在 GQA 及更好的替代方案已存在的当下，仍使用多头注意力机制将是一个糟糕的技术选择。要了解最新研究，并采用那些能在大规模应用中带来明确、经证实的收益的技术。但要抵制追逐每一篇承诺带来微小收益的新论文的诱惑（除非你有足够资源，或者你的目标是进行架构研究）。
+**Strike the right balance between innovation and pragmatism.**We can’t afford to ignore major architectural advances - using Multi-Head Attention today when GQA and better alternatives exist would be a poor technical choice. Stay informed about the latest research and adopt techniques that offer clear, validated benefits at scale. But resist the temptation to chase every new paper that promises marginal gains (unless you have the resources to do so or your goal is architecture research).**在创新与实用主义之间取得恰当平衡。**我们不能忽视重大的架构进展 —— 在 GQA 及更好的替代方案已存在的当下，仍使用多头注意力机制将是一个糟糕的技术选择。要了解最新研究，并采用那些能在大规模应用中带来明确、经证实的收益的技术。但要抵制追逐每一篇承诺带来微小收益的新论文的诱惑（除非你有足够资源，或者你的目标是进行架构研究）。
 
-**Systematic beats intuitive.** Validate every architecture change, no matter how promising it looks on paper. Then test modifications individually before combining them to understand their impact.** 系统性优于直觉。** 验证每一项架构变更，无论其在理论上看起来多么有前景。然后在将修改组合起来之前，先单独测试它们，以了解其影响。
+**Systematic beats intuitive.**Validate every architecture change, no matter how promising it looks on paper. Then test modifications individually before combining them to understand their impact.**系统性优于直觉。**验证每一项架构变更，无论其在理论上看起来多么有前景。然后在将修改组合起来之前，先单独测试它们，以了解其影响。
 
-**Scale effects are real - re-ablate at target size when possible.** Don’t assume your small-scale ablations will hold perfectly at your target model size. If you have the compute, try to reconfirm them.** 规模效应是真实存在的 —— 尽可能在目标规模下重新进行消融实验。** 不要假设小规模的消融实验结果能完美适用于目标模型规模。如果有计算资源，尝试重新验证它们。
+**Scale effects are real - re-ablate at target size when possible.**Don’t assume your small-scale ablations will hold perfectly at your target model size. If you have the compute, try to reconfirm them.**规模效应是真实存在的 —— 尽可能在目标规模下重新进行消融实验。**不要假设小规模的消融实验结果能完美适用于目标模型规模。如果有计算资源，尝试重新验证它们。
 
-**Validate tokenizer efficiency on your actual domains.** Fertility metrics across your target languages and domains matter more than following what the latest model used. A 50k English tokenizer won’t cut it for serious multilingual work, but you don’t need a 256k vocab if you’re not covering that many languages either.** 在您的实际领域验证分词器效率。** 跨目标语言和领域的覆盖率指标比追随最新模型所使用的分词器更为重要。一个 50k 词表的英语分词器无法胜任严谨的多语言工作，但如果您不需要覆盖那么多语言，也无需使用 256k 词表的分词器。
+**Validate tokenizer efficiency on your actual domains.**Fertility metrics across your target languages and domains matter more than following what the latest model used. A 50k English tokenizer won’t cut it for serious multilingual work, but you don’t need a 256k vocab if you’re not covering that many languages either.**在您的实际领域验证分词器效率。**跨目标语言和领域的覆盖率指标比追随最新模型所使用的分词器更为重要。一个 50k 词表的英语分词器无法胜任严谨的多语言工作，但如果您不需要覆盖那么多语言，也无需使用 256k 词表的分词器。
 
 ## 优化器和训练超参数
 
@@ -511,7 +511,7 @@ However, we risk leaving performance on the table by not tuning these values for
 
 - **AdamW**：主流选择，超参数稳定（β₁=0.9，β₂=0.95，梯度裁剪 = 1.0，权重衰减 = 0.1），兼容性好、训练稳定，SmolLM3 最终采用。
 - **Muon**：二阶优化器，基于矩阵视角更新参数，支持更大批处理，但对学习率敏感、易发散，需大量调优。
-- ** 其他优化器 **：如 Shampoo、Sophia 等，需针对性调优，未超越 AdamW 的普适性。
+- **其他优化器**：如 Shampoo、Sophia 等，需针对性调优，未超越 AdamW 的普适性。
 
 ### 学习率
 
@@ -521,7 +521,7 @@ However, we risk leaving performance on the table by not tuning these values for
 
 多年来，人们已经知道改变学习率有助于收敛（[Smith & Topin, 2018](https://huggingfacetb-smol-training-playbook.hf.space/#bib-smith2018superconvergencefasttrainingneural)），而余弦衰减（[Loshchilov & Hutter, 2017](https://huggingfacetb-smol-training-playbook.hf.space/#bib-loshchilov2017sgdrstochasticgradientdescent)）是训练大语言模型（LLMs）时常用的调度方式：在预热后从峰值学习率开始，然后按照余弦曲线平稳下降。这种方式简单且效果良好。但它的主要缺点是缺乏灵活性；我们需要预先知道总的训练步数，因为余弦周期长度必须与总训练时长相匹配。这在一些常见场景中会成为问题：模型尚未达到性能平台期，或者你获得了更多计算资源并想延长训练时间，又或者你在进行缩放定律研究并需要在不同的 token 数量上训练同一个模型。余弦衰减会迫使你从头开始重新训练。
 
-现在许多团队采用的训练计划中，热身结束后无需立即开始衰减学习率。如下方图表所示，** 热身 - 稳定 - 衰减（**WSD）（[Hu 等人，2024](https://huggingfacetb-smol-training-playbook.hf.space/#bib-hu2024minicpmunveilingpotentialsmall)）和 ** 多步（**[深度求索人工智能等，2024](https://huggingfacetb-smol-training-playbook.hf.space/#bib-deepseekai2024deepseekllmscalingopensource)）变体就属于这种情况。在训练的大部分时间里，学习率保持恒定的较高水平，对于 WSD 来说，通常在训练的最后 10%-20% 的 token 阶段会急剧衰减；而对于多步计划，例如在 [深度求索大语言模型](https://arxiv.org/abs/2401.02954) 的多步计划中，会通过离散的下降（步骤）来降低学习率，比如在训练进行到 80% 后下降一次，然后在 90% 后再下降一次。
+现在许多团队采用的训练计划中，热身结束后无需立即开始衰减学习率。如下方图表所示，**热身 - 稳定 - 衰减（**WSD）（[Hu 等人，2024](https://huggingfacetb-smol-training-playbook.hf.space/#bib-hu2024minicpmunveilingpotentialsmall)）和**多步（**[深度求索人工智能等，2024](https://huggingfacetb-smol-training-playbook.hf.space/#bib-deepseekai2024deepseekllmscalingopensource)）变体就属于这种情况。在训练的大部分时间里，学习率保持恒定的较高水平，对于 WSD 来说，通常在训练的最后 10%-20% 的 token 阶段会急剧衰减；而对于多步计划，例如在 [深度求索大语言模型](https://arxiv.org/abs/2401.02954) 的多步计划中，会通过离散的下降（步骤）来降低学习率，比如在训练进行到 80% 后下降一次，然后在 90% 后再下降一次。
 
 这些调度方案相比余弦衰减具有实际优势。我们可以在训练中途延长训练而无需重启，无论是想比最初计划训练更长时间，还是提前衰减以更好地衡量训练进度，并且我们可以通过一次主要训练运行，在不同的令牌数量上进行缩放定律实验。此外，研究表明，WSD 和多步衰减都与余弦衰减效果相当（DeepSeek-AI 等，2024；Hägele 等，2024 [)](https://huggingfacetb-smol-training-playbook.hf.space/#bib-deepseekai2024deepseekllmscalingopensource)，同时在现实世界的训练场景中更具实用性。
 
@@ -544,12 +544,12 @@ DeepSeek 大语言模型采用了基准的多步调度（80/10/10）。[DeepSeek
 
 ### 批次大小
 
-批量大小是在更新模型权重之前处理的样本数量。它直接影响训练效率和最终的模型性能。如果你的硬件和训练栈能很好地跨设备扩展，增大批量大小可以提高吞吐量。但超过某个点后，更大的批量会开始损害数据效率：模型需要更多的总标记才能达到相同的损失。发生这种情况的临界点被称为 ** 临界批量大小 **（[McCandlish 等人，2018](https://huggingfacetb-smol-training-playbook.hf.space/#bib-mccandlish2018empiricalmodellargebatchtraining)）。
+批量大小是在更新模型权重之前处理的样本数量。它直接影响训练效率和最终的模型性能。如果你的硬件和训练栈能很好地跨设备扩展，增大批量大小可以提高吞吐量。但超过某个点后，更大的批量会开始损害数据效率：模型需要更多的总标记才能达到相同的损失。发生这种情况的临界点被称为**临界批量大小**（[McCandlish 等人，2018](https://huggingfacetb-smol-training-playbook.hf.space/#bib-mccandlish2018empiricalmodellargebatchtraining)）。
 
 Throughput is the number of tokens processed per second during training. 吞吐量是训练过程中每秒处理的令牌数量。
 
-- **Increasing the batch size while staying below critical:** after increasing the batch size and retuning the learning rate, you reach the same loss with the same number of tokens as the smaller batch size run, no data is wasted.** 在保持低于临界值的同时增加批量大小：** 在增加批量大小并重新调整学习率后，你会以与较小批量大小运行时相同数量的标记达到相同的损失，不会浪费任何数据。
-- **Increasing the batch size while staying above critical:** larger batches start to sacrifice data efficiency; reaching the same loss now requires more total tokens (and thus more money), even if wall-clock time drops because more chips are busy.** 在保持高于临界点的同时增加批量大小：** 更大的批量开始牺牲数据效率；即使由于更多芯片处于工作状态而缩短了实际时间，但要达到相同的损失，现在需要更多的总令牌（因此也需要更多资金）。
+- **Increasing the batch size while staying below critical:**after increasing the batch size and retuning the learning rate, you reach the same loss with the same number of tokens as the smaller batch size run, no data is wasted.**在保持低于临界值的同时增加批量大小：**在增加批量大小并重新调整学习率后，你会以与较小批量大小运行时相同数量的标记达到相同的损失，不会浪费任何数据。
+- **Increasing the batch size while staying above critical:**larger batches start to sacrifice data efficiency; reaching the same loss now requires more total tokens (and thus more money), even if wall-clock time drops because more chips are busy.**在保持高于临界点的同时增加批量大小：**更大的批量开始牺牲数据效率；即使由于更多芯片处于工作状态而缩短了实际时间，但要达到相同的损失，现在需要更多的总令牌（因此也需要更多资金）。
 
 ### 超参数的缩放定律
 

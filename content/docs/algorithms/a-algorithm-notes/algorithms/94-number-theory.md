@@ -1,0 +1,2485 @@
+---
+title: 数论
+description: 素数判定、埃氏筛法等数论基础知识与算法实现
+---
+
+## 素数
+
+- 质数（素数）：大于 1 的自然数，且只能被 1 和它本身整除（如 2、3、5、7、11...）
+- 合数：大于 1 且不是质数的自然数（如 4、6、8、9...）
+- 1 既不是质数也不是合数
+
+### 试除法
+
+- 素数如何判定？可以使用试除法
+  - 无需检查 2 到 n-1 的所有数，只需检查 2 到 √n（n 的平方根）即可
+  - 原因：如果 n 有一个大于 √n 的约数 a，那么必然存在一个小于 √n 的约数 b = n/a，因此只需检查到 √n 就能确定是否为质数
+  - 额外优化：先排除偶数（除了 2），减少一半的检查次数
+
+- 试除法的代码实现
+
+  ```cpp
+  // 试除法判断单个数字是否为质数
+  bool isPrime(int n) {
+      // 边界条件：小于等于1的数不是质数
+      if (n <= 1) return false;
+      // 2是唯一的偶质数
+      if (n == 2) return true;
+      // 大于2的偶数一定不是质数
+      if (n % 2 == 0) return false;
+
+      // 检查从3到√n的奇数（步长为2，跳过偶数）
+      // 用long long避免sqrt返回值精度问题导致的溢出
+      for (long long i = 3; i <= sqrt(n); i += 2) {
+          if (n % i == 0) { // 存在其他约数，不是质数
+              return false;
+          }
+      }
+      return true; // 没有找到其他约数，是质数
+  }
+  ```
+
+- 时间复杂度为 $O(\sqrt{n})$
+
+### 埃氏筛
+
+- 试除法适合判断单个质数，而埃拉托斯特尼筛法（简称埃氏筛） 适合批量筛选「1~N」范围内的所有质数，效率远高于逐个试除
+  - 初始化一个布尔数组 `is_prime`，长度为 N+1，初始值全为 `true`（假设所有数都是质数）
+  - 先将 `is_prime[0]` 和 `is_prime[1]` 设为 `false`（0 和 1 不是质数）
+  - 从 2 开始遍历到 √N：如果当前数 `i` 是质数（`is_prime[i] == true`），则将 `i` 的所有倍数（2i、3i、4i...≤N）标记为 `false`（这些数是合数）
+  - 最终数组中值为 `true` 的索引，就是 1~N 范围内的质数
+
+- 代码实现
+
+  ```cpp
+  // 埃拉托斯特尼筛法：筛选1~n范围内的所有质数
+  vector<int> sieveOfEratosthenes(int n) {
+      // 边界条件：n<2时无质数
+      if (n < 2) return {};
+
+      // 初始化筛子：is_prime[i]表示i是否为质数，初始全为true
+      vector<bool> is_prime(n + 1, true);
+      is_prime[0] = is_prime[1] = false; // 0和1不是质数
+
+      // 核心筛选逻辑：遍历到√n即可
+      for (int i = 2; i <= sqrt(n); ++i) {
+          if (is_prime[i]) { // 如果i是质数，标记其所有倍数为合数
+              // 优化：从i*i开始标记（因为2i、3i...(i-1)i已被更小的质数标记过）
+              for (long long j = (long long)i * i; j <= n; j += i) {
+                  is_prime[j] = false;
+              }
+          }
+      }
+
+      // 收集所有质数
+      vector<int> primes;
+      for (int i = 2; i <= n; ++i) {
+          if (is_prime[i]) {
+              primes.push_back(i);
+          }
+      }
+      return primes;
+  }
+  ```
+
+- 时间复杂度为 $O(n\log \log n)$
+
+### 线性筛（欧拉筛）
+
+- 埃氏筛的时间复杂度是 $O(n\log \log n)$，虽然已经很快，但存在重复标记合数的问题：比如数字 12，会被 2（标记 4、6、8、10、12...）和 3（标记 6、9、12...）各标记一次，冗余操作导致效率不是最优
+
+- 线性筛（欧拉筛）的核心目标是：让每个合数只被它的「最小质因数」标记一次，彻底消除重复操作，从而将时间复杂度降到严格的 $O (n)$
+
+- 线性筛需要两个核心数组：
+  - `is_prime[]`：布尔数组，标记数字是否为质数（和埃氏筛一致）
+  - `primes[]`：数组，按顺序存储筛出的质数（比如 [2,3,5,7,...]）
+
+- 线性筛选的步骤
+  - 初始化 `is_prime[]` 全为 `true`，`is_prime[0] = is_prime[1] = false`，`primes[]` 为空
+  - 遍历从 2 到 n 的每个数 `i`：
+    - 如果 `is_prime[i] == true`，说明 `i` 是质数，将其加入 `primes[]`
+    - 遍历已找到的质数 `primes[j]`：
+      - 计算 `num = i * primes[j]`，将 `is_prime[num]` 标记为 `false`（标记合数）
+      - 关键优化：如果 `i % primes[j] == 0`，立即跳出内层循环
+      - 原因：`primes[j]` 是 `i` 的最小质因数，那么 `i * primes[j+1]` 的最小质因数必然是 `primes[j]`（而非 `primes[j+1]`），如果继续循环会导致重复标记，因此提前终止
+  - 比如 `i=4`（合数，最小质因数是 2），遍历质数 `primes[j]=2`：
+    - 计算 `4*2=8`，标记 8 为合数
+    - 因为 `4%2==0`，直接跳出循环，不再用 `primes[j]=3` 计算 `4*3=12`
+    - 12 会在 `i=6`、`primes[j]=2` 时被标记（6\*2=12），而 2 是 12 的最小质因数，符合“每个合数只被最小质因数标记”的规则
+
+- 代码实现
+
+  ```cpp
+  // 线性筛（欧拉筛）：筛选1~n范围内的所有质数，时间复杂度O(n)
+  vector<int> linearSieve(int n) {
+      // 边界条件：n<2时无质数
+      if (n < 2) return {};
+
+      // is_prime[i]：标记i是否为质数，初始全为true
+      vector<bool> is_prime(n + 1, true);
+      is_prime[0] = is_prime[1] = false;
+
+      // primes：存储筛出的质数
+      vector<int> primes;
+      primes.reserve(n / log(n)); // 预分配空间，提升效率（质数密度约为1/log(n)）
+
+      // 核心筛选逻辑
+      for (int i = 2; i <= n; ++i) {
+          // 如果i是质数，加入primes数组
+          if (is_prime[i]) {
+              primes.push_back(i);
+          }
+
+          // 遍历已找到的质数，标记合数
+          for (int j = 0; j < primes.size() && (long long)i * primes[j] <= n; ++j) {
+              // 标记i*primes[j]为合数
+              is_prime[i * primes[j]] = false;
+
+              // 关键：i能被primes[j]整除时，跳出循环，避免重复标记
+              if (i % primes[j] == 0) {
+                  break;
+              }
+          }
+      }
+
+      return primes;
+  }
+  ```
+
+- 时间复杂度为 $O(n)$​
+
+- 质数定理 ——n 以内的质数数量约为 $\frac{n}{\ln n}$，因此可以预分配数组空间
+
+  ```cpp
+  primes.reserve(static_cast<int>(n / log(n)) + 1);
+  ```
+
+### 分段筛
+
+- 普通筛法（埃氏筛 / 线性筛）的瓶颈是内存：
+  - 若要筛选 1~1e9 的质数，需要创建一个长度为 1e9+1 的布尔数组，仅存储 `bool` 类型（1 字节 / 元素）就需要约 1GB 内存；若 n=1e10，内存需求会达到 10GB，完全无法处理
+  - 分段筛的思路是：将大区间 `[L, R]` 拆分成多个小分段（比如每段 1e6 长度），用普通筛法先筛出 `√R` 以内的质数，再用这些质数标记每个分段内的合数，最终得到 `[L, R]` 内的所有质数
+
+- 假设要筛选区间 `[L, R]` 内的质数（通常 L≥2，R 远大于 L），步骤如下：
+  - 第一步：筛出 `[2, √R]` 范围内的所有质数
+    - 这一步用线性筛/埃氏筛即可，因为 `√R` 远小于 R（比如 R=1e9 时，`√R=3e4`），内存消耗极小
+    - 这些质数称为「基质数」，是后续标记的依据
+  - 第二步：初始化分段标记数组
+    - 对目标区间 `[L, R]`，创建一个布尔数组 `segment_is_prime`，长度为 `R-L+1`，初始值全为 `true`
+    - 数组索引 `i` 对应实际数字 `L+i`
+  - 第三步：用基质数标记分段内的合数
+    - 遍历每个基质数 `p`，找到 `p` 在 `[L, R]` 内的第一个倍数 `start`（满足 `start ≥ L` 且 `start` 是 `p` 的倍数）
+    - 然后从 `start` 开始，以 `p` 为步长标记所有倍数为 `false`（合数）
+    - `start` 的计算公式：`start = max(p*p, ((L + p - 1) / p) * p)`
+      - `p*p`：避免重复标记（小质数的倍数已被更小的基质数标记）；
+      - `((L + p - 1) / p) * p`：向上取整得到 `≥L` 的第一个 `p` 的倍数
+  - 第四步：收集结果
+    - 遍历 `segment_is_prime`，值为 `true` 的索引对应的数字就是 `[L, R]` 内的质数（注意排除 L=1 的情况）
+
+- 代码实现
+
+  ```cpp
+  #include <iostream>
+  #include <vector>
+  #include <cmath>
+  #include <chrono>
+  using namespace std;
+
+  // 第一步：线性筛（欧拉筛）获取 [2, sqrtR] 内的基质数
+  vector<long long> getBasePrimes(long long sqrtR) {
+      if (sqrtR < 2) return {};
+
+      vector<bool> is_prime(sqrtR + 1, true);
+      is_prime[0] = is_prime[1] = false;
+      vector<long long> base_primes;
+
+      for (long long i = 2; i <= sqrtR; ++i) {
+          if (is_prime[i]) {
+              base_primes.push_back(i);
+          }
+          for (long long j = 0; j < base_primes.size() && i * base_primes[j] <= sqrtR; ++j) {
+              is_prime[i * base_primes[j]] = false;
+              if (i % base_primes[j] == 0) break;
+          }
+      }
+      return base_primes;
+  }
+
+  // 第二步：分段筛（区间筛）筛选 [L, R] 内的质数
+  vector<long long> segmentedSieve(long long L, long long R) {
+      // 边界处理
+      if (R < 2) return {};
+      if (L < 2) L = 2; // 小于2的数无质数，直接从2开始
+
+      // 步骤1：获取基质数（[2, sqrt(R)] 内的质数）
+      long long sqrtR = sqrt(R);
+      vector<long long> base_primes = getBasePrimes(sqrtR);
+
+      // 步骤2：初始化分段标记数组（索引i对应数字 L+i）
+      int segment_len = R - L + 1;
+      vector<bool> segment_is_prime(segment_len, true);
+
+      // 步骤3：用基质数标记分段内的合数
+      for (long long p : base_primes) {
+          // 找到 >= L 的第一个 p 的倍数
+          long long start = max(p * p, ((L + p - 1) / p) * p);
+          // 标记所有 p 的倍数为合数
+          for (long long j = start; j <= R; j += p) {
+              segment_is_prime[j - L] = false;
+          }
+      }
+
+      // 步骤4：收集 [L, R] 内的所有质数
+      vector<long long> primes;
+      for (int i = 0; i < segment_len; ++i) {
+          if (segment_is_prime[i]) {
+              primes.push_back(L + i);
+          }
+      }
+      return primes;
+  }
+
+  // 辅助函数：打印质数结果
+  void printPrimes(const vector<long long>& primes, long long L, long long R) {
+      cout << "\n===== 分段筛结果 =====" << endl;
+      cout << "区间 [" << L << ", " << R << "] 内的质数总数：" << primes.size() << endl;
+      cout << "质数列表（前20个，避免输出过长）：";
+
+      int count = 0;
+      for (long long p : primes) {
+          if (count >= 20) break;
+          cout << p << " ";
+          count++;
+      }
+      if (primes.size() > 20) cout << "...";
+      cout << endl;
+  }
+
+  int main() {
+      // 示例：筛选 [1e9, 1e9 + 1000000] 内的质数（超大区间）
+      long long L = 1000000000;
+      long long R = L + 1000000;
+
+      cout << "开始筛选区间 [" << L << ", " << R << "] 内的质数..." << endl;
+
+      // 计时
+      auto start = chrono::high_resolution_clock::now();
+      vector<long long> primes = segmentedSieve(L, R);
+      auto end = chrono::high_resolution_clock::now();
+      chrono::duration<double> duration = end - start;
+
+      // 输出结果
+      printPrimes(primes, L, R);
+      cout << "筛选耗时：" << duration.count() << " 秒" << endl;
+
+      return 0;
+  }
+  ```
+
+## 因子
+
+### 因子分解
+
+- 因子（约数）是指能整除一个数的所有正整数。例如，12 的因子有 1, 2, 3, 4, 6, 12
+
+- 因子枚举就是找出一个数的所有因子；因子分解（质因数分解）是将一个数分解为若干质数的乘积，例如 12 = 2² × 3¹
+
+- 代码实现
+
+  ```cpp
+  #include <iostream>
+  #include <vector>
+  #include <map>
+  #include <cmath>
+  using namespace std;
+
+  // 枚举一个数的所有因子
+  vector<int> enumerate_factors(int n) {
+      vector<int> factors;
+      if (n <= 0) return factors; // 处理非正整数
+
+      // 优化：只需遍历到sqrt(n)，减少时间复杂度
+      for (int i = 1; i <= sqrt(n); ++i) {
+          if (n % i == 0) {
+              factors.push_back(i);          // 找到小因子
+              if (i != n / i) {              // 避免重复添加（如n=4时的2）
+                  factors.push_back(n / i);
+              }
+          }
+      }
+      return factors;
+  }
+
+  // 质因数分解（返回 质因数:指数 的映射）
+  map<int, int> prime_factorization(int n) {
+      map<int, int> prime_factors;
+      if (n <= 1) return prime_factors; // 1没有质因子
+
+      // 先分解2的因子（处理偶数）
+      while (n % 2 == 0) {
+          prime_factors[2]++;
+          n /= 2;
+      }
+
+      // 再分解奇数因子（从3开始，步长2）
+      for (int i = 3; i <= sqrt(n); i += 2) {
+          while (n % i == 0) {
+              prime_factors[i]++;
+              n /= i;
+          }
+      }
+
+      // 如果最后剩余的n是大于2的质数（如n=15，分解后剩5）
+      if (n > 2) {
+          prime_factors[n]++;
+      }
+
+      return prime_factors;
+  }
+  ```
+
+- `enumerate_factors`：核心优化是只遍历到`sqrt(n)`，因为因子总是成对出现（如 12 的 1 和 12、2 和 6、3 和 4），避免遍历到 n，时间复杂度从 O (n) 降到 O (√n)
+- `prime_factorization`：先处理 2 的因子，再处理奇数因子，最后处理剩余的大质数，确保分解结果都是质数
+
+### 因子和
+
+- 因子和是指一个数所有因子的总和。例如，12 的因子和是 1+2+3+4+6+12 = 28
+
+- 若 n 的质因数分解为 $n = p_1^{a_1} × p_2^{a_2} × ... × p_k^{a_k}$，则因子和为：
+
+  $$
+  (1+p_1+p_1^2+...+p_1^{a_1}) × (1+p_2+p_2^2+...+p_2^{a_2}) × ... × (1+p_k+p_k^2+...+p_k^{a_k})
+  $$
+
+- 代码实现
+
+  ```cpp
+  // 计算因子和（基于质因数分解）
+  long long sum_of_factors(int n) {
+      if (n <= 0) return 0;
+      if (n == 1) return 1;
+
+      map<int, int> prime_factors = prime_factorization(n);
+      long long sum = 1; // 初始为1（乘法单位元）
+
+      // 遍历每个质因数及其指数，计算对应项的和并相乘
+      for (auto& p : prime_factors) {
+          int prime = p.first;
+          int exponent = p.second;
+          long long term = 1; // 当前质因数项的和（初始为1）
+          long long power = 1; // 存储prime^0, prime^1...
+
+          for (int i = 1; i <= exponent; ++i) {
+              power *= prime;
+              term += power;
+          }
+          sum *= term;
+      }
+
+      return sum;
+  }
+
+  // 优化版因子和（用等比数列公式）
+  long long sum_of_factors_optimized(int n) {
+      if (n <= 0) return 0;
+      if (n == 1) return 1;
+
+      map<int, int> prime_factors = prime_factorization(n);
+      long long sum = 1;
+
+      for (auto& p : prime_factors) {
+          int prime = p.first;
+          int exponent = p.second;
+          // 等比数列求和：(p^(exponent+1) - 1) / (p - 1)
+          long long numerator = pow(prime, exponent + 1) - 1;
+          long long denominator = prime - 1;
+          sum *= (numerator / denominator);
+      }
+
+      return sum;
+  }
+  ```
+
+### 最大公约数（GCD）与最小公倍数（LCM）
+
+- 最大公约数（GCD）
+  - 概念：两个数的最大公共约数，即能同时整除这两个数的最大正整数。例如gcd(12, 18)=6
+  - 欧几里得算法：`gcd(a, b) = gcd(b, a % b)`，终止条件是当b=0时，a就是GCD
+- 最小公倍数（LCM）
+  - 概念：两个数的最小公共倍数，即能被这两个数同时整除的最小正整数。例如lcm(12, 18)=36
+  - 公式：`lcm(a, b) = a * b / gcd(a, b)`，但为了避免溢出，建议写成`lcm(a, b) = (a / gcd(a, b)) * b`（先除后乘）
+
+- 代码实现
+
+  ```cpp
+  // 欧几里得算法求GCD（递归版）
+  int gcd_recursive(int a, int b) {
+      if (b == 0) return a;
+      return gcd_recursive(b, a % b);
+  }
+
+  // 欧几里得算法求GCD（迭代版，避免递归栈溢出）
+  int gcd_iterative(int a, int b) {
+      while (b != 0) {
+          int temp = b;
+          b = a % b;
+          a = temp;
+      }
+      return a;
+  }
+
+  // 求LCM（基于GCD，避免溢出）
+  long long lcm(int a, int b) {
+      if (a == 0 || b == 0) return 0; // 0没有最小公倍数
+      int g = gcd_iterative(a, b);
+      // 先除后乘，避免a*b溢出（例如a=1e9, b=1e9时，a*b会超出int范围）
+      return (long long)a / g * b;
+  }
+  ```
+
+- 质因数分解
+  - 将一个数分解为若干质数的乘积（如 12 = 2² × 3¹）
+  - 求约数个数、欧拉函数、密码学（RSA）
+
+### 欧拉函数
+
+- 对于正整数 $n$，欧拉函数 $\varphi(n)$ 表示小于等于 $n$ 且与 $n$ 互质的正整数的个数
+
+- 两个数互质：最大公约数 $\gcd(a,n)=1$
+
+- 若 $n$ 的质因数分解为：
+
+  $$
+  n = p_1^{k_1} p_2^{k_2} \cdots p_m^{k_m}
+  $$
+
+- 其中 $p_1,p_2,\dots,p_m$ 是 $n$ 的不同质因子，则：
+
+  $$
+  \varphi(n) = n \prod_{i=1}^m \left(1 - \frac{1}{p_i}\right)
+  $$
+
+- 展开写：
+
+  $$
+  \varphi(n) = n \left(1-\frac1{p_1}\right)\left(1-\frac1{p_2}\right)\cdots\left(1-\frac1{p_m}\right)
+  $$
+
+- 单个质因子的欧拉函数
+  - 若 $p$ 是质数，则
+    $$
+    \varphi(p) = p-1
+    $$
+  - 若 $p$ 是质数，$k\ge1$，则
+    $$
+    \varphi(p^k) = p^k - p^{k-1} = p^{k-1}(p-1)
+    $$
+
+- 积性函数：若 $\gcd(a,b)=1$，则
+
+  $$
+  \varphi(ab) = \varphi(a)\varphi(b)
+  $$
+
+- 欧拉定理：若 $\gcd(a,m)=1$，则
+
+  $$
+  a^{\varphi(m)} \equiv 1 \pmod m
+  $$
+
+- 求和性质：$n$ 的所有正约数的欧拉函数之和等于 $n$
+
+  $$
+  \sum_{d\mid n} \varphi(d) = n
+  $$
+
+- 例1：$\varphi(12)$
+  - 分解：$12=2^2\times3^1$
+  - 公式：
+    $$
+    \varphi(12)=12\left(1-\frac12\right)\left(1-\frac13\right)
+    = 12 \times \frac12 \times \frac23 = 4
+    $$
+  - 与 12 互质的数：1,5,7,11，共 4 个
+
+- 例2：$\varphi(7)$，因为 7 是质数，因此 $\varphi(7)=7-1=6$
+
+- 相关结论
+  - $\varphi(1)=1$
+  - 若 $n>2$，则 $\varphi(n)$ 必为偶数
+  - 若 $n$ 是奇数，则 $\varphi(2n)=\varphi(n)$
+
+- 单次求 $\varphi(n)$
+
+  ```cpp
+  int euler_phi(int n) {
+      int res = n;
+      for (int i = 2; i * i <= n; i++) {
+          if (n % i == 0) {
+              while (n % i == 0)
+                  n /= i;
+              res = res / i * (i - 1);
+          }
+      }
+      if (n > 1)
+          res = res / n * (n - 1);
+      return res;
+  }
+  ```
+
+- 筛法求 $1\sim n$ 的欧拉函数
+
+  ```cpp
+  void get_phi(int n, int phi[]) {
+      for (int i = 1; i <= n; i++)
+          phi[i] = i;
+      for (int i = 2; i <= n; i++) {
+          if (phi[i] == i) { // i 是质数
+              for (int j = i; j <= n; j += i)
+                  phi[j] = phi[j] / i * (i - 1);
+          }
+      }
+  }
+  ```
+
+## 模运算
+
+- 整数与余数
+  - 整除：若 `a % b == 0`，则称 b 整除 a（b | a）
+  - 余数：`a = b * q + r`（0 ≤ r < b），r 是 a 除以 b 的余数
+
+- 取模运算
+  - 编程中 `%` 是取模运算，需要注意负数取模的特性
+  - C++ 中：取模结果的符号与被除数一致（`-5 % 3 = -2`）
+  - Python 中：取模结果非负（`-5 % 3 = 1`）
+  - 如果需要在 C++ 中实现非负取模，可以用：`(a % b + b) % b`
+
+- 模运算的分配律是数论计算的基础，能避免大数溢出：
+  - `(a + b) % m = [(a % m) + (b % m)] % m`
+  - `(a - b) % m = [(a % m) - (b % m) + m] % m`（加 m 避免负数）
+  - `(a × b) % m = [(a % m) × (b % m)] % m`
+
+- 模逆元
+  - 定义：若 `a × x ≡ 1 (mod m)`，则称 `x` 是 `a` 在模 `m` 下的逆元（记作 `a⁻¹ mod m`），即 a 乘以 x，再除以 m，余数正好是 1
+  - 符号 `≡` 叫同余号，意思是两边的数除以 m 后，余数相同
+  - 例如，3 是 5 在模 7 下的逆元
+  - 存在条件：`a` 和 `m` 互质（即 `gcd(a, m) = 1`）
+  - 作用：模运算中没有除法，除以 `a` 等价于乘以 `a` 的逆元（`(b / a) % m = (b × a⁻¹) % m`）
+
+- 求逆元的方法
+  - 费马小定理（仅当 m 是质数时可用）：若 `m` 是质数且 `a` 不是 `m` 的倍数，则 `a^(m-1) ≡ 1 (mod m)`，变形得逆元 `x = a^(m-2) % m`
+  - 扩展欧几里得算法（通用方法）：要求 `a` 和 `m` 互质（`gcd(a, m)=1`），则方程 `a×x + m×y = 1` 的解 `x` 就是 `a` 在模 `m` 下的逆元
+
+- 扩展欧几里得算法
+  - 核心目标：求解不定方程 `a×x + b×y = gcd(a, b)` 的整数解 `(x, y)`
+  - 原理：基于欧几里得算法（辗转相除法求最大公约数）的递归扩展：
+    - 欧几里得算法：`gcd(a, b) = gcd(b, a % b)`
+    - 扩展：当 `b=0` 时，`a×1 + 0×0 = a = gcd(a, 0)`，解为 `x=1, y=0`；
+    - 递归回代：假设已求得 `b×x' + (a%b)×y' = gcd(b, a%b)`，则可推导出 `a×y' + b×(x' - (a//b)×y') = gcd(a, b)`，即 `x = y', y = x' - (a//b)×y'`
+
+- 中国剩余定理（CRT）
+  - 问题场景：求解一组同余方程的最小正整数解：
+
+    ```
+    x ≡ a₁ (mod m₁)
+    x ≡ a₂ (mod m₂)
+    ...
+    x ≡ aₙ (mod mₙ)
+    ```
+
+  - 前提条件：所有 `mᵢ` 两两互质
+
+  - 核心思想：逐步合并两个同余方程，最终得到唯一解
+
+  - 例如合并 `x ≡ a₁ (mod m₁)` 和 `x ≡ a₂ (mod m₂)`
+    - 设 `x = a₁ + k×m₁`，代入第二个方程得：`k×m₁ ≡ (a₂ - a₁) (mod m₂)`
+    - 求解 `k` 的最小正整数解，再回代得到合并后的同余方程 `x ≡ x₀ (mod m₁×m₂)`
+
+- 代码实现
+
+  ```cpp
+  #include <iostream>
+  #include <vector>
+  #include <algorithm> // 用于abs
+  using namespace std;
+
+  // 1. 欧几里得算法：求最大公约数 gcd(a, b)
+  long long gcd(long long a, long long b) {
+      while (b != 0) {
+          long long temp = b;
+          b = a % b;
+          a = temp;
+      }
+      return a;
+  }
+
+  // 2. 扩展欧几里得算法：求解 ax + by = gcd(a, b)，返回gcd(a,b)，并通过引用返回x,y
+  long long exgcd(long long a, long long b, long long &x, long long &y) {
+      if (b == 0) {
+          x = 1; // 边界条件：a*1 + 0*0 = a = gcd(a,0)
+          y = 0;
+          return a;
+      }
+      // 递归求解 gcd(b, a%b) = b*x' + (a%b)*y'
+      long long d = exgcd(b, a % b, y, x);
+      // 回代：a*y' + b*(x' - (a//b)*y') = gcd(a,b)
+      y -= (a / b) * x;
+      return d;
+  }
+
+  // 3. 非负取模：确保返回值 ∈ [0, b-1]（解决C++负数取模符号问题）
+  long long mod(long long a, long long b) {
+      return (a % b + b) % b;
+  }
+
+  // 4. 方法1：用扩展欧几里得求模逆元（通用）
+  // 返回a在模m下的逆元，若不存在返回-1
+  long long mod_inverse_exgcd(long long a, long long m) {
+      long long x, y;
+      long long d = exgcd(a, m, x, y);
+      if (d != 1) { // a和m不互质，逆元不存在
+          return -1;
+      }
+      // 确保逆元是非负数
+      return mod(x, m);
+  }
+
+  // 快速幂：计算 (base^exp) % mod，用于费马小定理求逆元
+  long long fast_pow(long long base, long long exp, long long mod) {
+      long long result = 1;
+      base = mod(base, mod); // 先取模避免溢出
+      while (exp > 0) {
+          if (exp % 2 == 1) { // 指数为奇数，乘上当前base
+              result = mod(result * base, mod);
+          }
+          base = mod(base * base, mod); // 底数平方
+          exp /= 2; // 指数减半
+      }
+      return result;
+  }
+
+  // 5. 方法2：费马小定理求模逆元（仅m为质数时可用）
+  long long mod_inverse_fermat(long long a, long long m) {
+      // 检查m是否为质数（简化版，实际需更严格的质数判断）
+      // 核心公式：a^(m-2) mod m 是a的逆元
+      return fast_pow(a, m - 2, m);
+  }
+
+  // 6. 中国剩余定理（CRT）：求解x ≡ a[i] (mod m[i])，m[i]两两互质
+  // 返回最小正整数解，若无解返回-1
+  long long crt(const vector<long long> &a, const vector<long long> &m) {
+      int n = a.size();
+      long long x = 0;    // 最终解
+      long long M = 1;    // 所有模数的乘积：M = m1*m2*...*mn
+
+      // 第一步：计算所有模数的乘积M
+      for (int i = 0; i < n; ++i) {
+          M *= m[i];
+      }
+
+      // 第二步：逐步合并求解
+      for (int i = 0; i < n; ++i) {
+          long long Mi = M / m[i];       // Mi = M / mi
+          long long inv_Mi = mod_inverse_exgcd(Mi, m[i]); // Mi在模mi下的逆元
+          if (inv_Mi == -1) { // 逆元不存在，无解
+              return -1;
+          }
+          // 累加：x += ai * Mi * inv(Mi) mod mi
+          x = mod(x + a[i] * Mi % M * inv_Mi % M, M);
+      }
+
+      return x;
+  }
+
+  // 测试主函数
+  int main() {
+      // 测试1：欧几里得算法
+      cout << "gcd(12, 18) = " << gcd(12, 18) << endl; // 输出6
+
+      // 测试2：扩展欧几里得算法
+      long long x, y;
+      long long d = exgcd(12, 18, x, y);
+      cout << "12*x + 18*y = " << d << ", x=" << x << ", y=" << y << endl; // 12*(-1) + 18*1 = 6
+
+      // 测试3：模逆元（扩展欧几里得）
+      long long inv1 = mod_inverse_exgcd(5, 7); // 5和7互质，逆元是3（5*3=15≡1 mod7）
+      cout << "5的逆元(mod7) = " << inv1 << endl; // 输出3
+
+      // 测试4：模逆元（费马小定理，m=7是质数）
+      long long inv2 = mod_inverse_fermat(5, 7);
+      cout << "5的逆元(mod7，费马) = " << inv2 << endl; // 输出3
+
+      // 测试5：中国剩余定理
+      // 求解：x≡2(mod3), x≡3(mod5), x≡2(mod7) → 解为23
+      vector<long long> a = {2, 3, 2};
+      vector<long long> m = {3, 5, 7};
+      long long crt_result = crt(a, m);
+      cout << "CRT解：" << crt_result << endl; // 输出23
+
+      return 0;
+  }
+  ```
+
+## 快速幂
+
+### 二分快速幂
+
+- 快速幂（也叫二分快速幂）的核心是分治思想，目的是将计算 $a^b$ 的时间复杂度从朴素算法的 $O(n)$ 降低到 $O(log_2n)$
+
+- 朴素计算 $a^b$ 是把 $a$ 乘 $b$ 次（比如 $2^5 = 2×2×2×2×2$），而快速幂通过二分拆解指数来减少乘法次数：
+  - 若 $b$ 是偶数：$a^b = (a^2)^{b/2}$
+
+  - 若 $b$ 是奇数：$a^b = a × (a^2)^{(b-1)/2}$
+
+  - 边界条件：$a^0 = 1$​
+
+- 可以用一个简单例子理解：计算 $3^7$
+  - $3^7 = 3 × (3^2)^3 = 3 × 9^3$
+  - $9^3 = 9 × (9^2)^1 = 9 × 81^1$
+  - $81^1 = 81 × (81^2)^0 = 81 × 1$
+  - 最终：$3 × 9 × 81 = 2187$（仅需 3 次乘法，而朴素算法需要 6 次）
+
+- 代码实现
+
+  ```cpp
+  #include <iostream>
+  using namespace std;
+
+  /**
+   * 快速幂计算 a^b，可选对结果取模（避免数值溢出）
+   * @param a 底数（支持整数类型）
+   * @param b 指数（非负整数）
+   * @param mod 模数（可选，默认无）
+   * @return a^b 或 (a^b) % mod
+   */
+  long long fast_power(long long a, long long b, long long mod = -1) {
+      // 初始化结果为1（乘法单位元）
+      long long result = 1;
+      // 处理特殊情况：0^0无意义，返回0
+      if (a == 0 && b == 0) {
+          return 0;
+      }
+      // 循环拆解指数
+      while (b > 0) {
+          // 若指数为奇数，将当前底数乘到结果中
+          if (b % 2 == 1) {
+              result *= a;
+              // 若指定模数，及时取模防止溢出（long long也会溢出，取模是必要的）
+              if (mod != -1) {
+                  result %= mod;
+              }
+          }
+          // 底数平方，指数折半
+          a *= a;
+          if (mod != -1) {
+              a %= mod;
+          }
+          b /= 2;
+      }
+      return result;
+  }
+
+  // 测试快速幂
+  int test_fast_power() {
+      cout << "===== 快速幂测试 =====" << endl;
+      // 3^7 = 2187
+      cout << "3^7 = " << fast_power(3, 7) << endl;
+      // 2^10 % 1000 = 1024 % 1000 = 24
+      cout << "2^10 % 1000 = " << fast_power(2, 10, 1000) << endl;
+      // 10^18 % 123456 = 大数取模（验证防溢出）
+      cout << "10^18 % 123456 = " << fast_power(10, 18, 123456) << endl;
+      return 0;
+  }
+  ```
+
+### 矩阵快速幂
+
+- 矩阵快速幂是快速幂思想在矩阵运算上的扩展，核心是：
+  - 定义矩阵乘法规则；
+  - 把“矩阵的幂运算”拆解为二分计算（和快速幂完全一致）；
+  - 主要用于快速求解线性递推问题（如斐波那契数列、递推数列第 n 项）
+
+- 两个矩阵 $A$（m×p）和 $B$（p×n）相乘，结果 $C$ 是 m×n 矩阵，其中：
+
+  $$
+  C[i][j] = \sum_{k=0}^{p-1} A[i][k] × B[k][j]
+  $$
+
+- 示例：2×2 矩阵相乘
+
+  $$
+  \begin{bmatrix}a&b\\c&d\end{bmatrix} × \begin{bmatrix}e&f\\g&h\end{bmatrix} = \begin{bmatrix}ae+bg&af+bh\\ce+dg&cf+dh\end{bmatrix}
+  $$
+
+- 以求解斐波那契数列第 n 项为例（斐波那契递推式：$f(n) = f(n-1) + f(n-2)$，$f(0)=0, f(1)=1$），先将递推式转化为矩阵形式：
+
+  $$
+  \begin{bmatrix}f(n)\\f(n-1)\end{bmatrix} = \begin{bmatrix}1&1\\1&0\end{bmatrix} × \begin{bmatrix}f(n-1)\\f(n-2)\end{bmatrix}
+  $$
+
+- 推导出：
+
+  $$
+  \begin{bmatrix}f(n)\\f(n-1)\end{bmatrix} = \begin{bmatrix}1&1\\1&0\end{bmatrix}^{n-1} × \begin{bmatrix}f(1)\\f(0)\end{bmatrix}
+  $$
+
+- 代码实现
+
+  ```cpp
+  #include <vector>
+  using namespace std;
+
+  // 定义矩阵类型：vector<vector<long long>>
+  using Matrix = vector<vector<long long>>;
+
+  /**
+   * 矩阵乘法：a (m×p) × b (p×n) = c (m×n)
+   * @param a 矩阵a
+   * @param b 矩阵b
+   * @param mod 模数（可选，默认无）
+   * @return 乘积矩阵c
+   */
+  Matrix matrix_mult(const Matrix& a, const Matrix& b, long long mod = -1) {
+      // 获取矩阵维度
+      int m = a.size();       // a的行数
+      int p = b.size();       // b的行数 = a的列数
+      int n = b[0].size();    // b的列数
+      // 初始化结果矩阵为全0
+      Matrix result(m, vector<long long>(n, 0));
+
+      // 矩阵乘法核心逻辑：三重循环
+      for (int i = 0; i < m; ++i) {
+          for (int k = 0; k < p; ++k) {
+              // 优化：a[i][k]为0时跳过，减少计算
+              if (a[i][k] == 0) continue;
+              for (int j = 0; j < n; ++j) {
+                  result[i][j] += a[i][k] * b[k][j];
+                  // 取模防止溢出
+                  if (mod != -1) {
+                      result[i][j] %= mod;
+                  }
+              }
+          }
+      }
+      return result;
+  }
+
+  /**
+   * 矩阵快速幂：计算 mat^power
+   * @param mat 待求幂的矩阵（方阵）
+   * @param power 指数（非负整数）
+   * @param mod 模数（可选，默认无）
+   * @return mat^power
+   */
+  Matrix matrix_power(Matrix mat, long long power, long long mod = -1) {
+      // 获取矩阵维度（方阵）
+      int n = mat.size();
+      // 初始化单位矩阵（矩阵乘法的单位元）
+      Matrix result(n, vector<long long>(n, 0));
+      for (int i = 0; i < n; ++i) {
+          result[i][i] = 1;
+      }
+
+      // 套用快速幂逻辑
+      while (power > 0) {
+          if (power % 2 == 1) {
+              result = matrix_mult(result, mat, mod);
+          }
+          mat = matrix_mult(mat, mat, mod);
+          power /= 2;
+      }
+      return result;
+  }
+
+  /**
+   * 用矩阵快速幂求斐波那契数列第n项
+   * 递推式：f(n) = f(n-1) + f(n-2)，f(0)=0, f(1)=1
+   * @param n 项数（n≥0）
+   * @param mod 模数（可选，默认无）
+   * @return 斐波那契第n项
+   */
+  long long fibonacci(long long n, long long mod = -1) {
+      if (n == 0) return 0;
+      if (n == 1) return 1;
+      // 核心递推矩阵：[[1,1],[1,0]]
+      Matrix base_mat = {{1, 1}, {1, 0}};
+      // 计算矩阵的n-1次幂
+      Matrix mat_pow = matrix_power(base_mat, n - 1, mod);
+      // 结果 = 矩阵幂 × [f(1), f(0)]^T → 取第一个元素
+      return mat_pow[0][0];
+  }
+
+  // 测试矩阵快速幂（斐波那契）
+  int test_matrix_power() {
+      cout << "\n===== 矩阵快速幂（斐波那契）测试 =====" << endl;
+      // 斐波那契第10项：0,1,1,2,3,5,8,13,21,34,55 → 输出55
+      cout << "斐波那契第10项 = " << fibonacci(10) << endl;
+      // 斐波那契第1000项 % 1e9+7（大数取模）
+      const long long MOD = 1e9 + 7;
+      cout << "斐波那契第1000项 % " << MOD << " = " << fibonacci(1000, MOD) << endl;
+      return 0;
+  }
+  ```
+
+## 进制
+
+- 进制（也叫进位制）是计数的方式，指满几进一。日常生活中我们用的是十进制（满 10 进 1），编程中常用的还有二进制（满 2 进 1）、八进制（满 8 进 1）、十六进制（满 16 进 1）
+  - 基数：进制的 “满几进一” 中的 “几” 就是基数。比如十进制基数是 10，二进制基数是 2
+  - 位权：每个数位的权重，比如十进制数 `123` = `1×10² + 2×10¹ + 3×10⁰`，其中 `10²`、`10¹`、`10⁰` 就是位权（位权 = 基数 ^ 数位索引，索引从右往左从 0 开始）
+  - 进制符号：十六进制中，10-15 分别用 A-F（或 a-f）表示，其余进制只用 0-(基数 - 1) 的数字
+
+- 常见进制
+
+  | 进制     | 基数 | 符号范围     | 编程中的标识（C++） | 示例    |
+  | :------- | :--- | :----------- | :------------------ | :------ |
+  | 二进制   | 2    | 0,1          | 前缀 `0b`（C++11+） | 0b101=5 |
+  | 八进制   | 8    | 0-7          | 前缀 `0`            | 012=10  |
+  | 十进制   | 10   | 0-9          | 无                  | 123=123 |
+  | 十六进制 | 16   | 0-9, A-F/a-f | 前缀 `0x`           | 0xA=10  |
+
+- 进制转换的本质是数值的不同表示形式，核心思路分两类：
+  - 十进制转其他进制：除基取余法（将十进制数反复除以目标进制的基数，直到商为 0，余数倒序排列）
+  - 其他进制转十进制：按权展开法（每一位数字 × 基数 ^ 位权，累加所有结果）
+  - 非十进制互转：先转十进制，再转目标进制（通用方法，简单易实现）
+
+- 基础工具函数（字符 / 数字互转）
+
+  ```cpp
+  #include <iostream>
+  #include <string>
+  #include <algorithm> // 用于反转字符串
+  #include <cctype>    // 用于字符判断
+
+  // 数字转字符（处理0-15 → '0'-'9','A'-'F'）
+  char numToChar(int num) {
+      if (num >= 0 && num <= 9) {
+          return '0' + num;
+      } else if (num >= 10 && num <= 15) {
+          return 'A' + (num - 10);
+      }
+      return '\0'; // 非法输入返回空字符
+  }
+
+  // 字符转数字（处理'0'-'9','A'-'F','a'-'f' → 0-15）
+  int charToNum(char c) {
+      if (isdigit(c)) { // 判断是否是数字字符
+          return c - '0';
+      } else if (isupper(c)) { // 大写字母
+          return 10 + (c - 'A');
+      } else if (islower(c)) { // 小写字母
+          return 10 + (c - 'a');
+      }
+      return -1; // 非法字符返回-1
+  }
+  ```
+
+- 十进制转任意进制（2-16），使用除基取余法，步骤：
+  - 处理特殊情况（十进制数为 0 时，直接返回 "0"）；
+  - 反复除以目标进制基数，记录余数；
+  - 余数倒序排列，得到结果
+
+- 代码实现
+
+  ```cpp
+  // 十进制转任意进制（base范围：2-16）
+  std::string decimalToAny(int decimal, int base) {
+      // 合法性校验
+      if (base < 2 || base > 16) {
+          return "Error: Base must be between 2 and 16";
+      }
+      if (decimal == 0) { // 特殊情况：十进制0
+          return "0";
+      }
+
+      std::string result;
+      bool isNegative = false;
+
+      // 处理负数（先转正数处理，最后加负号）
+      if (decimal < 0) {
+          isNegative = true;
+          decimal = -decimal;
+      }
+
+      // 除基取余
+      while (decimal > 0) {
+          int remainder = decimal % base; // 取余数
+          result += numToChar(remainder); // 余数转字符存入结果
+          decimal = decimal / base;       // 更新商
+      }
+
+      // 负数加负号
+      if (isNegative) {
+          result += '-';
+      }
+
+      // 反转字符串（余数是逆序存储的）
+      std::reverse(result.begin(), result.end());
+      return result;
+  }
+  ```
+
+- 任意进制转十进制（2-16），使用按权展开法，步骤：
+  - 遍历输入字符串的每一位；
+  - 每一位字符转数字，乘以基数的对应位权；
+  - 累加所有结果，得到十进制数
+
+- 代码实现
+
+  ```cpp
+  // 任意进制转十进制（base范围：2-16）
+  long long anyToDecimal(const std::string& numStr, int base) {
+      // 合法性校验
+      if (base < 2 || base > 16) {
+          return -1; // 非法基数返回-1
+      }
+
+      long long result = 0;
+      bool isNegative = false;
+      int startIndex = 0;
+
+      // 处理负数
+      if (numStr[0] == '-') {
+          isNegative = true;
+          startIndex = 1;
+      }
+
+      // 按权展开
+      for (int i = startIndex; i < numStr.size(); ++i) {
+          int num = charToNum(numStr[i]);
+          // 校验字符合法性（数字需小于基数）
+          if (num == -1 || num >= base) {
+              return -1; // 非法字符返回-1
+          }
+          result = result * base + num; // 核心：result = result*基数 + 当前位数字
+      }
+
+      // 处理负数
+      if (isNegative) {
+          result = -result;
+      }
+      return result;
+  }
+  ```
+
+- 任意进制互转：先转十进制，再转目标进制
+
+  ```cpp
+  // 任意进制转任意进制（fromBase和toBase范围：2-16）
+  std::string anyToAny(const std::string& numStr, int fromBase, int toBase) {
+      // 第一步：转十进制
+      long long decimal = anyToDecimal(numStr, fromBase);
+      if (decimal == -1) {
+          return "Error: Invalid number or base";
+      }
+      // 第二步：十进制转目标进制
+      return decimalToAny(static_cast<int>(decimal), toBase);
+  }
+  ```
+
+- 非十进制互相转换
+  - 非十进制直接转换的关键是利用进制间的整数次幂关系（如 8=2³、16=2⁴），通过「分组法」实现快速转换，避免十进制中转的计算开销
+
+  - 二进制 ↔ 八进制 / 十六进制
+
+    | 转换方向          | 核心规则                                                         |
+    | :---------------- | :--------------------------------------------------------------- |
+    | 二进制 → 八进制   | 将二进制数从右往左每 3 位分组（不足补 0），每组转 1 位八进制数   |
+    | 二进制 → 十六进制 | 将二进制数从右往左每 4 位分组（不足补 0），每组转 1 位十六进制数 |
+    | 八进制 → 二进制   | 每 1 位八进制数转 3 位二进制数，拼接后去掉前导 0（保留单个 0）   |
+    | 十六进制 → 二进制 | 每 1 位十六进制数转 4 位二进制数，拼接后去掉前导 0（保留单个 0） |
+
+- 通用任意进制直接转换（无整数次幂关系）
+  - 如果两个进制无整数次幂关系（如二进制↔七进制），需用「基数连乘 / 连除」法：
+  - 源进制转目标进制：将源进制数按位展开为源基数的幂次和，再用目标基数反复除，取余（本质和十进制中转逻辑一致，但跳过了十进制显式存储）。
+  - 这种方法逻辑复杂，实际开发中除非追求极致性能，否则优先用十进制中转
+
+- 二进制 ↔ 八进制 直接转换
+
+  ```cpp
+  // ---------------------- 二进制 → 八进制 直接转换 ----------------------
+  std::string binaryToOctal(const std::string& binaryStr) {
+      // 校验二进制字符串合法性
+      for (char c : binaryStr) {
+          if (c != '0' && c != '1') {
+              return "Error: Invalid binary number";
+          }
+      }
+      if (binaryStr.empty() || binaryStr == "0") {
+          return "0";
+      }
+
+      std::string temp = binaryStr;
+      std::string octal;
+
+      // 从右往左每3位分组，不足补0
+      int pad = 3 - (temp.size() % 3);
+      if (pad != 3) {
+          temp = std::string(pad, '0') + temp; // 头部补0
+      }
+
+      // 每3位二进制转1位八进制
+      for (int i = 0; i < temp.size(); i += 3) {
+          // 截取3位二进制子串
+          std::string group = temp.substr(i, 3);
+          // 按权展开计算十进制值（0-7）
+          int val = (charToNum(group[0]) * 4) + (charToNum(group[1]) * 2) + charToNum(group[2]);
+          octal += numToChar(val);
+      }
+
+      // 去掉前导0（如果有）
+      size_t start = octal.find_first_not_of('0');
+      if (start == std::string::npos) return "0";
+      return octal.substr(start);
+  }
+
+  // ---------------------- 八进制 → 二进制 直接转换 ----------------------
+  std::string octalToBinary(const std::string& octalStr) {
+      // 校验八进制字符串合法性
+      for (char c : octalStr) {
+          int num = charToNum(c);
+          if (num < 0 || num >= 8) {
+              return "Error: Invalid octal number";
+          }
+      }
+      if (octalStr.empty() || octalStr == "0") {
+          return "0";
+      }
+
+      std::string binary;
+      // 每1位八进制转3位二进制
+      for (char c : octalStr) {
+          int num = charToNum(c);
+          // 依次计算4、2、1位的二进制值
+          binary += numToChar((num / 4) % 2);
+          binary += numToChar((num / 2) % 2);
+          binary += numToChar(num % 2);
+      }
+
+      // 去掉前导0（如果有）
+      size_t start = binary.find_first_not_of('0');
+      if (start == std::string::npos) return "0";
+      return binary.substr(start);
+  }
+  ```
+
+- 二进制 ↔ 十六进制 直接转换
+
+  ```cpp
+  // ---------------------- 二进制 → 十六进制 直接转换 ----------------------
+  std::string binaryToHex(const std::string& binaryStr) {
+      // 校验二进制字符串合法性
+      for (char c : binaryStr) {
+          if (c != '0' && c != '1') {
+              return "Error: Invalid binary number";
+          }
+      }
+      if (binaryStr.empty() || binaryStr == "0") {
+          return "0";
+      }
+
+      std::string temp = binaryStr;
+      std::string hex;
+
+      // 从右往左每4位分组，不足补0
+      int pad = 4 - (temp.size() % 4);
+      if (pad != 4) {
+          temp = std::string(pad, '0') + temp; // 头部补0
+      }
+
+      // 每4位二进制转1位十六进制
+      for (int i = 0; i < temp.size(); i += 4) {
+          std::string group = temp.substr(i, 4);
+          // 按权展开：8+4+2+1
+          int val = (charToNum(group[0]) * 8) + (charToNum(group[1]) * 4) +
+                    (charToNum(group[2]) * 2) + charToNum(group[3]);
+          hex += numToChar(val);
+      }
+
+      // 去掉前导0
+      size_t start = hex.find_first_not_of('0');
+      if (start == std::string::npos) return "0";
+      return hex.substr(start);
+  }
+
+  // ---------------------- 十六进制 → 二进制 直接转换 ----------------------
+  std::string hexToBinary(const std::string& hexStr) {
+      // 校验十六进制字符串合法性
+      for (char c : hexStr) {
+          int num = charToNum(c);
+          if (num < 0 || num >= 16) {
+              return "Error: Invalid hex number";
+          }
+      }
+      if (hexStr.empty() || hexStr == "0") {
+          return "0";
+      }
+
+      std::string binary;
+      // 每1位十六进制转4位二进制
+      for (char c : hexStr) {
+          int num = charToNum(c);
+          // 依次计算8、4、2、1位的二进制值
+          binary += numToChar((num / 8) % 2);
+          binary += numToChar((num / 4) % 2);
+          binary += numToChar((num / 2) % 2);
+          binary += numToChar(num % 2);
+      }
+
+      // 去掉前导0
+      size_t start = binary.find_first_not_of('0');
+      if (start == std::string::npos) return "0";
+      return binary.substr(start);
+  }
+  ```
+
+- 对于无整数次幂关系的进制（如二进制↔七进制），直接转换的核心逻辑是：
+  - 将源进制数 `num_str` 解析为「源基数的幂次和」（如二进制 `101` = 1×2² + 0×2¹ + 1×2⁰）；
+  - 用目标基数反复除这个幂次和，取余（除基取余法）；
+  - 余数倒序排列得到目标进制数
+  - 和十进制中转的区别仅在于，步骤 1 的结果不存储为十进制数，而是直接参与步骤 2 的计算（避免大数溢出时的十进制存储问题）。但这种方法代码复杂度高，新手无需深入，实际开发中优先用十进制中转
+
+## 位运算
+
+- 位运算是直接对二进制位（bit）进行操作的运算方式，在 C++ 中主要用于底层编程、性能优化、状态标记等场景
+- 所有位运算的操作数都会被转换为二进制补码形式进行计算
+
+### 位与
+
+- 位与 & 运算（AND）：两个二进制位都为 1 时，结果为 1；否则为 0
+
+  | 位 A | 位 B | A & B |
+  | :--- | :--- | :---- |
+  | 0    | 0    | 0     |
+  | 0    | 1    | 0     |
+  | 1    | 0    | 0     |
+  | 1    | 1    | 1     |
+
+- 关键性质
+  - 归零性：任何数与 0 进行位与，结果都是 0（`a & 0 = 0`）；例：`10 & 0 = 0`（`1010 & 0000 = 0000`）
+
+  - 自保持性：任何数与自身进行位与，结果还是自身（`a & a = a`）；例：`7 & 7 = 7`（`0111 & 0111 = 0111`）
+  - 按位筛选：与特定掩码（mask）位与，可精准保留 / 清除指定位（这是最常用的特性）；例：想保留低 4 位 → 与 `0x0F`（二进制 `00001111`）位与；想清除低 4 位 → 与 `0xF0`（二进制 `11110000`）位与
+  - 交换律 & 结合律：`a & b = b & a`；`(a & b) & c = a & (b & c)`
+
+- 判断整数的奇偶性
+  - 二进制数的最低位（第 0 位）为 1 时是奇数，为 0 时是偶数。用 `num & 1` 可快速判断最低位：
+    - 若 `num & 1 = 1` → 奇数
+    - 若 `num & 1 = 0` → 偶数
+  - 位运算比取模运算（`num % 2`）效率更高，尤其在高频判断场景（如算法、底层编程）中更常用
+
+  ```cpp
+  #include <iostream>
+  using namespace std;
+
+  int main() {
+      int num1 = 15, num2 = 24;
+
+      // 判断奇数
+      if (num1 & 1) {
+          cout << num1 << " 是奇数" << endl;
+      } else {
+          cout << num1 << " 是偶数" << endl;
+      }
+
+      // 判断偶数
+      if (num2 & 1) {
+          cout << num2 << " 是奇数" << endl;
+      } else {
+          cout << num2 << " 是偶数" << endl;
+      }
+      return 0;
+  }
+  ```
+
+- 保留 / 清除指定位（掩码操作）
+  - 构造一个 “掩码（mask）”，掩码中想保留的位设为 1，想清除的位设为 0，与原数进行位与即可
+  - 保留数字 `0x1234`（十六进制，二进制 `0001 0010 0011 0100`）的低 4 位，清除其他位
+
+  ```cpp
+  #include <iostream>
+  using namespace std;
+
+  // 辅助函数：打印十进制数的低16位二进制（方便查看）
+  void printBinary16(int num) {
+      cout << "二进制（低16位）：";
+      for (int i = 15; i >= 0; --i) {
+          cout << ((num >> i) & 1);
+          if (i % 4 == 0) cout << " "; // 每4位分隔
+      }
+      cout << endl;
+  }
+
+  int main() {
+      int num = 0x1234; // 十进制4660，二进制 0001 0010 0011 0100
+      int mask = 0x000F; // 掩码：低4位为1，其余为0（0000 0000 0000 1111）
+
+      cout << "原数：" << num << endl;
+      printBinary16(num);
+
+      int result = num & mask; // 保留低4位
+      cout << "保留低4位后：" << result << endl;
+      printBinary16(result); // 结果：0000 0000 0000 0100（十进制4）
+
+      return 0;
+  }
+  ```
+
+- 判断某个二进制位是否为 1
+  - 构造仅目标位为 1 的掩码（`1 << n`，n 为位的索引，从 0 开始），与原数进行位与：
+    - 若结果！= 0 → 目标位为 1；
+    - 若结果 == 0 → 目标位为 0
+  - 例如，判断数字 `9`（二进制 `1001`）的第 3 位是否为 1
+
+  ```cpp
+  #include <iostream>
+  using namespace std;
+
+  // 判断第n位是否为1
+  bool isBitSet(int num, int n) {
+      return (num & (1 << n)) != 0;
+  }
+
+  int main() {
+      int num = 9; // 二进制 1001
+      int bitIndex = 3; // 第3位（从0开始数：0:1, 1:0, 2:0, 3:1）
+
+      if (isBitSet(num, bitIndex)) {
+          cout << "数字 " << num << " 的第" << bitIndex << "位是1" << endl;
+      } else {
+          cout << "数字 " << num << " 的第" << bitIndex << "位是0" << endl;
+      }
+
+      // 测试第1位
+      bitIndex = 1;
+      if (isBitSet(num, bitIndex)) {
+          cout << "数字 " << num << " 的第" << bitIndex << "位是1" << endl;
+      } else {
+          cout << "数字 " << num << " 的第" << bitIndex << "位是0" << endl;
+      }
+      return 0;
+  }
+  ```
+
+- 清零整数的某一位
+  - 构造目标位为 0、其余位为 1 的掩码（`~(1 << n)`），与原数进行位与，即可将目标位清零，其余位保持不变
+  - 例如，将数字 `9`（二进制 `1001`）的第 3 位清零
+
+  ```cpp
+  #include <iostream>
+  using namespace std;
+
+  void printBinary8(int num) {
+      cout << "二进制（低8位）：";
+      for (int i = 7; i >= 0; --i) {
+          cout << ((num >> i) & 1);
+      }
+      cout << endl;
+  }
+
+  int main() {
+      int num = 9; // 二进制 00001001
+      int bitIndex = 3;
+
+      cout << "原数：" << num << endl;
+      printBinary8(num);
+
+      // 构造掩码：~(1 << 3) = ~8 = 0xFFFFFFF7（低8位：11110111）
+      int mask = ~(1 << bitIndex);
+      int result = num & mask; // 00001001 & 11110111 = 00000001（十进制1）
+
+      cout << "第" << bitIndex << "位清零后：" << result << endl;
+      printBinary8(result);
+
+      return 0;
+  }
+  ```
+
+- 位与运算的进阶应用
+  - 权限控制：用二进制位表示不同权限（如 0001 = 读、0010 = 写、0100 = 执行），位与运算可判断用户是否拥有某权限；
+  - 位图（BitMap）：海量数据去重、排序时，用位与判断某数是否存在；
+  - 硬件编程：操作寄存器的特定位（如开启 / 关闭某硬件功能）
+
+### 位或
+
+- 位或 | 运算（OR）：两个二进制位只要有一个为 1，结果为 1；否则为 0
+  | 位 A | 位 B | A \| B |
+  | :--- | :--- | :--- |
+  | 0 | 0 | 0 |
+  | 0 | 1 | 1 |
+  | 1 | 0 | 1 |
+  | 1 | 1 | 1 |
+
+- 关键性质
+  - 置 1 性：任何数与 1 进行位或，对应位会被置为 1；与 0 位或，对应位保持不变（这是最核心的特性）；例：`0101 | 1000 = 1101`（第 3 位被置 1，其余位不变）
+  - 自保持性：任何数与自身进行位或，结果还是自身（`a | a = a`）；例：`7 | 7 = 7`（`0111 | 0111 = 0111`）
+  - 全 1 性：任何数与全 1 的掩码位或，结果为全 1（`a | ~0 = ~0`）；例：`5 | ~0 = -1`（32 位下`~0`是全 1，结果也是全 1，对应十进制 - 1）
+  - 交换律 & 结合律：`a | b = b | a`；`(a | b) | c = a | (b | c)`
+
+- 将指定二进制位设置为 1
+  - 构造一个 “掩码（mask）”，掩码中想置 1 的位设为 1，其余位设为 0，与原数进行位或即可（原数对应位无论 0/1，最终都会变成 1）
+  - 例如，将数字 `8`（二进制 `00001000`）的第 1 位和第 2 位置为 1
+
+  ```cpp
+  #include <iostream>
+  using namespace std;
+
+  // 辅助函数：打印低8位二进制（方便查看）
+  void printBinary8(int num) {
+      cout << num << " 的二进制（低8位）：";
+      for (int i = 7; i >= 0; --i) {
+          cout << ((num >> i) & 1);
+      }
+      cout << endl;
+  }
+
+  int main() {
+      int num = 8; // 二进制 00001000
+      printBinary8(num);
+
+      // 构造掩码：第1位和第2位置1 → 1<<1 | 1<<2 = 2 + 4 = 6（二进制 00000110）
+      int mask = (1 << 1) | (1 << 2);
+      num = num | mask; // 00001000 | 00000110 = 00001110（十进制14）
+
+      printBinary8(num);
+      return 0;
+  }
+  ```
+
+- 合并多个状态标记（权限 / 功能开关）
+  - 用不同的二进制位表示不同的状态（如权限、功能开关），通过位或运算将多个状态合并为一个整数，节省内存且操作高效
+  - 例如，用位或合并 “读、写、执行” 三种权限
+  - 这种方式比用多个布尔变量存储状态更节省内存（一个 int 能存 32 个状态），且权限检查 / 合并的效率极高
+
+  ```cpp
+  #include <iostream>
+  using namespace std;
+
+  // 定义权限常量（每个权限对应一个独立的二进制位）
+  const int READ = 1 << 0;  // 0001（第0位：读权限）
+  const int WRITE = 1 << 1; // 0010（第1位：写权限）
+  const int EXEC = 1 << 2;  // 0100（第2位：执行权限）
+
+  // 检查是否拥有某权限（结合位与运算）
+  bool hasPermission(int permissions, int perm) {
+      return (permissions & perm) != 0;
+  }
+
+  int main() {
+      // 合并“读+写”权限
+      int userPerm = READ | WRITE; // 0001 | 0010 = 0011（十进制3）
+      cout << "用户权限值：" << userPerm << endl;
+
+      // 检查权限
+      cout << "是否有读权限：" << boolalpha << hasPermission(userPerm, READ) << endl;
+      cout << "是否有写权限：" << boolalpha << hasPermission(userPerm, WRITE) << endl;
+      cout << "是否有执行权限：" << boolalpha << hasPermission(userPerm, EXEC) << endl;
+
+      // 追加执行权限
+      userPerm |= EXEC; // 等价于 userPerm = userPerm | EXEC（0011 | 0100 = 0111）
+      cout << "\n追加执行权限后，权限值：" << userPerm << endl;
+      cout << "是否有执行权限：" << boolalpha << hasPermission(userPerm, EXEC) << endl;
+
+      return 0;
+  }
+  ```
+
+- 将整数的低 n 位全部置为 1
+  - 构造低 n 位为 1、其余位为 0 的掩码，与原数进行位或，即可将原数的低 n 位全部置 1
+  - 例如，将数字 `10`（二进制 `00001010`）的低 4 位全部置为 1
+
+  ```cpp
+  #include <iostream>
+  using namespace std;
+
+  void printBinary8(int num) {
+      cout << num << " 的二进制（低8位）：";
+      for (int i = 7; i >= 0; --i) {
+          cout << ((num >> i) & 1);
+      }
+      cout << endl;
+  }
+
+  int main() {
+      int num = 10; // 二进制 00001010
+      printBinary8(num);
+
+      int n = 4; // 低4位置1
+      int mask = (1 << n) - 1; // 1<<4=16 → 16-1=15（二进制 00001111）
+      num = num | mask; // 00001010 | 00001111 = 00001111（十进制15）
+
+      printBinary8(num);
+      return 0;
+  }
+  ```
+
+- 补全二进制位数（不足位补 1）
+  - 当需要将一个数的二进制位数补到指定长度时，可用位或快速补 1（比如将 4 位的`1000`补到 8 位为`11111000`）
+
+  ```cpp
+  #include <iostream>
+  using namespace std;
+
+  void printBinary8(int num) {
+      cout << "二进制（低8位）：";
+      for (int i = 7; i >= 0; --i) {
+          cout << ((num >> i) & 1);
+      }
+      cout << endl;
+  }
+
+  int main() {
+      int num = 8; // 4位：1000 → 要补到8位，高4位补1
+      printBinary8(num);
+
+      int mask = 0xF0; // 高4位为1：11110000
+      num = num | mask; // 1000 | 11110000 = 11111000（十进制248）
+
+      printBinary8(num);
+      return 0;
+  }
+  ```
+
+- 两个数的最大值
+  - 计算两个数的差值 `diff = a - b`
+  - 提取差值的符号位（32 位 int 中，第 31 位为符号位：0 表示正数 / 0，1 表示负数）
+  - 利用符号位构造掩码，结合位或运算筛选出最大值：
+    - 若 `diff >= 0`（a ≥ b），掩码为全 0，最终结果 = `a & ~掩码 | b & 掩码` = a；
+    - 若 `diff < 0`（a < b），掩码为全 1，最终结果 = `a & ~掩码 | b & 掩码` = b
+
+  ```cpp
+  #include <iostream>
+  using namespace std;
+
+  // 用位运算（含位或）实现两个整数的最大值
+  int maxWithBitOr(int a, int b) {
+      // 步骤1：计算a - b的差值（注意溢出风险，这里简化处理）
+      int diff = a - b;
+
+      // 步骤2：提取差值的符号位（32位int，右移31位得到符号位扩展的掩码）
+      // 正数/0：右移31位后为0（掩码全0）；负数：右移31位后为-1（掩码全1）
+      int mask = diff >> 31;
+
+      // 步骤3：结合位或、位与运算筛选最大值
+      // 原理：mask为0时，结果=a&~0 | b&0 = a|0 = a；
+      //       mask为-1时，结果=a&0 | b&-1 = 0|b = b；
+      int maxVal = (a & ~mask) | (b & mask);
+
+      return maxVal;
+  }
+
+  int main() {
+      // 测试用例
+      int a1 = 10, b1 = 20;
+      cout << a1 << " 和 " << b1 << " 的最大值：" << maxWithBitOr(a1, b1) << endl;
+
+      int a2 = -5, b2 = -3;
+      cout << a2 << " 和 " << b2 << " 的最大值：" << maxWithBitOr(a2, b2) << endl;
+
+      int a3 = 0, b3 = -8;
+      cout << a3 << " 和 " << b3 << " 的最大值：" << maxWithBitOr(a3, b3) << endl;
+
+      int a4 = 100, b4 = 100;
+      cout << a4 << " 和 " << b4 << " 的最大值：" << maxWithBitOr(a4, b4) << endl;
+
+      return 0;
+  }
+  ```
+
+- 位或运算的进阶应用
+  - 位图（BitMap）：批量标记数据是否存在（比如标记 0~31 的数是否出现，用一个 int 即可，出现则对应位置 1）
+  - 硬件寄存器操作：开启硬件的多个功能（每个功能对应寄存器的一个位，位或置 1 即可开启）
+  - 数据压缩：将多个布尔值压缩到一个整数中存储，减少内存占用
+
+### 异或
+
+- 异或 ^ 运算（XOR，Exclusive OR）：两个二进制位相同则为 0，不同则为 1
+
+  | 位 A | 位 B | A ^ B |
+  | :--- | :--- | :---- |
+  | 0    | 0    | 0     |
+  | 0    | 1    | 1     |
+  | 1    | 0    | 1     |
+  | 1    | 1    | 0     |
+
+- 关键性质
+  - 自反性：`a ^ a = 0`（任何数和自身异或，结果为 0）；例：`5 ^ 5 = 0`（`0101 ^ 0101 = 0000`）
+  - 归零性：`a ^ 0 = a`（任何数和 0 异或，结果还是自身）；例：`5 ^ 0 = 5`（`0101 ^ 0000 = 0101`）
+  - 交换律：`a ^ b = b ^ a`
+  - 结合律：`(a ^ b) ^ c = a ^ (b ^ c)`
+  - 可逆性：如果 `a ^ b = c`，那么 `a ^ c = b` 且 `b ^ c = a`；例：`5 ^ 3 = 6` → `5 ^ 6 = 3`、`3 ^ 6 = 5`
+
+- 无需临时变量交换两个整数
+  - 利用 “自反性” 和 “归零性” 实现，无需额外内存
+  - 这种方法仅适用于两个不同的变量（不能是同一个内存地址，比如 `swap(&x, &x)` 会导致值变为 0）
+
+  ```cpp
+  #include <iostream>
+  using namespace std;
+
+  int main() {
+      int a = 10, b = 20;
+      cout << "交换前：a = " << a << ", b = " << b << endl;
+
+      // 异或交换核心逻辑
+      a = a ^ b;  // 第一步：a = 10 ^ 20
+      b = a ^ b;  // 第二步：b = (10^20) ^ 20 = 10 ^ (20^20) = 10 ^ 0 = 10
+      a = a ^ b;  // 第三步：a = (10^20) ^ 10 = 20 ^ (10^10) = 20 ^ 0 = 20
+
+      cout << "交换后：a = " << a << ", b = " << b << endl;
+      return 0;
+  }
+  ```
+
+- 翻转指定位（0 变 1，1 变 0）
+  - 利用 `a ^ 1 = ~a（单比特）` 的特性，可精准翻转某个二进制位
+  - 想翻转第 n 位 → `num ^ (1 << n)`（`1 << n` 构造仅第 n 位为 1 的掩码）
+
+  ```cpp
+  #include <iostream>
+  using namespace std;
+
+  // 打印二进制（辅助查看）
+  void printBinary(int num) {
+      cout << num << " 的二进制：";
+      for (int i = 7; i >= 0; --i) { // 只打印低8位
+          cout << ((num >> i) & 1);
+      }
+      cout << endl;
+  }
+
+  int main() {
+      int num = 8; // 二进制：00001000
+      printBinary(num);
+
+      int n = 3; // 翻转第3位（从0开始计数）
+      num = num ^ (1 << n);
+      printBinary(num); // 翻转后：00000000（8 → 0）
+
+      // 再翻转一次，恢复原值
+      num = num ^ (1 << n);
+      printBinary(num); // 恢复：00001000（0 → 8）
+      return 0;
+  }
+  ```
+
+- 找数组中唯一出现一次的数
+  - 题目：一个数组中，除了一个数只出现 1 次，其余数都出现 2 次，找出这个数（利用 `a^a=0`，所有重复数异或后抵消为 0，最终结果就是唯一数）
+
+  ```cpp
+  #include <iostream>
+  #include <vector>
+  using namespace std;
+
+  int findUniqueNumber(vector<int>& nums) {
+      int res = 0;
+      for (int num : nums) {
+          res ^= num; // 遍历异或所有数
+      }
+      return res;
+  }
+
+  int main() {
+      vector<int> nums = {2, 3, 2, 4, 4};
+      int unique = findUniqueNumber(nums);
+      cout << "唯一出现一次的数：" << unique << endl; // 输出3
+      return 0;
+  }
+  ```
+
+- 异或在算法中的拓展应用
+  - 找缺失的数字：0~n 的数组缺失一个数，用 `0^1^2^...^n ^ 数组所有数`，结果就是缺失数；
+  - 二进制中 1 的个数（奇偶）：统计异或结果中 1 的位数，判断奇偶性；
+  - 加密 / 解密：简单异或加密（明文 ^ 密钥 = 密文，密文 ^ 密钥 = 明文）
+
+### 左移
+
+- 左移 << 运算：将二进制位向左移动 n 位，右侧补 0，高位溢出则舍弃；等价于：`num << n = num * 2^n`（无溢出时）
+
+- 关键性质
+  - 算术特性（无溢出）：左移 n 位等价于乘以 2 的 n 次方，这是左移最核心的实用特性，且位运算效率远高于乘法运算符（`*`）；例：`7 << 1 = 14`（7×2）、`7 << 3 = 56`（7×8）
+  - 补 0 规则：右侧始终补 0，与原数符号无关（但有符号数左移溢出可能导致未定义行为）
+  - 优先级：左移运算优先级低于算术运算（`+`、`-`、`*`、`/`），高于位与 / 位或 / 异或，复杂表达式建议加括号；例：`a + b << 2` 等价于 `(a + b) << 2`，而非 `a + (b << 2)`
+  - 移位位数限制：C++ 标准规定，移位位数不能超过数据类型的位数（如 32 位 int 不能左移 32 位及以上），否则行为未定义
+
+- 快速乘法（替代 ×2ⁿ）
+
+  ```cpp
+  #include <iostream>
+  using namespace std;
+
+  int main() {
+      int num = 9;
+
+      // 左移1位：×2
+      int res1 = num << 1;
+      cout << num << " << 1 = " << res1 << "（等价于 " << num << "×2 = " << num*2 << "）" << endl;
+
+      // 左移3位：×8
+      int res2 = num << 3;
+      cout << num << " << 3 = " << res2 << "（等价于 " << num << "×8 = " << num*8 << "）" << endl;
+
+      return 0;
+  }
+  ```
+
+- 构造掩码（生成指定位为 1 的数）：左移可快速构造 “仅某一位为 1，其余位为 0” 的掩码，配合位与 / 位或使用
+
+  ```cpp
+  #include <iostream>
+  using namespace std;
+
+  // 打印低8位二进制
+  void printBinary8(int num) {
+      cout << "二进制（低8位）：";
+      for (int i = 7; i >= 0; --i) {
+          cout << ((num >> i) & 1);
+      }
+      cout << endl;
+  }
+
+  int main() {
+      // 构造第3位为1的掩码（从0开始计数）
+      int mask = 1 << 3; // 1 → 1000（十进制8）
+      cout << "掩码值：" << mask << endl;
+      printBinary8(mask);
+
+      // 构造低4位为1的掩码（1<<4 -1 = 15 → 00001111）
+      int mask2 = (1 << 4) - 1;
+      cout << "\n低4位掩码值：" << mask2 << endl;
+      printBinary8(mask2);
+
+      return 0;
+  }
+  ```
+
+- 设置整数的指定位为 1（配合位或）：左移构造掩码后，结合位或可精准将某一位置为 1
+
+  ```cpp
+  #include <iostream>
+  using namespace std;
+
+  void printBinary8(int num) {
+      cout << num << " → 二进制（低8位）：";
+      for (int i = 7; i >= 0; --i) {
+          cout << ((num >> i) & 1);
+      }
+      cout << endl;
+  }
+
+  int main() {
+      int num = 4; // 二进制 00000100
+      printBinary8(num);
+
+      int bitIndex = 2; // 将第2位（已为1）和第1位置为1
+      // 构造掩码：(1<<2) | (1<<1) = 4 + 2 = 6 → 00000110
+      int mask = (1 << bitIndex) | (1 << 1);
+      num = num | mask; // 00000100 | 00000110 = 00000110（十进制6）
+
+      printBinary8(num);
+      return 0;
+  }
+  ```
+
+- 数据的位级拆分 / 合并（如 RGB 颜色值）：左移可将不同分量（如 R、G、B）合并为一个整数，这是图形编程中的常见用法
+
+  ```cpp
+  #include <iostream>
+  using namespace std;
+
+  // 合并RGB为32位颜色值（R:8位, G:8位, B:8位, 透明通道:8位）
+  int mergeRGB(unsigned char r, unsigned char g, unsigned char b) {
+      // 透明通道设为255（不透明），左移24位；R左移16位；G左移8位；B不移动
+      return (255 << 24) | (r << 16) | (g << 8) | b;
+  }
+
+  int main() {
+      // 红色：R=255, G=0, B=0
+      int red = mergeRGB(255, 0, 0);
+      cout << "红色的32位颜色值：" << hex << red << endl; // 输出 ff0000ff（十六进制）
+
+      // 绿色：R=0, G=255, B=0
+      int green = mergeRGB(0, 255, 0);
+      cout << "绿色的32位颜色值：" << hex << green << endl; // 输出 00ff00ff
+
+      return 0;
+  }
+  ```
+
+- 左移辅助求最小值
+  - 计算两数差值 `diff = a - b`
+  - 用右移 31 位提取差值的符号位（32 位 int 中，符号位是第 31 位），再通过左移辅助构造掩码（或直接用符号位掩码）
+  - 符号位规则：
+    - 若 `diff ≥ 0`（a ≥ b），符号位为 0 → 最小值是 b；
+    - 若 `diff < 0`（a < b），符号位为 1 → 最小值是 a；
+  - 利用掩码和位运算组合：`minVal = (a & mask) | (b & ~mask)`（mask 为符号位扩展的全 1 / 全 0 掩码），其中左移用于验证 / 构造掩码（比如 `1 << 31` 可直接定位符号位）
+
+  ```cpp
+  #include <iostream>
+  #include <climits> // 用于INT_MIN/INT_MAX，处理溢出
+  using namespace std;
+
+  // 利用位运算（含左移）实现两个整数的最小值
+  int minWithLeftShift(int a, int b) {
+      // 步骤1：计算差值（优化溢出问题：用无符号数处理）
+      unsigned int diff = (unsigned int)(a - b);
+
+      // 步骤2：提取符号位（右移31位），再用左移验证符号位位置（可选，核心是构造掩码）
+      // mask：符号位为1 → mask=1（仅演示左移定位符号位）；最终掩码扩展为全1/全0
+      int sign_bit = (diff >> 31) & 1; // 提取符号位（0或1）
+      int mask = sign_bit ? -1 : 0;    // 符号位1→mask=-1（全1），0→mask=0（全0）
+
+      // 【左移应用】验证符号位位置：1<<31 是符号位的掩码（可选，辅助理解）
+      (void)(1 << 31); // 仅演示：1左移31位得到2^31，对应int的符号位
+
+      // 步骤3：筛选最小值
+      // mask=-1（全1）→ a&mask=a，b&~mask=0 → 结果=a（a < b）
+      // mask=0（全0）→ a&mask=0，b&~mask=b → 结果=b（a ≥ b）
+      int minVal = (a & mask) | (b & ~mask);
+
+      return minVal;
+  }
+
+  // 进阶版：直接用左移构造符号位掩码（更贴合“左移”需求）
+  int minWithLeftShiftAdv(int a, int b) {
+      long long diff = (long long)a - b; // 用long long避免溢出
+
+      // 左移核心应用：构造符号位掩码（1LL << 63 是long long的符号位）
+      // 符号位为1 → mask=-1；符号位为0 → mask=0
+      int mask = (diff >> 63) & 1; // 提取long long的符号位
+      mask = mask << 31 >> 31;     // 左移31位再右移31位，扩展为全1/全0（等价于mask?-1:0）
+
+      return (a & mask) | (b & ~mask);
+  }
+
+  int main() {
+      // 测试用例覆盖正数、负数、相等值
+      int test_cases[][2] = {{10, 20}, {-5, -3}, {0, -8}, {100, 100}, {INT_MAX, INT_MIN}};
+      int case_count = sizeof(test_cases) / sizeof(test_cases[0]);
+
+      for (int i = 0; i < case_count; ++i) {
+          int a = test_cases[i][0], b = test_cases[i][1];
+          cout << a << " 和 " << b << " 的最小值：" << endl;
+          cout << "  基础版：" << minWithLeftShift(a, b) << endl;
+          cout << "  进阶版（左移构造掩码）：" << minWithLeftShiftAdv(a, b) << endl;
+          cout << "  标准库验证：" << min(a, b) << "\n" << endl;
+      }
+
+      return 0;
+  }
+  ```
+
+- 左移运算的注意事项
+  - 有符号数溢出风险：对于有符号整数（如 int），左移导致符号位变化时，行为是未定义的（可能变成负数）
+    - 例：`INT_MAX << 1`（INT_MAX 是 2¹⁰-1 或 2³¹-1），溢出后结果未定义
+    - 建议：涉及左移的高性能计算优先使用无符号数（unsigned int）
+  - 移位位数非负：C++ 中移位位数必须是非负数，若传入负数，行为未定义
+  - 移位位数不超限：移位位数不能大于等于数据类型的位数（如 32 位 int 不能左移 32 位），否则结果不可控
+
+### 右移
+
+- 右移 >> 运算的规则
+  - 对于整数 `num` 和移位位数 `n`，`num >> n` 是将 `num` 的二进制位右移 `n` 位，右侧超出的低位直接舍弃；
+  - 左侧补位规则：
+    - 无符号数：补 0（逻辑右移）；
+    - 有符号数：补符号位（算术右移，C++ 标准未强制，但主流编译器如 GCC/Clang/VS 均遵循此规则）
+  - 无溢出时，`num >> n ≈ num / 2ⁿ`（向下取整）
+
+- 两种移位类型（核心区别）：
+
+  | 类型     | 适用数据类型 | 左侧补位规则 | 典型场景               |
+  | :------- | :----------- | :----------- | :--------------------- |
+  | 逻辑右移 | 无符号数     | 补 0         | 纯位操作、无符号数计算 |
+  | 算术右移 | 有符号数     | 补符号位     | 有符号数快速除法       |
+
+- 关键特性
+  - 算术特性（无溢出）：右移 n 位等价于除以 2 的 n 次方，且向下取整（对负数友好）。
+    - 例：`7 >> 1 = 3`（7/2=3.5 → 向下取整 3）、`-7 >> 1 = -4`（-7/2=-3.5 → 向下取整 - 4）
+  - 优先级：与左移相同，低于算术运算、高于位与 / 位或 / 异或，复杂表达式建议加括号
+  - 移位位数限制：同左移，移位位数不能≥数据类型位数（如 32 位 int 不能右移 32 位），否则行为未定义；且移位位数必须非负
+
+- 快速除法（替代 ÷2ⁿ，向下取整）：位运算效率远高于除法运算符（`/`），且天然支持负数向下取整
+
+  ```cpp
+  #include <iostream>
+  using namespace std;
+
+  int main() {
+      // 正数右移
+      int num1 = 25;
+      int res1 = num1 >> 2; // 25 / 4 = 6.25 → 向下取整6
+      cout << num1 << " >> 2 = " << res1 << "（等价于 " << num1 << "/4 = " << num1/4 << "）" << endl;
+
+      // 负数右移（算术右移，向下取整）
+      int num2 = -25;
+      int res2 = num2 >> 2; // -25 / 4 = -6.25 → 向下取整-7
+      cout << num2 << " >> 2 = " << res2 << "（等价于 " << num2 << "/4 = " << num2/4 << "）" << endl;
+
+      return 0;
+  }
+  ```
+
+- 提取整数的高位 / 指定位：右移可将目标位移动到最低位，配合位与运算提取该位的值
+
+  ```cpp
+  #include <iostream>
+  using namespace std;
+
+  // 打印低8位二进制
+  void printBinary8(int num) {
+      cout << num << " → 二进制（低8位）：";
+      for (int i = 7; i >= 0; --i) {
+          cout << ((num >> i) & 1);
+      }
+      cout << endl;
+  }
+
+  // 提取第n位的值（0~7，低8位）
+  int getBit(int num, int n) {
+      // 右移n位将目标位移到最低位，再与1位与提取值
+      return (num >> n) & 1;
+  }
+
+  int main() {
+      int num = 0b10101010; // 十进制170，二进制10101010
+      printBinary8(num);
+
+      // 提取第7位（最高位）
+      int bit7 = getBit(num, 7);
+      cout << "第7位的值：" << bit7 << endl; // 输出1
+
+      // 提取第3位
+      int bit3 = getBit(num, 3);
+      cout << "第3位的值：" << bit3 << endl; // 输出1
+
+      return 0;
+  }
+  ```
+
+- 无符号数的逻辑右移（强制补 0）：当需要对有符号数做逻辑右移时，可先强制转换为无符号数，避免补符号位
+
+  ```cpp
+  #include <iostream>
+  using namespace std;
+
+  void printBinary8(unsigned char num) {
+      cout << (int)num << " → 二进制（低8位）：";
+      for (int i = 7; i >= 0; --i) {
+          cout << ((num >> i) & 1);
+      }
+      cout << endl;
+  }
+
+  int main() {
+      // 有符号负数（char范围：-128~127）
+      char neg = -20; // 8位补码：11101100
+      cout << "有符号数-20算术右移2位：" << endl;
+      printBinary8(neg >> 2); // 算术右移：11111011（十进制-5）
+
+      cout << "\n有符号数-20强制逻辑右移2位：" << endl;
+      // 转换为无符号数后右移（补0）
+      unsigned char uneg = (unsigned char)neg;
+      printBinary8(uneg >> 2); // 逻辑右移：00111011（十进制59）
+
+      return 0;
+  }
+  ```
+
+- 数据的位级拆分（如 RGB 颜色值提取）：右移可从合并的整数中拆分出各分量（如从 32 位颜色值中提取 R、G、B）
+
+  ```cpp
+  #include <iostream>
+  using namespace std;
+
+  // 从32位颜色值提取RGB分量（格式：透明通道(8位)|R(8位)|G(8位)|B(8位)）
+  void splitRGB(int color, unsigned char& r, unsigned char& g, unsigned char& b) {
+      // 右移16位后与0xFF（255）位与，提取R分量
+      r = (color >> 16) & 0xFF;
+      // 右移8位后与0xFF位与，提取G分量
+      g = (color >> 8) & 0xFF;
+      // 直接与0xFF位与，提取B分量
+      b = color & 0xFF;
+  }
+
+  int main() {
+      // 红色：0xff0000ff（透明通道255, R255, G0, B0）
+      int red = 0xff0000ff;
+      unsigned char r, g, b;
+      splitRGB(red, r, g, b);
+      cout << "红色分量：R=" << (int)r << ", G=" << (int)g << ", B=" << (int)b << endl;
+
+      // 绿色：0x00ff00ff（透明通道255, R0, G255, B0）
+      int green = 0x00ff00ff;
+      splitRGB(green, r, g, b);
+      cout << "绿色分量：R=" << (int)r << ", G=" << (int)g << ", B=" << (int)b << endl;
+
+      return 0;
+  }
+  ```
+
+### 按位取反
+
+- 按位取反 ~ 运算（Bitwise NOT）：将每一位取反（0 变 1，1 变 0），结果是补码形式（负数）；对于 n 位整数：`~num = -num - 1`（如`~5 = -6`）
+
+- C++ 中整数以补码形式存储，因此按位取反的结果不能简单理解为 “数值取反”，而是 “补码逐位取反”
+
+- 关键特性
+  - 数值等价公式：对于任意整数 `num`，`~num = -num - 1`（这是记忆按位取反结果的万能公式，无需纠结补码）；验证：`~5 = -5 -1 = -6`、`~(-5) = -(-5) -1 = 4`、`~0 = -0 -1 = -1`，完全匹配示例结果
+  - 可逆性：两次取反会还原原数 → `~~num = num`；例：`~~5 = 5`、`~~(-5) = -5`
+  - 无符号数取反：无符号数无符号位，取反结果为 “最大值 - 原数”（如 8 位无符号数`uint8_t`，最大值 255，`~5 = 255 - 5 = 250`）
+  - 优先级：高于算术运算（+、-、\*、/）和其他位运算（&、|、^、<<、>>），表达式中需注意加括号
+
+- 构造全 1 掩码（替代硬编码）：`~0` 是全 1 的掩码（32 位 int 为 - 1），结合移位可构造 “高位全 1、低位全 0” 的掩码，比硬编码`0xFFFFFFF0`更通用
+
+  ```cpp
+  #include <iostream>
+  using namespace std;
+
+  // 打印低8位二进制
+  void printBinary8(int num) {
+      cout << num << " → 二进制（低8位）：";
+      for (int i = 7; i >= 0; --i) {
+          cout << ((num >> i) & 1);
+      }
+      cout << endl;
+  }
+
+  int main() {
+      // 构造“低4位清零，其余位保留”的掩码
+      int mask = ~((1 << 4) - 1); // (1<<4)-1=15（00001111），取反后=~15=-16（11110000）
+      cout << "掩码值：" << mask << endl;
+      printBinary8(mask);
+
+      // 测试：清零num的低4位
+      int num = 0b10101111; // 十进制175，二进制10101111
+      int res = num & mask; // 10101111 & 11110000 = 10100000（十进制160）
+      cout << "\n原数：";
+      printBinary8(num);
+      cout << "清零低4位后：";
+      printBinary8(res);
+
+      return 0;
+  }
+  ```
+
+- 快速计算 “最大值 - 原数”（无符号数）：无符号数取反等价于 “该类型最大值 - 原数”，可用于快速计算差值，比减法更高效
+
+  ```cpp
+  #include <iostream>
+  using namespace std;
+
+  int main() {
+      // 8位无符号数，最大值255
+      uint8_t num = 5;
+      uint8_t res = ~num; // ~5 = 255 - 5 = 250
+      cout << "uint8_t " << (int)num << " 取反：" << (int)res << endl;
+
+      // 16位无符号数，最大值65535
+      uint16_t num2 = 100;
+      uint16_t res2 = ~num2; // ~100 = 65535 - 100 = 65435
+      cout << "uint16_t " << num2 << " 取反：" << res2 << endl;
+
+      return 0;
+  }
+  ```
+
+- 翻转指定位（配合位与 / 位或）：按位取反可翻转整数的指定位（0 变 1，1 变 0），核心是构造 “仅目标位为 1” 的掩码，再用异或；而掩码的反码可通过取反构造
+
+  ```cpp
+  #include <iostream>
+  using namespace std;
+
+  void printBinary8(int num) {
+      cout << num << " → 二进制（低8位）：";
+      for (int i = 7; i >= 0; --i) {
+          cout << ((num >> i) & 1);
+      }
+      cout << endl;
+  }
+
+  int main() {
+      int num = 0b00001000; // 十进制8，二进制00001000
+
+      // 翻转第3位（从0计数）
+      int bitIndex = 3;
+      int mask = 1 << bitIndex; // 掩码：00001000
+      num = num ^ mask; // 异或翻转：00001000 ^ 00001000 = 00000000
+      cout << "翻转第3位后：";
+      printBinary8(num);
+
+      // 用取反构造“除第3位外全1”的掩码，清零其他位
+      mask = ~(1 << 3); // ~8 = -9（11110111）
+      num = 0b10101010 & mask; // 10101010 & 11110111 = 10100010（十进制162）
+      cout << "清零第3位后：";
+      printBinary8(num);
+
+      return 0;
+  }
+  ```
+
+- 简化边界值计算：利用 `~num = -num -1` 的特性，可简化一些边界值的计算（如求 “比原数小 1 的负数”）
+
+  ```cpp
+  #include <iostream>
+  using namespace std;
+
+  int main() {
+      // 计算“小于0的最大整数（-1）”
+      int max_neg = ~0;
+      cout << "小于0的最大整数：" << max_neg << endl; // 输出-1
+
+      // 计算“比num小1的负数”
+      int num = 10;
+      int res = ~num; // ~10 = -11（比10小1的负数）
+      cout << "比" << num << "小1的负数：" << res << endl; // 输出-11
+
+      return 0;
+  }
+  ```
+
+### 总结
+
+- 位与（&）：全 1 才 1；位或（|）：有 1 就 1；异或（^）：不同则 1；
+- 左移（<<）：补 0，等价乘 2ⁿ；右移（>>）：补符号位，等价除 2ⁿ；取反（~）：逐位翻转，结果 =-num-1
+- 位与：判断位、清零位；位或：设置位；异或：交换数、翻位；移位：快速乘除；取反：生成掩码
+- 有符号数右移是算术右移（补符号位），无符号数是逻辑右移（补 0）
+- 位运算优先级低于算术运算，复杂表达式建议加括号
+
+## 组合数学
+
+### 基本概念
+
+- 阶乘（Factorial）
+  - 定义：对于非负整数 `n`，`n!`（n的阶乘）表示从1到n的所有正整数的乘积，规定 `0! = 1`
+
+  - 公式：`n! = n × (n-1) × (n-2) × ... × 1`
+
+  - 例：`5! = 5×4×3×2×1 = 120`
+
+- 排列（Permutation）
+  - 定义：从 `n` 个不同元素中取出 `k` 个元素，按一定顺序排成一列，称为排列，记为 `P(n,k)` 或 `A(n,k)`
+
+  - 核心：有序，即“ab”和“ba”是不同的排列
+
+  - 公式：`P(n,k) = n! / (n-k)!`（要求 `0 ≤ k ≤ n`）
+
+  - 例：从5个元素中取3个排列：`P(5,3) = 5!/(5-3)! = 5×4×3 = 60`
+
+- 组合（Combination）
+  - 定义：从 `n` 个不同元素中取出 `k` 个元素，不考虑顺序组成一组，称为组合，记为 `C(n,k)` 或 $\binom{n}{k}$（二项式系数）
+
+  - 核心：无序，即“ab”和“ba”是同一个组合
+
+  - 公式：`C(n,k) = P(n,k) / k! = n! / (k! × (n-k)!)`（要求 `0 ≤ k ≤ n`）
+
+  - 例：从5个元素中取3个组合：`C(5,3) = 5!/(3!×2!) = 10`
+
+- 组合对称性：`C(n,k) = C(n, n-k)`；例：`C(5,3) = C(5,2) = 10`（取3个和留2个的组合数相同）
+
+- 杨辉三角（帕斯卡三角）：`C(n,k) = C(n-1,k-1) + C(n-1,k)` ，这是递推计算组合数的核心公式（边界：`C(n,0)=1`，`C(n,n)=1`）
+
+- 二项式定理：`(a+b)ⁿ = Σ（k=0到n）C(n,k)×a^(n-k)×b^k`，例如 `(a+b)² = C(2,0)a² + C(2,1)ab + C(2,2)b² = a²+2ab+b²`
+
+- 组合数求和：`Σ（k=0到n）C(n,k) = 2ⁿ`（n个元素的所有子集数）
+
+- 阶乘计算（基础）：阶乘是排列 / 组合的基础，需注意溢出问题（C++ 中 int 最多存 12!，long long 最多存 20!，更大的数需用高精度或模运算）
+
+  ```cpp
+  #include <iostream>
+  using namespace std;
+
+  // 计算n的阶乘（返回long long，避免溢出）
+  long long factorial(int n) {
+      if (n < 0) return -1; // 非法输入
+      long long res = 1;
+      for (int i = 2; i <= n; ++i) {
+          res *= i;
+      }
+      return res;
+  }
+
+  int main() {
+      int n = 5;
+      cout << n << "! = " << factorial(n) << endl; // 输出120
+      return 0;
+  }
+  ```
+
+- 排列数计算
+
+  ```cpp
+  #include <iostream>
+  using namespace std;
+
+  long long factorial(int n) {
+      if (n < 0) return -1;
+      long long res = 1;
+      for (int i = 2; i <= n; ++i) res *= i;
+      return res;
+  }
+
+  // 计算排列数P(n,k)
+  long long permutation(int n, int k) {
+      if (k < 0 || k > n) return 0; // 非法输入
+      return factorial(n) / factorial(n - k);
+  }
+
+  int main() {
+      int n = 5, k = 3;
+      cout << "P(" << n << "," << k << ") = " << permutation(n, k) << endl; // 输出60
+      return 0;
+  }
+  ```
+
+- 组合数计算
+
+  ```cpp
+  // 方法 1：直接公式（易溢出，适合小 n）
+  long long combination(int n, int k) {
+      if (k < 0 || k > n) return 0;
+      k = min(k, n - k); // 利用对称性减少计算量
+      long long res = 1;
+      // 优化：分步计算，避免大数阶乘（C(n,k) = n×(n-1)×...×(n-k+1) / (k×(k-1)×...×1)）
+      for (int i = 1; i <= k; ++i) {
+          res = res * (n - k + i) / i;
+      }
+      return res;
+  }
+
+  // 方法 2：杨辉三角递推（适合中等 n）
+  // 递推计算C(n,k)，返回二维数组存储杨辉三角
+  long long combinationDP(int n, int k) {
+      if (k < 0 || k > n) return 0;
+      // 构建杨辉三角（dp[i][j] = C(i,j)）
+      long long dp[n+1][k+1];
+      // 初始化边界
+      for (int i = 0; i <= n; ++i) {
+          dp[i][0] = 1; // C(i,0)=1
+          if (i <= k) dp[i][i] = 1; // C(i,i)=1
+      }
+      // 递推
+      for (int i = 2; i <= n; ++i) {
+          for (int j = 1; j < min(i, k+1); ++j) {
+              dp[i][j] = dp[i-1][j-1] + dp[i-1][j];
+          }
+      }
+      return dp[n][k];
+  }
+
+  // 方法 3：模运算（适合大数，如组合数取模）
+  // 竞赛中常需计算 C(n,k) mod MOD（如 MOD=1e9+7），需预处理阶乘和逆元
+  const int MOD = 1e9 + 7;
+  const int MAXN = 1e5 + 5;
+
+  long long fact[MAXN], inv_fact[MAXN];
+
+  // 快速幂求逆元
+  long long quickPow(long long a, long long b) {
+      long long res = 1;
+      while (b) {
+          if (b & 1) res = res * a % MOD;
+          a = a * a % MOD;
+          b >>= 1;
+      }
+      return res;
+  }
+
+  // 预处理阶乘和逆元阶乘
+  void preprocess() {
+      fact[0] = 1;
+      for (int i = 1; i < MAXN; ++i) {
+          fact[i] = fact[i-1] * i % MOD;
+      }
+      inv_fact[MAXN-1] = quickPow(fact[MAXN-1], MOD-2); // 费马小定理求逆元
+      for (int i = MAXN-2; i >= 0; --i) {
+          inv_fact[i] = inv_fact[i+1] * (i+1) % MOD;
+      }
+  }
+
+  // 计算C(n,k) mod MOD
+  long long combinationMod(int n, int k) {
+      if (k < 0 || k > n) return 0;
+      return fact[n] * inv_fact[k] % MOD * inv_fact[n - k] % MOD;
+  }
+
+  int main() {
+      preprocess();
+      int n = 1000, k = 500;
+      cout << "C(" << n << "," << k << ") mod " << MOD << " = " << combinationMod(n, k) << endl;
+      return 0;
+  }
+  ```
+
+- 子集计数：求 n 个元素的所有子集数（包括空集），根据组合数求和性质，结果为 `2ⁿ`
+
+  ```cpp
+  #include <iostream>
+  #include <cmath>
+  using namespace std;
+
+  int main() {
+      int n = 3;
+      // 子集数 = C(3,0)+C(3,1)+C(3,2)+C(3,3) = 1+3+3+1=8 = 2^3
+      cout << n << "个元素的子集数：" << pow(2, n) << endl; // 输出8
+      return 0;
+  }
+  ```
+
+- 组合数学的常见应用场景
+  - 算法题：排列组合计数、子集 / 子序列问题、路径计数（如网格中从 (0,0) 到 (m,n) 的最短路径数为 C (m+n, m)）
+  - 概率论：计算事件发生的概率（如抽卡、抽奖的概率）
+  - 编程竞赛：组合数取模、容斥原理、卡特兰数（特殊组合数，如括号匹配数、二叉树形态数）
+  - 实际开发：密码学（排列组合生成密钥）、数据分析（组合抽样）
+
+### 容斥原理
+
+- 容斥原理 = 先把所有都加起来，再把重复多算的减掉，再把少减的加回来…… 反复 “包容” 和 “排斥”，直到不重不漏
+- 两个集合的容斥：
+  - 总数 = A + B - A∩B
+  - 先包容：A + B
+  - 再排斥：减去重复的交集 A∩B
+
+- 三个集合的容斥
+
+  $$
+  |A∪B∪C| = A+B+C - A∩B - A∩C - B∩C + A∩B∩C
+  $$
+
+- n 个集合的容斥：奇数个集合交 +，偶数个集合交 -
+
+  $$
+  \left|\bigcup_{i=1}^n A_i\right| = \sum|A_i| - \sum|A_i∩A_j| + \sum|A_i∩A_j∩A_k| - \dots + (-1)^{n+1}|A_1∩…∩A_n|
+  $$
+
+- 容斥原理主要用于解决「多集合交集 / 并集」的计数问题，将复杂的计数转化为简单的加减
+
+- 错排问题
+  - n 个人各有一顶帽子，全部打乱，每个人都不拿到自己帽子的情况有多少种？
+
+  - 用容斥推导：
+    - 总排列：n!
+    - 减去至少1个人拿对：C(n,1)(n-1)!
+    - 加回至少2个人拿对：C(n,2)(n-2)!
+    - 再减至少3个人拿对：C(n,3)(n-3)!
+      ……
+
+  - 最终错排公式：
+    $$
+    D(n) = n!\left(1 - \frac{1}{1!} + \frac{1}{2!} - \frac{1}{3!} + \dots + (-1)^n\frac{1}{n!}\right)
+    $$
+
+- 常见场景
+  - 数论计数（比如 1~n 中能被 2 或 3 整除的数的个数）；
+  - 组合计数（比如满足多个条件的方案数）；
+  - 概率统计（比如多个事件至少发生一个的概率）
+
+- 容斥在算法里主要用来：
+  - 求 1~N 中被某些数整除的数的个数
+  - 求 不互质的数的个数
+  - 求 满足多个条件的方案数
+  - 组合计数、数位 DP 辅助
+
+- 通用模板思路（代码逻辑）
+  - 枚举所有非空子集
+  - 统计子集大小：
+    - 奇数个：加
+    - 偶数个：减
+  - 计算该子集代表的 “共同条件”（如最小公倍数）
+
+- 典型场景：基于二进制枚举子集
+
+  ```cpp
+  #include <iostream>
+  #include <vector>
+  #include <algorithm>
+  using namespace std;
+
+  // 计算两个数的最大公约数（GCD）
+  long long gcd(long long a, long long b) {
+      return b == 0 ? a : gcd(b, a % b);
+  }
+
+  // 计算两个数的最小公倍数（LCM）
+  long long lcm(long long a, long long b) {
+      if (a == 0 || b == 0) return 0; // 边界处理：避免除以0
+      return a / gcd(a, b) * b; // 先除后乘防止溢出
+  }
+
+  // 容斥核心函数：求1~n中，能被nums中至少一个数整除的数的个数
+  // nums：除数集合（需先去重、剔除0）
+  // n：范围上限
+  long long inclusion_exclusion(const vector<long long>& nums, long long n) {
+      long long ans = 0;
+      int m = nums.size(); // 集合大小
+
+      // 二进制枚举所有非空子集（1 ~ (1<<m)-1）
+      for (int mask = 1; mask < (1 << m); ++mask) {
+          long long current_lcm = 1; // 当前子集的最小公倍数
+          int cnt = 0; // 当前子集的元素个数
+
+          // 遍历mask的每一位，判断是否选了第i个数
+          for (int i = 0; i < m; ++i) {
+              if (mask & (1 << i)) { // 第i位为1，选中nums[i]
+                  cnt++;
+                  current_lcm = lcm(current_lcm, nums[i]);
+
+                  // 剪枝：如果LCM超过n，后续不用算（除以它为0）
+                  if (current_lcm > n) {
+                      break;
+                  }
+              }
+          }
+
+          // 容斥核心：奇数个元素加，偶数个元素减
+          if (current_lcm > n) continue;
+          if (cnt % 2 == 1) {
+              ans += n / current_lcm;
+          } else {
+              ans -= n / current_lcm;
+          }
+      }
+      return ans;
+  }
+
+  // 测试示例
+  int main() {
+      // 示例：求1~10中能被2或3整除的数的个数（答案：2,3,4,6,8,9,10 → 共7个）
+      vector<long long> nums = {2, 3};
+      long long n = 10;
+      cout << "结果：" << inclusion_exclusion(nums, n) << endl; // 输出7
+      return 0;
+  }
+  ```
+
+- 模板适配场景
+  - 求 1~n 中被若干数整除的数的个数；
+  - 求 1~n 中与某个数不互质的数的个数（转化为 “被其质因子整除”）；
+  - 组合计数中 “至少满足一个条件” 的方案数
+
+### 鸽巢原理
+
+- 如果把 n+1 个物品放进 n 个抽屉，那么至少有一个抽屉里 ≥2 个物品
+
+- 把 m 个物品放进 k 个抽屉，则至少有一个抽屉里 ≥ ⌈ m /k ⌉ 个物品
+
+- 把 m 个物品放进 k 个抽屉，则至少有一个抽屉里 ≤ ⌊ m /k ⌋ 个物品
+
+- 例如
+  - 367 个人中，至少 2 人生日相同（抽屉：366 天，物品：367 人）
+  - 同色问题：袜子 / 球有 k 种颜色，要保证拿到 2 个同色，最少拿 k+1 个
+  - 连续和问题：任意 n 个整数中，一定存在若干个连续数的和是 n 的倍数
+  - 区间重复覆盖：数轴上放若干区间，总长度 > L，则一定有一段被至少两个区间覆盖
+  - 图论 / Ramsey 型问题：6 个人中，要么 3 个互相认识，要么 3 个互相不认识
+
+- n 个数里是否存在两个数模 k 同余——只要数组大小 >k，直接返回 true
+
+  ```cpp
+  bool hasSameMod(vector<int>& a, int k) {
+      vector<bool> vis(k);
+      for (int x : a) {
+          int r = x % k;
+          if (vis[r]) return true; // 鸽巢命中！
+          vis[r] = true;
+      }
+      return false;
+  }
+  ```

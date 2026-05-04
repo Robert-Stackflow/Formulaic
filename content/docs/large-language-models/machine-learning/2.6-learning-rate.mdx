@@ -137,7 +137,7 @@ description: 介绍学习率的定义、重要性，以及常见的 warmup 和�
   ```python
   def inv_sqrt_schedule(step):
       step = max(step, 1)
-      return min(step ** -0.5, step * warmup_steps ** -1.5)
+      return min(step**-0.5, step * warmup_steps**-1.5)
 
   scheduler = LambdaLR(optimizer, lr_lambda=inv_sqrt_schedule)
   ```

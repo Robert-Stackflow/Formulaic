@@ -34,6 +34,11 @@ export function GiscusComments({
   useEffect(() => {
     if (!ref.current || ref.current.hasChildNodes()) return;
 
+    const isLocalhost = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+    const theme = isLocalhost
+      ? (resolvedTheme === "dark" ? "dark" : "light")
+      : (resolvedTheme === "dark" ? `${window.location.origin}/giscus-dark.css` : `${window.location.origin}/giscus-light.css`);
+
     const script = document.createElement("script");
     script.src = "https://giscus.app/client.js";
     script.setAttribute("data-repo", repo);
@@ -45,25 +50,30 @@ export function GiscusComments({
     script.setAttribute("data-reactions-enabled", reactionsEnabled ? "1" : "0");
     script.setAttribute("data-emit-metadata", emitMetadata ? "1" : "0");
     script.setAttribute("data-input-position", inputPosition);
-    script.setAttribute("data-theme", resolvedTheme === "dark" ? `${window.location.origin}/giscus-dark.css` : `${window.location.origin}/giscus-light.css`);
+    script.setAttribute("data-theme", theme);
     script.setAttribute("data-lang", lang);
     script.setAttribute("data-loading", loading);
     script.crossOrigin = "anonymous";
     script.async = true;
 
     ref.current.appendChild(script);
-  }, [repo, repoId, category, categoryId, mapping, reactionsEnabled, emitMetadata, inputPosition, lang, loading]);
+  }, [repo, repoId, category, categoryId, mapping, reactionsEnabled, emitMetadata, inputPosition, lang, loading, resolvedTheme]);
 
   // Update theme when it changes
   useEffect(() => {
     const iframe = document.querySelector<HTMLIFrameElement>("iframe.giscus-frame");
     if (!iframe) return;
 
+    const isLocalhost = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+    const theme = isLocalhost
+      ? (resolvedTheme === "dark" ? "dark" : "light")
+      : (resolvedTheme === "dark" ? `${window.location.origin}/giscus-dark.css` : `${window.location.origin}/giscus-light.css`);
+
     iframe.contentWindow?.postMessage(
       {
         giscus: {
           setConfig: {
-            theme: resolvedTheme === "dark" ? `${window.location.origin}/giscus-dark.css` : `${window.location.origin}/giscus-light.css`,
+            theme,
           },
         },
       },

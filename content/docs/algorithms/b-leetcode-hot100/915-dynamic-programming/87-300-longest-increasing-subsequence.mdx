@@ -1,0 +1,530 @@
+---
+remark: 重要！最长递增子序列（不连续）如何定义 dp 数组，如何利用贪心+二分优化
+id: "300"
+title: 最长递增子序列
+englishTitle: Longest Increasing Subsequence
+slug: longest-increasing-subsequence
+url: https://leetcode-cn.com/problems/longest-increasing-subsequence/
+difficulty: Medium
+tags:
+  - 动态规划
+  - 数组
+  - 二分查找
+---
+
+## 题面
+
+给你一个整数数组 `nums` ，找到其中最长严格递增子序列的长度。
+
+子序列  是由数组派生而来的序列，删除（或不删除）数组中的元素而不改变其余元素的顺序。例如，`[3,6,2,7]` 是数组 `[0,3,1,6,2,2,7]` 的子序列。
+
+示例 1：
+
+    输入： nums = [10,9,2,5,3,7,101,18]
+    输出： 4
+    解释： 最长递增子序列是 [2,3,7,101]，因此长度为 4 。
+
+示例 2：
+
+    输入： nums = [0,1,0,3,2,3]
+    输出： 4
+
+示例 3：
+
+    输入： nums = [7,7,7,7,7,7,7]
+    输出： 1
+
+提示：
+
+  * `1 <= nums.length <= 2500`
+  * `-104 <= nums[i] <= 104`
+
+进阶：
+
+  * 你能将算法的时间复杂度降低到 `O(n log(n))` 吗?
+
+## 分析
+
+- 可见，这是不连续的子序列问题
+
+- dp 数组的含义：dp[i] 表示下标在 0-i 内的数组以 nums[i] 结尾的最长严格递增子序列的长度；这里一定表示以 nums[i] 结尾的最长递增子序，因为在做递增比较的时候，那么两个递增子序列一定要以 nums[j] 和 nums[i] 结尾，否则没有比较意义
+
+- 递推公式：如果 nums[j]>nums[i]，说明 nums[j]=nums[i]+1;
+
+- 在计算过程中，维护出现过的最大递增子序列长度
+
+- 代码实现
+
+  ```cpp
+  class Solution {
+  public:
+      int lengthOfLIS(vector<int>& nums) {
+          int n = nums.size();
+          if (n == 0) return 0;
+          
+          vector<int> dp(n, 1); // dp[i]：以nums[i]结尾的LIS长度，初始为1（自身）
+          int max_len = 1;
+          
+          // 正确的DP遍历顺序：i从1到n-1，j从0到i-1
+          for (int i = 1; i < n; ++i) {
+              for (int j = 0; j < i; ++j) {
+                  if (nums[i] > nums[j]) {
+                      dp[i] = max(dp[i], dp[j] + 1);
+                  }
+              }
+              max_len = max(max_len, dp[i]);
+          }
+          return max_len;
+      }
+  };
+  ```
+
+- 显然，时间复杂度为 $O(n^2)$
+
+
+## 构造最长递增子序列
+
+- 保留`dp`数组（记录以每个元素结尾的 LIS 长度）；
+- 新增`prev`数组（记录每个元素在 LIS 中的前驱索引）；
+- 找到`dp`数组的最大值对应的索引（LIS 最后一个元素）
+- 通过`prev`数组回溯，还原完整的 LIS
+
+- 代码实现
+
+  ```cpp
+  // 构造最长递增子序列（DP版）
+  vector<int> constructLIS(vector<int>& nums) {
+      int n = nums.size();
+      if (n == 0) return {};
+  
+      vector<int> dp(n, 1);       // dp[i]：以nums[i]结尾的LIS长度
+      vector<int> prev(n, -1);    // prev[i]：nums[i]在LIS中的前驱索引
+      int max_len = 1;
+      int last_idx = 0;           // LIS最后一个元素的索引
+  
+      // 1. 填充dp和prev数组
+      for (int i = 1; i < n; ++i) {
+          for (int j = 0; j < i; ++j) {
+              // 满足递增，且能形成更长的子序列
+              if (nums[i] > nums[j] && dp[j] + 1 > dp[i]) {
+                  dp[i] = dp[j] + 1;
+                  prev[i] = j;    // 记录前驱索引
+              }
+          }
+          // 更新最长长度和最后一个元素的索引
+          if (dp[i] > max_len) {
+              max_len = dp[i];
+              last_idx = i;
+          }
+      }
+  
+      // 2. 回溯prev数组，构造逆序的LIS
+      vector<int> lis;
+      while (last_idx != -1) {
+          lis.push_back(nums[last_idx]);
+          last_idx = prev[last_idx];
+      }
+  
+      // 3. 反转得到正序的LIS
+      reverse(lis.begin(), lis.end());
+      return lis;
+  }
+  ```
+
+
+- 如何构造字典序最小/最大的 LIS
+
+	```cpp
+	// 构造字典序最小的最长递增子序列
+	vector<int> constructLIS(vector<int>& nums) {
+	    int n = nums.size();
+	    if (n == 0) return {};
+	
+	    vector<int> dp(n, 1);       // dp[i]：以nums[i]结尾的LIS长度
+	    vector<int> prev(n, -1);    // prev[i]：nums[i]在LIS中的前驱索引
+	    int max_len = 1;
+	    int last_idx = 0;           // LIS最后一个元素的索引
+	
+	    // 1. 填充dp和prev数组
+	    for (int i = 1; i < n; ++i) {
+	        for (int j = 0; j < i; ++j) {
+	            // 满足递增，且能形成更长的子序列
+	            if (nums[i] > nums[j] && dp[j] + 1 > dp[i]) {
+	                dp[i] = dp[j] + 1;
+	                prev[i] = j;    // 记录前驱索引
+	            } else if (nums[i] > nums[j] && dp[j] + 1 == dp[i]) {
+	                // 前驱数大于 nums[j] 时，替换 nums[j] 为前驱数，从而减小字典序
+	                if(nums[prev[i]]>nums[j]){
+	                    prev[i]=j;
+	                }
+	            }
+	        }
+	        // 更新最长长度和最后一个元素的索引
+	        if (dp[i] > max_len) {
+	            max_len = dp[i];
+	            last_idx = i;
+	        }else if(dp[i]==max_len){
+	            if(nums[last_idx]>nums[i]){
+	                last_idx = i;
+	            }
+	        }
+	    }
+	
+	    // 2. 回溯prev数组，构造逆序的LIS
+	    vector<int> lis;
+	    while (last_idx != -1) {
+	        lis.push_back(nums[last_idx]);
+	        last_idx = prev[last_idx];
+	    }
+	
+	    // 3. 反转得到正序的LIS
+	    reverse(lis.begin(), lis.end());
+	    return lis;
+	}
+	```
+
+
+## 贪心+二分查找
+
+- 如何优化时间复杂度？之前的方法中，`dp`数组的定义和更新方式不够高效，没有利用 “贪心 + 二分” 的核心优化思想
+
+  - 贪心：要让递增子序列尽可能长，就要让子序列的最后一个元素尽可能小
+  - 二分：维护一个 `tails` 数组，`tails[i]` 表示长度为 `i+1` 的最长递增子序列的最小末尾元素，通过二分查找快速定位更新位置，将时间复杂度从 O (n²) 降到 O (n log n)
+  - 注意 tail 数组并不表示最终的最长递增子序列
+  - 原序列的顺序没有被破坏：我们是按原数组的顺序遍历元素的，替换操作只是更新 “某长度子序列的最小末尾”，并没有改变 “遍历顺序”—— 比如处理 4 时，它出现在 21 之后，所以我们只会用 4 去更新 “在它之前能形成的子序列” 的末尾，不会往前篡改
+  - g 数组的顺序不需要和原序列一致：g 数组本身是 “长度 - 最小末尾” 的映射，它内部保持递增（因为每次替换 / 加入都保证`g`是严格递增的），但它不是原序列的子序列。比如最终`g = [1,3,4,7,8,9,10,11]`，这恰好是原序列的一个 LIS（`[1,3,4,7,8,9,10,11]`），但即使 g 不是原序列的子序列，它的长度依然是对的
+
+- 代码实现
+
+  ```cpp
+  #include <iostream>
+  #include <vector>
+  #include <algorithm> // 用于lower_bound
+  
+  using namespace std;
+  
+  class Solution {
+  public:
+      int lengthOfLIS(vector<int>& nums) {
+          int n = nums.size();
+          if (n == 0) return 0; // 边界处理：空数组直接返回0
+          
+          // tails数组：tails[i]表示长度为i+1的LIS的最小末尾元素
+          vector<int> tails;
+          tails.push_back(nums[0]); // 初始化，第一个元素作为长度为1的LIS的末尾
+          
+          for (int i = 1; i < n; i++) {
+              if (nums[i] > tails.back()) {
+                  // 情况1：当前元素比tails最后一个元素大，直接追加，LIS长度+1
+                  tails.push_back(nums[i]);
+              } else {
+                  // 情况2：当前元素不大于tails最后一个元素，用二分找第一个>=nums[i]的位置并替换
+                  // lower_bound返回第一个>=nums[i]的迭代器，保证tails的递增性
+                  auto it = lower_bound(tails.begin(), tails.end(), nums[i]);
+                  *it = nums[i]; // 替换为更小的末尾元素，为后续更长的子序列留空间
+              }
+          }
+          
+          // tails的长度就是最长递增子序列的长度
+          return tails.size();
+      }
+  };
+  ```
+
+- 那么如何利用这个来求解最长递增子序列是什么？
+
+- 原算法只维护了`g`数组（记录各长度子序列的最小末尾），要构造 LIS，需要额外记录两个信息：
+
+  - `g`数组：和原算法一致，记录`长度i+1的子序列的最小末尾`；
+  - `pre`数组：`pre[i]` 记录原数组中第`i`个元素，在它所属的最长递增子序列中，前一个元素的索引；
+  - 最后一步回溯：找到 LIS 的最后一个元素的索引，通过`pre`数组回溯，就能还原出完整的 LIS
+
+- 代码实现
+
+  ```cpp
+  #include <algorithm> // 用于lower_bound
+  #include <iostream>
+  #include <vector>
+  
+  using namespace std;
+  
+  class Solution {
+  public:
+      // 原功能：求LIS长度
+      int lengthOfLIS(vector<int>& nums) {
+          int n = nums.size();
+          if (n == 0)
+              return 0;
+  
+          vector<int> tails;
+          tails.push_back(nums[0]);
+  
+          for (int i = 1; i < n; i++) {
+              if (nums[i] > tails.back()) {
+                  tails.push_back(nums[i]);
+              } else {
+                  auto it = lower_bound(tails.begin(), tails.end(), nums[i]);
+                  *it = nums[i];
+              }
+          }
+  
+          return tails.size();
+      }
+  
+      // 构造最长递增子序列（LIS）
+      vector<int> findOneLIS(vector<int>& nums) {
+          int n = nums.size();
+          if (n == 0) {
+              return {};
+          }
+  
+          // pair结构体：存储值(v)和原数组下标(i)
+          // C++直接用pair<int, int>，first=值，second=下标
+          vector<pair<int, int>> g;
+          // last数组：记录每个元素的前驱下标，初始化为-1
+          vector<int> last(n, -1);
+  
+          for (int i = 0; i < n; ++i) {
+              int x = nums[i];
+              // 找第一个g[j].first >= x的下标j
+              // lower_bound的比较函数：比较pair的first值
+              auto it = lower_bound(
+                  g.begin(), g.end(), make_pair(x, 0),
+                  [](const pair<int, int>& a, const pair<int, int>& b) {
+                      return a.first < b.first; // 按值升序比较
+                  });
+              int j = it - g.begin(); // 转换为下标
+  
+              // 记录前驱：j>0时，前驱是g[j-1].second（原数组下标）
+              if (j > 0) {
+                  last[i] = g[j - 1].second;
+              }
+  
+              // 替换或追加：维护g数组的"最小末尾"特性
+              if (j < g.size()) {
+                  g[j] = {x, i}; // 替换当前位置的pair
+              } else {
+                  g.emplace_back(x, i); // 追加新的pair
+              }
+          }
+  
+          // 回溯构造LIS：从g最后一个元素的下标开始
+          vector<int> lis;
+          for (int i = g.back().second; i >= 0; i = last[i]) {
+              lis.push_back(nums[i]);
+          }
+          // 反转得到正序的LIS（对应Go的slices.Reverse）
+          reverse(lis.begin(), lis.end());
+  
+          return lis;
+      }
+  };
+  ```
+
+## 递增的三元子序列
+
+- [递增的三元子序列](https://leetcode.cn/problems/increasing-triplet-subsequence/)
+
+## 最大递增子序列的个数
+
+- 代码实现
+
+	```cpp
+	class Solution {
+	public:
+	    int findNumberOfLIS(vector<int>& nums) {
+	        int n = nums.size();
+	        vector<int> dp(n, 1);
+	        vector<int> count(n, 1);
+	        int ans = 1;
+	        int res = 0;
+	        for (int i = 0; i < n; i++) {
+	            for (int j = 0; j < i; j++) {
+	                if (nums[j] < nums[i]) {
+	                    if (dp[j] + 1 > dp[i]) {
+	                        count[i] = count[j];
+	                    } else if (dp[j] + 1 == dp[i]) {
+	                        count[i] += count[j];
+	                    }
+	                    dp[i] = max(dp[i], dp[j] + 1);
+	                }
+	            }
+	            if (dp[i] > ans) {
+	                ans = dp[i];
+	                res = count[i];
+	            } else if (dp[i] == ans) {
+	                res += count[i];
+	            }
+	        }
+	        return res;
+	    }
+	};
+	```
+
+## 进阶
+
+- 给定一个正整数 k（k ≤ 1e9），构造一个数组 nums，使得 nums 的最长递增子序列（LIS）的个数恰好等于 k
+
+- 要构造出 LIS 个数恰好为 k 的数组，核心是利用 “二进制分解 + 阶梯式数组” 的思路：
+
+  1. 基础原理：一个形如 `[1,2,3,...,m]` 的数组，LIS 个数为 1（只有自身）；一个形如 `[1,1,1]` 的数组，LIS 个数为 3（每个 1 单独作为 LIS）；而阶梯式数组（如 `[3,2,1,2,1,1]`）可以通过 “分组重复” 的方式，让 LIS 个数等于各组选择数的乘积。
+  2. 二进制分解：将 k 分解为若干个整数的乘积（比如 k=6=2×3），然后构造对应的 “阶梯组”，每组的选择数对应分解后的因子，最终 LIS 个数就是所有因子的乘积
+  3. 构造规则：
+
+  	- 从大到小构造 “阶梯”，每个阶梯内的数字相同，阶梯间严格递减；
+  	- 第 i 个阶梯的长度 = 分解后的第 i 个因子，阶梯的数值 = 阶梯的层级（保证 LIS 只能从每个阶梯选一个元素）
+
+- 若 k=6：分解为 2×3 → 构造数组 `[2,2,1,1,1]`
+
+	- LIS 的长度为 2（必须从第一个阶梯选一个 2，第二个阶梯选一个 1）；
+	- LIS 的个数 = 第一个阶梯的元素数 × 第二个阶梯的元素数 = 2×3=6
+
+- 若 k=5：分解为 5 → 构造数组 `[1,1,1,1,1]`（LIS 长度为 1，个数为 5）
+
+- 若 k=7（质数）：分解为 7 → 构造数组 `[1,1,1,1,1,1,1]`
+
+- 若 k=12=2×2×3 → 构造数组 `[3,3,2,2,1,1,1]`（LIS 个数 = 2×2×3=12）
+
+- 代码实现
+
+	```cpp
+	// 分解k为若干因子（优先分解为大因子，减少数组长度）
+	vector<int> factorize(int k) {
+	    vector<int> factors;
+	    if (k == 1) {
+	        factors.push_back(1);
+	        return factors;
+	    }
+	    // 从大到小分解（减少数组长度）
+	    for (int i = sqrt(k); i >= 2; --i) {
+	        while (k % i == 0) {
+	            factors.push_back(i);
+	            k /= i;
+	        }
+	    }
+	    if (k > 1) {
+	        factors.push_back(k);
+	    }
+	    // 反转因子，让大因子在前（构造阶梯时层级更高）
+	    reverse(factors.begin(), factors.end());
+	    return factors;
+	}
+	
+	// 构造nums数组，使其LIS个数恰好为k
+	vector<int> constructNumsWithLISCount(int k) {
+	    if (k <= 0) {
+	        return {}; // 非法输入，返回空数组
+	    }
+	    if (k == 1) {
+	        return {1}; // 最简单的情况：LIS个数为1
+	    }
+	
+	    // 步骤1：分解k为因子数组
+	    vector<int> factors = factorize(k);
+	    int m = factors.size(); // 阶梯的层数
+	
+	    // 步骤2：构造阶梯式数组
+	    vector<int> nums;
+	    for (int i = 0; i < m; ++i) {
+	        int level = m - i; // 阶梯的数值（层级，从m递减到1）
+	        int count = factors[i]; // 该阶梯的元素个数
+	        // 向nums中添加count个level
+	        nums.insert(nums.end(), count, level);
+	    }
+	
+	    return nums;
+	}
+	
+	// 验证函数：计算数组的LIS个数（用于验证构造结果）
+	int countLIS(vector<int>& nums) {
+	    int n = nums.size();
+	    if (n == 0) return 0;
+	
+	    // dp[i]：以nums[i]结尾的LIS长度
+	    // cnt[i]：以nums[i]结尾的LIS的个数
+	    vector<int> dp(n, 1);
+	    vector<long long> cnt(n, 1);
+	    int max_len = 1;
+	    long long total = 1;
+	
+	    for (int i = 1; i < n; ++i) {
+	        for (int j = 0; j < i; ++j) {
+	            if (nums[i] > nums[j]) {
+	                if (dp[j] + 1 > dp[i]) {
+	                    dp[i] = dp[j] + 1;
+	                    cnt[i] = cnt[j];
+	                } else if (dp[j] + 1 == dp[i]) {
+	                    cnt[i] += cnt[j];
+	                }
+	            }
+	        }
+	        // 更新最长长度和总个数
+	        if (dp[i] > max_len) {
+	            max_len = dp[i];
+	            total = cnt[i];
+	        } else if (dp[i] == max_len) {
+	            total += cnt[i];
+	        }
+	    }
+	
+	    return (int)total;
+	}
+	```
+
+- 另一种做法所得到数组的长度更短，即用 2 的幂次分解 k（二进制分解）来构造数组，能得到长度最短的 nums
+
+- 任何正整数 k 都可以唯一分解为 2 的幂次之和（二进制表示）
+
+- 基于二进制分解的构造思路和 “阶梯” 不同，而是利用 “递增序列 + 重复元素” 让 LIS 个数等于各幂次的和，核心规则：
+
+	- 构造一个基础递增序列 `[1,2,3,...,m]`（m 是 k 的二进制位数）；
+	- 对于二进制中为 1 的位（对应 2^p），在基础序列的第`p+1`位后重复一次该元素，使得 LIS 个数累加 2^p；
+	- 最终 LIS 个数 = 所有二进制为 1 的位对应的 2^p 之和 = k；
+	- 数组长度 = 二进制位数 + 二进制中 1 的个数 - 1（远短于因子分解的数组长度）
+
+- 举例验证（对比因子分解）
+
+	| k    | 二进制分解    | 构造的最短数组 | 数组长度 | 因子分解的数组           | 因子分解长度 |
+	| :--- | :------------ | :------------- | :------- | :----------------------- | :----------- |
+	| 6    | 110（4+2）    | [1,1,2,3]      | 4        | [2,2,1,1,1]              | 5            |
+	| 13   | 1101（8+4+1） | [1,2,2,3,3,4]  | 6        | [13 个 1] 或 [3,3,2,2,1] | 13 或 5      |
+	| 5    | 101（4+1）    | [1,2,3,3]      | 4        | [5 个 1]                 | 5            |
+
+- 不对吧，
+
+
+## 相邻元素差值不超过 k 的最长递增子序列长度
+
+- 朴素而言，在 LIS 的基础上加一个判断条件即可
+
+	```cpp
+	class Solution {
+	public:
+	    int lengthOfLIS(vector<int>& nums, int k) {
+	        int n = nums.size();
+	        vector<int> dp(n, 1);
+	        int ans = 1;
+	        for (int i = 0; i < n; i++) {
+	            for (int j = 0; j < i; j++) {
+	                if (nums[j] < nums[i] && abs(nums[j] - nums[i]) <= k) {
+	                    dp[i] = max(dp[i], dp[j] + 1);
+	                    ans = max(ans, dp[i]);
+	                }
+	            }
+	        }
+	        return ans;
+	    }
+	};
+	```
+
+- 但实际上，这会导致部分算例超时
+
+- 分析问题的本质是
+
+	```text
+	dp[x] = max{ dp[y] | y ∈ [x−k, x−1] } + 1
+	```
+
+- 也即，要找的是在一段值域窗口 [x−k, x−1] 里的最大值
+
+- 因此需要使用基于值域的滑动窗口（任意区间最值）来解决这个问题，即线段树 / 树状数组 / 块状数组

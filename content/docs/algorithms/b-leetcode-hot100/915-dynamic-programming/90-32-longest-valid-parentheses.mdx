@@ -1,0 +1,167 @@
+---
+id: "32"
+title: 最长有效括号
+englishTitle: Longest Valid Parentheses
+slug: longest-valid-parentheses
+url: https://leetcode-cn.com/problems/longest-valid-parentheses/
+difficulty: Hard
+tags:
+  - 动态规划
+  - 栈
+  - 字符串
+---
+
+## 题面
+
+给你一个只包含 `'('` 和 `')'` 的字符串，找出最长有效（格式正确且连续）括号 子串 的长度。
+
+左右括号匹配，即每个左括号都有对应的右括号将其闭合的字符串是格式正确的，比如 `"(()())"`。
+
+示例 1：
+
+    输入： s = "(()"
+    输出： 2
+    解释： 最长有效括号子串是 "()"
+
+示例 2：
+
+    输入： s = ")()())"
+    输出： 4
+    解释： 最长有效括号子串是 "()()"
+
+示例 3：
+
+    输入： s = ""
+    输出： 0
+
+提示：
+
+   `0 <= s.length <= 3  104`
+  * `s[i]` 为 `'('` 或 `')'`
+
+## 分析
+
+- 可以直接用栈解决，代码实现
+
+	```cpp
+	class Solution {
+	public:
+	    int longestValidParentheses(string s) {
+	        stack<int> st;
+	        // 初始化栈，压入-1作为有效括号的起始边界（关键优化）
+	        st.push(-1);
+	        int ans = 0;
+	        for (int j = 0; j < s.size(); j++) {
+	            if (s[j] == '(') {
+	                // 左括号直接压入索引
+	                st.push(j);
+	            } else {
+	                // 右括号先弹出栈顶
+	                st.pop();
+	                if (st.empty()) {
+	                    // 栈空说明当前右括号无匹配，作为新的边界
+	                    st.push(j);
+	                } else {
+	                    // 计算当前有效长度：当前索引 - 栈顶边界索引
+	                    ans = max(ans, j - st.top());
+	                }
+	            }
+	        }
+	        return ans;
+	    }
+	};
+	```
+
+- dp[i] 表示以第 i 个字符结尾的子串的最长有效括号子串长度
+
+- 当栈顶是左括号，且当前字符是右括号时，其最大有效括号子串长度就是 `dp[st.top() - 1] + j -st.top() + 1`
+
+- 代码实现
+
+	```cpp
+	class Solution {
+	public:
+	    int longestValidParentheses(string s) {
+	        stack<int> st;
+	        vector<int> dp(s.size(), 0);
+	        int ans = 0;
+	        for (int j = 0; j < s.size(); j++) {
+	            if (!st.empty() && s[st.top()] == '(' && s[j] == ')') {
+	                dp[j] = (st.top() - 1 >= 0 ? dp[st.top() - 1] : 0) + j -
+	                        st.top() + 1;
+	                ans = max(dp[j], ans);
+	                st.pop();
+	            } else {
+	                st.push(j);
+	            }
+	        }
+	        return ans;
+	    }
+	};
+	```
+
+- 实际上，这个不太类似动态规划，只是用数组存储了被匹配掉的左括号左侧是否已经有有效括号子串
+- 定义 `dp[i]` 表示以字符串中第 `i` 个字符（下标从 0 开始）结尾的**最长有效括号子串的长度**
+	- 只有当 `s[i] = ')'` 时，`dp[i]` 才有可能大于 0（以左括号结尾的子串不可能是有效括号）；
+	- 当 `s[i] = '('` 时，`dp[i] = 0`
+
+- 情况 1：`s[i] = ')'` 且 `s[i-1] = '('`
+	- 此时 `s[i-1]` 和 `s[i]` 直接匹配成 `()`，因此 `dp[i] = dp[i-2] + 2`（`dp[i-2]` 是 `i-2` 位置结尾的有效长度，加上当前匹配的 2 个字符）
+	- 注意：如果 `i-2 < 0`（比如 `i=1`），则 `dp[i-2]` 按 0 计算
+
+- 情况 2：`s[i] = ')'` 且 `s[i-1] = ')'`，此时需要看 `i - dp[i-1] - 1` 位置的字符：
+
+	- 如果 `s[i - dp[i-1] - 1] = '('`，说明这个左括号能和当前 `s[i]` 匹配，此时 `dp[i] = dp[i-1] + 2 + dp[i - dp[i-1] - 2]`
+	  - `dp[i-1]`：以 `i-1` 结尾的有效长度；
+	  - `+2`：当前匹配的 `()`；
+	  - `dp[i - dp[i-1] - 2]`：匹配位置前的有效长度（比如 `()(())` 中，最后一个 `)` 匹配后，还要加上前面 `()` 的长度）
+
+	- 如果 `s[i - dp[i-1] - 1] = ')'`，则当前无法形成有效匹配，`dp[i] = 0`
+
+
+- 初始条件：`dp[0] = 0`（单个字符不可能是有效括号），整个 `dp` 数组初始化为 0
+
+- 代码实现
+
+	```cpp
+	int longestValidParentheses(string s) {
+	    int n = s.size();
+	    // 边界条件：字符串长度小于2，直接返回0
+	    if (n < 2) {
+	        return 0;
+	    }
+	
+	    // 初始化dp数组，dp[i]表示以s[i]结尾的最长有效括号长度
+	    vector<int> dp(n, 0);
+	    int max_len = 0;
+	
+	    // 从第二个字符开始遍历（下标1）
+	    for (int i = 1; i < n; ++i) {
+	        // 只有右括号结尾才有可能形成有效括号
+	        if (s[i] == ')') {
+	            // 情况1：前一个字符是左括号，直接匹配 "()"
+	            if (s[i-1] == '(') {
+	                // 处理i-2越界的情况，越界则取0
+	                dp[i] = (i >= 2 ? dp[i-2] : 0) + 2;
+	            }
+	            // 情况2：前一个字符是右括号，需要找嵌套的左括号
+	            else {
+	                // 计算可能匹配的左括号位置
+	                int match_pos = i - dp[i-1] - 1;
+	                // 匹配位置有效且是左括号
+	                if (match_pos >= 0 && s[match_pos] == '(') {
+	                    // 加上匹配位置前的有效长度（处理match_pos-1越界）
+	                    dp[i] = dp[i-1] + 2 + (match_pos >= 1 ? dp[match_pos - 1] : 0);
+	                }
+	            }
+	            // 更新最大长度
+	            max_len = max(max_len, dp[i]);
+	        }
+	        // 左括号结尾的情况，dp[i]保持0，无需处理
+	    }
+	
+	    return max_len;
+	}
+	```
+
+	

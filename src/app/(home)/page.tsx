@@ -145,7 +145,7 @@ export default function HomePage() {
                 },
                 {
                   label: "文档字数",
-                  value: "50w+",
+                  value: "70w+",
                   tip: "统计中文字符数和英文单词数",
                 },
                 { label: "持续更新", value: "∞", tip: "内容定期更新维护" },

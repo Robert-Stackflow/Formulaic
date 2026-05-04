@@ -1,0 +1,152 @@
+---
+remark: 注意递推公式和边界条件
+id: "72"
+title: 编辑距离
+englishTitle: Edit Distance
+slug: edit-distance
+url: https://leetcode-cn.com/problems/edit-distance/
+difficulty: Medium
+tags:
+  - 多维动态规划
+  - 字符串
+  - 动态规划
+---
+
+## 题面
+
+给你两个单词 `word1` 和 `word2`， 请返回将  `word1` 转换成 `word2` 所使用的最少操作数  。
+
+你可以对一个单词进行如下三种操作：
+
+  * 插入一个字符
+  * 删除一个字符
+  * 替换一个字符
+
+示例  1：
+
+    输入： word1 = "horse", word2 = "ros"
+    输出： 3
+    解释：
+    horse -> rorse (将 'h' 替换为 'r')
+    rorse -> rose (删除 'r')
+    rose -> ros (删除 'e')
+
+示例  2：
+
+    输入： word1 = "intention", word2 = "execution"
+    输出： 5
+    解释：
+    intention -> inention (删除 't')
+    inention -> enention (将 'i' 替换为 'e')
+    enention -> exention (将 'n' 替换为 'x')
+    exention -> exection (将 'n' 替换为 'c')
+    exection -> execution (插入 'u')
+
+提示：
+
+  * `0 <= word1.length, word2.length <= 500`
+  * `word1` 和 `word2` 由小写英文字母组成
+
+## 分析
+
+- `dp[i][j]` 表示以 0-i 且 0-j 的编辑距离
+
+- 递推公式
+
+	- 如果 `s1[i]==s1[j]`，则 `dp[i][j] = dp[i - 1][j - 1]`
+	- 如果 `s1[i]!=s1[j]`，则 `dp[i][j]=min(dp[i-1][j]+1,dp[i][j-1]+1,dp[i - 1][j - 1] + 1)`
+
+- 边界条件
+
+	- `dp[i][0] = i`：将 `s` 的前 `i` 个字符转换成空字符串，需要删除 `i` 次
+	- `dp[0][j] = j`：将空字符串转换成 `t` 的前 `j` 个字符，需要插入 `j` 次
+	
+- 代码实现
+
+  ```cpp
+  class Solution {
+  public:
+      int minDistance(string s, string t) {
+          int n = s.size(), m = t.size();
+          // 二维DP数组，dp[i][j]表示s前i个字符转t前j个字符的最少操作数
+          vector<vector<int>> dp(n + 1, vector<int>(m + 1, 0));
+  
+          // 初始化边界
+          for (int i = 0; i <= n; ++i)
+              dp[i][0] = i; // 转空字符串，删除i次
+          for (int j = 0; j <= m; ++j)
+              dp[0][j] = j; // 空字符串转t，插入j次
+  
+          // 状态转移
+          for (int i = 1; i <= n; ++i) {
+              for (int j = 1; j <= m; ++j) {
+                  if (s[i - 1] == t[j - 1]) {
+                      // 字符相等，无需操作，继承左上角值
+                      dp[i][j] = dp[i - 1][j - 1];
+                  } else {
+                      // 字符不等，取替换、删除、插入的最小值 +1
+                      dp[i][j] =
+                          min({dp[i - 1][j - 1], dp[i - 1][j], dp[i][j - 1]}) + 1;
+                  }
+              }
+          }
+          return dp[n][m];
+      }
+  };
+
+- 在二维 DP 中，计算 `dp[i][j]` 仅依赖 3 个位置的值：
+
+	1. `dp[i-1][j-1]`（左上角）：对应替换操作；
+	2. `dp[i-1][j]`（正上方）：对应删除操作；
+	3. `dp[i][j-1]`（正左方）：对应插入操作
+
+- 因此无需保存整个二维数组，只需用一维数组保存上一行的状态，再用一个临时变量记录 “左上角” 的值（避免被覆盖），即可完成状态转移
+
+- 代码实现
+
+	```cpp
+	int minDistance(string s, string t) {
+	    int n = s.size(), m = t.size();
+	    
+	    // 关键优化1：让较短的字符串作为t，一维数组长度=min(n,m)+1，进一步节省空间
+	    if (n < m) {
+	        swap(s, t);
+	        swap(n, m);
+	    }
+	
+	    // 一维DP数组：初始时dp[j] = dp[0][j]（空字符串转t前j个字符的操作数）
+	    vector<int> dp(m + 1, 0);
+	    for (int j = 0; j <= m; ++j) {
+	        dp[j] = j; // 边界：空→t前j个字符，需要j次插入
+	    }
+	
+	    // 遍历s的每个字符（对应二维DP的i行）
+	    for (int i = 1; i <= n; ++i) {
+	        // pre：保存dp[i-1][j-1]（左上角值），初始为dp[i-1][0] = i-1
+	        int pre = dp[0];
+	        // 更新dp[0]为dp[i][0]（s前i个字符→空字符串，需要i次删除）
+	        dp[0] = i;
+	
+	        // 遍历t的每个字符（对应二维DP的j列）
+	        for (int j = 1; j <= m; ++j) {
+	            // temp：暂存dp[j]的原值（即dp[i-1][j]，正上方值）
+	            int temp = dp[j];
+	
+	            if (s[i-1] == t[j-1]) {
+	                // 字符相等：dp[i][j] = 左上角值（pre）
+	                dp[j] = pre;
+	            } else {
+	                // 字符不等：取替换(pre)、删除(temp)、插入(dp[j-1])的最小值+1
+	                dp[j] = min({pre, temp, dp[j-1]}) + 1;
+	            }
+	
+	            // 更新pre为下一轮的左上角值（当前的dp[i-1][j]）
+	            pre = temp;
+	        }
+	    }
+	
+	    return dp[m];
+	}
+	```
+
+	

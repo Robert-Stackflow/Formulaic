@@ -1,0 +1,11 @@
+{
+  "title": "技巧",
+  "description": "技巧相关的题目",
+  "pages": [
+    "96-136-single-number",
+    "97-169-majority-element",
+    "98-75-sort-colors",
+    "99-31-next-permutation",
+    "100-287-find-the-duplicate-number"
+  ]
+}

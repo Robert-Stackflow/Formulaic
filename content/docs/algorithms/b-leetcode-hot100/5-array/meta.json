@@ -1,0 +1,11 @@
+{
+  "title": "普通数组",
+  "description": "普通数组相关的题目",
+  "pages": [
+    "13-53-maximum-subarray",
+    "14-56-merge-intervals",
+    "15-189-rotate-array",
+    "16-238-product-of-array-except-self",
+    "17-41-first-missing-positive"
+  ]
+}

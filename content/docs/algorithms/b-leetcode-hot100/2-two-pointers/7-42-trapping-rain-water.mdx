@@ -1,0 +1,240 @@
+---
+id: "42"
+title: 接雨水
+englishTitle: Trapping Rain Water
+slug: trapping-rain-water
+url: https://leetcode-cn.com/problems/trapping-rain-water/
+difficulty: Hard
+tags:
+  - 双指针
+  - 栈
+  - 数组
+  - 动态规划
+  - 单调栈
+---
+
+## 题面
+
+给定 `n` 个非负整数表示每个宽度为 `1` 的柱子的高度图，计算按此排列的柱子，下雨之后能接多少雨水。
+
+示例 1：
+
+![](https://assets.leetcode.cn/aliyun-lc-upload/uploads/2018/10/22/rainwatertrap.png)
+
+    输入： height = [0,1,0,2,1,0,1,3,2,1,2,1]
+    输出： 6
+    解释： 上面是由数组 [0,1,0,2,1,0,1,3,2,1,2,1] 表示的高度图，在这种情况下，可以接 6 个单位的雨水（蓝色部分表示雨水）。 
+
+示例 2：
+
+    输入： height = [4,2,0,3,2,5]
+    输出： 9
+
+提示：
+
+  * `n == height.length`
+      `1 <= n <= 2  104`
+  * `0 <= height[i] <= 105`
+
+## 分析
+
+- 横向角度
+	- 求第 `i` 层的水，遍历每个位置，如果当前的高度小于 `i`，并且两边有高度大于等于 `i` 的，说明这个地方一定有水，水就可以加 1
+	- 如果求高度为 `i` 的水，首先用一个变量 `temp` 保存当前累积的水，初始化为 0。从左到右遍历墙的高度，遇到高度大于等于 `i` 的时候，开始更新 `temp`。更新原则是遇到高度小于 `i` 的就把 `temp` 加 1，遇到高度大于等于 `i` 的，就把 `temp` 加到最终的答案 `ans` 里，并且 `temp` 置零，然后继续循环
+- 纵向角度
+	- 对于下标 i，下雨后水能到达的最大高度等于下标 i 两边的最大高度的最小值
+	- 下标 i 处能接的雨水量等于下标 i 处的水能到达的最大高度减去 height[i]
+	- 因此，朴素的做法是对于数组中的每个元素，分别向左和向右扫描并记录左右的最大高度，然后计算每个下标位置能接的雨水量
+	- 上述做法的时间复杂度是 $O(n^2)$
+	- 时间复杂度较高是因为对每个下标位置都向两边扫描。如果已经知道每个位置两边的最大高度，则可以在 $O(n)$ 时间内计算得到每个位置能接的雨水总量
+
+## 按行求
+
+- 代码实现
+
+	```cpp
+	#include <vector>
+	using namespace std;
+	
+	class Solution {
+	public:
+	    int trap(vector<int>& height) {
+	        int sum = 0;
+	        int max = getMax(height);
+	        for (int i = 1; i <= max; i++) {
+	            bool isStart = false;
+	            int temp_sum = 0;
+	            for (int j = 0; j < height.size(); j++) {
+	                if (isStart && height[j] < i) {
+	                    temp_sum++;
+	                }
+	                if (height[j] >= i) {
+	                    sum += temp_sum;
+	                    temp_sum = 0;
+	                    isStart = true;
+	                }
+	            }
+	        }
+	        return sum;
+	    }
+	    
+	private:
+	    int getMax(vector<int>& height) {
+	        int max = 0;
+	        for (int i = 0; i < height.size(); i++) {
+	            if (height[i] > max) {
+	                max = height[i];
+	            }
+	        }
+	        return max;
+	    }
+	};
+	```
+
+## 动态规划
+
+- 可以使用动态规划的方法来从纵向角度解决问题
+
+- 创建两个长度为 n 的数组 leftMax 和 rightMax
+
+	- leftMax[i] 表示下标 i 左侧的最大高度
+	- rightMax[i] 表示下标 i 右侧的最大高度
+
+- 递推关系
+
+	- leftMax[0] = height[0]
+	- rightMax[n-1] = height[n-1]
+	- leftMax[i] = max(height[i],leftMax[i-1])
+	- rightMax[i] = max(height[i],rightMax[i+1])
+
+- 可以正向遍历得到 leftMax，反向遍历得到 rightMax
+
+- 然后通过 max(leftMax[i],rightMax[i])-height[i] 得到 i 位置处能积累的雨水量
+
+- 代码实现
+
+	```cpp
+	class Solution {
+	public:
+	    int trap(vector<int>& height) {
+	        int n = height.size();
+	        vector<int> leftMax = vector(n, 0);
+	        vector<int> rightMax = vector(n, 0);
+	        leftMax[0] = height[0];
+	        rightMax[n - 1] = height[n - 1];
+	        for (int i = 1; i <= n - 1; i++) {
+	            leftMax[i] = max(height[i], leftMax[i - 1]);
+	        }
+	        for (int i = n - 2; i >= 0; i--) {
+	            rightMax[i] = max(height[i], rightMax[i + 1]);
+	        }
+	        int result = 0;
+	        for (int i = 0; i <= n - 1; i++) {
+	            result += (min(leftMax[i], rightMax[i]) - height[i]);
+	        }
+	        return result;
+	    }
+	};
+	```
+
+- 以上算法的时间复杂度为 $O(n)$，空间复杂度也是 $O(n)$​
+
+## 双指针
+
+- 可以对以上代码进一步优化
+
+- 维护两个相向指针，在移动过程中记录出现过的最大的高度
+
+- 代码如下
+
+	```cpp
+	class Solution {
+	public:
+	    int trap(vector<int>& height) {
+	        // 边界条件：数组为空 或 长度<3，无法接水，直接返回0
+	        if (height.empty() || height.size() < 3) {
+	            return 0;
+	        }
+	
+	        int sum = 0;                // 总接水量
+	        int max_left = 0;           // 左指针左侧的最高高度
+	        int max_right = 0;          // 右指针右侧的最高高度
+	        int left = 1;               // 左指针，从第二个位置（索引1）开始
+	        int right = height.size() - 2; // 右指针，从倒数第二个位置开始
+	
+	        // 双指针遍历所有可接水的位置，直到左右指针相遇
+	        while (left <= right) {
+	            // 比较左右边界的高度，决定处理方向
+	            if (height[left - 1] < height[right + 1]) {
+	                // 左边界更矮 → 处理左指针（接水量由左最高高度决定）
+	                max_left = max(max_left, height[left - 1]);
+	                int min_height = max_left;
+	                // 只有最小高度 > 当前高度时，才能接水
+	                if (min_height > height[left]) {
+	                    sum += (min_height - height[left]);
+	                }
+	                left++; // 左指针右移
+	            } else {
+	                // 右边界更矮/相等 → 处理右指针（接水量由右最高高度决定）
+	                max_right = max(max_right, height[right + 1]);
+	                int min_height = max_right;
+	                if (min_height > height[right]) {
+	                    sum += (min_height - height[right]);
+	                }
+	                right--; // 右指针左移
+	            }
+	        }
+	
+	        return sum;
+	    }
+	};
+	```
+
+## 单调栈
+
+- 当遍历墙的高度的时候，如果当前高度小于栈顶的墙高度，说明这里会有积水，将墙的高度的下标入栈
+
+- 如果当前高度大于栈顶的墙的高度，说明之前的积水到这里停下，于是可以计算下有多少积水
+
+- 计算完，就把当前的墙继续入栈，作为新的积水的墙
+
+- 总体原则
+
+	- 当前高度小于等于栈顶高度，入栈，指针后移
+	- 当前高度大于栈顶高度，出栈，计算出当前墙和栈顶的墙之间水的多少，然后计算当前的高度和新栈的高度的关系，重复第 2 步。直到当前墙的高度不大于栈顶高度或者栈空，然后把当前墙入栈，指针后移
+
+- 单调栈实际上是按横向的水层计算，和按行遍历的思路完全不同
+
+- 代码实现
+
+	```cpp
+	#include <vector>
+	#include <stack>
+	using namespace std;
+	
+	class Solution {
+	public:
+	    int trap(vector<int>& height) {
+	        int sum = 0;
+	        stack<int> st;
+	        int current = 0;
+	        while (current < height.size()) {
+	            while (!st.empty() && height[current] > height[st.top()]) {
+	                int h = height[st.top()];
+	                st.pop();
+	                if (st.empty()) {
+	                    break;
+	                }
+	                int distance = current - st.top() - 1;
+	                int min_h = min(height[st.top()], height[current]);
+	                sum += distance * (min_h - h);
+	            }
+	            st.push(current);
+	            current++;
+	        }
+	        return sum;
+	    }
+	};
+	```
+
+	

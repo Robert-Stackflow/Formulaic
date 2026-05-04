@@ -1,0 +1,361 @@
+---
+remark: 注意掌握扩展题
+id: "994"
+title: 腐烂的橘子
+englishTitle: Rotting Oranges
+slug: rotting-oranges
+url: https://leetcode-cn.com/problems/rotting-oranges/
+difficulty: Medium
+tags:
+  - 图论
+  - 广度优先搜索
+  - 数组
+  - 矩阵
+---
+
+## 题面
+
+在给定的 `m x n` 网格 `grid` 中，每个单元格可以有以下三个值之一：
+
+  * 值 `0` 代表空单元格；
+  * 值 `1` 代表新鲜橘子；
+  * 值 `2` 代表腐烂的橘子。
+
+每分钟，腐烂的橘子 周围  4 个方向上相邻 的新鲜橘子都会腐烂。
+
+返回 直到单元格中没有新鲜橘子为止所必须经过的最小分钟数。如果不可能，返回  `-1` 。
+
+示例 1：
+
+![](https://assets.leetcode.cn/aliyun-lc-upload/uploads/2019/02/16/oranges.png)
+
+    输入： grid = [[2,1,1],[1,1,0],[0,1,1]]
+    输出： 4
+
+示例 2：
+
+    输入： grid = [[2,1,1],[0,1,1],[1,0,1]]
+    输出： -1
+    解释： 左下角的橘子（第 2 行， 第 0 列）永远不会腐烂，因为腐烂只会发生在 4 个方向上。
+
+示例 3：
+
+    输入： grid = [[0,2]]
+    输出： 0
+    解释： 因为 0 分钟时已经没有新鲜橘子了，所以答案就是 0 。
+
+提示：
+
+  * `m == grid.length`
+  * `n == grid[i].length`
+  * `1 <= m, n <= 10`
+  * `grid[i][j]` 仅为 `0`、`1` 或 `2`
+
+## 分析
+
+- 很显然，是广度优先遍历的应用，向队列中放入所有腐败的橘子，每次循环时，增加分钟数，取出所有腐败的橘子，污染周围的新鲜橘子，并将这些被污染的橘子放入队列中
+
+- 如果最后还剩下新鲜的橘子，那么说明不可能腐烂所有橘子
+
+- 代码实现
+
+	```cpp
+	class Solution {
+	public:
+	    // 方向数组保持不变（全局/成员常量均可）
+	    const vector<vector<int>> directions = {{1, 0}, {0, 1}, {-1, 0}, {0, -1}};
+	
+	    int orangesRotting(vector<vector<int>>& grid) {
+	        int m = grid.size(), n = grid[0].size();
+	        int fresh = 0;
+	        queue<pair<int, int>> que;
+	
+	        // 初始化：统计新鲜橘子，将腐烂橘子入队
+	        for (int i = 0; i < m; i++) {
+	            for (int j = 0; j < n; j++) {
+	                if (grid[i][j] == 2) {
+	                    que.push(make_pair(i, j));
+	                } else if (grid[i][j] == 1) {
+	                    fresh++;
+	                }
+	            }
+	        }
+	
+	        int ans = 0;
+	        while (fresh > 0 && !que.empty()) {
+	            // 记录当前层（本轮）的腐烂橘子数
+	            int current_level_size = que.size();
+	            ans++; // 每一层对应1分钟
+	
+	            // 遍历当前层的所有腐烂橘子
+	            for (int i = 0; i < current_level_size; i++) {
+	                pair<int, int> curr = que.front();
+	                que.pop();
+	                int x = curr.first;
+	                int y = curr.second;
+	
+	                // 遍历四个方向
+	                for (int d = 0; d < 4;
+	                     d++) { // 固定4个方向，无需directions.size()
+	                    int nx = x + directions[d][0];
+	                    int ny = y + directions[d][1];
+	
+	                    // 有效坐标 + 新鲜橘子
+	                    if (nx >= 0 && nx < m && ny >= 0 && ny < n &&
+	                        grid[nx][ny] == 1) {
+	                        fresh--;
+	                        grid[nx][ny] = 2;            // 标记为腐烂
+	                        que.push(make_pair(nx, ny)); // 直接入队，无需nxt中转
+	                    }
+	                }
+	            }
+	        }
+	
+	        return fresh > 0 ? -1 : ans;
+	    }
+	};
+	```
+
+## 进阶
+
+- 多源最短路径问题：给定多个 “源点”，求网格中每个点到最近的源点的最短距离（比如腐烂橘子是源点，求每个新鲜橘子到最近腐烂橘子的距离）
+
+- DFS 不适合多源最短路径问题（DFS 是深度优先，易走弯路，无法保证 “最短”），BFS 才是最优选择（BFS 是广度优先，天然求最短路径）
+
+- 场景 1：至多 k 个 1 改成 2，最小化最终新鲜橘子数
+
+	- 第一步：拆分连通块
+		- 遍历网格，找出所有 “未被污染的新鲜连通块”（即无法被原有腐烂橘子扩散到的 1 的连通块）；
+		- 每个连通块的 “大小”= 该块中 1 的数量；
+	- 第二步：贪心选择修改位置
+		- 目标：改 1 个 /k 个 1 为 2 → 本质是 “给某个 / 某 k 个未被污染的连通块增加腐烂源”，让该块被完全污染；
+		- 最优策略：优先选择最大的未被污染连通块修改（改 1 个点就能污染整个块，最大化减少新鲜数）
+
+- 代码实现
+
+	```cpp
+	int calculateFresh(vector<vector<int>> grid) {
+	    int m = grid.size(), n = grid[0].size();
+	    int fresh = 0;
+	    queue<pair<int, int>> q;
+	    
+	    // 初始化队列和新鲜数
+	    for (int i = 0; i < m; i++) {
+	        for (int j = 0; j < n; j++) {
+	            if (grid[i][j] == 2) {
+	                q.push(make_pair(i, j));
+	            } else if (grid[i][j] == 1) {
+	                fresh++;
+	            }
+	        }
+	    }
+	    
+	    // BFS扩散
+	    while (!q.empty() && fresh > 0) {
+	        int size = q.size();
+	        for (int i = 0; i < size; i++) {
+	            auto curr = q.front();
+	            q.pop();
+	            int x = curr.first, y = curr.second;
+	            for (int d = 0; d < 4; d++) {
+	                int nx = x + dirs[d][0], ny = y + dirs[d][1];
+	                if (nx >= 0 && nx < m && ny >= 0 && ny < n && grid[nx][ny] == 1) {
+	                    grid[nx][ny] = 2;
+	                    fresh--;
+	                    q.push(make_pair(nx, ny));
+	                }
+	            }
+	        }
+	    }
+	    return fresh;
+	}
+	// 步骤1：DFS找连通块（标记未被污染的新鲜连通块）
+	void dfsFindBlock(vector<vector<int>>& grid, int x, int y, vector<vector<bool>>& visited, 
+	                  vector<pair<int, int>>& block, vector<vector<int>>& dist) {
+	    if (x <0 || y <0 || x >= grid.size() || y >= grid[0].size() || visited[x][y] || grid[x][y] != 1 || dist[x][y] != -1) {
+	        return;
+	    }
+	    visited[x][y] = true;
+	    block.push_back({x, y});
+	    const int dirs[4][2] = {{1,0},{0,1},{-1,0},{0,-1}};
+	    for (auto& d : dirs) {
+	        dfsFindBlock(grid, x+d[0], y+d[1], visited, block, dist);
+	    }
+	}
+	
+	// Q2：至多k个1改2，最小化新鲜数
+	int minFreshByBlock(vector<vector<int>>& grid, int k) {
+	    int m = grid.size(), n = grid[0].size();
+	    // 1. 多源BFS求每个1到最近腐烂橘子的距离（dist=-1表示未被污染）
+	    auto dist = multiSourceBFS(grid);
+	    
+	    // 2. 找出所有未被污染的新鲜连通块，按大小降序排序
+	    vector<vector<bool>> visited(m, vector<bool>(n, false));
+	    vector<int> block_sizes; // 存储每个未被污染连通块的大小
+	    int total_fresh = 0; // 总新鲜数
+	    int polluted_fresh = 0; // 原本能被污染的新鲜数
+	    
+	    // 统计总新鲜数和已被污染的新鲜数
+	    for (int i = 0; i < m; i++) {
+	        for (int j = 0; j < n; j++) {
+	            if (grid[i][j] == 1) {
+	                total_fresh++;
+	                if (dist[i][j] != -1) polluted_fresh++;
+	            }
+	        }
+	    }
+	    int un_polluted = total_fresh - polluted_fresh; // 原本未被污染的新鲜数
+	    
+	    // 找未被污染的连通块
+	    for (int i = 0; i < m; i++) {
+	        for (int j = 0; j < n; j++) {
+	            if (grid[i][j] == 1 && dist[i][j] == -1 && !visited[i][j]) {
+	                vector<pair<int, int>> block;
+	                dfsFindBlock(grid, i, j, visited, block, dist);
+	                block_sizes.push_back(block.size());
+	            }
+	        }
+	    }
+	    
+	    // 3. 贪心选最大的k个连通块修改，减少未被污染的新鲜数
+	    sort(block_sizes.rbegin(), block_sizes.rend()); // 降序排序
+	    int reduce = 0;
+	    for (int i = 0; i < min(k, (int)block_sizes.size()); i++) {
+	        reduce += block_sizes[i];
+	    }
+	    
+	    // 最终新鲜数 = 原本未被污染的 - 被修改后污染的 + 原本已被污染的（已腐烂）
+	    return (un_polluted - reduce) + 0; // 已被污染的最终会腐烂，所以加0
+	}
+	```
+
+- 场景 3：至多 1 个 2 改成 1，最大化最终新鲜橘子数
+
+	- 第一步：拆分 “腐烂源连通块”
+		- 遍历网格，找出每个 “腐烂橘子的连通块”（即该腐烂橘子能扩散到的所有 1 的连通块）；
+		- 标记每个连通块 “依赖的腐烂源数量”（比如某连通块仅能被 1 个腐烂橘子污染 → 移除该腐烂源，整个块保留）；
+	- 第二步：选择最优修改位置
+		- 最优策略：修改 “唯一污染某个最大连通块的腐烂橘子” 为 1 → 该连通块的所有 1 都不会被污染，最大化新鲜数
+
+- 代码实现
+
+	```cpp
+	// 找每个腐烂橘子的污染范围（连通块）
+	void dfsPolluteRange(vector<vector<int>>& grid, int x, int y, vector<vector<bool>>& visited, 
+	                     vector<pair<int, int>>& range, vector<vector<int>>& owner) {
+	    if (x <0 || y <0 || x >= grid.size() || y >= grid[0].size() || visited[x][y]) return;
+	    if (grid[x][y] == 2) {
+	        visited[x][y] = true;
+	        range.push_back({x, y});
+	        owner[x][y] = range[0].first * grid[0].size() + range[0].second; // 标记所属腐烂源
+	    } else if (grid[x][y] == 1) {
+	        visited[x][y] = true;
+	        range.push_back({x, y});
+	        owner[x][y] = range[0].first * grid[0].size() + range[0].second;
+	    }
+	    const int dirs[4][2] = {{1,0},{0,1},{-1,0},{0,-1}};
+	    for (auto& d : dirs) {
+	        dfsPolluteRange(grid, x+d[0], y+d[1], visited, range, owner);
+	    }
+	}
+	
+	// Q3：至多1个2改1，最大化新鲜数
+	int maxFreshByBlockQ3(vector<vector<int>>& grid) {
+	    int m = grid.size(), n = grid[0].size();
+	    vector<vector<bool>> visited(m, vector<bool>(n, false));
+	    vector<vector<int>> owner(m, vector<int>(n, -1)); // 标记每个点被哪个腐烂源污染
+	    vector<pair<int, int>> rot_pos; // 所有腐烂橘子位置
+	    for (int i = 0; i < m; i++) {
+	        for (int j = 0; j < n; j++) {
+	            if (grid[i][j] == 2) rot_pos.push_back({i, j});
+	        }
+	    }
+	    
+	    // 统计每个腐烂源的污染范围大小
+	    unordered_map<int, int> range_size;
+	    for (auto& pos : rot_pos) {
+	        int x = pos.first, y = pos.second;
+	        if (!visited[x][y]) {
+	            vector<pair<int, int>> range;
+	            dfsPolluteRange(grid, x, y, visited, range, owner);
+	            int id = x * n + y;
+	            range_size[id] = 0;
+	            for (auto& p : range) {
+	                if (grid[p.first][p.second] == 1) range_size[id]++;
+	            }
+	        }
+	    }
+	    
+	    // 找“仅被一个腐烂源污染”的最大连通块
+	    int max_save = 0;
+	    for (auto& [id, size] : range_size) {
+	        // 检查该连通块是否仅被当前腐烂源污染
+	        bool only_one = true;
+	        int x0 = id / n, y0 = id % n;
+	        vector<pair<int, int>> range;
+	        vector<vector<bool>> temp_vis(m, vector<bool>(n, false));
+	        dfsPolluteRange(grid, x0, y0, temp_vis, range, owner);
+	        for (auto& p : range) {
+	            if (grid[p.first][p.second] == 1 && owner[p.first][p.second] != id) {
+	                only_one = false;
+	                break;
+	            }
+	        }
+	        if (only_one) max_save = max(max_save, size);
+	    }
+	    
+	    // 原本的新鲜数 + 能保存的最大连通块大小
+	    int base_fresh = calculateFresh(grid);
+	    return base_fresh + max_save;
+	}
+	```
+
+- 场景 4：至多 k 个 2 改成 1，最大化最终新鲜橘子数
+
+	- 问题转化为 0-1 背包：
+		- 每个 “腐烂源” 对应一个 “物品”，物品的 “重量”=1（修改该腐烂源需要 1 次机会），物品的 “价值”= 移除该腐烂源后能保存的新鲜数；
+		- 背包容量 = k（最多修改 k 个腐烂源）；
+		- 目标：选若干物品（腐烂源），总重量≤k，总价值最大 → 0-1 背包经典问题
+	- 步骤：
+		- 第一步：计算每个腐烂源的 “价值”（移除后能保存的新鲜数）；
+		- 第二步：用 0-1 背包 DP 求解 “选 k 个腐烂源的最大价值”；
+		- 第三步：最终新鲜数 = 原本新鲜数 + 最大价值
+
+- 代码实现
+
+	```cpp
+	// Q4：至多k个2改1，最大化新鲜数（0-1背包）
+	int maxFreshByKnapsack(vector<vector<int>>& grid, int k) {
+	    int m = grid.size(), n = grid[0].size();
+	    // 1. 计算每个腐烂源的价值（移除后能保存的新鲜数）
+	    vector<int> values; // 每个腐烂源的价值
+	    vector<pair<int, int>> rot_pos;
+	    for (int i = 0; i < m; i++) {
+	        for (int j = 0; j < n; j++) {
+	            if (grid[i][j] == 2) rot_pos.push_back({i, j});
+	        }
+	    }
+	    
+	    // 计算每个腐烂源的价值
+	    for (auto& pos : rot_pos) {
+	        vector<vector<int>> temp_grid = grid;
+	        temp_grid[pos.first][pos.second] = 1; // 改2为1
+	        int save = calculateFresh(temp_grid) - calculateFresh(grid); // 保存的新鲜数
+	        values.push_back(max(save, 0));
+	    }
+	    
+	    // 2. 0-1背包DP
+	    vector<int> dp(k+1, 0); // dp[i] = 选i个腐烂源的最大价值
+	    for (int i = 0; i < values.size(); i++) {
+	        for (int j = k; j >= 1; j--) { // 逆序遍历，0-1背包
+	            dp[j] = max(dp[j], dp[j-1] + values[i]);
+	        }
+	    }
+	    
+	    // 最终新鲜数 = 原本新鲜数 + 最大价值
+	    int base_fresh = calculateFresh(grid);
+	    return base_fresh + dp[k];
+	}
+	```
+
+	

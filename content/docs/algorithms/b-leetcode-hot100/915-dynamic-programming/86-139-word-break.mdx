@@ -1,0 +1,143 @@
+---
+id: "139"
+title: 单词拆分
+englishTitle: Word Break
+slug: word-break
+url: https://leetcode-cn.com/problems/word-break/
+difficulty: Medium
+tags:
+  - 动态规划
+  - 字典树
+  - 记忆化
+  - 数组
+  - 哈希表
+  - 字符串
+---
+
+## 题面
+
+给你一个字符串 `s` 和一个字符串列表 `wordDict` 作为字典。如果可以利用字典中出现的一个或多个单词拼接出 `s` 则返回 `true`。
+
+注意： 不要求字典中出现的单词全部都使用，并且字典中的单词可以重复使用。
+
+示例 1：
+
+    输入: s = "leetcode", wordDict = ["leet", "code"]
+    输出: true
+    解释: 返回 true 因为 "leetcode" 可以由 "leet" 和 "code" 拼接成。
+
+示例 2：
+
+    输入: s = "applepenapple", wordDict = ["apple", "pen"]
+    输出: true
+    解释: 返回 true 因为 "applepenapple" 可以由 "apple" "pen" "apple" 拼接成。
+         注意，你可以重复使用字典中的单词。
+
+示例 3：
+
+    输入: s = "catsandog", wordDict = ["cats", "dog", "sand", "and", "cat"]
+    输出: false
+
+提示：
+
+  * `1 <= s.length <= 300`
+  * `1 <= wordDict.length <= 1000`
+  * `1 <= wordDict[i].length <= 20`
+  * `s` 和 `wordDict[i]` 仅由小写英文字母组成
+  * `wordDict` 中的所有字符串 互不相同
+
+## 分析
+
+- 可以用回溯的方法来解决，枚举分割字符串，判断分割出来的字符串是否在字典中
+
+- 如何用动态规划来解决？
+
+- 首先寻找子问题
+
+	- 例如 *s*=leetcode，枚举最后一段的长度
+	- 长为 1，即子串 e，如果它在 *wordDict* 中，那么问题变成：能否把 leetcod 划分成若干段，使得每段都在 *wordDict* 中？
+	- 长为 2，即子串 de，如果它在 *wordDict* 中，那么问题变成：能否把 leetco 划分成若干段，使得每段都在 *wordDict* 中？
+	- 长为 3，即子串 ode，如果它在 *wordDict* 中，那么问题变成：能否把 leetc 划分成若干段，使得每段都在 *wordDict* 中？
+	- 长为 4，即子串 code，如果它在 *wordDict* 中，那么问题变成：能否把 leet 划分成若干段，使得每段都在 *wordDict* 中？
+	- ……
+	- 这些问题都是和原问题相似的、规模更小的子问题，可以用递归解决
+
+- dp[i] 表示字符串的子串 0-i 能否由字典中的单词拼成
+
+- 递推关系
+
+	- 如果 dp[j]==true 且 [j,i] 子串在字典中，说明 dp[i]=true
+
+- 这个是完全背包问题吗？完全背包是同一个物品连续选择，然后就再也不选这个物品了。本题可以交替选。比如 *s* 是 ABA 型，如果用完全背包的写法，只能枚举 AAB、ABB 这类连续的字符串组合，无法枚举到 ABA 这样的字符串组合
+
+- 代码实现
+
+	```cpp
+	class Solution {
+	public:
+	    bool wordBreak(string s, vector<string>& wordDict) {
+	        std::unordered_set<string> words(wordDict.begin(), wordDict.end());
+	        vector<bool> dp = vector(s.size() + 1, false);
+	        dp[0] = true;
+	        for (int i = 1; i <= s.size(); i++) {
+	            for (int j = 0; j < i; j++) {
+	                if (dp[j] == true &&
+	                    words.find(s.substr(j, i - j)) != words.end()) {
+	                    dp[i] = true;
+	                    break;
+	                }
+	            }
+	        }
+	        return dp[s.size()];
+	    }
+	};
+	```
+
+- 可以做一个剪枝优化，统计 words 中的单词最短长度，那么 j 只需要从这个最短长度开始枚举
+
+	```cpp
+	#include <iostream>
+	#include <vector>
+	#include <unordered_set>
+	#include <string>
+	#include <climits> // 用于INT_MAX
+	
+	using namespace std;
+	
+	class Solution {
+	public:
+	    bool wordBreak(string s, vector<string>& wordDict) {
+	        // 1. 将单词字典存入哈希集合，方便快速查找
+	        unordered_set<string> words(wordDict.begin(), wordDict.end());
+	        
+	        // 2. 剪枝优化：计算字典中单词的最短长度
+	        int min_len = INT_MAX;
+	        for (const string& word : wordDict) {
+	            if (word.size() < min_len) {
+	                min_len = word.size();
+	            }
+	        }
+	        
+	        // 3. 动态规划数组：dp[i] 表示 s[0...i-1] 子串能否被拆分
+	        vector<bool> dp(s.size() + 1, false);
+	        dp[0] = true; // 空字符串可以被拆分
+	        
+	        // 4. 遍历所有结束位置i
+	        for (int i = 1; i <= s.size(); i++) {
+	            // 剪枝：j从 max(0, i - min_len) 开始枚举，减少无效循环
+	            int start_j = max(0, i - min_len);
+	            for (int j = start_j; j < i; j++) {
+	                // 如果前j个字符可拆分，且j到i的子串在字典中，则i位置可拆分
+	                if (dp[j] && words.find(s.substr(j, i - j)) != words.end()) {
+	                    dp[i] = true;
+	                    break; // 找到一种拆分方式即可，无需继续枚举
+	                }
+	            }
+	        }
+	        
+	        return dp[s.size()];
+	    }
+	};
+	```
+
+	

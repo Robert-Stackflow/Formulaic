@@ -1,0 +1,146 @@
+---
+remark: 桶排序思路
+id: "347"
+title: 前 K 个高频元素
+englishTitle: Top K Frequent Elements
+slug: top-k-frequent-elements
+url: https://leetcode-cn.com/problems/top-k-frequent-elements/
+difficulty: Medium
+tags:
+  - 堆
+  - 数组
+  - 哈希表
+  - 分治
+  - 桶排序
+  - 计数
+  - 快速选择
+  - 排序
+  - 堆（优先队列）
+---
+
+## 题面
+
+给你一个整数数组 `nums` 和一个整数 `k` ，请你返回其中出现频率前 `k` 高的元素。你可以按 任意顺序 返回答案。
+
+示例 1：
+
+输入： nums = [1,1,1,2,2,3], k = 2
+
+输出：[1,2]
+
+示例 2：
+
+输入： nums = [1], k = 1
+
+输出：[1]
+
+示例 3：
+
+输入： nums = [1,2,1,2,1,2,3,1,3,2], k = 2
+
+输出：[1,2]
+
+提示：
+
+  * `1 <= nums.length <= 105`
+  * `-104 <= nums[i] <= 104`
+  * `k` 的取值范围是 `[1, 数组中不相同的元素的个数]`
+  * 题目数据保证答案唯一，换句话说，数组中前 `k` 个高频元素的集合是唯一的
+
+进阶： 你所设计算法的时间复杂度 必须 优于 `O(n log n)` ，其中 `n`   是数组大小
+
+## 分析
+
+- 显然，统计频次之后，可以使用排序，得到频次前 k 大的元素，其时间复杂度为 $O(n\log n)$
+
+- 如何优化？可以用堆来实现，而堆排序的规则就是每个数字所出现的频率
+
+- 代码如下
+
+	```cpp
+	class Solution {
+	public:
+	    vector<int> topKFrequent(vector<int>& nums, int k) {
+	        unordered_map<int, int> freq_map;
+	        for (int num : nums) {
+	            freq_map[num]++;
+	        }
+	
+	        // 定义小顶堆（优先队列），排序规则：频率小的优先出队
+	        // 堆中存储pair<频率,元素>，默认按第一个元素降序，所以用greater反转成升序
+	        priority_queue<pair<int, int>, vector<pair<int, int>>,
+	                       greater<pair<int, int>>>
+	            min_heap;
+	
+	        // 步骤3：遍历频率表，维护大小为k的小顶堆
+	        for (auto& pair : freq_map) {
+	            int num = pair.first;
+	            int freq = pair.second;
+	
+	            if (min_heap.size() < k) {
+	                // 堆未满，直接入堆
+	                min_heap.push({freq, num});
+	            } else {
+	                // 堆已满，若当前频率 > 堆顶频率，替换堆顶
+	                if (freq > min_heap.top().first) {
+	                    min_heap.pop();
+	                    min_heap.push({freq, num});
+	                }
+	            }
+	        }
+	
+	        // 步骤4：提取堆中的元素（前k高频）
+	        vector<int> result;
+	        while (!min_heap.empty()) {
+	            result.push_back(min_heap.top().second);
+	            min_heap.pop();
+	        }
+	
+	        // 可选：反转结果（堆是小顶堆，结果是按频率升序，反转后为降序）
+	        // reverse(result.begin(), result.end());
+	
+	        return result;
+	    }
+	};
+	```
+
+- 上述方法的时间复杂度为 $O(n\log k)$，k 为堆的大小，显然当 k 比较大时，时间复杂度会比较高
+
+- 如何进一步优化？可以对这些频次进行桶排序，相同频次的元素落入一个桶中，同一个桶内的元素出现次数相同，无需对桶内元素排序
+
+- 设出现次数最大值为 maxCount，可以创建一个 maxCount+1 大小的数组  buckets，每个 buckets[c] 都对应一个列表，存储出现次数为 c 的元素列表
+
+- 这样，可以倒序遍历 buckets，将 buckets[c] 中的元素加到答案中，一旦答案长度等于 k，就立刻返回答案
+
+- 代码实现
+
+	```cpp
+	class Solution {
+	public:
+	    vector<int> topKFrequent(vector<int>& nums, int k) {
+	        // 第一步：统计每个元素的出现次数
+	        unordered_map<int, int> cnt;
+	        int max_cnt = 0;
+	        for (int x : nums) {
+	            cnt[x]++;
+	            max_cnt = max(max_cnt, cnt[x]);
+	        }
+	
+	        // 第二步：把出现次数相同的元素，放到同一个桶中
+	        vector<vector<int>> buckets(max_cnt + 1);
+	        for (auto& [x, c] : cnt) {
+	            buckets[c].push_back(x);
+	        }
+	
+	        // 第三步：倒序遍历 buckets，把出现次数前 k 大的元素加入答案
+	        vector<int> ans;
+	        // 注意题目保证答案唯一，一定会出现某次 insert 后 ans.size() 恰好等于 k 的情况
+	        for (int i = max_cnt; i >= 0 && ans.size() < k; i--) {
+	            ans.insert(ans.end(), buckets[i].begin(), buckets[i].end());
+	        }
+	        return ans;
+	    }
+	};
+	```
+
+	

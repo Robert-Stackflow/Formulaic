@@ -1,0 +1,356 @@
+---
+id: "101"
+title: 对称二叉树
+englishTitle: Symmetric Tree
+slug: symmetric-tree
+url: https://leetcode-cn.com/problems/symmetric-tree/
+difficulty: Easy
+tags:
+  - 二叉树
+  - 树
+  - 深度优先搜索
+  - 广度优先搜索
+---
+
+## 题面
+
+给你一个二叉树的根节点 `root` ， 检查它是否轴对称。
+
+示例 1：
+
+![](https://pic.leetcode.cn/1698026966-JDYPDU-image.png)
+
+    输入： root = [1,2,2,3,4,4,3]
+    输出： true
+
+示例 2：
+
+![](https://pic.leetcode.cn/1698027008-nPFLbM-image.png)
+
+    输入： root = [1,2,2,null,3,null,3]
+    输出： false
+
+提示：
+
+  * 树中节点数目在范围 `[1, 1000]` 内
+  * `-100 <= Node.val <= 100`
+
+进阶： 你可以运用递归和迭代两种方法解决这个问题吗？
+
+## 分析
+
+- 两棵树是对称的，当
+
+  - 两棵树的根节点值相同
+  - 左树的左子树与右树的右子树对称，左树的右子树与右树的左子树对称
+
+- 代码实现
+
+  ```cpp
+  class Solution {
+  public:
+      bool check(TreeNode *p, TreeNode *q) {
+          if (!p && !q) return true;
+          if (!p || !q) return false;
+          return p->val == q->val && check(p->left, q->right) && check(p->right, q->left);
+      }
+  
+      bool isSymmetric(TreeNode* root) {
+          return check(root->left, root->right);
+      }
+  };
+  ```
+
+- 可以使用栈来模拟递归的过程，每次将要比较的两棵树压入栈中，弹出时也弹出两棵树进行比较
+
+  ```cpp
+  class Solution {
+  public:
+      bool check(TreeNode *u, TreeNode *v) {
+          queue <TreeNode*> q;
+          q.push(u); q.push(v);
+          while (!q.empty()) {
+              u = q.front(); q.pop();
+              v = q.front(); q.pop();
+              if (!u && !v) continue;
+              if ((!u || !v) || (u->val != v->val)) return false;
+  
+              q.push(u->left);
+              q.push(v->right);
+  
+              q.push(u->right); 
+              q.push(v->left);
+          }
+          return true;
+      }
+  
+      bool isSymmetric(TreeNode* root) {
+          return check(root, root);
+      }
+  };
+  ```
+
+- 也可以使用层序遍历，将每一行的节点转换为数组，然后判断是否是回文数组即可
+
+	```cpp
+	#include <stdbool.h>
+	#include <stdlib.h>
+	/**
+	 * Definition for a binary tree node.
+	 * struct TreeNode {
+	 *     int val;
+	 *     struct TreeNode *left;
+	 *     struct TreeNode *right;
+	 * };
+	 */
+	
+	bool isSymmetric(struct TreeNode* root) {
+	    if (root == NULL) return true;//空树直接true
+	
+	    int cap = 1024;//先申请一个能放1024元素的队列数组
+	    struct TreeNode**que = (struct TreeNode**)malloc(sizeof(struct TreeNode*) * cap);//申请一个动态内存，申请一个能装cap个treenode的数组
+	    if (que==NULL) return false;//如果没申请到内存，就直接返回false
+	
+	    int front = 0;//对头
+	    int rear = 0;//队尾
+	    que[rear++] = root;//根节点入队
+	
+	    while (front < rear) {
+	        int levelsize = rear - front;
+	
+	        // 1) 本层头尾比较（含NULL）
+	        int l = 0;//左指针
+	        int r = levelsize - 1;//右指针
+	        while (l < r) {
+	            struct TreeNode* a = que[front + l];//左元素
+	            struct TreeNode* b = que[front + r];//右元素
+	            //ab全空，转下一个，终止这个
+	            if (a == NULL && b == NULL) { l++; r--; continue; }
+	            //ab一个空一个不空,直接false
+	            if (a == NULL || b == NULL) { free(que); return false; }
+	            //ab都非空,如果元素不一样，false
+	            if (a->val != b->val)       { free(que); return false; }
+	            //ab都非空，元素也一样
+	            l++; r--;
+	        }
+	
+	        //层次遍历+null,拓展下一层
+	        //创建一个标志位，先假设下一层全为空。作用防止给null下面添加无穷无尽的左右null节点
+	        bool next_all_NULL = true;
+	        // 看队列够不够大，不够就翻倍扩容，直到够为止。
+	        long long need = (long long)rear + (long long)2 * levelsize;//算空间，表示当前队列占用rear格，这一层节点个数为levelsize，下一层的个数为2*levelsize
+	        while (need > cap) {//需求need大于当前容量cap，就扩容
+	            cap *= 2;//当前容量翻倍
+	            struct TreeNode**nque = (struct TreeNode**)realloc(que, sizeof(struct TreeNode*) * cap);//realloc用给已经malloc的内存改大小，改成新的cap乘以指令
+	            if (nque==true) { free(que); return false; }//扩容失败，返回null
+	            que = nque;//赋值到更大的数组
+	        }
+	
+	        for (int i = 0; i < levelsize; i++) {
+	            struct TreeNode* node = que[front++];//层次遍历首节点出队
+	             //节点不为空，不管左右孩子是否为空。先占位置
+	            if (node != NULL) {
+	                que[rear++] = node->left;   // 可能NULL也入队（保位置）
+	                que[rear++] = node->right;  // 可能NULL也入队（保位置）
+	                //  //节点不为空，左右节点一空以一非空，即至少存在一个非空节点，就说明下一层不可能全空
+	                if (node->left != NULL || node->right != NULL) next_all_NULL = false;
+	            } 
+	            //节点为空，所以左右节点全空，下一层没有元素，标志位不变,加null到队尾
+	            else {
+	                // node本身是NULL，也补两个NULL（否则位置会断层）
+	                que[rear++] = NULL;
+	                que[rear++] = NULL;
+	            }
+	        }
+	
+	        // 3) 停机：下一层全NULL就结束（防止无限NULL）
+	        if (next_all_NULL) { free(que); return true; }
+	    }
+	
+	    free(que);
+	    return true;
+	}
+	```
+
+- 那么，现在要求出这棵二叉树，有多少棵子树是对称二叉树？最大的对称二叉子树有多少个节点？
+
+- 解决这个问题，需要：
+
+	- 遍历所有子树：对每个节点，都将其作为根节点，检查以它为根的子树是否对称；
+	- 复用对称判断逻辑：基于你提供的check函数，判断单个子树是否对称；
+	- 统计与记录：遍历过程中统计对称子树的数量，并记录最大对称子树的节点数；
+	- 节点数计算：若子树对称，需计算该子树的总节点数（后续封装为辅助函数）
+
+- 代码实现
+
+	```cpp
+	/**
+	 * Definition for a binary tree node.
+	 * struct TreeNode {
+	 *     int val;
+	 *     TreeNode *left;
+	 *     TreeNode *right;
+	 *     TreeNode() : val(0), left(nullptr), right(nullptr) {}
+	 *     TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}
+	 *     TreeNode(int x, TreeNode *left, TreeNode *right) : val(x), left(left), right(right) {}
+	 * };
+	 */
+	class Solution {
+	public:
+	    // 存储最终结果：[对称子树数量, 最大对称子树节点数]
+	    int symCount = 0;
+	    int maxSymNodes = 0;
+	
+	    // 复用原逻辑：判断以root为根的子树是否对称
+	    bool isSymmetricSubtree(TreeNode* root) {
+	        if (root == nullptr) return true; // 空树视为对称（可选，根据题意调整）
+	        return check(root->left, root->right);
+	    }
+	
+	    // 原check函数：判断两个子树是否镜像对称
+	    bool check(TreeNode *p, TreeNode *q) {
+	        if (!p && !q) return true;
+	        if (!p || !q) return false;
+	        return p->val == q->val && check(p->left, q->right) && check(p->right, q->left);
+	    }
+	
+	    // 计算以root为根的子树的节点总数
+	    int countNodes(TreeNode* root) {
+	        if (root == nullptr) return 0;
+	        return 1 + countNodes(root->left) + countNodes(root->right);
+	    }
+	
+	    // 遍历所有节点，检查每个子树是否对称，并更新统计结果
+	    void traverse(TreeNode* root) {
+	        if (root == nullptr) return;
+	
+	        // 检查当前节点为根的子树是否对称
+	        if (isSymmetricSubtree(root)) {
+	            symCount++; // 对称子树数量+1
+	            int curNodes = countNodes(root); // 计算当前对称子树的节点数
+	            if (curNodes > maxSymNodes) {
+	                maxSymNodes = curNodes; // 更新最大节点数
+	            }
+	        }
+	
+	        // 递归遍历左、右子树（检查所有子节点作为根的情况）
+	        traverse(root->left);
+	        traverse(root->right);
+	    }
+	
+	    // 主函数：返回结果数组，[对称子树数量, 最大对称子树节点数]
+	    vector<int> solve(TreeNode* root) {
+	        symCount = 0;
+	        maxSymNodes = 0;
+	        traverse(root);
+	        return {symCount, maxSymNodes};
+	    }
+	};
+	```
+
+- `countNodes`会重复计算节点数（比如父节点和子节点都会计算子树节点）。若追求更高效率，可在`check`判断对称的同时，同步计算节点数，避免重复递归
+
+- 代码实现
+
+	```cpp
+	/**
+	 * Definition for a binary tree node.
+	 * struct TreeNode {
+	 *     int val;
+	 *     TreeNode *left;
+	 *     TreeNode *right;
+	 *     TreeNode() : val(0), left(nullptr), right(nullptr) {}
+	 *     TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}
+	 *     TreeNode(int x, TreeNode *left, TreeNode *right) : val(x), left(left), right(right) {}
+	 * };
+	 */
+	class Solution {
+	private:
+	    // 全局统计变量：对称子树数量、最大对称子树节点数
+	    int symmetricSubtreeCount = 0;
+	    int maxSymmetricNodes = 0;
+	
+	    /**
+	     * 核心优化函数：同时完成「对称判断」和「节点数计算」
+	     * @param p: 左子树节点
+	     * @param q: 右子树节点
+	     * @return: 若对称返回子树总节点数，不对称返回 -1
+	     */
+	    int checkSymmetricAndCount(TreeNode* p, TreeNode* q) {
+	        // 情况1：左右都为空 → 对称，节点数为 0
+	        if (!p && !q) {
+	            return 0;
+	        }
+	        // 情况2：一个为空一个不为空 → 不对称，返回 -1
+	        if (!p || !q) {
+	            return -1;
+	        }
+	        // 情况3：值不相等 → 不对称，返回 -1
+	        if (p->val != q->val) {
+	            return -1;
+	        }
+	
+	        // 递归检查左子树的左 vs 右子树的右，同时计算节点数
+	        int leftSubtreeCnt = checkSymmetricAndCount(p->left, q->right);
+	        // 递归检查左子树的右 vs 右子树的左，同时计算节点数
+	        int rightSubtreeCnt = checkSymmetricAndCount(p->right, q->left);
+	
+	        // 任意子树不对称 → 整体不对称
+	        if (leftSubtreeCnt == -1 || rightSubtreeCnt == -1) {
+	            return -1;
+	        }
+	
+	        // 对称 → 返回当前层级的总节点数（p + q + 左右子树节点数）
+	        return 2 + leftSubtreeCnt + rightSubtreeCnt;
+	    }
+	
+	    /**
+	     * 遍历所有节点，以每个节点为根检查是否为对称子树
+	     * @param root: 当前遍历的节点（作为子树的根）
+	     */
+	    void traverseAllSubtrees(TreeNode* root) {
+	        if (!root) {
+	            return;
+	        }
+	
+	        // 检查以当前节点为根的子树是否对称，并获取节点数
+	        // 注意：checkSymmetricAndCount返回的是左右子树的总节点数，需 +1（当前根节点）
+	        int subtreeNodeCnt = checkSymmetricAndCount(root->left, root->right);
+	        if (subtreeNodeCnt != -1) {
+	            // 子树对称 → 统计数量+1
+	            symmetricSubtreeCount++;
+	            // 总节点数 = 根节点(1) + 左右子树节点数
+	            int totalNodes = 1 + subtreeNodeCnt;
+	            // 更新最大节点数
+	            if (totalNodes > maxSymmetricNodes) {
+	                maxSymmetricNodes = totalNodes;
+	            }
+	        }
+	
+	        // 递归遍历左子树的所有节点
+	        traverseAllSubtrees(root->left);
+	        // 递归遍历右子树的所有节点
+	        traverseAllSubtrees(root->right);
+	    }
+	
+	public:
+	    /**
+	     * 主函数：返回 [对称子树数量, 最大对称子树节点数]
+	     * @param root: 二叉树的根节点
+	     * @return: 结果数组
+	     */
+	    vector<int> countMaxSymmetricSubtree(TreeNode* root) {
+	        // 初始化统计变量（避免多次调用时数据残留）
+	        symmetricSubtreeCount = 0;
+	        maxSymmetricNodes = 0;
+	
+	        // 遍历所有子树并统计
+	        traverseAllSubtrees(root);
+	
+	        // 返回结果
+	        return {symmetricSubtreeCount, maxSymmetricNodes};
+	    }
+	};
+	```
+
+	

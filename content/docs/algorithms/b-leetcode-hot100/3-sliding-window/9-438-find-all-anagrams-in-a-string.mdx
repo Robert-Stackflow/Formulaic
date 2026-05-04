@@ -1,0 +1,158 @@
+---
+id: "438"
+title: 找到字符串中所有字母异位词
+englishTitle: Find All Anagrams in a String
+slug: find-all-anagrams-in-a-string
+url: https://leetcode-cn.com/problems/find-all-anagrams-in-a-string/
+difficulty: Medium
+tags:
+  - 滑动窗口
+  - 哈希表
+  - 字符串
+---
+
+## 题面
+
+给定两个字符串 `s` 和 `p`，找到 `s`  中所有 `p`  的 异位词  的子串，返回这些子串的起始索引。不考虑答案输出的顺序。
+
+示例  1:
+
+    输入: s = "cbaebabacd", p = "abc"
+    输出:[0,6]
+    解释:
+    起始索引等于 0 的子串是 "cba", 它是 "abc" 的异位词。
+    起始索引等于 6 的子串是 "bac", 它是 "abc" 的异位词。
+
+  示例 2:
+
+    输入: s = "abab", p = "ab"
+    输出:[0,1,2]
+    解释:
+    起始索引等于 0 的子串是 "ab", 它是 "ab" 的异位词。
+    起始索引等于 1 的子串是 "ba", 它是 "ab" 的异位词。
+    起始索引等于 2 的子串是 "ab", 它是 "ab" 的异位词。
+
+提示:
+
+   `1 <= s.length, p.length <= 3  104`
+  * `s` 和 `p` 仅包含小写字母
+
+## 分析
+
+- 首先，统计 p 中的各个字母出现的次数
+
+- 然后使用两个指针，初始化在 s 的第一个位置
+
+- 外层循环向右扩展右指针，直到窗口大小达到 p 的长度
+
+- 如果满足了异位词的条件，则记录左指针索引
+
+- 然后窗口向右移动，同时注意处理移出窗口的字符
+
+- 代码实现
+
+	```cpp
+	class Solution {
+	public:
+	    bool isAnagram(vector<int>& count, vector<int>& window) {
+	        for (int i = 0; i < count.size(); i++) {
+	            if (count[i] != 0 && count[i] != window[i])
+	                return false;
+	        }
+	        return true;
+	    }
+	    vector<int> findAnagrams(string s, string p) {
+	        int p_len = p.size();
+	        vector<int> count = vector(26, 0);
+	        vector<int> window = vector(26, 0);
+	        vector<int> result;
+	        for (char c : p) {
+	            count[c - 'a']++;
+	        }
+	        for (int l = 0, r = 0; r < s.size(); r++) {
+	            window[s[r] - 'a']++;
+	            if (r - l + 1 > p_len) {
+	                window[s[l] - 'a']--;
+	                l++;
+	            }
+	            if (r - l + 1 == p_len) {
+	                if (isAnagram(count, window))
+	                    result.push_back(l);
+	            }
+	        }
+	        return result;
+	    }
+	};
+	```
+
+- 上述代码中，判断是否为字母异位词时，每次都需要遍历整个数组
+- 可以在滑动窗口更新的过程中实时维护匹配状态，避免每次都完整遍历数组：
+	- 新增一个变量 `match` 记录当前窗口中字符计数与目标计数完全匹配的字母数量
+	- 窗口右移 / 左移时，只更新当前操作字符的匹配状态，并同步更新 `match`
+	- 当 `match == 26` 时，直接判定为字母异位词，无需遍历数组
+
+- 代码实现
+
+	```cpp
+	#include <vector>
+	#include <string>
+	using namespace std;
+	
+	class Solution {
+	public:
+	    vector<int> findAnagrams(string s, string p) {
+	        int p_len = p.size();
+	        int s_len = s.size();
+	        vector<int> count(26, 0);
+	        vector<int> window(26, 0);
+	        vector<int> result;
+	
+	        // 新增：边界条件，p比s长直接返回空
+	        if (p_len > s_len) {
+	            return result;
+	        }
+	
+	        for (char c : p) {
+	            count[c - 'a']++;
+	        }
+	
+	        // 新增：维护匹配的字符数量，替代原有的isAnagram函数
+	        int match = 0;
+	        for (int l = 0, r = 0; r < s_len; r++) {
+	            int right_idx = s[r] - 'a';
+	            window[right_idx]++;
+	
+	            // 新增：更新右指针字符的匹配状态
+	            if (window[right_idx] == count[right_idx]) {
+	                match++;
+	            } else if (window[right_idx] == count[right_idx] + 1) {
+	                match--;
+	            }
+	
+	            if (r - l + 1 > p_len) {
+	                int left_idx = s[l] - 'a';
+	
+	                // 新增：左指针移出前先更新匹配状态
+	                if (window[left_idx] == count[left_idx]) {
+	                    match--;
+	                }
+	                window[left_idx]--;
+	                // 新增：左指针移出后再次检查匹配状态
+	                if (window[left_idx] == count[left_idx]) {
+	                    match++;
+	                }
+	
+	                l++;
+	            }
+	
+	            // 修改：用match == 26替代原有的isAnagram调用
+	            if (r - l + 1 == p_len && match == 26) {
+	                result.push_back(l);
+	            }
+	        }
+	        return result;
+	    }
+	};
+	```
+
+	

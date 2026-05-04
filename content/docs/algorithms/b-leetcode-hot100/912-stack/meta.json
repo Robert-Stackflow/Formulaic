@@ -1,0 +1,11 @@
+{
+  "title": "栈",
+  "description": "栈相关的题目",
+  "pages": [
+    "69-20-valid-parentheses",
+    "70-155-min-stack",
+    "71-394-decode-string",
+    "72-739-daily-temperatures",
+    "73-84-largest-rectangle-in-histogram"
+  ]
+}

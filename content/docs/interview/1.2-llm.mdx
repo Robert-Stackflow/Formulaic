@@ -604,7 +604,7 @@ description: 整理各种面试中常见的八股问题，涵盖 Python 基础�
           self.dim = dim
           self.base = base
           # 预计算 theta = 10000^(-2i/d)
-          inv_freq = 1.0 / (base ** (torch.arange(0, dim, 2).float() / dim))
+          inv_freq = 1.0 / (base**(torch.arange(0, dim, 2).float() / dim))
           self.register_buffer("inv_freq", inv_freq)
 
       def forward(self, seq_len):

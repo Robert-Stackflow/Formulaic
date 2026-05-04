@@ -1,0 +1,11 @@
+{
+  "title": "多维动态规划",
+  "description": "多维动态规划相关的题目",
+  "pages": [
+    "91-62-unique-paths",
+    "92-64-minimum-path-sum",
+    "93-5-longest-palindromic-substring",
+    "94-1143-longest-common-subsequence",
+    "95-72-edit-distance"
+  ]
+}

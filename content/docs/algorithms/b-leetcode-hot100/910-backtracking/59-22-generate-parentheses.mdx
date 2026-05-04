@@ -1,0 +1,79 @@
+---
+id: "22"
+title: 括号生成
+englishTitle: Generate Parentheses
+slug: generate-parentheses
+url: https://leetcode-cn.com/problems/generate-parentheses/
+difficulty: Medium
+tags:
+  - 回溯
+  - 字符串
+  - 动态规划
+---
+
+## 题面
+
+数字 `n` 代表生成括号的对数，请你设计一个函数，用于能够生成所有可能的并且 有效的 括号组合。
+
+示例 1：
+
+    输入： n = 3
+    输出：["((()))","(()())","(())()","()(())","()()()"]
+
+示例 2：
+
+    输入： n = 1
+    输出：["()"]
+
+提示：
+
+  * `1 <= n <= 8`
+
+## 分析
+
+- 本质是「选或不选」的思想，可以把填左括号视作「选」，填右括号视作「不选」
+
+- 递归的过程中，要保证右括号的个数不能超过左括号的个数
+
+- 如果现在右括号个数等于左括号个数，那么不能填右括号
+
+- 如果现在右括号个数小于左括号个数，那么可以填右括号
+
+- 代码实现
+
+	```cpp
+	class Solution {
+	public:
+	    vector<string> generateParenthesis(int n) {
+	        vector<string> ans;
+	        string path(n * 2, 0); // 所有括号长度都是一样的 2n
+	
+	        // 目前填了 left 个左括号，right 个右括号
+	        auto dfs = [&](this auto&& dfs, int left, int right) -> void {
+	            if (right == n) { // 填完 2n 个括号
+	                ans.emplace_back(path);
+	                return;
+	            }
+	            if (left < n) { // 可以填左括号
+	                path[left + right] = '('; // 直接覆盖
+	                dfs(left + 1, right);
+	            }
+	            if (right < left) { // 可以填右括号
+	                path[left + right] = ')'; // 直接覆盖
+	                dfs(left, right + 1);
+	            }
+	        };
+	
+	        dfs(0, 0); // 一开始没有填括号
+	        return ans;
+	    }
+	};
+	```
+
+- 时间复杂度：分析回溯问题的时间复杂度，有一个通用公式：路径长度 × 搜索树的叶子数，对于本题，它等于 $O(n \cdot C(2n, n))$
+
+- 但由于左右括号的约束，实际上没有这么多叶子，根据 Catalan 数，只有 $\frac{C(2n, n)}{n+1}$ 个叶子节点，所以实际的时间复杂度为 $O(C(2n, n))$
+
+- 此外，根据阶乘的 Stirling 公式，时间复杂度也可以表示为 $O\left(\frac{4^n}{\sqrt{n}}\right)$
+
+- 

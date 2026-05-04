@@ -1,0 +1,115 @@
+---
+id: "152"
+title: 乘积最大子数组
+englishTitle: Maximum Product Subarray
+slug: maximum-product-subarray
+url: https://leetcode-cn.com/problems/maximum-product-subarray/
+difficulty: Medium
+tags:
+  - 动态规划
+  - 数组
+---
+
+## 题面
+
+给你一个整数数组 `nums` ，请你找出数组中乘积最大的非空连续子数组（该子数组中至少包含一个数字），并返回该子数组所对应的乘积。
+
+测试用例的答案是一个 32-位 整数。
+
+请注意 ，一个只包含一个元素的数组的乘积是这个元素的值。
+
+示例 1:
+
+    输入: nums = [2,3,-2,4]
+    输出: 6
+    解释:  子数组 [2,3] 有最大乘积 6。
+
+示例 2:
+
+    输入: nums = [-2,0,-1]
+    输出: 0
+    解释:  结果不能为 2, 因为 [-2,-1] 不是子数组。
+
+提示:
+
+   `1 <= nums.length <= 2  104`
+  * `-10 <= nums[i] <= 10`
+  * `nums` 的任何子数组的乘积都 保证  是一个 32-位 整数
+
+## 分析
+
+- 由于存在负数，因此可能当前得到的负数最小值会被后面得负数相乘，反而得到更大的值，因此需要为每个位置保存其最大乘积和最小乘积
+
+- 代码实现
+
+	```cpp
+	class Solution {
+	public:
+	    int maxProduct(vector<int>& nums) {
+	        int n = nums.size();
+	        if (n == 0)
+	            return 0;
+	
+	        vector<int> dp_max(n); // dp_max[i]：以nums[i]结尾的子数组的最大乘积
+	        vector<int> dp_min(n); // dp_min[i]：以nums[i]结尾的子数组的最小乘积
+	
+	        // 初始化：第一个元素的最大/最小乘积都是自身
+	        dp_max[0] = nums[0];
+	        dp_min[0] = nums[0];
+	
+	        int ans = dp_max[0]; // 初始答案为第一个元素的最大乘积
+	
+	        // 遍历数组，更新两个DP数组
+	        for (int i = 1; i < n; ++i) {
+	            // 计算以nums[i]结尾的最大乘积：三种可能取最大
+	            // 1. 仅自身  2. 前一个最大乘积*自身  3.
+	            // 前一个最小乘积*自身（负数转正）
+	            int candidate1 = nums[i];
+	            int candidate2 = dp_max[i - 1] * nums[i];
+	            int candidate3 = dp_min[i - 1] * nums[i];
+	            dp_max[i] = max({candidate1, candidate2, candidate3});
+	
+	            // 计算以nums[i]结尾的最小乘积：三种可能取最小
+	            dp_min[i] = min({candidate1, candidate2, candidate3});
+	
+	            // 更新全局最大乘积
+	            ans = max(ans, dp_max[i]);
+	        }
+	
+	        return ans;
+	    }
+	};
+	```
+
+- 可以进一步优化空间，实现如下
+
+	```cpp
+	class Solution {
+	public:
+	    int maxProduct(vector<int>& nums) {
+	        int n = nums.size();
+	        if (n == 0)
+	            return 0;
+	
+	        int pre_max = nums[0];
+	        int pre_min = nums[0];
+	
+	        int ans = pre_max;
+	
+	        for (int i = 1; i < n; ++i) {
+	            int candidate1 = nums[i];
+	            int candidate2 = pre_max * nums[i];
+	            int candidate3 = pre_min * nums[i];
+	            pre_max = max({candidate1, candidate2, candidate3});
+	
+	            pre_min = min({candidate1, candidate2, candidate3});
+	
+	            ans = max(ans, pre_max);
+	        }
+	
+	        return ans;
+	    }
+	};
+	```
+
+	
