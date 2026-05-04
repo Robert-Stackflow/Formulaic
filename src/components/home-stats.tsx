@@ -25,6 +25,9 @@ export function HomeStats() {
   }, []);
 
   const formatNumber = (num: number): string => {
+    if (num === 0) {
+      return "0";
+    }
     if (num >= 1000000) {
       return `${(num / 1000000).toFixed(1)}M+`;
     }
@@ -39,12 +42,12 @@ export function HomeStats() {
       label: "总访问量",
       value: loading
         ? "..."
-        : pvData?.site_pv
+        : pvData?.site_pv != null
           ? formatNumber(pvData.site_pv)
           : "--",
       tip: loading
         ? "加载中..."
-        : pvData?.site_pv
+        : pvData?.site_pv != null
           ? "根据 busuanzi 统计的站点总访问量"
           : "根据 busuanzi 统计（加载失败，请检查配置）",
       loading,
