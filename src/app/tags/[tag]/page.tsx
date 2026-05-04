@@ -11,9 +11,18 @@ interface TagPageProps {
 export default async function TagPage({ params }: TagPageProps) {
   const { tag } = await params;
   const decodedTag = decodeURIComponent(tag);
-  const pages = getTaggedPages().filter((page) =>
-    page.tags.includes(decodedTag),
-  );
+
+  if (!decodedTag || decodedTag.trim() === "") {
+    return (
+      <HomeLayout {...baseOptions}>
+        <div className="p-10 text-center">标签不存在</div>
+      </HomeLayout>
+    );
+  }
+
+  const pages = getTaggedPages()
+    .filter((page) => page.tags.includes(decodedTag))
+    .filter((page) => page.url && page.url.trim() !== "");
 
   return (
     <HomeLayout {...baseOptions}>
@@ -24,7 +33,9 @@ export default async function TagPage({ params }: TagPageProps) {
               <h1 className="text-3xl font-bold text-fd-foreground mb-2">
                 标签：{decodedTag}
               </h1>
-              <p className="text-fd-muted-foreground">共 {pages.length} 篇文章</p>
+              <p className="text-fd-muted-foreground">
+                共 {pages.length} 篇文章
+              </p>
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -69,7 +80,11 @@ export default async function TagPage({ params }: TagPageProps) {
 }
 
 export async function generateStaticParams() {
-  return getAllTags().map((tag) => ({ tag }));
+  const tags = getAllTags();
+
+  return tags
+    .filter((tag) => typeof tag === "string" && tag.trim() !== "")
+    .map((tag) => ({ tag }));
 }
 
 export async function generateMetadata({

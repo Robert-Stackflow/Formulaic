@@ -1,5 +1,6 @@
 import { blogSource, source } from "@/lib/source";
 import { getReadingTimeFromPage } from "@/lib/reading-time";
+import { get } from "http";
 
 export type TaggedPage = {
   title: string;
@@ -14,6 +15,14 @@ export function getTaggedPages(): TaggedPage[] {
   const docs = source.getPages().flatMap((page) => {
     const tags = page.data.tags ?? [];
     if (tags.length === 0) return [];
+
+    if (!page.url || page.url.trim() === "") {
+      console.warn(
+        `[tags.ts] Skipping doc with empty URL: title="${page.data.title}", tags=${JSON.stringify(tags)}`,
+      );
+      return [];
+    }
+
     return [
       {
         title: page.data.title,
@@ -29,6 +38,14 @@ export function getTaggedPages(): TaggedPage[] {
   const blogs = blogSource.getPages().flatMap((page) => {
     const tags = page.data.tags ?? [];
     if (tags.length === 0) return [];
+
+    if (!page.url || page.url.trim() === "") {
+      console.warn(
+        `[tags.ts] Skipping blog with empty URL: title="${page.data.title}", tags=${JSON.stringify(tags)}`,
+      );
+      return [];
+    }
+
     return [
       {
         title: page.data.title,

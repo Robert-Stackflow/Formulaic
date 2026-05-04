@@ -93,10 +93,12 @@ export function PageInfoCard({
         }
 
         // Fetch PV data
+        // 需要设置 x-bsz-referer 为 Referer, pageURL 不包含域名部分, 不能直接使用，需要用 window.location.origin
         const pvResponse = await fetch(pvConfig.apiUrl, {
           method: "POST",
           headers: {
             Authorization: `Bearer ${pvConfig.token}`,
+            "x-bsz-referer": window.location.origin,
           },
         });
 
