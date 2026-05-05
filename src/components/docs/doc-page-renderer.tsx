@@ -14,6 +14,13 @@ import { GiscusComments } from "@/components/giscus-comments";
 import { DocFeedback } from "@/components/doc-feedback";
 import { giscusConfig, githubConfig } from "@/config/giscus";
 import { PageInfoCard } from "@/components/page-info-card";
+import {
+  getMdxFilePath,
+  getGithubEditUrl,
+  getGithubViewUrl,
+  getGithubIssueUrl,
+  getMarkdownUrl,
+} from "@/lib/page-url-utils";
 
 interface DocPageRendererProps {
   source: LoaderOutput<any>;
@@ -60,7 +67,7 @@ export function DocPageRenderer({ source, slug }: DocPageRendererProps) {
             <PageInfoCard
               owner={githubConfig.owner}
               repo={githubConfig.repo}
-              filePath={`${githubConfig.contentDir}${page.url}.mdx`}
+              filePath={`${githubConfig.contentDir}${getMdxFilePath(page.data)}`}
               pageUrl={page.url}
             />
           </div>
@@ -131,11 +138,11 @@ export function DocPageRenderer({ source, slug }: DocPageRendererProps) {
             className="flex flex-row flex-wrap gap-2 items-center"
             id="doc-page-actions"
           >
-            <LLMCopyButton markdownUrl={`${page.url}.mdx`} />
+            <LLMCopyButton markdownUrl={getMarkdownUrl(page.data)} />
             <ExportPDFButton />
             <ViewOptions
-              markdownUrl={`${page.url}.mdx`}
-              githubUrl={`https://github.com/${githubConfig.owner}/${githubConfig.repo}/blob/${githubConfig.branch}/${githubConfig.contentDir}${page.url}.mdx`}
+              markdownUrl={getMarkdownUrl(page.data)}
+              githubUrl={getGithubViewUrl(page.data, githubConfig)}
             />
           </div>
         </div>
@@ -155,8 +162,8 @@ export function DocPageRenderer({ source, slug }: DocPageRendererProps) {
 
       {/* Document Feedback */}
       <DocFeedback
-        githubEditUrl={`https://github.com/${githubConfig.owner}/${githubConfig.repo}/edit/${githubConfig.branch}/${githubConfig.contentDir}${page.url}.mdx`}
-        githubIssueUrl={`https://github.com/${githubConfig.owner}/${githubConfig.repo}/issues/new?title=${encodeURIComponent(`[文档反馈] ${title}`)}&body=${encodeURIComponent(`页面链接: ${page.url}\n\n问题描述:\n`)}`}
+        githubEditUrl={getGithubEditUrl(page.data, githubConfig)}
+        githubIssueUrl={getGithubIssueUrl(page.data, title, githubConfig)}
       />
 
       {/* Giscus Comments */}

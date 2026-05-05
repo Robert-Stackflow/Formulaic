@@ -96,7 +96,7 @@ export default function HomePage() {
   return (
     <main className="flex flex-1 flex-col">
       {/* Hero Section - Full viewport height */}
-      <section className="relative flex h-[calc(100vh-4rem)] items-center px-4 sm:px-6 lg:px-8 overflow-hidden">
+      <section className="relative flex min-h-[calc(100vh-4rem)] items-center px-4 sm:px-6 lg:px-8 overflow-hidden py-8 sm:py-12 lg:py-0">
         {/* Background decorations */}
         <div className="absolute inset-0 -z-10">
           <div className="absolute top-20 left-10 w-48 h-48 sm:w-72 sm:h-72 bg-fd-primary/5 rounded-full blur-3xl" />
@@ -105,22 +105,22 @@ export default function HomePage() {
         </div>
 
         <div className="mx-auto grid max-w-7xl w-full items-center gap-8 lg:gap-10 lg:grid-cols-[1.1fr_0.9fr]">
-          <div>
+          <div className="text-center lg:text-left">
             <div className="inline-flex items-center gap-2 rounded-full border border-fd-border bg-fd-card px-3 py-1.5 text-xs text-fd-muted-foreground shadow-sm">
               <span className="h-1.5 w-1.5 rounded-full bg-fd-primary animate-pulse" />
               Milestone Version
             </div>
-            <h1 className="mt-4 sm:mt-6 text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold tracking-tight text-fd-foreground">
+            <h1 className="mt-4 sm:mt-6 text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold tracking-tight text-fd-foreground">
               Formulaic
               <span className="block text-fd-primary mt-2 sm:mt-3 bg-gradient-to-r from-fd-primary to-fd-primary/60 bg-clip-text text-transparent">
                 技术学习与知识分享
               </span>
             </h1>
-            <p className="mt-4 sm:mt-6 text-base sm:text-lg lg:text-xl xl:text-2xl text-fd-muted-foreground leading-relaxed">
+            <p className="mt-4 sm:mt-6 text-sm sm:text-base md:text-lg lg:text-xl xl:text-2xl text-fd-muted-foreground leading-relaxed max-w-2xl mx-auto lg:mx-0">
               覆盖 LLM、AI
               Infra、数据结构与算法、计算机系统基础等知识，让学习更清晰、更高效
             </p>
-            <div className="mt-6 sm:mt-8 lg:mt-10 flex flex-col gap-3 sm:gap-4 sm:flex-row sm:items-center">
+            <div className="mt-6 sm:mt-8 lg:mt-10 flex flex-col gap-3 sm:gap-4 sm:flex-row sm:items-center sm:justify-center lg:justify-start">
               <Link
                 href="/docs/large-language-models"
                 className="inline-flex items-center justify-center rounded-full bg-fd-primary px-6 sm:px-8 py-3 sm:py-4 text-sm sm:text-base font-semibold text-fd-primary-foreground shadow-lg shadow-fd-primary/25 transition hover:brightness-90 hover:shadow-xl hover:shadow-fd-primary/30 hover:scale-105"
@@ -140,7 +140,8 @@ export default function HomePage() {
             <HomeStats />
           </div>
 
-          <div className="rounded-3xl border border-fd-border bg-fd-card p-6 sm:p-8 shadow-xl backdrop-blur-sm">
+          {/* Learning Path - Hidden on mobile */}
+          <div className="hidden lg:block rounded-3xl border border-fd-border bg-fd-card p-6 sm:p-8 shadow-xl backdrop-blur-sm">
             <div className="text-sm sm:text-base font-semibold text-fd-foreground">
               学习路径
             </div>
@@ -193,38 +194,38 @@ export default function HomePage() {
       </section>
 
       {/* Documentation Sections */}
-      <section className="py-12 sm:py-16 lg:py-20 px-4 bg-fd-muted">
+      <section className="py-10 sm:py-12 md:py-16 lg:py-20 px-4 bg-fd-muted">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-fd-foreground mb-4">
+          <div className="text-center mb-8 sm:mb-10 md:mb-12">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight text-fd-foreground mb-3 sm:mb-4">
               探索技术领域
             </h2>
-            <p className="text-lg text-fd-muted-foreground max-w-2xl mx-auto">
+            <p className="text-base sm:text-lg text-fd-muted-foreground max-w-2xl mx-auto px-4">
               选择你感兴趣的方向，开始学习之旅
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 md:gap-6">
             {docSections.map((section) => (
               <Link
                 key={section.href}
                 href={section.href}
-                className="group rounded-2xl border border-fd-border bg-fd-card p-6 transition-all duration-200 hover:border-fd-primary/60"
+                className="group rounded-2xl border border-fd-border bg-fd-card p-5 sm:p-6 transition-all duration-200 hover:border-fd-primary/60 hover:shadow-lg"
               >
                 <div
-                  className={`inline-flex p-3 rounded-xl ${section.bgColor} mb-4 ${section.iconColor}`}
+                  className={`inline-flex p-2.5 sm:p-3 rounded-xl ${section.bgColor} mb-3 sm:mb-4 ${section.iconColor}`}
                 >
                   {section.icon}
                 </div>
-                <h3 className="text-xl font-semibold text-fd-foreground mb-2">
+                <h3 className="text-lg sm:text-xl font-semibold text-fd-foreground mb-2">
                   {section.title}
                 </h3>
-                <p className="text-sm text-fd-muted-foreground mb-4 min-h-[2.5rem] line-clamp-2">
+                <p className="text-xs sm:text-sm text-fd-muted-foreground mb-3 sm:mb-4 min-h-[2.5rem] line-clamp-2">
                   {section.description}
                 </p>
-                <div className="flex items-center text-sm font-medium text-fd-muted-foreground group-hover:text-fd-primary transition-colors">
+                <div className="flex items-center text-xs sm:text-sm font-medium text-fd-muted-foreground group-hover:text-fd-primary transition-colors">
                   查看文档
-                  <ArrowRightIcon className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
+                  <ArrowRightIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 ml-1 group-hover:translate-x-1 transition-transform" />
                 </div>
               </Link>
             ))}

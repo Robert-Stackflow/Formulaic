@@ -290,4 +290,45 @@ article figure[data-rehype-pretty-code-figure]:has(figcaption) pre {
   a {
     text-decoration: underline;
   }
+
+  /* 代码块打印样式 */
+  pre,
+  code {
+    overflow: visible !important;
+    white-space: pre-wrap !important;
+    word-wrap: break-word !important;
+    max-width: 100% !important;
+  }
+
+  article pre {
+    overflow: visible !important;
+    max-height: none !important;
+    padding: 1rem !important;
+    font-size: 0.75rem !important;
+    line-height: 1.4 !important;
+  }
+
+  article pre code {
+    display: block !important;
+    overflow: visible !important;
+    white-space: pre-wrap !important;
+    word-break: break-word !important;
+  }
+
+  /* 隐藏代码块的复制按钮等交互元素 */
+  article figure[data-rehype-pretty-code-figure] button,
+  article pre button {
+    display: none !important;
+  }
+
+  /* 确保代码块标题正常显示 */
+  article pre[data-language]::before {
+    page-break-after: avoid;
+    break-after: avoid;
+  }
+
+  article figure[data-rehype-pretty-code-figure] figcaption {
+    page-break-after: avoid;
+    break-after: avoid;
+  }
 }
