@@ -128,7 +128,7 @@ description: 介绍 CUDA 执行模型的基本概念，包括核函数、CUDA �
   - 线程在 block 内的编号，表示当前线程在它所属 block 里的位置
   - 是一个三维向量，包括 `threadIdx.x`、`threadIdx.y`、`threadIdx.z`
 
-  - `threadIdx.x`：block 内 x 方向的线程编号，取值范围为 $0 \le \text{threadIdx.x} <\text{blockDim.x}$
+  - `threadIdx.x`：block 内 x 方向的线程编号，取值范围为 $0\le\text{threadIdx.x}<\text{blockDim.x}$
 
 - block 维度大小：`blockDim`
   - 一个 block 有多少线程，表示一个 block 的尺寸

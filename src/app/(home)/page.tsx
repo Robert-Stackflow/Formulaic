@@ -108,7 +108,7 @@ export default function HomePage() {
           <div>
             <div className="inline-flex items-center gap-2 rounded-full border border-fd-border bg-fd-card px-3 py-1.5 text-xs text-fd-muted-foreground shadow-sm">
               <span className="h-1.5 w-1.5 rounded-full bg-fd-primary animate-pulse" />
-              Mailstone Version
+              Milestone Version
             </div>
             <h1 className="mt-4 sm:mt-6 text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold tracking-tight text-fd-foreground">
               Formulaic
