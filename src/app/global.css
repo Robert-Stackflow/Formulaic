@@ -291,7 +291,28 @@ article figure[data-rehype-pretty-code-figure]:has(figcaption) pre {
     text-decoration: underline;
   }
 
-  /* 代码块打印样式 */
+  figure > div[role="region"] {
+    overflow: visible !important;
+    max-height: none !important;
+  }
+
+  div[data-toc-popover] {
+    display: none !important;
+  }
+
+  article div[class*="@container"][class*="grid"]:has(> a[href^="/docs/"]) {
+    display: none !important;
+  }
+
+  /* #doc-page-metadata,
+  #doc-page-tags {
+    display: none !important;
+  } */
+
+  figure > div:has(button[type="button"]) {
+    display: none !important;
+  }
+
   pre,
   code {
     overflow: visible !important;
@@ -315,13 +336,11 @@ article figure[data-rehype-pretty-code-figure]:has(figcaption) pre {
     word-break: break-word !important;
   }
 
-  /* 隐藏代码块的复制按钮等交互元素 */
   article figure[data-rehype-pretty-code-figure] button,
   article pre button {
     display: none !important;
   }
 
-  /* 确保代码块标题正常显示 */
   article pre[data-language]::before {
     page-break-after: avoid;
     break-after: avoid;
@@ -331,4 +350,8 @@ article figure[data-rehype-pretty-code-figure]:has(figcaption) pre {
     page-break-after: avoid;
     break-after: avoid;
   }
+}
+
+div.flex.flex-col.border-s:has(> div.bg-fd-card) {
+  border-left: none;
 }

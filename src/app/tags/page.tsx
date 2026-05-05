@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { HomeLayout } from "fumadocs-ui/layouts/home";
 import { baseOptions } from "../layout.config";
 import { getAllTags, getTaggedPages } from "@/lib/tags";
+import { Footer } from "@/components/footer";
 
 export default function TagsPage() {
   const tags = getAllTags();
@@ -16,13 +17,15 @@ export default function TagsPage() {
   return (
     <HomeLayout {...baseOptions}>
       <main className="flex flex-1 flex-col">
-        <section className="py-12 sm:py-16 lg:py-24 px-4">
+        <section className="py-12 sm:py-16 lg:py-24 px-4 mb-12">
           <div className="max-w-6xl mx-auto">
             <div className="mb-8">
               <h1 className="text-3xl font-bold text-fd-foreground mb-2">
                 所有标签
               </h1>
-              <p className="text-fd-muted-foreground">共 {tags.length} 个标签</p>
+              <p className="text-fd-muted-foreground">
+                共 {tags.length} 个标签
+              </p>
             </div>
 
             <div className="flex flex-wrap gap-3">
@@ -41,6 +44,7 @@ export default function TagsPage() {
             </div>
           </div>
         </section>
+        <Footer />
       </main>
     </HomeLayout>
   );

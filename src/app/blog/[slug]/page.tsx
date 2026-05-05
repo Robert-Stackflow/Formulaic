@@ -10,10 +10,7 @@ import {
 } from "lucide-react";
 import { blogSource } from "@/lib/source";
 import { DocsBody } from "fumadocs-ui/page";
-import {
-  TOCProvider,
-  TOCScrollArea,
-} from "fumadocs-ui/components/toc";
+import { TOCProvider, TOCScrollArea } from "fumadocs-ui/components/toc";
 import { notFound } from "next/navigation";
 import { PageLayout } from "@/components/page-layout";
 import { getMDXComponents } from "@/mdx-components";
@@ -21,6 +18,7 @@ import { baseOptions } from "@/app/layout.config";
 import { HomeLayout } from "fumadocs-ui/layouts/home";
 import { PageViews } from "@/components/page-views";
 import { TOCItems } from "@/components/toc-items";
+import { Footer } from "@/components/footer";
 
 interface BlogPageProps {
   params: Promise<{ slug: string }>;
@@ -43,7 +41,7 @@ export default async function BlogPostPage({ params }: BlogPageProps) {
   return (
     <HomeLayout {...baseOptions}>
       <main className="flex flex-1 flex-col">
-        <section className="pt-8 sm:pt-12 pb-4 px-4">
+        <section className="pt-8 sm:pt-12 pb-4 px-4 mb-12">
           <div className="max-w-6xl mx-auto">
             <Link
               href="/blog"
@@ -145,6 +143,7 @@ export default async function BlogPostPage({ params }: BlogPageProps) {
             </div>
           </div>
         </section>
+        <Footer />
       </main>
     </HomeLayout>
   );

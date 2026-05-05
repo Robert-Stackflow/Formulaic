@@ -67,7 +67,7 @@ export function DocPageRenderer({ source, slug }: DocPageRendererProps) {
             <PageInfoCard
               owner={githubConfig.owner}
               repo={githubConfig.repo}
-              filePath={`${githubConfig.contentDir}${getMdxFilePath(page.data)}`}
+              filePath={getMdxFilePath(page)}
               pageUrl={page.url}
             />
           </div>
@@ -81,7 +81,7 @@ export function DocPageRenderer({ source, slug }: DocPageRendererProps) {
 
           {/* LeetCode problem metadata */}
           {(difficulty || problemUrl) && (
-            <div className="flex flex-wrap items-center gap-3 mb-3">
+            <div className="flex flex-wrap items-center gap-3 mb-3" id="doc-page-metadata">
               {difficulty && (
                 <span
                   className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${
@@ -122,7 +122,7 @@ export function DocPageRenderer({ source, slug }: DocPageRendererProps) {
           )}
 
           {tags && tags.length > 0 && (
-            <div className="flex flex-wrap items-center gap-2 text-sm text-fd-muted-foreground mb-4">
+            <div className="flex flex-wrap items-center gap-2 text-sm text-fd-muted-foreground mb-4" id="doc-page-tags">
               {tags.map((tag: string) => (
                 <Link
                   key={tag}
@@ -138,11 +138,11 @@ export function DocPageRenderer({ source, slug }: DocPageRendererProps) {
             className="flex flex-row flex-wrap gap-2 items-center"
             id="doc-page-actions"
           >
-            <LLMCopyButton markdownUrl={getMarkdownUrl(page.data)} />
+            <LLMCopyButton markdownUrl={getMarkdownUrl(page)} />
             <ExportPDFButton />
             <ViewOptions
-              markdownUrl={getMarkdownUrl(page.data)}
-              githubUrl={getGithubViewUrl(page.data, githubConfig)}
+              markdownUrl={getMarkdownUrl(page)}
+              githubUrl={getGithubViewUrl(page, githubConfig)}
             />
           </div>
         </div>
@@ -162,8 +162,8 @@ export function DocPageRenderer({ source, slug }: DocPageRendererProps) {
 
       {/* Document Feedback */}
       <DocFeedback
-        githubEditUrl={getGithubEditUrl(page.data, githubConfig)}
-        githubIssueUrl={getGithubIssueUrl(page.data, title, githubConfig)}
+        githubEditUrl={getGithubEditUrl(page, githubConfig)}
+        githubIssueUrl={getGithubIssueUrl(page, title, githubConfig)}
       />
 
       {/* Giscus Comments */}

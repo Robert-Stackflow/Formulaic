@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { HomeLayout } from "fumadocs-ui/layouts/home";
 import { baseOptions } from "../../layout.config";
 import { getAllTags, getTaggedPages } from "@/lib/tags";
+import { Footer } from "@/components/footer";
 
 interface TagPageProps {
   params: Promise<{ tag: string }>;
@@ -27,7 +28,7 @@ export default async function TagPage({ params }: TagPageProps) {
   return (
     <HomeLayout {...baseOptions}>
       <main className="flex flex-1 flex-col">
-        <section className="py-12 sm:py-16 lg:py-24 px-4">
+        <section className="py-12 sm:py-16 lg:py-24 px-4 mb-12">
           <div className="max-w-6xl mx-auto">
             <div className="mb-8">
               <h1 className="text-3xl font-bold text-fd-foreground mb-2">
@@ -74,6 +75,7 @@ export default async function TagPage({ params }: TagPageProps) {
             </div>
           </div>
         </section>
+        <Footer />
       </main>
     </HomeLayout>
   );

@@ -5,7 +5,15 @@
 
 interface PageData {
   url: string;
-  index?: boolean;
+  path: string;
+  absolutePath: string;
+  data: {
+    index?: boolean;
+    info: {
+      path: string;
+      fullPath: string;
+    };
+  };
 }
 
 /**
@@ -14,10 +22,7 @@ interface PageData {
  * @returns The relative path to the MDX file (e.g., "docs/algorithms/index.mdx")
  */
 export function getMdxFilePath(page: PageData): string {
-  if (page.index) {
-    return `${page.url}/index.mdx`;
-  }
-  return `${page.url}.mdx`;
+  return page.data.info.fullPath;
 }
 
 /**
@@ -32,11 +37,10 @@ export function getGithubEditUrl(
     owner: string;
     repo: string;
     branch: string;
-    contentDir: string;
-  }
+  },
 ): string {
   const filePath = getMdxFilePath(page);
-  return `https://github.com/${config.owner}/${config.repo}/edit/${config.branch}/${config.contentDir}${filePath}`;
+  return `https://github.com/${config.owner}/${config.repo}/edit/${config.branch}/${filePath}`;
 }
 
 /**
@@ -51,11 +55,10 @@ export function getGithubViewUrl(
     owner: string;
     repo: string;
     branch: string;
-    contentDir: string;
-  }
+  },
 ): string {
   const filePath = getMdxFilePath(page);
-  return `https://github.com/${config.owner}/${config.repo}/blob/${config.branch}/${config.contentDir}${filePath}`;
+  return `https://github.com/${config.owner}/${config.repo}/blob/${config.branch}/${filePath}`;
 }
 
 /**
@@ -71,7 +74,7 @@ export function getGithubIssueUrl(
   config: {
     owner: string;
     repo: string;
-  }
+  },
 ): string {
   return `https://github.com/${config.owner}/${config.repo}/issues/new?title=${encodeURIComponent(`[文档反馈] ${title}`)}&body=${encodeURIComponent(`页面链接: ${page.url}\n\n问题描述:\n`)}`;
 }
@@ -79,9 +82,15 @@ export function getGithubIssueUrl(
 /**
  * Get the markdown URL for fetching raw content
  * This is used by LLMCopyButton and ViewOptions to fetch the MDX content
+ * Converts page URL to the corresponding MDX file path
  * @param page - The page object from fumadocs
- * @returns The relative URL to fetch the markdown content
+ * @returns The relative URL to fetch the markdown content (e.g., "/docs/algorithms/index.mdx" or "/docs/algorithms/1-python.mdx")
  */
 export function getMarkdownUrl(page: PageData): string {
-  return getMdxFilePath(page);
+  // // If it's an index page, append /index.mdx to the URL
+  // // Otherwise, append .mdx to the URL
+  // if (page.data.index) {
+  //   return `${page.url}/index.mdx`;
+  // }
+  return `${page.url}.mdx`;
 }
