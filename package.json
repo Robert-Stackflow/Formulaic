@@ -10,8 +10,8 @@
     "dev": "set NODE_OPTIONS=--max-old-space-size=16384 && next dev",
     "start": "cross-env DEBUG=next:* next start",
     "start:debug": "cross-env DEBUG=next:* next start",
-    "deploy": "npx vercel deploy --prebuilt --archive=tgz",
-    "prod": "npx vercel --prod --archive=tgz",
+    "vercel:build": "npx vercel build --prod",
+    "vercel:deploy": "npx vercel deploy --prebuilt --archive=tgz --prod",
     "sync:algolia": "bun scripts/sync-algolia.ts"
   },
   "dependencies": {
