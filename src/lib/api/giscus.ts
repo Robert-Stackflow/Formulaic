@@ -28,11 +28,9 @@ export function listenGiscusMetadata(
 
     const giscusData = event.data?.giscus as GiscusMetadata | undefined;
     if (giscusData?.discussion) {
-      // 如果 Giscus 返回了 URL，检查是否匹配当前页面
-      // 注意：Giscus 使用 pathname mapping 时，discussion.url 可能包含完整路径
       const discussionUrl = giscusData.discussion.url;
       if (discussionUrl && !discussionUrl.includes(pageUrl)) {
-        return; // 不是当前页面的评论数据，忽略
+        return;
       }
 
       callback({

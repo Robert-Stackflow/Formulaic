@@ -35,7 +35,7 @@ export async function fetchPVData(): Promise<PVData | null> {
 
     return null;
   } catch (error) {
-    console.error("Error fetching PV data:", error);
+    // console.error("Error fetching PV data:", error);
     return null;
   }
 }

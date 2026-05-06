@@ -39,14 +39,12 @@ export async function fetchLastCommit(
   filePath: string,
 ): Promise<CommitInfo | null> {
   try {
-    // 首先尝试直接调用 GitHub API
     const response = await fetch(
       `https://api.github.com/repos/${owner}/${repo}/commits?path=${filePath}&page=1&per_page=1`,
     );
 
-    // 如果返回 403（rate limit），使用服务端 API
     if (response.status === 403) {
-      console.warn("GitHub API rate limit exceeded, using fallback API");
+      // console.warn("GitHub API rate limit exceeded, using fallback API");
       return fetchLastCommitFromAPI(owner, repo, filePath);
     }
 
@@ -67,8 +65,7 @@ export async function fetchLastCommit(
       date: formatLocalDateTime(commit.commit.author.date),
     };
   } catch (error) {
-    console.error("Error fetching commit info:", error);
-    // 发生错误时也尝试使用备用 API
+    // console.error("Error fetching commit info:", error);
     return fetchLastCommitFromAPI(owner, repo, filePath);
   }
 }
@@ -93,7 +90,7 @@ async function fetchLastCommitFromAPI(
     const data = await response.json();
     return data;
   } catch (error) {
-    console.error("Error fetching commit info from API:", error);
+    // console.error("Error fetching commit info from API:", error);
     return null;
   }
 }

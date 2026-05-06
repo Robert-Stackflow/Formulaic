@@ -18,7 +18,7 @@ export const giscusConfig = {
   mapping: "pathname" as const,
 
   // 是否启用反应
-  reactionsEnabled: true,
+  reactionsEnabled: false,
 
   // 是否发送元数据（用于获取评论数等信息）
   emitMetadata: true,

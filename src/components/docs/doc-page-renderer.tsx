@@ -75,16 +75,16 @@ export function DocPageRenderer({ source, slug }: DocPageRendererProps) {
       }}
       tableOfContentPopover={{
         style: "clerk",
-        footer: (
-          <div className="mb-4">
-            <PageInfoCard
-              owner={githubConfig.owner}
-              repo={githubConfig.repo}
-              filePath={getMdxFilePath(page)}
-              pageUrl={page.url}
-            />
-          </div>
-        ),
+        // footer: (
+        //   <div className="mb-4">
+        //     <PageInfoCard
+        //       owner={githubConfig.owner}
+        //       repo={githubConfig.repo}
+        //       filePath={getMdxFilePath(page)}
+        //       pageUrl={page.url}
+        //     />
+        //   </div>
+        // ),
       }}
     >
       <div className="flex items-start justify-between gap-4 mb-4">
@@ -331,10 +331,10 @@ function DocsCategory({
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4" id="docs-category">
       {siblings
-        .filter((sibling) => sibling.type !== 'separator')
+        .filter((sibling) => sibling.type !== "separator")
         .map((sibling) => {
           // For folders, use index page; for pages, use the page itself
-          const isFolder = sibling.type === 'folder';
+          const isFolder = sibling.type === "folder";
           const itemUrl = isFolder ? sibling.index?.url : sibling.url;
           const itemName = sibling.name;
           const itemDescription = sibling.description;
@@ -343,7 +343,7 @@ function DocsCategory({
 
           // Get page data for tags and LeetCode metadata
           const peerPage = source.getPage(
-            itemUrl.split('/').filter(Boolean).slice(1)
+            itemUrl.split("/").filter(Boolean).slice(1),
           );
           const peerData = peerPage?.data;
 

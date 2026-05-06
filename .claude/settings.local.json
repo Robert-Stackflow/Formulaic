@@ -10,7 +10,8 @@
       "Bash(npm install *)",
       "Bash(grep -E \"\\\\.\\(tsx|ts|jsx|js\\)$\")",
       "Bash(Move-Item -Path \".github/workflows/deploy-vercel.yml\" -Destination \".github/workflows/deploy-vercel.yml.disabled\")",
-      "PowerShell(Move-Item -Path \".github/workflows/deploy-vercel.yml\" -Destination \".github/workflows/deploy-vercel.yml.disabled\")"
+      "PowerShell(Move-Item -Path \".github/workflows/deploy-vercel.yml\" -Destination \".github/workflows/deploy-vercel.yml.disabled\")",
+      "Bash(grep -E \"\\\\.\\(tsx|ts\\)$\")"
     ]
   }
 }

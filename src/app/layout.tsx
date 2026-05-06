@@ -4,7 +4,7 @@ import { ToastContainer } from "@/components/toast";
 import type { ReactNode } from "react";
 import type { Metadata } from "next";
 import ClientShell from "@/components/shell/client-shell";
-import CustomSearchDialog from "@/components/search";
+import { Analytics } from "@vercel/analytics/next";
 import "katex/dist/katex.css";
 import AlgoliaSearchDialog from "@/components/algolia-search";
 
@@ -86,6 +86,7 @@ export default function Layout({ children }: { children: ReactNode }) {
         >
           <ClientShell>{children}</ClientShell>
           <ToastContainer />
+          <Analytics />
         </RootProvider>
       </body>
     </html>

@@ -22,7 +22,7 @@ export function GiscusComments({
   category,
   categoryId,
   mapping = "pathname",
-  reactionsEnabled = true,
+  reactionsEnabled = false,
   emitMetadata = false,
   inputPosition = "bottom",
   lang = "zh-CN",
