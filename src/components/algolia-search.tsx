@@ -132,7 +132,9 @@ function Pagination({
           >
             1
           </button>
-          {startPage > 1 && <span className="px-1 text-fd-muted-foreground">...</span>}
+          {startPage > 1 && (
+            <span className="px-1 text-fd-muted-foreground">...</span>
+          )}
         </>
       )}
       {pages.map((page) => (
@@ -150,7 +152,9 @@ function Pagination({
       ))}
       {endPage < totalPages - 1 && (
         <>
-          {endPage < totalPages - 2 && <span className="px-1 text-fd-muted-foreground">...</span>}
+          {endPage < totalPages - 2 && (
+            <span className="px-1 text-fd-muted-foreground">...</span>
+          )}
           <button
             onClick={() => onPageChange(totalPages - 1)}
             className="min-w-[28px] px-2 py-1 text-xs rounded cursor-pointer hover:bg-fd-accent transition-colors"
@@ -245,7 +249,10 @@ export default function AlgoliaSearchDialog(props: SharedProps) {
           <SearchDialogClose />
         </SearchDialogHeader>
 
-        <div ref={scrollContainerRef} className="overflow-y-auto px-2 max-h-[60vh]">
+        <div
+          ref={scrollContainerRef}
+          className="overflow-y-auto px-2 max-h-[60vh]"
+        >
           {isLoading && (
             <div className="flex items-center justify-center py-12">
               <div className="text-center">
@@ -263,10 +270,18 @@ export default function AlgoliaSearchDialog(props: SharedProps) {
             <div className="sticky top-0 bg-fd-background z-10 py-2 px-2 mb-1 border-b border-fd-border">
               <div className="flex items-center justify-between text-xs">
                 <span className="text-fd-muted-foreground">
-                  找到 <span className="font-medium text-fd-foreground">{result.nbHits}</span> 个结果
+                  找到{" "}
+                  <span className="font-medium text-fd-foreground">
+                    {result.nbHits}
+                  </span>{" "}
+                  个结果
                 </span>
                 <span className="text-fd-muted-foreground">
-                  用时 <span className="font-medium text-fd-foreground">{result.processingTimeMS}</span>ms
+                  用时{" "}
+                  <span className="font-medium text-fd-foreground">
+                    {result.processingTimeMS}
+                  </span>
+                  ms
                 </span>
               </div>
             </div>

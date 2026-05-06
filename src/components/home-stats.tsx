@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { fetchPVData, type PVData } from "@/lib/api/pv";
+import { fetchWordCount, type SiteStats } from "@/lib/api/docs-stats";
 
 interface StatItem {
   label: string;
@@ -12,16 +13,21 @@ interface StatItem {
 
 export function HomeStats() {
   const [pvData, setPvData] = useState<PVData | null>(null);
+  const [siteStats, setSiteStats] = useState<SiteStats | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const loadPVData = async () => {
-      const data = await fetchPVData();
-      setPvData(data);
+    const loadData = async () => {
+      const [pv, wordCountData] = await Promise.all([
+        fetchPVData(),
+        fetchWordCount(), // 不传 slug，只获取全站统计
+      ]);
+      setPvData(pv);
+      setSiteStats(wordCountData?.site || null);
       setLoading(false);
     };
 
-    loadPVData();
+    loadData();
   }, []);
 
   const formatNumber = (num: number): string => {
@@ -54,8 +60,15 @@ export function HomeStats() {
     },
     {
       label: "文档字数",
-      value: "70w+",
-      tip: "统计中文字符数和英文单词数",
+      value: loading
+        ? "..."
+        : siteStats?.formattedWords || "--",
+      tip: loading
+        ? "加载中..."
+        : siteStats
+          ? `统计中文字符数和英文单词数，共 ${siteStats.pageCount} 篇文档`
+          : "统计中文字符数和英文单词数",
+      loading,
     },
     {
       label: "持续更新",

@@ -17,7 +17,8 @@ import { useI18n } from "fumadocs-ui/contexts/i18n";
 
 const appId = process.env.NEXT_PUBLIC_ALGOLIA_APP_ID || "Your Algolia App ID";
 const apiKey =
-  process.env.NEXT_PUBLIC_ALGOLIA_SEARCH_API_KEY || "Your Algolia Search API Key";
+  process.env.NEXT_PUBLIC_ALGOLIA_SEARCH_API_KEY ||
+  "Your Algolia Search API Key";
 const indexName = process.env.ALGOLIA_INDEX_NAME || "document";
 const client = liteClient(appId, apiKey);
 

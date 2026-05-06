@@ -1,11 +1,10 @@
 import { getPageTreePeers } from "fumadocs-core/page-tree";
 import { Card, Cards } from "fumadocs-ui/components/card";
-import { DocsPage } from "fumadocs-ui/page";
+import { DocsPage } from "fumadocs-ui/layouts/notebook/page";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createRelativeLink } from "fumadocs-ui/mdx";
 import { getMDXComponents } from "@/mdx-components";
-import { tocConfig } from "@/lib/toc-config";
 import type { LoaderOutput } from "fumadocs-core/source";
 import { ExportPDFButton, LLMCopyButton, ViewOptions } from "./page-sections";
 import { AISummaryCard } from "@/components/ai-summary-card";
@@ -58,12 +57,24 @@ export function DocPageRenderer({ source, slug }: DocPageRendererProps) {
     <DocsPage
       toc={toc}
       full={full}
-      lastUpdate={lastModified ? new Date(lastModified) : undefined}
-      {...tocConfig}
+      // lastUpdate={lastModified ? new Date(lastModified) : undefined}
       tableOfContent={{
         style: "clerk",
         footer: (
-          <div className="mt-4">
+          <div className="mt-2">
+            <PageInfoCard
+              owner={githubConfig.owner}
+              repo={githubConfig.repo}
+              filePath={getMdxFilePath(page)}
+              pageUrl={page.url}
+            />
+          </div>
+        ),
+      }}
+      tableOfContentPopover={{
+        style: "clerk",
+        footer: (
+          <div className="mb-4">
             <PageInfoCard
               owner={githubConfig.owner}
               repo={githubConfig.repo}
@@ -81,7 +92,10 @@ export function DocPageRenderer({ source, slug }: DocPageRendererProps) {
 
           {/* LeetCode problem metadata */}
           {(difficulty || problemUrl) && (
-            <div className="flex flex-wrap items-center gap-3 mb-3" id="doc-page-metadata">
+            <div
+              className="flex flex-wrap items-center gap-3 mb-3"
+              id="doc-page-metadata"
+            >
               {difficulty && (
                 <span
                   className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${
@@ -122,7 +136,10 @@ export function DocPageRenderer({ source, slug }: DocPageRendererProps) {
           )}
 
           {tags && tags.length > 0 && (
-            <div className="flex flex-wrap items-center gap-2 text-sm text-fd-muted-foreground mb-4" id="doc-page-tags">
+            <div
+              className="flex flex-wrap items-center gap-2 text-sm text-fd-muted-foreground mb-4"
+              id="doc-page-tags"
+            >
               {tags.map((tag: string) => (
                 <Link
                   key={tag}

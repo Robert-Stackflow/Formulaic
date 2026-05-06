@@ -1,8 +1,29 @@
 "use client";
 
 import { ChevronDownIcon } from "lucide-react";
+import { useEffect, useState } from "react";
 
 export function ScrollDownIndicator() {
+  const [isVisible, setIsVisible] = useState(true);
+
+  useEffect(() => {
+    const checkVisibility = () => {
+      const viewportHeight = window.innerHeight;
+      const pageHeight = document.documentElement.scrollHeight;
+
+      if (viewportHeight < 900 || pageHeight < viewportHeight * 2) {
+        setIsVisible(false);
+      } else {
+        setIsVisible(true);
+      }
+    };
+
+    checkVisibility();
+    window.addEventListener("resize", checkVisibility);
+
+    return () => window.removeEventListener("resize", checkVisibility);
+  }, []);
+
   const handleClick = () => {
     window.scrollTo({
       top: window.innerHeight - 64,
@@ -10,16 +31,18 @@ export function ScrollDownIndicator() {
     });
   };
 
+  if (!isVisible) return null;
+
   return (
     <button
       onClick={handleClick}
-      className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 cursor-pointer hover:text-fd-primary transition-colors group"
+      className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 cursor-pointer hover:text-fd-primary transition-colors group flex"
       aria-label="向下滚动"
     >
       <span className="text-xs text-fd-muted-foreground group-hover:text-fd-primary transition-colors">
         向下滚动探索更多
       </span>
-      <ChevronDownIcon className="w-5 h-5 text-fd-muted-foreground group-hover:text-fd-primary transition-colors" />
+      <ChevronDownIcon className="w-5 h-5 text-fd-muted-foreground group-hover:text-fd-primary transition-colors animate-bounce" />
     </button>
   );
 }

@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { DocsLayout } from "fumadocs-ui/layouts/docs";
+import { DocsLayout } from "fumadocs-ui/layouts/notebook";
 import { baseOptions } from "@/app/layout.config";
 import { source } from "@/lib/source";
 import {
@@ -17,7 +17,6 @@ export default function Layout({ children }: { children: ReactNode }) {
     <DocsLayout
       tree={source.pageTree}
       {...baseOptions}
-      links={[]}
       tabs={[
         {
           icon: <Code2 className="size-4" />,

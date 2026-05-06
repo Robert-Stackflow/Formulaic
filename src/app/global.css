@@ -356,7 +356,6 @@ div.flex.flex-col.border-s:has(> div.bg-fd-card) {
   border-left: none;
 }
 
-/* Search Dialog 位置调整 */
 [role="dialog"][aria-labelledby*="radix"] {
   top: 2rem !important;
 }
@@ -365,4 +364,8 @@ div.flex.flex-col.border-s:has(> div.bg-fd-card) {
   [role="dialog"][aria-labelledby*="radix"] {
     top: 6rem !important;
   }
+}
+
+button[data-search-full] {
+  max-width: 300px !important;
 }
