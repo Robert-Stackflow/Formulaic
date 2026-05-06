@@ -31,6 +31,7 @@ function formatLocalDateTime(utcDate: string | Date): string {
 
 /**
  * 获取文件的最后提交信息
+ * 当 GitHub API 返回 403 时，自动切换到服务端 API
  */
 export async function fetchLastCommit(
   owner: string,
@@ -38,9 +39,16 @@ export async function fetchLastCommit(
   filePath: string,
 ): Promise<CommitInfo | null> {
   try {
+    // 首先尝试直接调用 GitHub API
     const response = await fetch(
       `https://api.github.com/repos/${owner}/${repo}/commits?path=${filePath}&page=1&per_page=1`,
     );
+
+    // 如果返回 403（rate limit），使用服务端 API
+    if (response.status === 403) {
+      console.warn("GitHub API rate limit exceeded, using fallback API");
+      return fetchLastCommitFromAPI(owner, repo, filePath);
+    }
 
     if (!response.ok) {
       return null;
@@ -60,6 +68,32 @@ export async function fetchLastCommit(
     };
   } catch (error) {
     console.error("Error fetching commit info:", error);
+    // 发生错误时也尝试使用备用 API
+    return fetchLastCommitFromAPI(owner, repo, filePath);
+  }
+}
+
+/**
+ * 通过服务端 API 获取提交信息（带认证）
+ */
+async function fetchLastCommitFromAPI(
+  owner: string,
+  repo: string,
+  filePath: string,
+): Promise<CommitInfo | null> {
+  try {
+    const response = await fetch(
+      `/api/github/commits?owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(repo)}&path=${encodeURIComponent(filePath)}`,
+    );
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error("Error fetching commit info from API:", error);
     return null;
   }
 }

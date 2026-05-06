@@ -6,6 +6,7 @@ import type { Metadata } from "next";
 import ClientShell from "@/components/shell/client-shell";
 import CustomSearchDialog from "@/components/search";
 import "katex/dist/katex.css";
+import AlgoliaSearchDialog from "@/components/algolia-search";
 
 export const metadata: Metadata = {
   title: {
@@ -80,7 +81,7 @@ export default function Layout({ children }: { children: ReactNode }) {
       <body className="flex flex-col min-h-screen antialiased">
         <RootProvider
           search={{
-            SearchDialog: CustomSearchDialog,
+            SearchDialog: AlgoliaSearchDialog,
           }}
         >
           <ClientShell>{children}</ClientShell>

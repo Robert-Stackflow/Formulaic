@@ -355,3 +355,14 @@ article figure[data-rehype-pretty-code-figure]:has(figcaption) pre {
 div.flex.flex-col.border-s:has(> div.bg-fd-card) {
   border-left: none;
 }
+
+/* Search Dialog 位置调整 */
+[role="dialog"][aria-labelledby*="radix"] {
+  top: 2rem !important;
+}
+
+@media (min-width: 768px) {
+  [role="dialog"][aria-labelledby*="radix"] {
+    top: 6rem !important;
+  }
+}

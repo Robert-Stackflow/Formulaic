@@ -111,7 +111,7 @@ export function AISummaryCard({ contentSelector = '#doc-content' }: AISummaryCar
         }
       }
 
-      const response = await fetch('https://api.cloudchewie.com/blog/summary', {
+      const response = await fetch('/api/ai/summary', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
