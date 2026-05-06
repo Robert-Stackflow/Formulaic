@@ -106,9 +106,9 @@ export default function HomePage() {
 
         <div className="mx-auto grid max-w-7xl w-full items-center gap-8 lg:gap-10 lg:grid-cols-[1.1fr_0.9fr]">
           <div className="text-center lg:text-left">
-            <div className="inline-flex items-center gap-2 rounded-full border border-fd-border bg-fd-card px-3 py-1.5 text-xs text-fd-muted-foreground shadow-sm">
+            <div className="inline-flex items-center gap-2 rounded-full border border-fd-border bg-fd-card px-3 py-1.5 text-xs text-fd-muted-foreground">
               <span className="h-1.5 w-1.5 rounded-full bg-fd-primary animate-pulse" />
-              Milestone Version
+              Preview Version
             </div>
             <h1 className="mt-4 sm:mt-6 text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold tracking-tight text-fd-foreground">
               Formulaic

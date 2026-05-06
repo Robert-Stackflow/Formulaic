@@ -197,7 +197,7 @@ export default function AlgoliaSearchDialog(props: SharedProps) {
             {
               indexName,
               query,
-              distinct: 5,
+              distinct: 3,
               hitsPerPage: 10,
               page,
               ...(locale && { filters: `locale:${locale}` }),

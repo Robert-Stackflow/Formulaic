@@ -20,7 +20,7 @@ export async function fetchPVData(): Promise<PVData | null> {
       method: "POST",
       headers: {
         Authorization: `Bearer ${pvConfig.token}`,
-        "x-bsz-referer": window.location.origin,
+        "x-bsz-referer": location.href,
       },
     });
 
