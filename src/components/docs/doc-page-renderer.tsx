@@ -1,5 +1,4 @@
-import { getPageTreePeers } from "fumadocs-core/page-tree";
-import { Card, Cards } from "fumadocs-ui/components/card";
+import { findSiblings } from "fumadocs-core/page-tree";
 import { DocsPage } from "fumadocs-ui/layouts/notebook/page";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -57,6 +56,9 @@ export function DocPageRenderer({ source, slug }: DocPageRendererProps) {
     <DocsPage
       toc={toc}
       full={full}
+      breadcrumb={{
+        enabled: false,
+      }}
       // lastUpdate={lastModified ? new Date(lastModified) : undefined}
       tableOfContent={{
         style: "clerk",
@@ -168,7 +170,10 @@ export function DocPageRenderer({ source, slug }: DocPageRendererProps) {
 
       {showAISummary && <AISummaryCard />}
 
-      <div className="prose flex-1 text-fd-foreground/90 mb-4" id="doc-content">
+      <div
+        className={`${index ? "" : "prose"} flex-1 text-fd-foreground/90 mb-4`}
+        id="doc-content"
+      >
         <MDXContent
           components={getMDXComponents({
             a: createRelativeLink(source, page),
@@ -182,7 +187,6 @@ export function DocPageRenderer({ source, slug }: DocPageRendererProps) {
         githubEditUrl={getGithubEditUrl(page, githubConfig)}
         githubIssueUrl={getGithubIssueUrl(page, title, githubConfig)}
       />
-
       {/* Giscus Comments */}
       {!index && (
         <GiscusComments
@@ -202,6 +206,119 @@ export function DocPageRenderer({ source, slug }: DocPageRendererProps) {
   );
 }
 
+function CustomCard({
+  name,
+  description,
+  tags,
+  url,
+  difficulty,
+  problemUrl,
+  isFolder,
+}: {
+  name: string;
+  description?: string;
+  tags?: string[];
+  url: string;
+  difficulty?: string;
+  problemUrl?: string;
+  isFolder?: boolean;
+}) {
+  const isLeetCode = difficulty || problemUrl;
+
+  return (
+    <Link
+      href={url}
+      className="group block rounded-lg border border-fd-border bg-fd-card p-5 hover:border-fd-primary/50 hover:shadow-md transition-all duration-200"
+    >
+      <div className="flex items-start justify-between gap-3 mb-3">
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <h3 className="font-semibold text-fd-foreground group-hover:text-fd-primary transition-colors line-clamp-2">
+            {name}
+          </h3>
+          {isFolder && (
+            <span className="inline-flex items-center rounded-md bg-fd-accent px-2 py-0.5 text-xs font-medium text-fd-muted-foreground flex-shrink-0">
+              集合
+            </span>
+          )}
+        </div>
+        <svg
+          className="w-4 h-4 text-fd-muted-foreground group-hover:text-fd-primary group-hover:translate-x-0.5 transition-all flex-shrink-0 mt-0.5"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M9 5l7 7-7 7"
+          />
+        </svg>
+      </div>
+
+      {isLeetCode ? (
+        <div className="flex flex-wrap items-center gap-2">
+          {difficulty && (
+            <span
+              className={`inline-flex items-center rounded-md px-2.5 py-1 text-xs font-medium ring-1 ring-inset ${
+                difficulty === "Easy"
+                  ? "bg-green-50 text-green-700 ring-green-600/20 dark:bg-green-500/10 dark:text-green-400 dark:ring-green-500/20"
+                  : difficulty === "Medium"
+                    ? "bg-yellow-50 text-yellow-800 ring-yellow-600/20 dark:bg-yellow-500/10 dark:text-yellow-500 dark:ring-yellow-500/20"
+                    : "bg-red-50 text-red-700 ring-red-600/20 dark:bg-red-500/10 dark:text-red-400 dark:ring-red-500/20"
+              }`}
+            >
+              {difficulty}
+            </span>
+          )}
+          {problemUrl && (
+            <span className="inline-flex items-center gap-1 text-xs text-fd-muted-foreground">
+              <svg
+                className="w-3.5 h-3.5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                />
+              </svg>
+              LeetCode 原题
+            </span>
+          )}
+        </div>
+      ) : (
+        description && (
+          <p className="text-sm text-fd-muted-foreground leading-relaxed line-clamp-2">
+            {description}
+          </p>
+        )
+      )}
+
+      {tags && tags.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mt-3 pt-3 border-t border-fd-border/50">
+          {tags.slice(0, 3).map((tag) => (
+            <span
+              key={tag}
+              className="rounded-full border border-fd-border px-2 py-0.5 text-xs text-fd-muted-foreground"
+            >
+              {tag}
+            </span>
+          ))}
+          {tags.length > 3 && (
+            <span className="inline-flex items-center text-xs text-fd-muted-foreground">
+              +{tags.length - 3}
+            </span>
+          )}
+        </div>
+      )}
+    </Link>
+  );
+}
+
 function DocsCategory({
   source,
   url,
@@ -209,16 +326,43 @@ function DocsCategory({
   source: LoaderOutput<any>;
   url: string;
 }) {
+  const siblings = findSiblings(source.pageTree, url);
+
   return (
-    <Cards>
-      {getPageTreePeers(source.pageTree, url).map((peer) => {
-        return (
-          <Card key={peer.url} title={peer.name} href={peer.url}>
-            {peer.description}
-          </Card>
-        );
-      })}
-    </Cards>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4" id="docs-category">
+      {siblings
+        .filter((sibling) => sibling.type !== 'separator')
+        .map((sibling) => {
+          // For folders, use index page; for pages, use the page itself
+          const isFolder = sibling.type === 'folder';
+          const itemUrl = isFolder ? sibling.index?.url : sibling.url;
+          const itemName = sibling.name;
+          const itemDescription = sibling.description;
+
+          if (!itemUrl) return null;
+
+          // Get page data for tags and LeetCode metadata
+          const peerPage = source.getPage(
+            itemUrl.split('/').filter(Boolean).slice(1)
+          );
+          const peerData = peerPage?.data;
+
+          return (
+            <CustomCard
+              key={itemUrl}
+              name={String(itemName)}
+              description={
+                itemDescription ? String(itemDescription) : undefined
+              }
+              tags={peerData?.tags}
+              url={itemUrl}
+              difficulty={peerData?.difficulty}
+              problemUrl={peerData?.url}
+              isFolder={isFolder}
+            />
+          );
+        })}
+    </div>
   );
 }
 

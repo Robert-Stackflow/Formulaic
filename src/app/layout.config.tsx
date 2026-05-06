@@ -1,7 +1,7 @@
-import Image from "next/image";
 import type { BaseLayoutProps } from "fumadocs-ui/layouts/shared";
 import { BookOpen, Layers } from "lucide-react";
 import { DocsDropdown } from "@/components/docs-dropdown";
+import { Logo } from "@/components/logo";
 
 const docsMenuItems = [
   {
@@ -60,14 +60,7 @@ export const baseOptions: BaseLayoutProps = {
     transparentMode: "top",
     title: (
       <>
-        {/* <Image
-          src="/logo-transparent.png"
-          alt="Formulaic"
-          width={24}
-          height={24}
-          className="rounded"
-          priority
-        /> */}
+        <Logo className="size-6 text-gray-900 dark:text-gray-100" />
         <span className="font-semibold">Formulaic</span>
       </>
     ),
@@ -79,14 +72,30 @@ export const baseOptions: BaseLayoutProps = {
       children: <DocsDropdown items={docsMenuItems} />,
     },
     {
-      text: "博客",
-      icon: <BookOpen className="size-4" />,
-      url: "/blog",
+      type: "custom",
+      on: "nav",
+      children: (
+        <a
+          className="px-2.5 py-1.5 text-sm transition-all duration-200 rounded-md cursor-pointer text-fd-muted-foreground hover:text-fd-accent-foreground hover:bg-fd-accent/50"
+          href="/blog"
+          id="nav-blog-link"
+        >
+          博客
+        </a>
+      ),
     },
     {
-      text: "标签",
-      icon: <Layers className="size-4" />,
-      url: "/tags",
+      type: "custom",
+      on: "nav",
+      children: (
+        <a
+          className="px-2.5 py-1.5 text-sm transition-all duration-200 rounded-md cursor-pointer text-fd-muted-foreground hover:text-fd-accent-foreground hover:bg-fd-accent/50"
+          href="/tags"
+          id="nav-tags-link"
+        >
+          标签
+        </a>
+      ),
     },
   ],
   githubUrl: "https://github.com/Robert-Stackflow/Formulaic",

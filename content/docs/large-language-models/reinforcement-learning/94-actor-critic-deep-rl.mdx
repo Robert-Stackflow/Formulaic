@@ -3,7 +3,7 @@ title: Actor-Critic 深度强化学习
 description: 介绍 Actor-Critic 深度强化学习的基本原理，包括 A2C、A3C 等算法的核心思想、优势函数的定义与计算方法，以及它们在深度强化学习中的应用和实现细节
 ---
 
-## 3.2.1 AC 方法
+## AC 方法
 
 - 核心思想 —— 将策略和价值函数结合在一起训练：
   - **Actor**：表示策略函数 $\pi_\theta (a|s)$，负责从状态 $s$ 中选择动作 $a$
@@ -29,7 +29,7 @@ description: 介绍 Actor-Critic 深度强化学习的基本原理，包括 A2C�
     w \leftarrow w + \alpha \cdot \delta_t \cdot \nabla_w V_w (s_t)
   $$
 
-## 3.2.2 A2C 方法（Advantage Actor-Critic）
+## A2C 方法（Advantage Actor-Critic）
 
 - A2C 是**A3C 的同步版本**，是对标准 Actor–Critic 的工程化改进
 - 核心思想
@@ -92,7 +92,7 @@ description: 介绍 Actor-Critic 深度强化学习的基本原理，包括 A2C�
   - TD (λ)：需要 eligibility trace 或等价实现、并行环境下实现复杂、GPU 上不如 n-step 友好
   - 因此 A2C 选择了 TD (λ) 的 “离散近似版本”
 
-## 3.2.3 A3C 方法（Asynchronous Advantage Actor-Critic）
+## A3C 方法（Asynchronous Advantage Actor-Critic）
 
 - A3C 是**第一个成功的大规模并行深度强化学习算法**
 - 核心思想

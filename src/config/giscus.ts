@@ -30,7 +30,7 @@ export const giscusConfig = {
   lang: "zh-CN",
 
   // 加载方式
-  loading: "lazy" as const,
+  loading: "eager" as const,
 };
 
 // GitHub 配置

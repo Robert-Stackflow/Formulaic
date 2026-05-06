@@ -46,20 +46,19 @@ export function GiscusComments({
     script.setAttribute("data-category", category);
     script.setAttribute("data-category-id", categoryId);
     script.setAttribute("data-mapping", mapping);
-    script.setAttribute("data-strict", "0");
+    script.setAttribute("data-strict", "1");
     script.setAttribute("data-reactions-enabled", reactionsEnabled ? "1" : "0");
     script.setAttribute("data-emit-metadata", emitMetadata ? "1" : "0");
     script.setAttribute("data-input-position", inputPosition);
     script.setAttribute("data-theme", theme);
     script.setAttribute("data-lang", lang);
-    script.setAttribute("data-loading", loading);
+    // script.setAttribute("data-loading", loading);
     script.crossOrigin = "anonymous";
     script.async = true;
 
     ref.current.appendChild(script);
   }, [repo, repoId, category, categoryId, mapping, reactionsEnabled, emitMetadata, inputPosition, lang, loading, resolvedTheme]);
 
-  // Update theme when it changes
   useEffect(() => {
     const iframe = document.querySelector<HTMLIFrameElement>("iframe.giscus-frame");
     if (!iframe) return;

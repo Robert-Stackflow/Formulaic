@@ -321,21 +321,6 @@ article figure[data-rehype-pretty-code-figure]:has(figcaption) pre {
     max-width: 100% !important;
   }
 
-  article pre {
-    overflow: visible !important;
-    max-height: none !important;
-    padding: 1rem !important;
-    font-size: 0.75rem !important;
-    line-height: 1.4 !important;
-  }
-
-  article pre code {
-    display: block !important;
-    overflow: visible !important;
-    white-space: pre-wrap !important;
-    word-break: break-word !important;
-  }
-
   article figure[data-rehype-pretty-code-figure] button,
   article pre button {
     display: none !important;
@@ -368,4 +353,16 @@ div.flex.flex-col.border-s:has(> div.bg-fd-card) {
 
 button[data-search-full] {
   max-width: 300px !important;
+}
+
+#nd-subnav {
+  z-index: 11;
+}
+
+div.flex:has(> #nav-blog-link) {
+  gap: calc(var(--spacing) * 2) !important;
+}
+
+#docs-category {
+  text-decoration: none;
 }

@@ -3,14 +3,14 @@ title: Transformer 模型
 description: 介绍 Transformer 模型的基本概念，包括注意力机制、Transformer 结构、GPT、BERT、T5 和 RoBERTa 等内容
 ---
 
-## 9.1 注意力机制
+## 注意力机制
 
 - 深度学习中的注意力机制本质上和人类的选择性视觉注意力机制类似
 - 核心目标也是从众多信息中选择出对当前任务目标更关键的信息，可以广义地解释为重要性权重的向量
 - RNN 是健忘的，前面的信息在经过多个时间步骤传播后会被逐渐消弱乃至消失；
 - RNN 的解码期间没有对齐操作，因此在解码每个元素的过程中，焦点分散在整个序列中；
 
-### 9.1.1 注意力机制的核心步骤
+### 注意力机制的核心步骤
 
 - 第一步：根据 Query 和 Key 计算权重系数
   - 根据 Query 和 Key 计算两者的相似性或者相关性
@@ -50,7 +50,7 @@ description: 介绍 Transformer 模型的基本概念，包括注意力机制、
   y_t = g (c_t, h_t^{\text{dec}})
   $$
 
-### 9.1.2 自注意力（Self-Attention）
+### 自注意力（Self-Attention）
 
 - 缩放点积注意力（Scaled Dot-Product Attention）
 
@@ -69,7 +69,7 @@ description: 介绍 Transformer 模型的基本概念，包括注意力机制、
   - $V$：值矩阵
   - $d_k$：键向量的维度，用于缩放点积
 
-### 9.1.3 多头注意力（Multi-Head Attention）
+### 多头注意力（Multi-Head Attention）
 
 - 将输入分为多个头（子空间），并行计算注意力，每个头独立学习不同的特征表示
 - 这些 “头” 的输出随后被合并（通常是拼接后再通过一个线性层），以产生最终的输出表示
@@ -80,7 +80,7 @@ description: 介绍 Transformer 模型的基本概念，包括注意力机制、
 
 其中，$\text{head}_i = \text{Attention}(QW_i^Q, KW_i^K, VW_i^V)$
 
-## 9.2 Transformer 结构
+## Transformer 结构
 
 Transformer 模型是一种序列到序列（Sequence to Sequence，Seq2Seq）架构的深度学习模型
 
@@ -119,7 +119,7 @@ Transformer 模型是一种序列到序列（Sequence to Sequence，Seq2Seq）�
       \end {align*}
       $$
 
-## 9.3 GPT（Generative Pre-trained Transformer）
+## GPT（Generative Pre-trained Transformer）
 
 - 单向 Transformer 编码器：
   - 输入序列仅能关注之前的上下文（从左到右），无法利用后续信息。
@@ -129,7 +129,7 @@ Transformer 模型是一种序列到序列（Sequence to Sequence，Seq2Seq）�
 
   - 微调阶段：在特定任务（如分类、生成）上微调模型
 
-## 9.4 BERT（Bidirectional Encoder Representations from Transformers）
+## BERT（Bidirectional Encoder Representations from Transformers）
 
 - 双向 Transformer 编码器：
   - 每个词同时关注其左侧和右侧的上下文
@@ -141,13 +141,13 @@ Transformer 模型是一种序列到序列（Sequence to Sequence，Seq2Seq）�
   - Segment Embedding 用于区分输入的句子对，间接在语言模型中建模出前后句子所属的不同类型；
   - Position Embedding 则不同于 Transformer 中的三角函数，BERT 中直接设定处理序列的最大长度为 512，并对每个位置的 Embedding 进行学习
 
-## 9.5 T5（Text-to-Text Transfer Transformer）
+## T5（Text-to-Text Transfer Transformer）
 
 - 编码器 - 解码器结构：编码器处理输入，解码器生成输出文本
 - 任务统一化：例如，将分类任务表示为 "输入：文本，输出：标签"
 - 预训练目标：使用填空（Span Corruption）任务：随机遮蔽文本片段，模型学习恢复这些片段
 
-## 9.6 RoBERTa（A Robustly Optimized BERT Pretraining Approach）
+## RoBERTa（A Robustly Optimized BERT Pretraining Approach）
 
 - 改进点：
   - 移除了下一句预测（NSP）任务，专注于 MLM

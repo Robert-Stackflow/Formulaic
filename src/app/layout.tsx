@@ -47,9 +47,9 @@ export const metadata: Metadata = {
       "系统化的技术面试知识库，帮助你掌握算法、后端、系统、DevOps 等核心领域的八股文知识。",
   },
   icons: {
-    icon: "/logo-transparent.png",
-    shortcut: "/logo-transparent.png",
-    apple: "/logo-transparent.png",
+    icon: "/logo.svg",
+    shortcut: "/logo.svg",
+    apple: "/logo.svg",
   },
 };
 

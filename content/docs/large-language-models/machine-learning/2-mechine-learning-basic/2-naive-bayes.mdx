@@ -3,19 +3,19 @@ title: 朴素贝叶斯理论
 description: 介绍朴素贝叶斯分类器的基本概念、查询似然模型、基于翻译的语言模型及基于 KL 距离模型等内容
 ---
 
-## 2.1 基本概念
+## 基本概念
 
 - 以文本分类任务为例
   - 形式化定义：给定文档空间 $X$，类别集合 $C=\{c_1,\cdots,c_j\}$，则训练集 $D={\langle d,c\rangle \in X\times C}$，需要学习一个算法，得到分类器 $\gamma:X\rightarrow C$，确定文档 $d$ 最可能属于的类别
 
   - 文本的表示可以用 One-Hot 编码或 TF-IDF 表示
 
-### 2.1.1 One-Hot 表示
+### One-Hot 表示
 
 - 相互独立地表示语料中的每个词，将每个词表示为一个稀疏向量，其维度是词典大小
 - 不考虑单词之间的关联，不能表示词语的重要性，语义信息被全部丢失
 
-### 2.1.2 TF - IDF
+### TF - IDF
 
 - TF-IDF 全称为（Term Frequency-Inverse Document Frequency，词频 - 逆文档频率）
 
@@ -36,7 +36,7 @@ $$
     IDF (t,D)=\log\frac {|D|}{1+|d\in D:t\in d|}
     $$
 
-## 2.2 朴素贝叶斯分类器
+## 朴素贝叶斯分类器
 
 - 文档 $d$ 的类别是 $c$ 的概率公式是一个多项式模型
 
@@ -44,7 +44,7 @@ $$
   P (c\mid d)=P (d\mid c) P (c)/P (d)\propto P (d\mid c) P (c)=P (c)\prod_{1\leq k\leq n_{d}} P (t_{k}\mid c)
   $$
 
-### 2.2.1 查询似然模型（Query Likelihood Model，QLM）
+### 查询似然模型（Query Likelihood Model，QLM）
 
 $$
 \begin {align*}
@@ -60,7 +60,7 @@ $$
   - $p (w|D)=\frac {max (c (w,D)-\delta,0)}{|D|}+\frac {\delta|D|_{\mu}}{|D|} p (w|C)$
 - 缺点：无法解决词语失配问题，如查询中用词和文档中用词不一致
 
-### 2.2.2 基于翻译的语言模型
+### 基于翻译的语言模型
 
 $$
 P (Q|D)=\Pi_i P (q_i|D)=\Pi_i\sum_jP (q_i|w_j) P (w_j|M_D)
@@ -68,7 +68,7 @@ $$
 
 - 其中，$P (q_i|w_j)$ 为翻译概率，可以通过同近义词构造
 
-### 2.2.3 基于 KL 距离（相对熵）模型
+### 基于 KL 距离（相对熵）模型
 
 - KL 距离定义
 
@@ -125,7 +125,7 @@ $$
   \sum_{q_i\in Q} P (q_i\mid M_Q)\log P (q_i\mid M_D)
   $$
 
-### 2.2.4 朴素贝叶斯分类的目标
+### 朴素贝叶斯分类的目标
 
 朴素贝叶斯分类的目标是找到具有最大后验概率的类别：
 

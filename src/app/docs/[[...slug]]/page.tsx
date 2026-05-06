@@ -25,4 +25,3 @@ export async function generateMetadata(props: {
   const params = await props.params;
   return getDocPageMetadata(source, params.slug);
 }
-

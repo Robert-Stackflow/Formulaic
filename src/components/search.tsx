@@ -52,7 +52,7 @@ export default function CustomSearchDialog(props: SharedProps) {
             rel="noreferrer noopener"
             className="ms-auto text-xs text-fd-muted-foreground"
           >
-            Search powered by Algolia
+            Powered By Algolia
           </a>
         </SearchDialogFooter>
       </SearchDialogContent>

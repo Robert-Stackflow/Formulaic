@@ -3,7 +3,7 @@ title: Word2Vec
 description: 介绍 Word2Vec 的基本概念、模型结构、训练方法及应用等内容
 ---
 
-## 5.1 基本概念
+## 基本概念
 
 - 词向量（Word Vector）：对于词典 $D$ 中任意词 $w$，指定一个长度为 $m$ 的实值向量 $v (w) \in \mathbb {R}^m$，该向量即为单词 $w$ 的词向量，用于编码其语义和使用模式
 - 词嵌入（Word Embedding）：将不可计算、非结构化的词转化为可计算、结构化的向量，将现实问题转化为数学问题
@@ -15,11 +15,11 @@ description: 介绍 Word2Vec 的基本概念、模型结构、训练方法及应
 
 为突破上述限制，分布式表示（Distributed Representation）提出以低维稠密向量替代高维稀疏编码，并通过训练使向量捕捉词语的语义与上下文关系
 
-## 5.2 N-Gram 模型
+## N-Gram 模型
 
 - N-Gram 模型是 Word2Vec 的理论基础之一，通过使用前 $n-1$ 个单词预测下一个单词来估计句子概率
 
-- N-Gram 是由连续 $n$​ 个词语或字符组成的序列
+- N-Gram 是由连续 $n$ 个词语或字符组成的序列
 
 - 利用链式法则与马尔可夫假设，可将句子概率近似为：
 
@@ -38,7 +38,7 @@ description: 介绍 Word2Vec 的基本概念、模型结构、训练方法及应
   - Bigram (2-gram)：假设每个单词的概率仅取决于前一个单词，即 $P (w_i | w_{i-1})$
   - Trigram (3-gram)：假设每个单词的概率取决于前两个单词，即 $P (w_i | w_{i-2}, w_{i-1})$
 
-## 5.2 Word2Vec 的原理
+## Word2Vec 的原理
 
 ![word2vec 原理](/img/llm/word2vec 原理.png)
 
@@ -63,7 +63,7 @@ description: 介绍 Word2Vec 的基本概念、模型结构、训练方法及应
 
 ![cbow_skip-gram](/img/llm/cbow_skip-gram.png)
 
-## 5.3 CBOW (Continuous Bag-of-Words)
+## CBOW (Continuous Bag-of-Words)
 
 ![cbow](/img/llm/cbow.png)
 
@@ -78,7 +78,7 @@ description: 介绍 Word2Vec 的基本概念、模型结构、训练方法及应
 - 由于 One-Hot 编码中只有一个元素为 $1$，其余为 $0$，第 $i$ 个单词与 $W$ 相乘结果就是矩阵 $W$ 的第 $i$ 行
 - 因此，$W$ 也称为 lookup table，在拥有 lookup table 后，可以直接通过查表获取单词的词向量，无需再次训练
 
-## 5.4 Skip-gram
+## Skip-gram
 
 ![skip-gram](/img/llm/skip-gram.png)
 
@@ -100,7 +100,7 @@ description: 介绍 Word2Vec 的基本概念、模型结构、训练方法及应
 - 然而，直接计算完整 softmax 的训练开销非常大，实际应用中效率较低
 - 为提升训练效率，提出了两种改进方法：Hierarchical Softmax 和 Negative Sampling
 
-## 5.5 Hierarchical Softmax
+## Hierarchical Softmax
 
 - Hierarchical Softmax 对原模型的改进主要包括两方面：
   - 输入层到隐藏层的映射：不再使用原先将输入词向量与矩阵 $W$ 相乘再求平均的方法，而是直接对输入词向量求和。例如，若输入词向量为 $(0,1,0,0)$ 和 $(0,0,0,1)$，则隐藏层向量为 $(0,1,0,1)$
@@ -110,7 +110,7 @@ description: 介绍 Word2Vec 的基本概念、模型结构、训练方法及应
 - 具体实现上，除根节点外，每个非叶节点包含一个由参数 $\theta$ 确定的 sigmoid 函数，不同节点的 $\theta$ 值不同
 - 训练时，隐藏层向量与节点的 sigmoid 函数运算，根据输出结果选择分类方向：分类为负类沿左子树传递（编码 0），分类为正类沿右子树传递（编码 1），直到到达叶节点获得目标单词的概率
 
-## 5.6 Negative Sampling
+## Negative Sampling
 
 - 基本思想
   - 尽管哈夫曼树能够在一定程度上降低模型训练开销，但对于一些不常见或生僻词汇，计算其词向量仍需要大量运算

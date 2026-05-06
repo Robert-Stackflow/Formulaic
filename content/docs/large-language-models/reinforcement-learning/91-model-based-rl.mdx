@@ -3,7 +3,7 @@ title: 基于模型的强化学习
 description: 介绍基于模型的强化学习的基本原理，包括模型学习、Dyna-Q、Dyna-Q+、基于模拟的搜索等内容
 ---
 
-## 2.8.1 基于模型的强化学习
+## 基于模型的强化学习
 
 - 什么是基于模型的强化学习
   - 从经历中直接学习环境的模型
@@ -49,7 +49,7 @@ description: 介绍基于模型的强化学习的基本原理，包括模型学�
   - 最终得到的策略是 在 “幻想环境” 里最优
   - 因此，Dyna 要 “短规划”，MCTS 要 “从当前状态局部搜索”，Dreamer / MuZero 要用 value 网络兜底
 
-## 2.8.2 Dyna-Q
+## Dyna-Q
 
 - 结合学习和规划
   - 真实环境 → Q-learning（真实更新）
@@ -83,7 +83,7 @@ description: 介绍基于模型的强化学习的基本原理，包括模型学�
               update Q(s, a) using Q-learning update rule
   ```
 
-## 2.8.3 Dyna-Q+
+## Dyna-Q+
 
 - 在**非平稳环境**中（环境奖励 / 转移发生变化）：
   - 模型是 “记忆性的”，但环境可能变了
@@ -164,7 +164,7 @@ for each episode:
         s ← s'
 ```
 
-## 2.8.4 基于模拟的搜索
+## 基于模拟的搜索
 
 - 搜索方法（search-based methods）是基于模型的吗
   - 搜索方法（search-based methods）并非独立于基于模型的强化学习范式

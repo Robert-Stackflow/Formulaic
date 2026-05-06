@@ -37,8 +37,10 @@ export function DocsDropdown({ items }: DocsDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
-  const [dropdownPosition, setDropdownPosition] = useState<"left" | "right">("left");
-  const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const [dropdownPosition, setDropdownPosition] = useState<"left" | "right">(
+    "left",
+  );
+  const timeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
 
   // 计算下拉框位置
   useEffect(() => {
@@ -98,11 +100,12 @@ export function DocsDropdown({ items }: DocsDropdownProps) {
 
       {isOpen && (
         <div
-          className={`absolute top-full mt-1 w-[280px] bg-fd-popover border border-fd-border rounded-lg shadow-lg z-50 ${
+          className={`absolute top-full mt-1 w-[280px] bg-fd-popover border border-fd-border rounded-lg shadow-lg ${
             dropdownPosition === "right" ? "right-0" : "left-0"
           }`}
           style={{
             animation: "dropdownSlideIn 200ms ease-out",
+            zIndex: 50,
           }}
         >
           <style jsx>{`

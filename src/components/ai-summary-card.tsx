@@ -14,7 +14,7 @@ export function AISummaryCard({ contentSelector = '#doc-content' }: AISummaryCar
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [contentReady, setContentReady] = useState(false);
-  const [isTyping, setIsTyping] = useState(false);
+  const [isStreaming, setIsStreaming] = useState(false);
 
   // 等待内容加载完成
   useEffect(() => {
@@ -29,27 +29,6 @@ export function AISummaryCard({ contentSelector = '#doc-content' }: AISummaryCar
     const timer = setTimeout(checkContent, 500);
     return () => clearTimeout(timer);
   }, [contentSelector]);
-
-  // 打字机效果
-  useEffect(() => {
-    if (!summary || isTyping) return;
-
-    setIsTyping(true);
-    setDisplayedSummary('');
-    let currentIndex = 0;
-
-    const typingInterval = setInterval(() => {
-      if (currentIndex < summary.length) {
-        setDisplayedSummary(summary.slice(0, currentIndex + 1));
-        currentIndex++;
-      } else {
-        setIsTyping(false);
-        clearInterval(typingInterval);
-      }
-    }, 20); // 每 20ms 显示一个字符
-
-    return () => clearInterval(typingInterval);
-  }, [summary]);
 
   // 从 DOM 提取内容并转换为 Markdown
   const extractContent = (): string => {
@@ -86,6 +65,7 @@ export function AISummaryCard({ contentSelector = '#doc-content' }: AISummaryCar
     setError('');
     setSummary('');
     setDisplayedSummary('');
+    setIsStreaming(false);
 
     try {
       const content = extractContent();
@@ -98,13 +78,13 @@ export function AISummaryCard({ contentSelector = '#doc-content' }: AISummaryCar
 
       const cacheKey = getCacheKey(content);
 
-      // 检查缓存
       if (useCache) {
         const cached = localStorage.getItem(cacheKey);
         if (cached) {
           const { summary: cachedSummary, timestamp } = JSON.parse(cached);
           if (Date.now() - timestamp < 7 * 24 * 60 * 60 * 1000) {
             setSummary(cachedSummary);
+            setDisplayedSummary(cachedSummary);
             setIsLoading(false);
             return;
           }
@@ -123,29 +103,63 @@ export function AISummaryCard({ contentSelector = '#doc-content' }: AISummaryCar
         throw new Error('生成摘要失败');
       }
 
-      const summaryText = await response.text();
-      setSummary(summaryText);
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      let fullText = '';
 
-      // 保存到缓存
-      localStorage.setItem(cacheKey, JSON.stringify({
-        summary: summaryText,
-        timestamp: Date.now(),
-      }));
+      if (reader) {
+        setIsLoading(false);
+        setIsStreaming(true);
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value, { stream: true });
+          const lines = chunk.split('\n');
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const data = line.slice(6);
+              if (data === '[DONE]') continue;
+
+              try {
+                const parsed = JSON.parse(data);
+                const delta = parsed.choices?.[0]?.delta;
+                const text = delta?.content || delta?.reasoning_content || '';
+                if (text) {
+                  fullText += text;
+                  setDisplayedSummary(fullText);
+                }
+              } catch (e) {
+              }
+            }
+          }
+        }
+
+        setSummary(fullText);
+        setIsStreaming(false);
+
+        // 保存到缓存
+        localStorage.setItem(cacheKey, JSON.stringify({
+          summary: fullText,
+          timestamp: Date.now(),
+        }));
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : '生成摘要时出错');
-    } finally {
       setIsLoading(false);
+      setIsStreaming(false);
     }
   };
 
-  // 自动生成摘要
   useEffect(() => {
     if (contentReady) {
       generateSummary(true);
     }
   }, [contentReady]);
 
-  if (!summary && !isLoading && !error) {
+  if (!summary && !isLoading && !error && !displayedSummary) {
     return null;
   }
 
@@ -182,7 +196,7 @@ export function AISummaryCard({ contentSelector = '#doc-content' }: AISummaryCar
       {displayedSummary && (
         <div className="text-sm text-fd-foreground/90 leading-relaxed">
           {displayedSummary}
-          {isTyping && <span className="inline-block w-0.5 h-3.5 ml-0.5 bg-fd-primary animate-pulse align-middle" />}
+          {isStreaming && <span className="inline-block w-0.5 h-3.5 ml-0.5 bg-fd-primary animate-pulse align-middle" />}
         </div>
       )}
     </div>
