@@ -19,7 +19,6 @@ export async function fetchPVData(): Promise<PVData | null> {
     const response = await fetch(pvConfig.apiUrl, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${pvConfig.token}`,
         "x-bsz-referer": location.href,
       },
     });

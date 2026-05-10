@@ -7,6 +7,7 @@ import ClientShell from "@/components/shell/client-shell";
 import { Analytics } from "@vercel/analytics/next";
 import "katex/dist/katex.css";
 import AlgoliaSearchDialog from "@/components/algolia-search";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 export const metadata: Metadata = {
   title: {
@@ -87,6 +88,7 @@ export default function Layout({ children }: { children: ReactNode }) {
           <ClientShell>{children}</ClientShell>
           <ToastContainer />
           <Analytics />
+          <SpeedInsights />
         </RootProvider>
       </body>
     </html>

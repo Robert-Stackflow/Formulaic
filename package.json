@@ -23,6 +23,7 @@
     "@types/bcryptjs": "^3.0.0",
     "@types/turndown": "^5.0.6",
     "@vercel/analytics": "^2.0.1",
+    "@vercel/speed-insights": "^2.0.0",
     "algoliasearch": "^5.41.0",
     "clsx": "^2.1.1",
     "cross-env": "^10.1.0",
