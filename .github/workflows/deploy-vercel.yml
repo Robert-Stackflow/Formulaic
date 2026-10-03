@@ -21,6 +21,7 @@ jobs:
     env:
       NEXT_TELEMETRY_DISABLED: 1
       NODE_OPTIONS: --max-old-space-size=4096
+      NEXTAUTH_URL: https://formulaic.cloudchewie.com
       NEXT_PUBLIC_ONESEARCH_SERVER_URL: ${{ vars.ONESEARCH_SERVER_URL }}
       NEXT_PUBLIC_ONESEARCH_APP_ID: ${{ vars.ONESEARCH_APP_ID }}
       NEXT_PUBLIC_ONESEARCH_SEARCH_KEY: ${{ vars.ONESEARCH_SEARCH_KEY }}

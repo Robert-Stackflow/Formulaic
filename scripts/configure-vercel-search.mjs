@@ -1,4 +1,7 @@
 const keys = ["NEXT_PUBLIC_ONESEARCH_SERVER_URL", "NEXT_PUBLIC_ONESEARCH_APP_ID", "NEXT_PUBLIC_ONESEARCH_SEARCH_KEY"];
+// A legacy empty NextAuth URL makes even public pages fail during prerendering.
+process.env.NEXTAUTH_URL = "https://formulaic.cloudchewie.com";
+keys.push("NEXTAUTH_URL");
 for (const key of [...keys, "VERCEL_TOKEN", "VERCEL_PROJECT_ID", "VERCEL_ORG_ID"]) {
   if (!process.env[key]) throw new Error(`Missing ${key}`);
 }
