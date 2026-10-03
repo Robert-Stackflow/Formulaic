@@ -32,6 +32,13 @@ export async function fetchWordCount(
   slug?: string,
 ): Promise<WordCountResponse | null> {
   try {
+    if (process.env.NEXT_PUBLIC_STATIC_EXPORT === "true") {
+      const response = await fetch("/docs-stats.json");
+      if (!response.ok) return null;
+      const stats = await response.json();
+      const url = slug ? "/docs/" + slug.split("/").filter(s => s && s !== "docs").join("/") : null;
+      return { site: stats.site, page: url ? stats.pages[url] || null : undefined };
+    }
     const url = slug
       ? `/api/docs/word-count?slug=${encodeURIComponent(slug)}`
       : "/api/docs/word-count";

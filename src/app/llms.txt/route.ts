@@ -48,7 +48,7 @@ export async function GET() {
     for (const page of categoryPages) {
       const title = page.data.title || "Untitled";
       const description = page.data.description || "";
-      const url = `https://formulaic.vercel.app${page.url}`;
+      const url = `https://formulaic.cloudchewie.com${page.url}`;
 
       lines.push(`- [${title}](${url})`);
       if (description) {
@@ -65,8 +65,8 @@ export async function GET() {
   );
   lines.push("");
   lines.push("例如：");
-  lines.push("- HTML: https://formulaic.vercel.app/docs/algorithms");
-  lines.push("- Markdown: https://formulaic.vercel.app/docs/algorithms.mdx");
+  lines.push("- HTML: https://formulaic.cloudchewie.com/docs/algorithms");
+  lines.push("- Markdown: https://formulaic.cloudchewie.com/docs/algorithms.mdx");
 
   const content = lines.join("\n");
 

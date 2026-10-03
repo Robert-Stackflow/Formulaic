@@ -14,7 +14,9 @@
     "vercel:deploy": "npx vercel deploy --prebuilt --archive=tgz --prod",
     "typecheck": "tsc --noEmit",
     "test": "tsx --test tests/*.test.ts",
-    "sync:onesearch": "node scripts/sync-onesearch.cjs"
+    "sync:onesearch": "node scripts/sync-onesearch.cjs",
+    "build:cos": "node scripts/build-static.cjs",
+    "deploy:cos": "node scripts/upload-cos.cjs"
   },
   "dependencies": {
     "@auth/core": "^0.34.3",
@@ -57,6 +59,7 @@
     "zod": "^4.1.12"
   },
   "devDependencies": {
+    "@aws-sdk/client-s3": "3.1128.0",
     "@tailwindcss/postcss": "^4.1.14",
     "@types/mdx": "^2.0.13",
     "@types/node": "24.3.0",
@@ -69,6 +72,7 @@
     "fs-extra": "^11.3.2",
     "glob": "^13.0.0",
     "gray-matter": "^4.0.3",
+    "mime-types": "2.1.35",
     "pangu": "^7.2.0",
     "postcss": "^8.5.6",
     "remark-frontmatter": "^5.0.0",

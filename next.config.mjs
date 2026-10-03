@@ -1,12 +1,16 @@
 import { createMDX } from "fumadocs-mdx/next";
 
 const withMDX = createMDX();
+const staticExport = process.env.FORMULAIC_STATIC_EXPORT === "true";
 
 /** @type {import('next').NextConfig} */
 const config = {
+  ...(staticExport ? { output: "export", trailingSlash: true } : {}),
   reactStrictMode: true,
   productionBrowserSourceMaps: false, // 关闭 source map
   cleanDistDir: true,
+  staticPageGenerationTimeout: 180,
+  ...(staticExport ? { outputFileTracingRoot: process.cwd() } : {}),
   outputFileTracingIncludes: {
     "/*": ["./content/**/*"],
   },
@@ -29,6 +33,7 @@ const config = {
     unoptimized: true, // Disable built-in image optimization
   },
   async rewrites() {
+    if (staticExport) return [];
     return [
       {
         source: "/docs/:path*.mdx",
@@ -37,6 +42,7 @@ const config = {
     ];
   },
   async headers() {
+    if (staticExport) return [];
     return [
       {
         source: "/giscus-:theme.css",
@@ -54,5 +60,10 @@ const config = {
     ];
   },
 };
+
+if (staticExport) {
+  delete config.rewrites;
+  delete config.headers;
+}
 
 export default withMDX(config);

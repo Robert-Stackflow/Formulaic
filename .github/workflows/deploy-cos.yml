@@ -1,0 +1,60 @@
+name: Build and deploy Formulaic to COS
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: formulaic-cos-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      NEXT_TELEMETRY_DISABLED: 1
+      NEXT_PUBLIC_ONESEARCH_SERVER_URL: ${{ vars.ONESEARCH_SERVER_URL }}
+      NEXT_PUBLIC_ONESEARCH_APP_ID: ${{ vars.ONESEARCH_APP_ID }}
+      NEXT_PUBLIC_ONESEARCH_SEARCH_KEY: ${{ vars.ONESEARCH_SEARCH_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - name: Build static site with memory metrics
+        run: /usr/bin/time -v npm run build:cos
+      - name: Validate search index
+        run: npm run sync:onesearch -- --dry-run
+        env:
+          ONESEARCH_INDEX_FILE: out/static.json
+      - name: Validate COS upload
+        run: npm run deploy:cos -- --dry-run
+      - uses: actions/upload-artifact@v4
+        with:
+          name: formulaic-static
+          path: out/
+          retention-days: 7
+      - name: Upload to COS
+        if: github.event_name != 'pull_request'
+        run: npm run deploy:cos
+        env:
+          AWS_ENDPOINT: ${{ vars.AWS_ENDPOINT || 'https://cos.ap-guangzhou.myqcloud.com' }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_SECRET_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_BUCKET: ${{ vars.AWS_BUCKET || 'formulaic-1313406087' }}
+          AWS_REGION: ${{ vars.AWS_REGION || 'ap-guangzhou' }}
+          COS_ACCELERATE: ${{ vars.COS_ACCELERATE || 'false' }}
+      - name: Publish OneSearch index
+        if: github.event_name != 'pull_request'
+        run: npm run sync:onesearch
+        env:
+          ONESEARCH_INDEX_FILE: out/static.json
+          ONESEARCH_SERVER_URL: ${{ vars.ONESEARCH_SERVER_URL }}
+          ONESEARCH_APP_ID: ${{ vars.ONESEARCH_APP_ID }}
+          ONESEARCH_PUBLISH_KEY: ${{ secrets.ONESEARCH_PUBLISH_KEY }}

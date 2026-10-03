@@ -1,6 +1,8 @@
 node_modules
 dist
 .next
+.cos-build-*
+out
 .vercel
 .git
 .env*

@@ -24,11 +24,11 @@ npm run sync:onesearch -- --dry-run
 
 生产构建使用 Webpack、4 GB Node 堆上限、一个页面生成 worker、每 worker 同时生成一个页面。MDX 正文不再经过 Webpack 的整站编译和打包，避免大量公式与代码高亮生成的 JavaScript 占满构建内存。详见 [构建说明](docs/BUILD.md)。
 
-`master` 推送和手动触发会执行测试、构建、类型检查、OneSearch 索引同步和 Vercel 发布。Pull Request 只验证构建，不修改索引、不部署。工作流记录内存使用数据。
+`master` 推送和手动触发会分别发布 COS 静态站点与 Vercel 服务，均验证测试和构建、同步 OneSearch。Pull Request 只验证，不修改索引、不部署。工作流记录内存使用数据，配置见 [部署说明](docs/DEPLOYMENT.md)。
 
-GitHub Secrets：`VERCEL_TOKEN`、`VERCEL_ORG_ID`、`VERCEL_PROJECT_ID`、`ONESEARCH_PUBLISH_KEY`。
+GitHub Secrets：`VERCEL_TOKEN`、`VERCEL_ORG_ID`、`VERCEL_PROJECT_ID`、`ONESEARCH_PUBLISH_KEY`、`AWS_SECRET_ID`、`AWS_SECRET_ACCESS_KEY`。
 
-GitHub Variables：`ONESEARCH_SERVER_URL`、`ONESEARCH_APP_ID`、`ONESEARCH_SEARCH_KEY`。
+GitHub Variables：`ONESEARCH_SERVER_URL`、`ONESEARCH_APP_ID`、`ONESEARCH_SEARCH_KEY`、`AWS_BUCKET`、`AWS_REGION`、`AWS_ENDPOINT`、`COS_ACCELERATE`。
 
 ## 搜索
 

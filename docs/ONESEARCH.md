@@ -10,7 +10,7 @@ NEXT_PUBLIC_ONESEARCH_APP_ID=app_your_application_id
 NEXT_PUBLIC_ONESEARCH_SEARCH_KEY=your_search_only_key
 ```
 
-站点访问规则允许 `https://formulaic.cloudchewie.com`。本地验证还允许 `http://localhost:4310` 与 `http://127.0.0.1:4310`。其他预览域名需要单独加入来源白名单；不开放任意 Origin。
+站点访问规则允许 COS 的 `https://formulaic.cloudchewie.com` 与 Vercel 的 `https://v.formulaic.cloudchewie.com`。本地验证还允许 `http://localhost:4310` 与 `http://127.0.0.1:4310`。其他预览域名需要单独加入来源白名单；不开放任意 Origin。
 
 GitHub 发布流程使用相同 App ID，以及只有该索引权限的 `ONESEARCH_PUBLISH_KEY` Admin API Key。该密钥通过 GitHub Secret 保存，仅传给索引发布步骤。不要加 `NEXT_PUBLIC_` 前缀。
 

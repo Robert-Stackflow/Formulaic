@@ -168,7 +168,7 @@ export async function DocPageRenderer({ source, slug }: DocPageRendererProps) {
       </div>
       <div className="flex flex-row gap-2 items-center border-b mb-3"></div>
 
-      {showAISummary && <AISummaryCard />}
+      {showAISummary && process.env.NEXT_PUBLIC_STATIC_EXPORT !== "true" && <AISummaryCard />}
 
       <div
         className={`${index ? "" : "prose"} flex-1 text-fd-foreground/90 mb-4`}

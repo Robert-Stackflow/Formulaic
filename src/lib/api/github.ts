@@ -78,6 +78,7 @@ async function fetchLastCommitFromAPI(
   repo: string,
   filePath: string,
 ): Promise<CommitInfo | null> {
+  if (process.env.NEXT_PUBLIC_STATIC_EXPORT === "true") return null;
   try {
     const response = await fetch(
       `/api/github/commits?owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(repo)}&path=${encodeURIComponent(filePath)}`,

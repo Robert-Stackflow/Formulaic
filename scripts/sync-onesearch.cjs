@@ -46,7 +46,7 @@ async function syncIndex(documents, request, sleep = ms => new Promise(resolve =
   return { uploaded: documents.length, removed: stale.length };
 }
 async function main() {
-  const documents = validateIndex(JSON.parse(fs.readFileSync(path.resolve('.next/server/app/static.json.body'),'utf8')));
+  const documents = validateIndex(JSON.parse(fs.readFileSync(path.resolve(process.env.ONESEARCH_INDEX_FILE || '.next/server/app/static.json.body'),'utf8')));
   if (process.argv.includes('--dry-run')) { console.log(`OneSearch: ${documents.length} sections ready`); return; }
   const endpoint = process.env.ONESEARCH_PUBLISH_URL || (process.env.ONESEARCH_SERVER_URL && process.env.ONESEARCH_APP_ID ? process.env.ONESEARCH_SERVER_URL.replace(/\/$/,'')+'/api/apps/'+process.env.ONESEARCH_APP_ID : '');
   const key = process.env.ONESEARCH_PUBLISH_KEY;
