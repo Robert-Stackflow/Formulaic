@@ -77,6 +77,7 @@
     "postcss": "^8.5.6",
     "remark-frontmatter": "^5.0.0",
     "tailwindcss": "^4.1.14",
+    "tencentcloud-sdk-nodejs-cdn": "4.1.307",
     "tsx": "^4.20.6",
     "typescript": "^5.9.3",
     "unist-util-remove": "^4.0.0"

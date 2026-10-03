@@ -8,7 +8,7 @@ Secrets：
 
 | 名称 | 内容 |
 | --- | --- |
-| `AWS_SECRET_ID` | 腾讯云 SecretId，需有 Formulaic 桶的 HeadObject/GetObject/PutObject 权限 |
+| `AWS_SECRET_ID` | 腾讯云 SecretId，需有 Formulaic 桶的 HeadObject/GetObject/PutObject 与 CDN PurgeUrlsCache 权限 |
 | `AWS_SECRET_ACCESS_KEY` | 对应 SecretKey |
 | `ONESEARCH_PUBLISH_KEY` | 仅绑定 `formulaic_docs` 的 Admin API Key |
 | `VERCEL_TOKEN` | Vercel 部署凭据 |
@@ -41,6 +41,8 @@ ONESEARCH_INDEX_FILE=out/static.json npm run sync:onesearch
 静态构建在 `.cos-build-*` 临时目录完成，产物保存到 `out/`，保留 HTML、Next.js 导航数据、指纹资源、搜索索引和 Markdown。不会改变 Vercel 的 `.next` 目录。上传借鉴 Blog：比较 SHA-1 与 MIME/缓存元数据，先资源后 HTML，最多 6 个并发，保留旧指纹文件，不删除其他对象。构建失败不会替换旧 `out/`。
 
 COS 静态网站首页为 `index.html`，错误页为 `404.html`，深层目录需支持 `目录/index.html`。Next.js 指纹文件缓存一年；HTML、导航文本和 JSON 使用短缓存并重新验证。
+
+上传后刷新 `formulaic.cloudchewie.com` 的 HTML、导航数据和其他非指纹资源，保留指纹资源缓存。CDN 刷新失败时工作流会明确报错，可配置权限后重新运行；不会删除已上传的文件。
 
 COS 不执行 Node.js：每次发布时预生成文档和博客，字数/阅读时间由 `docs-stats.json` 提供；AI 摘要和使用服务端凭据的 GitHub 降级接口仅在 Vercel 可用。评论、公共 GitHub 查询、OneSearch 和无刷新导航继续工作。不要把 `.next` 直接上传为静态网站。
 

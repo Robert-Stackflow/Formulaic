@@ -58,3 +58,9 @@ jobs:
           ONESEARCH_SERVER_URL: ${{ vars.ONESEARCH_SERVER_URL }}
           ONESEARCH_APP_ID: ${{ vars.ONESEARCH_APP_ID }}
           ONESEARCH_PUBLISH_KEY: ${{ secrets.ONESEARCH_PUBLISH_KEY }}
+      - name: Refresh CDN pages and navigation payloads
+        if: github.event_name != 'pull_request'
+        run: node scripts/refresh-cdn.cjs
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_SECRET_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
