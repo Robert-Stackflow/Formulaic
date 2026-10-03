@@ -7,8 +7,18 @@ const config = {
   reactStrictMode: true,
   productionBrowserSourceMaps: false, // 关闭 source map
   cleanDistDir: true,
+  outputFileTracingIncludes: {
+    "/*": ["./content/**/*"],
+  },
+  experimental: {
+    cpus: 1,
+    staticGenerationMaxConcurrency: 1,
+    webpackMemoryOptimizations: true,
+    webpackBuildWorker: true,
+    serverSourceMaps: false,
+  },
   typescript: {
-    ignoreBuildErrors: true, // 不做全量类型检查
+    ignoreBuildErrors: false,
   },
   images: {
     formats: ["image/avif", "image/webp"],

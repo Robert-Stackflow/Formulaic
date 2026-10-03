@@ -1,4 +1,5 @@
 import "@/app/global.css";
+import "@/app/search.css";
 import { RootProvider } from "fumadocs-ui/provider/next";
 import { ToastContainer } from "@/components/toast";
 import type { ReactNode } from "react";
@@ -6,7 +7,7 @@ import type { Metadata } from "next";
 import ClientShell from "@/components/shell/client-shell";
 import { Analytics } from "@vercel/analytics/next";
 import "katex/dist/katex.css";
-import AlgoliaSearchDialog from "@/components/algolia-search";
+import OneSearchDialog from "@/components/onesearch";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
 export const metadata: Metadata = {
@@ -56,7 +57,7 @@ export const metadata: Metadata = {
 
 export default function Layout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="zh-CN" suppressHydrationWarning>
       <head>
         <meta
           name="viewport"
@@ -82,7 +83,7 @@ export default function Layout({ children }: { children: ReactNode }) {
       <body className="flex flex-col min-h-screen antialiased">
         <RootProvider
           search={{
-            SearchDialog: AlgoliaSearchDialog,
+            SearchDialog: OneSearchDialog,
           }}
         >
           <ClientShell>{children}</ClientShell>

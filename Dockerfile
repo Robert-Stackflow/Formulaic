@@ -24,6 +24,7 @@ COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/scripts ./scripts
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/src ./src
+COPY --from=builder /app/content ./content
 
 EXPOSE 3000
 

@@ -25,7 +25,7 @@ interface DocPageRendererProps {
   slug?: string[];
 }
 
-export function DocPageRenderer({ source, slug }: DocPageRendererProps) {
+export async function DocPageRenderer({ source, slug }: DocPageRendererProps) {
   const page = source.getPage(slug);
   if (!page) notFound();
 
@@ -41,7 +41,7 @@ export function DocPageRenderer({ source, slug }: DocPageRendererProps) {
     ai_summary,
     url: problemUrl,
     difficulty,
-  } = page.data;
+  } = { ...page.data, ...(await page.data.load()) };
 
   // Determine whether to show AI summary
   // Priority: page-level ai_summary > index page check > global default

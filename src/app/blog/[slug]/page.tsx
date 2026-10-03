@@ -36,7 +36,7 @@ export default async function BlogPostPage({ params }: BlogPageProps) {
   }
 
   const { data } = page;
-  const MDXContent = page.data.body;
+  const { body: MDXContent, toc } = await page.data.load();
 
   return (
     <HomeLayout {...baseOptions}>
@@ -124,14 +124,14 @@ export default async function BlogPostPage({ params }: BlogPageProps) {
                 </article>
               </div>
 
-              {page.data.toc && page.data.toc.length > 0 && (
+              {toc.length > 0 && (
                 <div className="hidden lg:block w-64 flex-shrink-0">
                   <div className="sticky top-24">
                     <div className="p-4 bg-fd-card border border-fd-border rounded-lg">
                       <h3 className="text-sm font-semibold text-fd-foreground mb-3">
                         目录
                       </h3>
-                      <TOCProvider toc={page.data.toc}>
+                      <TOCProvider toc={toc}>
                         <TOCScrollArea>
                           <TOCItems />
                         </TOCScrollArea>

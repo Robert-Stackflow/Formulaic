@@ -1,0 +1,23 @@
+.formulaic-search-dialog {
+  display: flex;
+  flex-direction: column;
+  top: min(12vh, 6rem);
+  max-height: calc(100dvh - min(12vh, 6rem) - 2rem);
+  width: calc(100% - 2rem);
+  max-width: 44rem;
+}
+
+@media (max-width: 640px) {
+  .formulaic-search-dialog {
+    top: max(0.75rem, env(safe-area-inset-top));
+    max-height: calc(100dvh - max(0.75rem, env(safe-area-inset-top)) - max(0.75rem, env(safe-area-inset-bottom)));
+    width: calc(100% - 1.5rem);
+  }
+  .formulaic-search-dialog button { min-height: 44px; min-width: 44px; }
+  .formulaic-search-dialog input { font-size: 16px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .formulaic-search-dialog, .formulaic-search-overlay { animation: none !important; }
+  .formulaic-search-dialog * { transition: none !important; }
+}

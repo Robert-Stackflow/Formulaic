@@ -26,7 +26,7 @@ export function PageViews() {
         const response = await fetch(pvConfig.apiUrl, {
           method: "POST",
           headers: {
-            Authorization: `Bearer ${pvConfig.token}`,
+            "x-bsz-referer": location.href,
           },
         });
 

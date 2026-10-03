@@ -1,6 +1,6 @@
 "use client";
 
-import * as LucideIcons from "lucide-react";
+import { icons } from "@/lib/icons";
 import { MessageCircle } from "lucide-react";
 
 interface IconRendererProps {
@@ -14,6 +14,6 @@ export function IconRenderer({
   className = "w-6 h-6",
   style,
 }: IconRendererProps) {
-  const Icon = (LucideIcons as any)[iconName] || MessageCircle;
+  const Icon = icons[iconName as keyof typeof icons] || MessageCircle;
   return <Icon className={className} style={style} />;
 }

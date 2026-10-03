@@ -73,7 +73,7 @@ export default function PrivacyPage() {
                   <strong>Vercel Analytics</strong>：用于网站分析
                 </li>
                 <li>
-                  <strong>Algolia</strong>：用于站内搜索功能
+                  <strong>OneSearch</strong>：用于站内搜索功能
                 </li>
               </ul>
               <p className="mb-4">

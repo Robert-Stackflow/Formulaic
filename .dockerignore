@@ -1,4 +1,8 @@
-node_modules/**
-dist/**
-.next/**
-data/**
+node_modules
+dist
+.next
+.vercel
+.git
+.env*
+*.tsbuildinfo
+data

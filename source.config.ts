@@ -21,6 +21,7 @@ const docSchema = pageSchema.extend({
 export const docs = defineDocs({
   dir: "content/docs",
   docs: {
+    dynamic: true,
     schema: docSchema,
     postprocess: {
       includeProcessedMarkdown: true,
@@ -32,6 +33,7 @@ export const docs = defineDocs({
 export const blog = defineDocs({
   dir: "content/blog",
   docs: {
+    dynamic: true,
     schema: pageSchema.extend({
       description: z.string(),
       published_at: z.string(),

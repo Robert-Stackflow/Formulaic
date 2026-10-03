@@ -5,7 +5,7 @@ import type { MetadataRoute } from "next";
 export const dynamic = "force-static";
 export const revalidate = 3600; // regenerate once per hour
 
-const BASE_URL = "https://otp.cloudchewie.com";
+const BASE_URL = "https://formulaic.cloudchewie.com";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const sitemap: MetadataRoute.Sitemap = [];
