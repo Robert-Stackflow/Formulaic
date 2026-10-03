@@ -1,6 +1,11 @@
 name: Check COS website routing
 on:
   workflow_dispatch:
+    inputs:
+      repair_404:
+        description: Remove the broken 404-to-COS-root redirect
+        type: boolean
+        default: false
 permissions:
   contents: read
 jobs:
@@ -14,7 +19,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: node scripts/check-cos-routing.cjs
+      - run: node scripts/check-cos-routing.cjs ${{ inputs.repair_404 && '--repair-404' || '' }}
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_SECRET_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}

@@ -42,6 +42,8 @@ ONESEARCH_INDEX_FILE=out/static.json npm run sync:onesearch
 
 COS 静态网站首页为 `index.html`，错误页为 `404.html`，深层目录需支持 `目录/index.html`。Next.js 指纹文件缓存一年；HTML、导航文本和 JSON 使用短缓存并重新验证。
 
+不要将 404 重定向到桶域名或 `/`，否则不存在的路径会跳出 CDN 并触发私有桶的 403。`Check COS website routing` 手动工作流可检查配置；选择 `repair_404` 仅移除这个错误规则，保留首页、错误页和 HTTPS 设置。检查 CDN 配置另需 `cdn:DescribeDomainsConfig` 权限。
+
 上传后刷新 `formulaic.cloudchewie.com` 的 HTML、导航数据和其他非指纹资源，保留指纹资源缓存。CDN 刷新失败时工作流会明确报错，可配置权限后重新运行；不会删除已上传的文件。
 
 COS 不执行 Node.js：每次发布时预生成文档和博客，字数/阅读时间由 `docs-stats.json` 提供；AI 摘要和使用服务端凭据的 GitHub 降级接口仅在 Vercel 可用。评论、公共 GitHub 查询、OneSearch 和无刷新导航继续工作。不要把 `.next` 直接上传为静态网站。
