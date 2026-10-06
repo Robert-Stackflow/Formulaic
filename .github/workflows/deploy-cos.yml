@@ -64,3 +64,13 @@ jobs:
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_SECRET_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      - name: Send PushPlus deployment notification
+        if: ${{ always() && github.event_name != 'pull_request' }}
+        continue-on-error: true
+        timeout-minutes: 1
+        run: node scripts/notify-pushplus.cjs
+        env:
+          PUSHPLUS_TOKEN: ${{ secrets.PUSHPLUS_TOKEN }}
+          FORMULAIC_DEPLOY_TARGET: COS
+          FORMULAIC_DEPLOY_STATUS: ${{ job.status }}

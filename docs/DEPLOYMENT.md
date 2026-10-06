@@ -14,6 +14,7 @@ Secrets：
 | `VERCEL_TOKEN` | Vercel 部署凭据 |
 | `VERCEL_ORG_ID` | Vercel 团队 ID |
 | `VERCEL_PROJECT_ID` | Formulaic 项目 ID |
+| `PUSHPLUS_TOKEN` | 可选，PushPlus 用户或消息 Token，用于部署结果通知 |
 
 Variables：
 
@@ -28,6 +29,12 @@ Variables：
 | `ONESEARCH_SEARCH_KEY` | Formulaic 的 Search API Key |
 
 全球加速开关为 `true` 时，上传地址自动替换为 `https://cos.accelerate.myqcloud.com`，签名区域仍为 `ap-guangzhou`，采用桶名子域名请求。须先在桶控制台开启全球加速。
+
+## 部署结果通知
+
+在仓库的 Settings → Secrets and variables → Actions 中添加 `PUSHPLUS_TOKEN`。COS 和 Vercel 工作流在 push 或手动运行结束时分别发送一条通知，标题注明部署平台与成功、失败或取消状态；正文包含分支、提交、北京时间和 GitHub Actions 日志链接。Pull Request 不发送通知。
+
+通知使用 [PushPlus 消息接口](https://www.pushplus.plus/doc/guide/api.html)。缺少密钥时跳过；请求有 15 秒超时，通知失败只记录警告，不改变部署结果。服务返回受理成功不代表最终送达，可在 PushPlus 消息记录中确认。
 
 ## COS
 

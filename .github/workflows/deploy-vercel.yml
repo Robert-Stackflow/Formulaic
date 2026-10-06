@@ -71,3 +71,13 @@ jobs:
         run: vercel deploy --prebuilt --archive=tgz --prod --token "$VERCEL_TOKEN"
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+
+      - name: Send PushPlus deployment notification
+        if: ${{ always() && github.event_name != 'pull_request' }}
+        continue-on-error: true
+        timeout-minutes: 1
+        run: node scripts/notify-pushplus.cjs
+        env:
+          PUSHPLUS_TOKEN: ${{ secrets.PUSHPLUS_TOKEN }}
+          FORMULAIC_DEPLOY_TARGET: Vercel
+          FORMULAIC_DEPLOY_STATUS: ${{ job.status }}
