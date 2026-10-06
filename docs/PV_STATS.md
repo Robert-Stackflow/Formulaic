@@ -2,7 +2,7 @@
 
 ## 功能概览
 
-已为文档页面和博客页面添加 PV（页面访问量）统计功能，使用 CloudChewie PV API。
+首页、文档页面和博客页面使用 OneAPI 的 `https://api.cloudchewie.com/pv` 接口统计 PV（页面访问量）和 UV（独立访客数）。现有 React 组件直接请求接口，并使用返回的数据更新页面。
 
 ## 显示内容
 
@@ -16,8 +16,7 @@
 
 ```typescript
 export const pvConfig = {
-  apiUrl: "https://pv.cloudchewie.com/api",
-  token: "YOUR_TOKEN_HERE",
+  apiUrl: "https://api.cloudchewie.com/pv",
   enabled: true,
 };
 ```
@@ -25,7 +24,6 @@ export const pvConfig = {
 ### 配置项说明
 
 - `apiUrl`: PV API 端点地址
-- `token`: Bearer Token 认证令牌
 - `enabled`: 是否启用 PV 统计（设为 `false` 可全局禁用）
 
 ## API 请求格式
@@ -33,8 +31,8 @@ export const pvConfig = {
 ### 请求
 
 ```http
-POST https://pv.cloudchewie.com/api
-Authorization: Bearer {token}
+POST https://api.cloudchewie.com/pv
+x-bsz-referer: https://formulaic.cloudchewie.com/
 ```
 
 ### 响应
@@ -125,7 +123,7 @@ export const pvConfig = {
 
 1. 检查浏览器控制台是否有错误
 2. 确认 `pvConfig.enabled` 为 `true`
-3. 验证 API token 是否正确
+3. 确认请求地址为 `https://api.cloudchewie.com/pv`，并携带当前页面地址的 `x-bsz-referer` 请求头
 4. 检查网络请求是否成功（开发者工具 > Network）
 
 ### CORS 错误
@@ -135,9 +133,9 @@ export const pvConfig = {
 Access-Control-Allow-Origin: https://your-domain.com
 ```
 
-### Token 过期
+### 来源校验失败
 
-如果 API 返回 401 错误，需要更新 `pvConfig.token`。
+如果 API 返回 `invalid referer`，检查 `x-bsz-referer` 是否为有效的当前页面地址，并核对 OneAPI 的跨域来源设置。
 
 ## 未来改进
 

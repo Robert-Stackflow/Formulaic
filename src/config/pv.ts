@@ -1,4 +1,4 @@
 export const pvConfig = {
-  apiUrl: "https://pv.cloudchewie.com/api",
+  apiUrl: "https://api.cloudchewie.com/pv",
   enabled: true,
 };
